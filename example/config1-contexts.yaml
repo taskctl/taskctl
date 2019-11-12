@@ -1,0 +1,16 @@
+contexts:
+  local:
+    type: local
+    env:
+      TEST: test-value
+
+  alpine:
+    type: docker-compose
+    service:
+      name: alpine
+      transient: true
+      file: example/docker-compose.yaml
+    executable:
+      bin: /bin/sh
+      args:
+        - -c
