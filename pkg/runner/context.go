@@ -8,13 +8,13 @@ import (
 
 func BuildContext(def *config.ContextConfig) (*Context, error) {
 	c := &Context{
-		Type:       def.Type,
+		Type: def.Type,
 		Executable: Executable{
-			Bin: def.Executable.Bin,
+			Bin:  def.Executable.Bin,
 			Args: make([]string, 0),
 		},
-		Container:  Container{},
-		Env:        append(os.Environ(), config.ConvertEnv(def.Env)...),
+		Container: Container{},
+		Env:       append(os.Environ(), config.ConvertEnv(def.Env)...),
 	}
 
 	switch def.Type {
@@ -59,21 +59,20 @@ type Context struct {
 	Type       string
 	Executable Executable
 	Container  Container
-	Env []string
+	Env        []string
 }
 
 type Executable struct {
-	Bin string
+	Bin  string
 	Args []string
 }
 
 type Container struct {
 	Provider string
-	Name string
-	Run bool
+	Name     string
+	Run      bool
 }
 
 func (c *Context) Cleanup() {
 	// todo: cleanup
 }
-

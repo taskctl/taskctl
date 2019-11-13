@@ -3,6 +3,7 @@ module github.com/trntv/wilson
 go 1.13
 
 require (
+	github.com/gizak/termui/v3 v3.1.0
 	github.com/imdario/mergo v0.3.8
 	github.com/logrusorgru/aurora v0.0.0-20191017060258-dc85c304c434
 	github.com/sirupsen/logrus v1.4.2

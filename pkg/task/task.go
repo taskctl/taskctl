@@ -2,6 +2,7 @@ package task
 
 import (
 	"github.com/trntv/wilson/pkg/config"
+	"io"
 	"sync/atomic"
 	"time"
 )
@@ -9,6 +10,7 @@ import (
 const (
 	STATUS_WAITING = iota
 	STATUS_SCHEDULED
+	STATUS_STARTING
 	STATUS_RUNNING
 	STATUS_DONE
 	STATUS_ERROR
@@ -18,12 +20,18 @@ const (
 type Task struct {
 	Command []string
 	Context string
-	Env []string
+	Env     []string
+	Dir     string
 
-	Name string
+	Name   string
 	Status int32
-	Start time.Time
-	End time.Time
+	Start  time.Time
+	End    time.Time
+
+	Stdout io.ReadCloser
+	Stderr io.ReadCloser
+
+	stderrLastLine string
 }
 
 func BuildTask(def *config.TaskConfig) *Task {
@@ -36,6 +44,7 @@ func BuildTask(def *config.TaskConfig) *Task {
 	if t.Context == "" {
 		t.Context = "local"
 	}
+	t.Dir = def.Dir
 
 	return t
 }
@@ -67,4 +76,12 @@ func (t *Task) UnmarshalYAML(unmarshal func(interface{}) error) error {
 
 func (t *Task) Duration() time.Duration {
 	return t.End.Sub(t.Start)
+}
+
+func (t *Task) WiteLog(l string) {
+	t.stderrLastLine = l
+}
+
+func (t *Task) ReadLog() string {
+	return t.stderrLastLine
 }

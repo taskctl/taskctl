@@ -1,0 +1,23 @@
+import:
+  - config1-contexts.yaml
+
+pipelines:
+  pipeline1:
+    - task: a
+    - task: b
+      depends: ["a"]
+    - task: c
+      depends: ["a"]
+
+tasks:
+  a:
+    command:
+      - echo "A"
+
+  b:
+    command:
+      - ">&2 echo \"error\" && exit 1"
+
+  c:
+    command:
+      - echo "C"

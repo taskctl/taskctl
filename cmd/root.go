@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+	"github.com/logrusorgru/aurora"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/trntv/wilson/pkg/config"
@@ -21,18 +23,14 @@ var done = make(chan bool)
 var rootCmd = &cobra.Command{
 	Short: "Wilson the task runner",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		// todo: better solution
-		if cmd.Use == "help [command]" {
-			return
-		}
-
 		if debug {
 			logrus.SetLevel(logrus.DebugLevel)
 		}
 
 		cfg, err := config.Load(configFile)
 		if err != nil {
-			logrus.Fatalln(err)
+			logrus.Debug(err)
+			cfg = &config.Config{}
 		}
 
 		tasks = make(map[string]*task.Task)
@@ -58,7 +56,7 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "debug")
+	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "enable debug")
 	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "wilson.yaml", "config file to use")
 }
 
@@ -69,4 +67,20 @@ func Execute() error {
 func Abort() {
 	close(cancel)
 	<-done
+}
+
+func printSummary(t *task.Task) {
+	switch t.ReadStatus() {
+	case task.STATUS_DONE:
+		fmt.Printf(aurora.Sprintf(aurora.Green("- Task %s done in %s\r\n"), t.Name, t.Duration()))
+	case task.STATUS_ERROR:
+		fmt.Printf(aurora.Sprintf(aurora.Red("- Task %s failed in %s\r\n"), t.Name, t.Duration()))
+		fmt.Printf(aurora.Sprintf(aurora.Red("  Error: %s\r\n"), t.ReadLog()))
+	case task.STATUS_CANCELED:
+		fmt.Printf(aurora.Sprintf(aurora.Gray(12, "- Task %s is cancelled\r\n"), t.Name))
+	case task.STATUS_WAITING:
+		fmt.Printf(aurora.Sprintf(aurora.Gray(12, "- Task %s skipped\r\n"), t.Name))
+	default:
+		logrus.Fatal(aurora.Sprintf(aurora.Red("- Unexpected status %d for task %s\r\n"), t.Status, t.Name))
+	}
 }

@@ -6,17 +6,20 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/trntv/wilson/pkg/runner"
-	"github.com/trntv/wilson/pkg/task"
 )
 
+var quiet, raw bool
+
 func init() {
+	runCommand.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "silence output")
+	runCommand.PersistentFlags().BoolVar(&raw, "raw-output", false, "raw output")
 	rootCmd.AddCommand(runCommand)
 }
 
 var runCommand = &cobra.Command{
-	Use: "run [pipeline]",
+	Use:   "run [pipeline]",
 	Short: "Run pipeline",
-	Args: cobra.MinimumNArgs(1),
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		var pname = args[0]
 		pipeline, ok := pipelines[pname]
@@ -24,7 +27,7 @@ var runCommand = &cobra.Command{
 			logrus.Fatalf("unknown pipeline %s", pname)
 		}
 
-		rr := runner.NewRunner(pipeline, contexts)
+		rr := runner.NewRunner(pipeline, contexts, raw, quiet)
 		go func() {
 			select {
 			case <-cancel:
@@ -32,25 +35,14 @@ var runCommand = &cobra.Command{
 				return
 			}
 		}()
-		rr.Run()
+		rr.Schedule()
 
 		fmt.Println(aurora.Yellow("\r\nSummary:"))
 		for _, t := range pipeline.Nodes() {
-			switch t.ReadStatus() {
-			case task.STATUS_DONE:
-				fmt.Printf(aurora.Sprintf(aurora.Green("- Task %s done in %s\r\n"), t.Name, t.Duration()))
-			case task.STATUS_ERROR:
-				fmt.Printf(aurora.Sprintf(aurora.Red("- Task %s failed in %s\r\n"), t.Name, t.Duration()))
-			case task.STATUS_CANCELED:
-				fmt.Printf(aurora.Sprintf(aurora.Gray(12, "- Task %s is cancelled\r\n"), t.Name))
-			case task.STATUS_WAITING:
-				fmt.Printf(aurora.Sprintf(aurora.Gray(12, "- Task %s skipped\r\n"), t.Name))
-			default:
-				logrus.Fatal(aurora.Sprintf(aurora.Red("- Unexpected status %d for task %s\r\n"), t.Status, t.Name))
-			}
+			printSummary(t)
 		}
 
-		fmt.Printf(aurora.Sprintf(aurora.Green("Total duration: %s\r\n"), rr.End.Sub(rr.Start)))
+		fmt.Printf(aurora.Sprintf(aurora.Green("\r\nTotal duration: %s\r\n"), rr.End.Sub(rr.Start)))
 
 		close(done)
 	},
