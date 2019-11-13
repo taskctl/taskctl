@@ -16,11 +16,14 @@ jobs:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v1
 
-    - name: Build
-      run: GOOS=darwin GOARCH=amd64 go build -o wilson -v .
-      
+    - name: Build for MacOS
+      run: GOOS=darwin GOARCH=amd64 go build -o wilson_darwin -v .
+
+    - name: Build for Linux
+      run: GOOS=linux GOARCH=amd64 go build -o wilson_darwin -v .
+
     - name: Publish release
       uses: ncipollo/release-action@v1
       with:
-        artifacts: "wilson"
+        artifacts: "wilson_darwin"
         token: ${{ secrets.GITHUB_TOKEN }}
