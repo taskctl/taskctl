@@ -26,6 +26,7 @@ tasks:
   a:
     command:
       - echo "A"
+      - export CCC=1
 
   b:
     command:

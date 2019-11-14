@@ -66,7 +66,10 @@ func (o *taskOutput) streamOutput(t *task.Task, done chan struct{}) {
 			return
 		default:
 			if o.raw {
-				o.streamRawOutput(t)
+				err := o.streamRawOutput(t)
+				if err != nil {
+					return
+				}
 			} else {
 				err := o.streamDecoratedStdoutOutput(t)
 				if err != nil {
@@ -81,19 +84,26 @@ func (o *taskOutput) streamOutput(t *task.Task, done chan struct{}) {
 	}
 }
 
-func (o *taskOutput) streamRawOutput(t *task.Task) {
+func (o *taskOutput) streamRawOutput(t *task.Task) error {
+	_, err := io.Copy(o.stdout, t.Stdout)
+	if err != nil {
+		return err
+	}
+
 	logw, logr, _ := os.Pipe()
 	stderr := io.MultiWriter(o.stderr, logw)
 
-	_, err := io.Copy(stderr, t.Stdout)
-	if err != nil {
-		logrus.Debug(err)
+	_, err = io.Copy(stderr, t.Stderr)
+	if err == os.ErrClosed {
+		return err
 	}
 
 	scanner := bufio.NewScanner(logr)
 	for scanner.Scan() {
 		t.WiteLog(scanner.Text())
 	}
+
+	return nil
 }
 
 func (o *taskOutput) streamDecoratedStdoutOutput(t *task.Task) error {

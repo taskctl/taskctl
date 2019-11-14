@@ -1,5 +1,9 @@
 tasks:
   release:
     command:
+      - GOOS=darwin GOARCH=amd64 go build -o bin/wilson_darwin main.go
+      - sed -i '' '/  version/s/".*"/"${ARGS}"/' Wilson.rb
+      - sed -i '' '/  sha256/s/".*"/"'$(shasum bin/wilson_darwin | shasum bin/wilson_darwin | awk '{print $1}')'"/' Wilson.rb
+      - git commit -am "Release ${ARGS}"
       - git tag ${ARGS}
       - git push origin ${ARGS}
