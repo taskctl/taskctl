@@ -3,7 +3,9 @@ package cmd
 import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/trntv/wilson/pkg/config"
 	"github.com/trntv/wilson/pkg/runner"
+	"strings"
 )
 
 func init() {
@@ -22,8 +24,12 @@ var taskRunCommand = &cobra.Command{
 			logrus.Fatalf("unknown task %s", tname)
 		}
 
+		taskArgs := args[1:]
+
 		tr := runner.NewTaskRunner(contexts, true, quiet)
-		err := tr.Run(t)
+		err := tr.RunWithEnv(t, config.ConvertEnv(map[string]string{
+			"ARGS": strings.Join(taskArgs, " "),
+		}))
 		if err != nil {
 			logrus.Error(err)
 		}

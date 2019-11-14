@@ -1,0 +1,5 @@
+tasks:
+  release:
+    command:
+      - git tag ${ARGS}
+      - git push origin ${ARGS}
