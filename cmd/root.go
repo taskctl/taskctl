@@ -12,10 +12,11 @@ import (
 
 var debug bool
 var configFile string
+var cfg *config.Config
 
-var tasks map[string]*task.Task
-var contexts map[string]*runner.Context
-var pipelines map[string]*task.Pipeline
+var tasks = make(map[string]*task.Task)
+var contexts = make(map[string]*runner.Context)
+var pipelines = make(map[string]*task.Pipeline)
 
 var cancel = make(chan struct{})
 var done = make(chan bool)
@@ -27,15 +28,12 @@ var rootCmd = &cobra.Command{
 			logrus.SetLevel(logrus.DebugLevel)
 		}
 
-		cfg, err := config.Load(configFile)
+		var err error
+		cfg, err = config.Load(configFile)
 		if err != nil {
 			logrus.Debug(err)
 			cfg = &config.Config{}
 		}
-
-		tasks = make(map[string]*task.Task)
-		contexts = make(map[string]*runner.Context)
-		pipelines = make(map[string]*task.Pipeline)
 
 		for name, def := range cfg.Tasks {
 			tasks[name] = task.BuildTask(def)

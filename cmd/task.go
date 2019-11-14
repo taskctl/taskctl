@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-	"github.com/logrusorgru/aurora"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/trntv/wilson/pkg/runner"
@@ -24,11 +22,11 @@ var taskRunCommand = &cobra.Command{
 			logrus.Fatalf("unknown task %s", tname)
 		}
 
-		rr := runner.NewRunner(nil, contexts, raw, quiet)
-		rr.Run(t)
-
-		fmt.Println(aurora.Yellow("\r\nSummary:"))
-		printSummary(t)
+		tr := runner.NewTaskRunner(contexts, true, quiet)
+		err := tr.Run(t)
+		if err != nil {
+			logrus.Error(err)
+		}
 
 		close(done)
 	},

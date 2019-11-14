@@ -11,8 +11,9 @@ import (
 )
 
 const (
-	CONTEXT_TYPE_LOCAL          = "local"
-	CONTEXT_TYPE_DOCKER_COMPOSE = "docker-compose"
+	// todo: local, container, remote + providers
+	CONTEXT_TYPE_LOCAL     = "local"
+	CONTEXT_TYPE_CONTAINER = "docker-compose"
 	//CONTEXT_TYPE_DOCKER = "docker"
 	//CONTEXT_TYPE_KUBECTL = "kubectl"
 	//CONTEXT_TYPE_SSH = "ssh"
@@ -59,11 +60,18 @@ type PipelineConfig struct {
 	Depends []string
 }
 
+type WatcherConfig struct {
+	Events []string
+	Watch  []string
+	Task   string
+}
+
 type Config struct {
 	Import    []string
 	Contexts  map[string]*ContextConfig
 	Pipelines map[string][]*PipelineConfig
 	Tasks     map[string]*TaskConfig
+	Watchers  map[string]*WatcherConfig
 
 	WilsonConfig WilsonConfig
 }
@@ -107,7 +115,9 @@ func load(dir string, file string) (*Config, error) {
 }
 
 func readFile(filename string) (*Config, error) {
-	c := &Config{}
+	c := &Config{
+		Contexts: make(map[string]*ContextConfig),
+	}
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
@@ -132,6 +142,7 @@ func ConvertEnv(env map[string]string) []string {
 	enva := make([]string, len(env))
 	for k, v := range env {
 		enva[i] = fmt.Sprintf("%s=%s", k, v)
+		i++
 	}
 
 	return enva

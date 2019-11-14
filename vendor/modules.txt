@@ -1,3 +1,5 @@
+# github.com/fsnotify/fsnotify v1.4.7
+github.com/fsnotify/fsnotify
 # github.com/imdario/mergo v0.3.8
 github.com/imdario/mergo
 # github.com/inconshreveable/mousetrap v1.0.0

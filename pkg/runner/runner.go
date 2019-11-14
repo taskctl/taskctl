@@ -8,99 +8,36 @@ import (
 	"github.com/trntv/wilson/pkg/task"
 	"os"
 	"os/exec"
-	"sync"
-	"sync/atomic"
 	"time"
 )
 
-const LOOP_DELAY = 50 * time.Millisecond
-
-type PipelineRunner struct {
-	pipeline *task.Pipeline
+type TaskRunner struct {
 	contexts map[string]*Context
 	output   *taskOutput
 
-	rctx      context.Context
-	cancel    context.CancelFunc
-	cancelled int32
-	wg        sync.WaitGroup
-	pause     time.Duration
-
-	Start time.Time
-	End   time.Time
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
-func NewRunner(pipeline *task.Pipeline, contexts map[string]*Context, raw bool, quiet bool) *PipelineRunner {
-
-	r := &PipelineRunner{
-		pipeline: pipeline,
+func NewTaskRunner(contexts map[string]*Context, raw, quiet bool) *TaskRunner {
+	tr := &TaskRunner{
 		contexts: contexts,
 		output:   NewTaskOutput(raw, quiet),
 	}
 
-	r.rctx, r.cancel = context.WithCancel(context.Background())
+	tr.ctx, tr.cancel = context.WithCancel(context.Background())
 
-	return r
+	return tr
 }
 
-func (pr *PipelineRunner) Schedule() {
-	pr.startTimer()
-	defer pr.stopTimer()
-
-	var done = false
-	for {
-		if done {
-			break
-		}
-
-		if atomic.LoadInt32(&pr.cancelled) == 1 {
-			break
-		}
-
-		done = true
-		for _, t := range pr.pipeline.Nodes() {
-			switch t.ReadStatus() {
-			case task.STATUS_WAITING, task.STATUS_SCHEDULED:
-				done = false
-			case task.STATUS_RUNNING:
-				done = false
-				continue
-			default:
-				continue
-			}
-
-			var ready = true
-			for _, dep := range pr.pipeline.To(t.Name) {
-				depTask := pr.pipeline.Node(dep)
-				switch depTask.ReadStatus() {
-				case task.STATUS_DONE:
-					continue
-				case task.STATUS_ERROR, task.STATUS_CANCELED:
-					ready = false
-					t.UpdateStatus(task.STATUS_CANCELED)
-				default:
-					ready = false
-				}
-			}
-
-			if ready {
-				go pr.Run(t)
-			}
-		}
-
-		time.Sleep(LOOP_DELAY)
-	}
-
-	pr.wg.Wait()
+func (r *TaskRunner) Run(t *task.Task) (err error) {
+	return r.RunWithEnv(t, make([]string, 0))
 }
 
-func (pr *PipelineRunner) Run(t *task.Task) {
-	pr.wg.Add(1)
-	defer pr.wg.Done()
-
-	c := pr.contexts[t.Context]
-	var err error
-	var env = append(c.Env, t.Env...)
+func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
+	c := r.contexts[t.Context]
+	env = append(env, c.Env...)
+	env = append(env, t.Env...)
 
 	cwd := t.Dir
 	if cwd == "" {
@@ -111,93 +48,77 @@ func (pr *PipelineRunner) Run(t *task.Task) {
 	}
 
 	t.Start = time.Now()
-	if !t.SwapStatus(task.STATUS_WAITING, task.STATUS_RUNNING) {
-		logrus.Fatal("unexpected task status")
-	}
 	fmt.Println(aurora.Sprintf(aurora.Green("Running %s..."), aurora.Green(t.Name)))
 
+	exargs := c.Executable.Args
 	for _, command := range t.Command {
-		if t.ReadStatus() == task.STATUS_ERROR {
-			break
-		}
-
-		args := append(c.Executable.Args, command)
+		args := append(exargs, command)
 
 		cmd := exec.Command(c.Executable.Bin, args...)
 		cmd.Dir = cwd
 		cmd.Env = env
 
-		t.Stdout, err = cmd.StdoutPipe()
+		stdout, err := cmd.StdoutPipe()
 		if err != nil {
 			logrus.Error(err)
 		}
+		t.SetStdout(stdout)
 
-		t.Stderr, err = cmd.StderrPipe()
+		stderr, err := cmd.StderrPipe()
 		if err != nil {
 			logrus.Error(err)
 		}
+		t.SetStderr(stderr)
 
-		pr.runCommand(t, cmd)
+		err = r.runCommand(t, cmd)
+		if err != nil {
+			t.UpdateStatus(task.STATUS_ERROR)
+			t.End = time.Now()
+			return err
+		}
 	}
 
 	t.End = time.Now()
-	if t.ReadStatus() == task.STATUS_ERROR {
-		pr.Cancel()
-		return
-	}
-
 	t.UpdateStatus(task.STATUS_DONE)
 
 	fmt.Println(aurora.Sprintf(aurora.Green("%s finished. Elapsed %s"), aurora.Green(t.Name), aurora.Yellow(t.Duration())))
+
+	return nil
 }
 
-func (pr *PipelineRunner) Cancel() {
-	atomic.StoreInt32(&pr.cancelled, 1)
-	pr.cancel()
-}
-
-func (pr *PipelineRunner) runCommand(t *task.Task, cmd *exec.Cmd) {
+func (r *TaskRunner) runCommand(t *task.Task, cmd *exec.Cmd) error {
 	var done = make(chan struct{})
 	var killed = make(chan struct{})
-	go pr.waitForInterruption(*cmd, done, killed)
+	go r.waitForInterruption(*cmd, done, killed)
 
 	var flushed = make(chan struct{})
-	go pr.output.Scan(t, done, flushed)
+	go r.output.Scan(t, done, flushed)
 
 	logrus.Debugf("Executing %s\r\n", cmd.String())
 	err := cmd.Start()
 	if err != nil {
-		t.UpdateStatus(task.STATUS_ERROR)
 		<-flushed
-		pr.Cancel()
-		return
+		return err
 	}
 
 	err = cmd.Wait()
 	if err != nil {
-		t.UpdateStatus(task.STATUS_ERROR)
 		<-flushed
-		pr.Cancel()
-		return
+		return err
 	}
 
 	close(done)
 	<-killed
 	<-flushed
+
+	return nil
 }
 
-func (pr *PipelineRunner) startTimer() {
-	pr.Start = time.Now()
-}
-func (pr *PipelineRunner) stopTimer() {
-	pr.End = time.Now()
-}
-
-func (pr *PipelineRunner) waitForInterruption(cmd exec.Cmd, done chan struct{}, killed chan struct{}) {
+func (r *TaskRunner) waitForInterruption(cmd exec.Cmd, done chan struct{}, killed chan struct{}) {
 	defer close(killed)
 
 	select {
-	case <-pr.rctx.Done():
+	case <-r.ctx.Done():
 		if cmd.ProcessState == nil || cmd.ProcessState.Exited() {
 			return
 		}

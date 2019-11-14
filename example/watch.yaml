@@ -1,0 +1,10 @@
+tasks:
+  test-watch-task:
+    command:
+      - echo $EVENT_NAME $EVENT_PATH
+
+watchers:
+  test-watcher:
+    events: ["write", "rename"]
+    watch: ["README.*"]
+    task: test-watch-task

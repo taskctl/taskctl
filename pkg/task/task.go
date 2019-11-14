@@ -3,6 +3,7 @@ package task
 import (
 	"github.com/trntv/wilson/pkg/config"
 	"io"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -32,6 +33,8 @@ type Task struct {
 	Stderr io.ReadCloser
 
 	stderrLastLine string
+
+	mu sync.Mutex
 }
 
 func BuildTask(def *config.TaskConfig) *Task {
@@ -57,10 +60,6 @@ func (t *Task) ReadStatus() int32 {
 	return atomic.LoadInt32(&t.Status)
 }
 
-func (t *Task) SwapStatus(old int32, new int32) bool {
-	return atomic.CompareAndSwapInt32(&t.Status, old, new)
-}
-
 func (t *Task) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	type rawTask Task
 	raw := rawTask{
@@ -84,4 +83,16 @@ func (t *Task) WiteLog(l string) {
 
 func (t *Task) ReadLog() string {
 	return t.stderrLastLine
+}
+
+func (t *Task) SetStdout(stdout io.ReadCloser) {
+	t.mu.Lock()
+	t.Stdout = stdout
+	t.mu.Unlock()
+}
+
+func (t *Task) SetStderr(stderr io.ReadCloser) {
+	t.mu.Lock()
+	t.Stderr = stderr
+	t.mu.Unlock()
 }

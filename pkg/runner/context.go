@@ -23,7 +23,7 @@ func BuildContext(def *config.ContextConfig) (*Context, error) {
 			c.Executable.Bin = "/bin/sh" // todo: move to config
 			c.Executable.Args = []string{"-c"}
 		}
-	case config.CONTEXT_TYPE_DOCKER_COMPOSE:
+	case config.CONTEXT_TYPE_CONTAINER:
 		bin := def.Executable.Bin
 		c.Executable.Bin = "docker-compose" // todo: move to config
 		if def.ComposeService.File != "" {

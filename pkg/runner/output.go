@@ -61,9 +61,6 @@ func (o *taskOutput) Scan(t *task.Task, done chan struct{}, flushed chan struct{
 
 func (o *taskOutput) streamOutput(t *task.Task, done chan struct{}) {
 	for {
-		if t.ReadStatus() != task.STATUS_RUNNING {
-			return
-		}
 		select {
 		case <-done:
 			return

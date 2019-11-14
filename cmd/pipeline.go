@@ -12,7 +12,7 @@ var quiet, raw bool
 
 func init() {
 	runCommand.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "silence output")
-	runCommand.PersistentFlags().BoolVar(&raw, "raw-output", false, "raw output")
+	runCommand.Flags().BoolVar(&raw, "raw-output", false, "raw output")
 	rootCmd.AddCommand(runCommand)
 }
 
@@ -27,7 +27,7 @@ var runCommand = &cobra.Command{
 			logrus.Fatalf("unknown pipeline %s", pname)
 		}
 
-		rr := runner.NewRunner(pipeline, contexts, raw, quiet)
+		rr := runner.NewScheduler(pipeline, contexts, raw, quiet)
 		go func() {
 			select {
 			case <-cancel:

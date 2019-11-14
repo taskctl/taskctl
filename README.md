@@ -59,6 +59,10 @@ start task --- |--- task B --------------|--- task E --- finish
                |___ task C ___ task D ___|
 ```
 
+Watch
+---
+WIF*
+
 TODO
 ---
  - [x] pipelines
