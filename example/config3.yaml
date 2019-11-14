@@ -1,0 +1,32 @@
+contexts:
+  alpine-docker:
+    type: container
+    container:
+      provider: docker
+      image: alpine:latest
+
+  alpine-docker-compose:
+    type: container
+    container:
+      provider: docker-compose
+      name: alpine
+      options:
+        - "--file=example/docker-compose.yaml"
+
+pipelines:
+  test-pipeline:
+    tasks:
+      - task: docker-env
+      - task: docker-compose-env
+        depends: [docker-env]
+
+tasks:
+  docker-env:
+    context: alpine-docker
+    command:
+      - env
+
+  docker-compose-env:
+    context: alpine-docker-compose
+    command:
+      - env

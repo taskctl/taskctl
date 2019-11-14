@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"github.com/sirupsen/logrus"
 	"github.com/trntv/wilson/pkg/task"
 	"sync"
 	"sync/atomic"
@@ -19,11 +20,11 @@ type PipelineScheduler struct {
 	End   time.Time
 }
 
-func NewScheduler(pipeline *task.Pipeline, contexts map[string]*Context, raw, quiet bool) *PipelineScheduler {
+func NewScheduler(pipeline *task.Pipeline, contexts map[string]*Context, env []string, raw, quiet bool) *PipelineScheduler {
 	r := &PipelineScheduler{
 		pipeline:   pipeline,
 		pause:      50 * time.Millisecond,
-		taskRunner: NewTaskRunner(contexts, raw, quiet),
+		taskRunner: NewTaskRunner(contexts, env, raw, quiet),
 	}
 
 	return r
@@ -76,6 +77,7 @@ func (s *PipelineScheduler) Schedule() {
 					defer s.wg.Done()
 					err := s.taskRunner.Run(t)
 					if err != nil {
+						logrus.Error(err)
 						t.UpdateStatus(task.STATUS_ERROR)
 						s.Cancel()
 					} else {

@@ -8,32 +8,34 @@ import (
 	"strings"
 )
 
-func init() {
-	runCommand.AddCommand(taskRunCommand)
-}
+func NewRunTaskCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "task [task]",
+		Short: "Schedule task",
+		Args:  cobra.MinimumNArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			// todo: OnlyValidArgs
+			var tname = args[0]
+			t, ok := tasks[tname]
+			if !ok {
+				logrus.Fatalf("unknown task %s", tname)
+			}
 
-var taskRunCommand = &cobra.Command{
-	Use:   "task [task]",
-	Short: "Schedule task",
-	Args:  cobra.MinimumNArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		// todo: OnlyValidArgs
-		var tname = args[0]
-		t, ok := tasks[tname]
-		if !ok {
-			logrus.Fatalf("unknown task %s", tname)
-		}
+			var taskArgs []string
+			if al := cmd.ArgsLenAtDash(); al > 0 {
+				taskArgs = args[cmd.ArgsLenAtDash():]
+			}
+			env := config.ConvertEnv(map[string]string{
+				"ARGS": strings.Join(taskArgs, " "),
+			})
 
-		taskArgs := args[1:]
+			tr := runner.NewTaskRunner(contexts, env, true, quiet)
+			err := tr.Run(t)
+			if err != nil {
+				logrus.Error(err)
+			}
 
-		tr := runner.NewTaskRunner(contexts, true, quiet)
-		err := tr.RunWithEnv(t, config.ConvertEnv(map[string]string{
-			"ARGS": strings.Join(taskArgs, " "),
-		}))
-		if err != nil {
-			logrus.Error(err)
-		}
-
-		close(done)
-	},
+			close(done)
+		},
+	}
 }

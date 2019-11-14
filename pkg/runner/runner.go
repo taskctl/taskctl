@@ -2,6 +2,7 @@ package runner
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/logrusorgru/aurora"
 	"github.com/sirupsen/logrus"
@@ -13,16 +14,18 @@ import (
 
 type TaskRunner struct {
 	contexts map[string]*Context
-	output   *taskOutput
+	env      []string
 
+	output *taskOutput
 	ctx    context.Context
 	cancel context.CancelFunc
 }
 
-func NewTaskRunner(contexts map[string]*Context, raw, quiet bool) *TaskRunner {
+func NewTaskRunner(contexts map[string]*Context, env []string, raw, quiet bool) *TaskRunner {
 	tr := &TaskRunner{
 		contexts: contexts,
 		output:   NewTaskOutput(raw, quiet),
+		env:      env,
 	}
 
 	tr.ctx, tr.cancel = context.WithCancel(context.Background())
@@ -31,11 +34,15 @@ func NewTaskRunner(contexts map[string]*Context, raw, quiet bool) *TaskRunner {
 }
 
 func (r *TaskRunner) Run(t *task.Task) (err error) {
-	return r.RunWithEnv(t, make([]string, 0))
+	return r.RunWithEnv(t, r.env)
 }
 
 func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
-	c := r.contexts[t.Context]
+	c, ok := r.contexts[t.Context]
+	if !ok {
+		return errors.New("unknown context")
+	}
+
 	env = append(env, c.Env...)
 	env = append(env, t.Env...)
 

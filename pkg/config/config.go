@@ -13,10 +13,13 @@ import (
 const (
 	// todo: local, container, remote + providers
 	CONTEXT_TYPE_LOCAL     = "local"
-	CONTEXT_TYPE_CONTAINER = "docker-compose"
-	//CONTEXT_TYPE_DOCKER = "docker"
-	//CONTEXT_TYPE_KUBECTL = "kubectl"
-	//CONTEXT_TYPE_SSH = "ssh"
+	CONTEXT_TYPE_CONTAINER = "container"
+	CONTEXT_TYPE_REMOTE    = "remote"
+
+	CONTEXT_CONTAINER_PROVIDER_DOCKER         = "docker"
+	CONTEXT_CONTAINER_PROVIDER_DOCKER_COMPOSE = "docker-compose"
+	CONTEXT_CONTAINER_PROVIDER_KUBECTL        = "kubectl"
+	CONTEX_REMOTE_PROVIDER_SSH                = "ssh"
 )
 
 type Executable struct {
@@ -27,23 +30,19 @@ type Executable struct {
 type WilsonConfig struct {
 	Shell         Executable `yaml:"shell"`
 	DockerCompose Executable `yaml:"docker-compose"`
-	LogOnError    bool
+	Kubectl       Executable `yaml:"kubectl"`
 }
 
 type ContextConfig struct {
-	Type           string
-	Executable     Executable
-	ComposeService struct {
-		Name           string
-		Transient      bool
-		StartupCommand string
-		CleanupCommand string
-		Args           []string
-		File           string
-	} `yaml:"service"`
-	Container struct {
-		Image string
-		Args  []string
+	Type       string
+	Executable Executable
+	Container  struct {
+		Provider string
+		Name     string
+		Image    string
+		Exec     bool
+		Options  []string
+		Env      map[string]string
 	}
 	Env map[string]string
 }
@@ -69,9 +68,11 @@ type WatcherConfig struct {
 type Config struct {
 	Import    []string
 	Contexts  map[string]*ContextConfig
-	Pipelines map[string][]*PipelineConfig
-	Tasks     map[string]*TaskConfig
-	Watchers  map[string]*WatcherConfig
+	Pipelines map[string]struct {
+		Tasks []*PipelineConfig
+	}
+	Tasks    map[string]*TaskConfig
+	Watchers map[string]*WatcherConfig
 
 	WilsonConfig WilsonConfig
 }
@@ -107,7 +108,7 @@ func load(dir string, file string) (*Config, error) {
 		if err != nil {
 			return nil, err
 		}
-		lconfig.Merge(config)
+		lconfig.merge(config)
 		config = lconfig
 	}
 
@@ -131,7 +132,7 @@ func readFile(filename string) (*Config, error) {
 	return c, nil
 }
 
-func (c *Config) Merge(src *Config) {
+func (c *Config) merge(src *Config) {
 	if err := mergo.Merge(c, src); err != nil {
 		logrus.Fatal(err)
 	}

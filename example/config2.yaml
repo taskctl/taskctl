@@ -1,13 +1,11 @@
-import:
-  - config1-contexts.yaml
-
 pipelines:
-  pipeline1:
-    - task: a
-    - task: b
-      depends: ["a"]
-    - task: c
-      depends: ["a"]
+  pipeline-with-error:
+    tasks:
+      - task: b
+
+  pipeline-with-args:
+    tasks:
+      - task: c
 
 tasks:
   a:
@@ -20,4 +18,4 @@ tasks:
 
   c:
     command:
-      - echo "C"
+      - echo "C - ${ARGS}"

@@ -5,44 +5,50 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/trntv/wilson/pkg/runner"
 	"github.com/trntv/wilson/pkg/watch"
+	"sync"
 )
 
-func init() {
-	rootCmd.AddCommand(watchCommand)
-}
+func NewWatchCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "watch [WATCHERS...]",
+		Short: "Start watching for filesystem events",
+		Args:  cobra.MinimumNArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			tr := runner.NewTaskRunner(contexts, make([]string, 0), true, false)
 
-var watchCommand = &cobra.Command{
-	Use:   "watch [watcher]",
-	Short: "Start watching for filesystem events",
-	Args:  cobra.MinimumNArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		tr := runner.NewTaskRunner(contexts, true, false)
-		def := cfg.Watchers[args[0]]
-		task, ok := tasks[def.Task]
-		if !ok {
-			// todo: validation
-			logrus.Fatal("task for watcher not found")
-		}
-		w, err := watch.BuildWatcher(def, task, tr)
-		if err != nil {
-			logrus.Fatal(err)
-		}
+			var wg sync.WaitGroup
+			for _, wname := range args {
+				def := cfg.Watchers[wname]
+				task, ok := tasks[def.Task]
+				if !ok {
+					// todo: validation
+					logrus.Fatal("task for watcher not found")
+				}
+				w, err := watch.BuildWatcher(def, task, tr)
+				if err != nil {
+					logrus.Fatal(err)
+				}
 
-		go func(w *watch.Watcher) {
-			select {
-			case <-done:
-				return
-			case <-cancel:
-				w.Close()
-				return
+				go func(w *watch.Watcher) {
+					select {
+					case <-cancel:
+						w.Close()
+						return
+					}
+				}(w)
+
+				go func(w *watch.Watcher) {
+					wg.Add(1)
+					defer wg.Done()
+
+					err = w.Run()
+					if err != nil {
+						logrus.Error()
+					}
+				}(w)
 			}
-		}(w)
 
-		err = w.Run()
-		if err != nil {
-			logrus.Error()
-		}
-
-		close(done)
-	},
+			wg.Wait()
+		},
+	}
 }

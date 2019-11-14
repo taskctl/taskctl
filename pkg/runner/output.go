@@ -2,7 +2,6 @@ package runner
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"github.com/logrusorgru/aurora"
 	"github.com/sirupsen/logrus"
@@ -116,9 +115,7 @@ func (o *taskOutput) streamDecoratedStdoutOutput(t *task.Task) error {
 	}
 
 	if err := scanner.Err(); err != nil {
-		if !errors.Is(err, os.ErrClosed) {
-			return err
-		}
+		return err
 	}
 
 	return nil
@@ -136,9 +133,7 @@ func (o *taskOutput) streamDecoratedStderrOutput(t *task.Task) error {
 	}
 
 	if err := scanner.Err(); err != nil {
-		if !errors.Is(err, os.ErrClosed) {
-			return err
-		}
+		return err
 	}
 
 	return nil
