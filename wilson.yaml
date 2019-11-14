@@ -1,14 +1,20 @@
 pipelines:
   release:
-    - task: update-formula
-    - task: push-tag
-      depends: [update-formula]
+    tasks:
+      - task: update-cmd-version
+      - task: update-brew-formula
+      - task: push-tag
+        depends: [update-formula]
 
 tasks:
-  update-formula:
+  update-cmd-version:
+    command:
+      - sed -i '' '/Version:/s/".*"/"'${ARGS}'"/' cmd/cmd.go
+
+  update-brew-formula:
     command:
       - GOOS=darwin GOARCH=amd64 go build -o bin/wilson_darwin main.go
-      - sed -i '' '/  version/s/".*"/"${ARGS}"/' Wilson.rb
+      - sed -i '' '/  version/s/".*"/"'${ARGS}'"/' Wilson.rb
       - sed -i '' '/  sha256/s/".*"/"'$(shasum bin/wilson_darwin | awk '{print $1}')'"/' Wilson.rb
       - git add Wilson.rb
 

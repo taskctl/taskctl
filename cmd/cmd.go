@@ -23,7 +23,8 @@ var done = make(chan bool)
 
 func NewRootCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Short: "Wilson the task runner",
+		Short:   "Wilson the task runner",
+		Version: "0.1.0-alpha-7",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			if debug {
 				logrus.SetLevel(logrus.DebugLevel)
@@ -37,8 +38,7 @@ func NewRootCommand() *cobra.Command {
 			var err error
 			cfg, err = config.Load(configFile)
 			if err != nil {
-				logrus.Debug(err)
-				cfg = &config.Config{}
+				logrus.Fatal(err)
 			}
 
 			for name, def := range cfg.Tasks {
