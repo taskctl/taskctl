@@ -154,3 +154,26 @@ func ConvertEnv(env map[string]string) []string {
 
 	return enva
 }
+
+func readStringsArray(v interface{}) (arr []string) {
+	if v == nil {
+		return arr
+	}
+
+	iarr, ok := v.([]interface{})
+	if ok {
+		arr = make([]string, len(iarr))
+		for i, dep := range iarr {
+			arr[i] = dep.(string)
+		}
+
+		return arr
+	}
+
+	item, ok := v.(string)
+	if ok {
+		arr = []string{item}
+	}
+
+	return arr
+}

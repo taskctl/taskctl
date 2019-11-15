@@ -6,18 +6,5 @@ type PipelineConfig struct {
 }
 
 func (pc PipelineConfig) DependsOn() (deps []string) {
-	if pc.Depends == nil {
-		return deps
-	}
-
-	deps, ok := pc.Depends.([]string)
-	if !ok {
-		dep, ok := pc.Depends.(string)
-		if ok {
-			deps = []string{dep}
-		}
-
-	}
-
-	return deps
+	return readStringsArray(pc.Depends)
 }
