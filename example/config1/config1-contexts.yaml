@@ -5,12 +5,10 @@ contexts:
       TEST: test-value
 
   alpine:
-    type: docker-compose
-    service:
+    type: container
+    container:
+      provider: docker-compose
       name: alpine
-      transient: true
-      file: example/docker-compose.yaml
-    executable:
-      bin: /bin/sh
-      args:
-        - -c
+      options:
+        - --file=example/docker-compose.yaml
+

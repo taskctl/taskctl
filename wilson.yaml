@@ -10,12 +10,14 @@ tasks:
   update-cmd-version:
     command:
       - sed -i '' '/Version:/s/".*"/"'${ARGS}'"/' cmd/cmd.go
+      - git add cmd/cmd.go
 
   update-brew-formula:
     command:
-      - GOOS=darwin GOARCH=amd64 go build -o bin/wilson_darwin main.go
-      - sed -i '' '/  version/s/".*"/"'${ARGS}'"/' Wilson.rb
-      - sed -i '' '/  sha256/s/".*"/"'$(shasum bin/wilson_darwin | awk '{print $1}')'"/' Wilson.rb
+      - GOOS=darwin GOARCH=amd64 go build -o bin/wilson_darwin_amd64 main.go
+      - tar -zcvf bin/wilson-darwin-amd64.tar.gz bin/wilson_darwin_amd64
+      - sed -i '' '/  version/s/".*"/"'${ARGS}'"/' wilson.rb
+      - sed -i '' '/  sha256/s/".*"/"'$(shasum -a256 bin/wilson-darwin-amd64.tar.gz | awk '{print $1}')'"/' wilson.rb
       - git add Wilson.rb
 
   push-tag:

@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"github.com/imdario/mergo"
-	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
@@ -21,6 +20,8 @@ const (
 	CONTEXT_CONTAINER_PROVIDER_KUBECTL        = "kubectl"
 	CONTEX_REMOTE_PROVIDER_SSH                = "ssh"
 )
+
+var loaded = make(map[string]bool)
 
 type Executable struct {
 	Bin  string
@@ -54,11 +55,6 @@ type TaskConfig struct {
 	Dir     string
 }
 
-type PipelineConfig struct {
-	Task    string
-	Depends []string
-}
-
 type WatcherConfig struct {
 	Events []string
 	Watch  []string
@@ -80,10 +76,10 @@ type Config struct {
 func Load(file string) (*Config, error) {
 	dir, err := os.Getwd()
 	if err != nil {
-		logrus.Fatalln(err)
+		return nil, err
 	}
 
-	c, err := load(dir, file)
+	c, err := load(path.Join(dir, file))
 	if err != nil {
 		return nil, err
 	}
@@ -95,20 +91,28 @@ func Load(file string) (*Config, error) {
 	return c, nil
 }
 
-func load(dir string, file string) (*Config, error) {
-	configPath := path.Join(dir, file)
-	config, err := readFile(configPath)
+func load(file string) (*Config, error) {
+	loaded[file] = true
+	config, err := readFile(file)
 	if err != nil {
 		return nil, err
 	}
 
-	importDir := path.Dir(configPath)
-	for _, file := range config.Import {
-		lconfig, err := load(importDir, file)
+	importDir := path.Dir(file)
+	for _, v := range config.Import {
+		importFile := path.Join(importDir, v)
+		if loaded[importFile] == true {
+			continue
+		}
+
+		lconfig, err := load(importFile)
 		if err != nil {
 			return nil, err
 		}
-		lconfig.merge(config)
+		err = lconfig.merge(config)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %v", importFile, err)
+		}
 		config = lconfig
 	}
 
@@ -121,21 +125,23 @@ func readFile(filename string) (*Config, error) {
 	}
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%s: %v", filename, err)
 	}
 
 	err = yaml.UnmarshalStrict(data, c)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%s: %v", filename, err)
 	}
 
 	return c, nil
 }
 
-func (c *Config) merge(src *Config) {
+func (c *Config) merge(src *Config) error {
 	if err := mergo.Merge(c, src); err != nil {
-		logrus.Fatal(err)
+		return err
 	}
+
+	return nil
 }
 
 func ConvertEnv(env map[string]string) []string {

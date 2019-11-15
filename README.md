@@ -1,19 +1,24 @@
-Warning
--------
+# Wilson - routines automation toolkit
+Willows allows you to get rid of a bunch of bash scripts and to design you workflow pipelines in nice and neat with way 
+with yaml files. 
+
+## Warning
 Proof of concept, heavy work is in progress ;-)
 
-Wilson the Task runner
-----------
-Willows allows you to get rid of a bunch of bash scripts and to design you workflow pipelines in nice and neat with way 
-in yaml files
-
-[asciinema]
-
-Install
----
-``
+##Install
+### MacOS
+```
+brew tap trntv/wilson https://github.com/trntv/wilson.git
+brew install trntv/wilson/wilson
+```
+### Linux
+```
+curl -L https://github.com/trntv/wilson/releases/latest/download/wilson-linux-amd64.tar.gz | tar xz
+```
+### From sources
+```
 go get -i github.com/trntv/wilson
-``
+```
 
 Contexts
 ---
@@ -29,19 +34,20 @@ This configuration:
 ```
 pipelines:
     pipeline1:
-        - task: start task
-        - task: task A
-          depends: ["start task"]
-        - task: task B
-          depends: ["start task"]
-        - task: task C
-          depends: ["start task"]
-        - task: task D
-          depends: ["task C"]
-        - task: task E
-          depends: ["task A", "task B", "task D"]
-        - task: finish
-          depends: ["task A", "task B", "finish"]
+        tasks:
+            - task: start task
+            - task: task A
+              depends: ["start task"]
+            - task: task B
+              depends: ["start task"]
+            - task: task C
+              depends: ["start task"]
+            - task: task D
+              depends: ["task C"]
+            - task: task E
+              depends: ["task A", "task B", "task D"]
+            - task: finish
+              depends: ["task A", "task B", "finish"]
 tasks:
     start task: ...
     task A: ...
@@ -59,7 +65,7 @@ start task --- |--- task B --------------|--- task E --- finish
                |___ task C ___ task D ___|
 ```
 
-Watch
+Watchers
 ---
 WIF*
 
@@ -74,9 +80,10 @@ TODO
  - [ ] import url
  - [ ] global config
  - [ ] check for cycles
- - [ ] testing
+ - [ ] tests
  - [ ] graceful shutdown
- - [ ] docker context
+ - [ ] set task env with -e in container context
+ - [x] docker context
  - [ ] kubectl context
  - [ ] visualize pipeline (ASCII)
  - [ ] Links (pipeline-pipeline, task-task)
@@ -85,46 +92,11 @@ TODO
  - [ ] ssh context
  - [ ] running context
  - [ ] add "--set" flag to set config entries
- - [ ] better concurrent tasks outputs handling (decorating?)
- - [ ] get rid of logrus in pkg/
- - [ ] brew tap
+ - [x] better concurrent tasks outputs handling (decorating?)
+ - [X] brew formula
  - [ ] write log file on error
  - [ ] ui dashboard
-
-# Run pipeline
-```
-Usage:
-   run [pipeline] [flags]
-   run [command]
-
-Available Commands:
-  task        Schedule task
-
-Flags:
-  -h, --help         help for run
-  -q, --quiet        silence output
-      --raw-output   raw output
-
-Global Flags:
-  -c, --config string   config file to use (default "wilson.yaml")
-  -d, --debug           enable debug
-```
-
-# Run task
-```
-Usage:
-   run task [task] [flags]
-
-Flags:
-  -h, --help   help for task
-
-Global Flags:
-  -c, --config string   config file to use (default "wilson.yaml")
-  -d, --debug           enable debug
-  -q, --quiet           silence output
-      --raw-output      raw output
-```
-
+ - [ ] task and command as string
 
 ---
 *waiting for inspiration

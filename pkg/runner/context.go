@@ -90,7 +90,7 @@ func buildContainerContext(def *config.ContextConfig, c *Context) error {
 		c.Executable.Args = append(c.Executable.Args, def.Container.Options...)
 
 		if def.Container.Exec {
-			c.Executable.Args = append(c.Executable.Args, "exec")
+			c.Executable.Args = append(c.Executable.Args, "exec", "-T")
 		} else {
 			c.Executable.Args = append(c.Executable.Args, "run", "--rm")
 		}

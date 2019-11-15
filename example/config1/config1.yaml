@@ -3,23 +3,26 @@ import:
 
 pipelines:
   pipeline1:
-    - task: a
-    - task: b
-      depends: ["a"]
-    - task: c
-      depends: ["a"]
-    - task: d
-      depends: ["b", "c"]
-    - task: e
-      depends: ["a", "b", "c", "d"]
+    tasks:
+      - task: a
+      - task: b
+        depends: a
+      - task: c
+        depends: a
+      - task: d
+        depends: ["b", "c"]
+      - task: e
+        depends: ["a", "b", "c", "d"]
 
   pipeline2:
+    tasks:
     - task: a
     - task: b
     - task: e
       depends: ["a", "b"]
 
   pipeline3:
+    tasks:
     - task: env
 
 tasks:

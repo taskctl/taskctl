@@ -28,7 +28,7 @@ func BuildPipeline(stages []*config.PipelineConfig, tasks map[string]*Task) *Pip
 
 		graph.addNode(stage.Task, t)
 
-		for _, dep := range stage.Depends {
+		for _, dep := range stage.DependsOn() {
 			graph.addEdge(dep, stage.Task)
 		}
 	}

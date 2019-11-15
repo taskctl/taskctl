@@ -16,14 +16,18 @@ jobs:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v1
 
-    - name: Build for MacOS
-      run: GOOS=darwin GOARCH=amd64 go build -o wilson_darwin -v .
-
     - name: Build for Linux
-      run: GOOS=linux GOARCH=amd64 go build -o wilson_darwin -v .
+      run: |
+        GOOS=linux GOARCH=amd64 go build -o bin/wilson_linux_amd64 -v .
+        tar -zcvf bin/wilson-linux-amd64.tar.gz bin/wilson_linux_amd64
+
+    - name: Build for MacOS
+      run: |
+        GOOS=darwin GOARCH=amd64 go build -o bin/wilson_darwin_amd64 -v .
+        tar -zcvf bin/wilson-darwin-amd64.tar.gz bin/wilson_darwin_amd64
 
     - name: Publish release
       uses: ncipollo/release-action@v1
       with:
-        artifacts: "wilson_darwin"
+        artifacts: "bin/wilson-linux-amd64.tar.gz, bin/wilson-darwin-amd64.tar.gz"
         token: ${{ secrets.GITHUB_TOKEN }}
