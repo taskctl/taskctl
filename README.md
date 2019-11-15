@@ -5,7 +5,7 @@ with yaml files.
 ## Warning
 Proof of concept, heavy work is in progress ;-)
 
-##Install
+## Install
 ### MacOS
 ```
 brew tap trntv/wilson https://github.com/trntv/wilson.git
@@ -20,16 +20,13 @@ curl -L https://github.com/trntv/wilson/releases/latest/download/wilson-linux-am
 go get -i github.com/trntv/wilson
 ```
 
-Contexts
----
+## Contexts
 WIF*
 
-Tasks
----
+## Tasks
 WIF*
 
-Pipelines
----
+## Pipelines
 This configuration:
 ```
 pipelines:
@@ -65,12 +62,10 @@ start task --- |--- task B --------------|--- task E --- finish
                |___ task C ___ task D ___|
 ```
 
-Watchers
----
+## Watchers
 WIF*
 
-TODO
----
+## TODO
  - [x] pipelines
  - [x] env
  - [x] command env processing
