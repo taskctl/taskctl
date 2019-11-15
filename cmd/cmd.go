@@ -24,7 +24,7 @@ var done = make(chan bool)
 func NewRootCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Short:   "Wilson the task runner",
-		Version: "0.1.0-beta.1",
+		Version: "0.1.0-beta.2",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			if debug {
 				logrus.SetLevel(logrus.DebugLevel)
