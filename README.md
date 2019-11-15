@@ -50,17 +50,17 @@ pipelines:
         tasks:
             - task: start task
             - task: task A
-              depends: ["start task"]
+              depends_on: "start task"
             - task: task B
-              depends: ["start task"]
+              depends_on: "start task"
             - task: task C
-              depends: ["start task"]
+              depends_on: "start task"
             - task: task D
-              depends: ["task C"]
+              depends_on: "task C"
             - task: task E
-              depends: ["task A", "task B", "task D"]
+              depends_on: ["task A", "task B", "task D"]
             - task: finish
-              depends: ["task A", "task B", "finish"]
+              depends_on: ["task A", "task B", "finish"]
 tasks:
     start task: ...
     task A: ...

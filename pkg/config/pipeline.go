@@ -1,10 +1,10 @@
 package config
 
 type PipelineConfig struct {
-	Task    string
-	Depends interface{}
+	Task      string
+	DependsOn interface{} `yaml:"depends_on"`
 }
 
-func (pc PipelineConfig) DependsOn() (deps []string) {
-	return readStringsArray(pc.Depends)
+func (pc PipelineConfig) GetDependsOn() (deps []string) {
+	return readStringsArray(pc.DependsOn)
 }

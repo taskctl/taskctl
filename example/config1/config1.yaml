@@ -6,20 +6,20 @@ pipelines:
     tasks:
       - task: a
       - task: b
-        depends: a
+        depends_on: a
       - task: c
-        depends: a
+        depends_on: a
       - task: d
-        depends: ["b", "c"]
+        depends_on: ["b", "c"]
       - task: e
-        depends: ["a", "b", "c", "d"]
+        depends_on: ["a", "b", "c", "d"]
 
   pipeline2:
     tasks:
     - task: a
     - task: b
     - task: e
-      depends: ["a", "b"]
+      depends_on: ["a", "b"]
 
   pipeline3:
     tasks:

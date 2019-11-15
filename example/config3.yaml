@@ -18,7 +18,7 @@ pipelines:
     tasks:
       - task: docker-env
       - task: docker-compose-env
-        depends: [docker-env]
+        depends_on: [docker-env]
 
 tasks:
   docker-env:
