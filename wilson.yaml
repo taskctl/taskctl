@@ -18,7 +18,7 @@ tasks:
       - tar -zcvf bin/wilson-darwin-amd64.tar.gz bin/wilson_darwin_amd64
       - sed -i '' '/  version/s/".*"/"'${ARGS}'"/' wilson.rb
       - sed -i '' '/  sha256/s/".*"/"'$(shasum -a256 bin/wilson-darwin-amd64.tar.gz | awk '{print $1}')'"/' wilson.rb
-      - git add Wilson.rb
+      - git add wilson.rb
 
   push-tag:
     command:
