@@ -1,6 +1,10 @@
 # Wilson - routines automation toolkit
 Willows allows you to get rid of a bunch of bash scripts and to design you workflow pipelines in nice and neat with way 
-with yaml files. 
+with yaml files. Wilson's automation based on four pillars:
+1. Execution contexts
+2. Tasks
+3. Pipelines that describe set of tasks to run
+4. Optional watchers that listen for filesystem events and trigger tasks
 
 ## Warning
 Proof of concept, heavy work is in progress ;-)
@@ -19,12 +23,24 @@ curl -L https://github.com/trntv/wilson/releases/latest/download/wilson-linux-am
 ```
 go get -i github.com/trntv/wilson
 ```
+## Tasks
+```
+tasks:
+  task-name:
+    context: api
+    command:
+      - some build command
+      - some other build command
+    env:
+        BUILD_ENV: dev
+        OTHER_VAR: 42  
+```
 
 ## Contexts
-WIF*
-
-## Tasks
-WIF*
+Available context types:
+- local - shell
+- container - docker, docker-compose, kubectl
+- remote - ssh
 
 ## Pipelines
 This configuration:
@@ -74,24 +90,25 @@ WIF*
  - [ ] import path
  - [ ] import url
  - [ ] global config
- - [ ] check for cycles
+ - [ ] check for cycles in pipelines
  - [ ] tests
- - [ ] graceful shutdown
+ - [ ] graceful shutdown +context specific
  - [ ] set task env with -e in container context
  - [x] docker context
  - [ ] kubectl context
- - [ ] visualize pipeline (ASCII)
- - [ ] Links (pipeline-pipeline, task-task)
- - [ ] Task timeout
- - [ ] raw/silence output in task definition
  - [ ] ssh context
- - [ ] running context
- - [ ] add "--set" flag to set config entries
+ - [ ] visualize pipeline (ASCII)
+ - [ ] links (pipeline-pipeline, task-task)
+ - [ ] task timeout
+ - [ ] raw/silence output in task definition
+ - [ ] context preparation
+ - [ ] add "--set" flag to replace config params
  - [x] better concurrent tasks outputs handling (decorating?)
  - [X] brew formula
  - [ ] write log file on error
  - [ ] ui dashboard
  - [ ] task and command as string
+ - [ ] task's args in pipeline definition
 
 ## Why "Wilson"?
 https://en.wikipedia.org/wiki/Cast_Away#Wilson_the_volleyball

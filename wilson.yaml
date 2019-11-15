@@ -4,7 +4,7 @@ pipelines:
       - task: update-cmd-version
       - task: update-brew-formula
       - task: push-tag
-        depends: [update-formula]
+        depends: [update-brew-formula]
 
 tasks:
   update-cmd-version:
