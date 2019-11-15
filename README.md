@@ -44,7 +44,7 @@ Available context types:
 
 ## Pipelines
 This configuration:
-```
+```yaml
 pipelines:
     pipeline1:
         tasks:
@@ -122,9 +122,10 @@ pipelines:
     - task: task1
     - task: task2
       depends_on: task1
-    - task: task3
+    - task: task3 
+      depends_on: task1 // task2 and task3 will run in parallel when task1 finished
+    - task: task4
       depends_on: [task1, task2]
-
 tasks:
     task1:
       context: local # optional. "local" is context by default
