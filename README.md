@@ -93,5 +93,8 @@ WIF*
  - [ ] ui dashboard
  - [ ] task and command as string
 
+## Why "Wilson"?
+https://en.wikipedia.org/wiki/Cast_Away#Wilson_the_volleyball
+
 ---
 *waiting for inspiration
