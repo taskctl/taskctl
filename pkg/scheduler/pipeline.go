@@ -3,19 +3,20 @@ package scheduler
 import (
 	log "github.com/sirupsen/logrus"
 	"github.com/trntv/wilson/pkg/config"
+	"github.com/trntv/wilson/pkg/task"
 )
 
 type Pipeline struct {
-	nodes map[string]*Task
+	nodes map[string]*task.Task
 	from  map[string][]string
 	to    map[string][]string
 
 	initial string
 }
 
-func BuildPipeline(stages []*config.PipelineConfig, tasks map[string]*Task) *Pipeline {
+func BuildPipeline(stages []*config.PipelineConfig, tasks map[string]*task.Task) *Pipeline {
 	var graph = &Pipeline{
-		nodes: make(map[string]*Task),
+		nodes: make(map[string]*task.Task),
 		from:  make(map[string][]string),
 		to:    make(map[string][]string),
 	}
@@ -36,7 +37,7 @@ func BuildPipeline(stages []*config.PipelineConfig, tasks map[string]*Task) *Pip
 	return graph
 }
 
-func (p *Pipeline) addNode(name string, task *Task) {
+func (p *Pipeline) addNode(name string, task *task.Task) {
 	p.nodes[name] = task
 }
 
@@ -46,11 +47,11 @@ func (p *Pipeline) addEdge(from string, to string) {
 	p.to[to] = append(p.to[to], from)
 }
 
-func (p *Pipeline) Nodes() map[string]*Task {
+func (p *Pipeline) Nodes() map[string]*task.Task {
 	return p.nodes
 }
 
-func (p *Pipeline) Node(name string) *Task {
+func (p *Pipeline) Node(name string) *task.Task {
 	t, ok := p.nodes[name]
 	if !ok {
 		log.Fatalf("unknown task name %s\r\n", name)

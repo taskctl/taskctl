@@ -4,8 +4,8 @@ import (
 	"errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/trntv/wilson/pkg/config"
 	"github.com/trntv/wilson/pkg/runner"
+	"github.com/trntv/wilson/pkg/util"
 	"strings"
 )
 
@@ -31,7 +31,7 @@ func NewRunTaskCommand() *cobra.Command {
 			if al := cmd.ArgsLenAtDash(); al > 0 {
 				taskArgs = args[cmd.ArgsLenAtDash():]
 			}
-			env := config.ConvertEnv(map[string]string{
+			env := util.ConvertEnv(map[string]string{
 				"ARGS": strings.Join(taskArgs, " "),
 			})
 

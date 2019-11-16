@@ -172,6 +172,8 @@ watchers:
  - [x] env
  - [x] command env processing
  - [x] import file
+ - [ ] kubectl context
+ - [ ] ssh context
  - [ ] autocomplete
  - [ ] import path
  - [ ] import url
@@ -179,8 +181,6 @@ watchers:
  - [ ] tests
  - [ ] graceful shutdown +context specific
  - [x] docker context
- - [ ] kubectl context
- - [ ] ssh context
  - [ ] visualize pipeline (ASCII)
  - [ ] links (pipeline-pipeline, task-task)
  - [ ] task timeout

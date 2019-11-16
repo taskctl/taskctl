@@ -10,7 +10,7 @@ import (
 )
 
 type PipelineScheduler struct {
-	pipeline   *task.Pipeline
+	pipeline   *Pipeline
 	taskRunner *runner.TaskRunner
 	pause      time.Duration
 
@@ -21,7 +21,7 @@ type PipelineScheduler struct {
 	End   time.Time
 }
 
-func NewScheduler(pipeline *task.Pipeline, contexts map[string]*runner.Context, env []string, raw, quiet bool) *PipelineScheduler {
+func NewScheduler(pipeline *Pipeline, contexts map[string]*runner.Context, env []string, raw, quiet bool) *PipelineScheduler {
 	r := &PipelineScheduler{
 		pipeline:   pipeline,
 		pause:      50 * time.Millisecond,

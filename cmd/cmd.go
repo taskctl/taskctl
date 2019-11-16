@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/trntv/wilson/pkg/config"
 	"github.com/trntv/wilson/pkg/runner"
+	"github.com/trntv/wilson/pkg/scheduler"
 	"github.com/trntv/wilson/pkg/task"
 	"io/ioutil"
 	"os"
@@ -18,7 +19,7 @@ var configFile string
 
 var tasks = make(map[string]*task.Task)
 var contexts = make(map[string]*runner.Context)
-var pipelines = make(map[string]*task.Pipeline)
+var pipelines = make(map[string]*scheduler.Pipeline)
 
 var cancel = make(chan struct{})
 var done = make(chan bool)
@@ -102,7 +103,7 @@ func loadConfig() {
 	}
 
 	for name, def := range cfg.Pipelines {
-		pipelines[name] = task.BuildPipeline(def.Tasks, tasks)
+		pipelines[name] = scheduler.BuildPipeline(def.Tasks, tasks)
 	}
 }
 

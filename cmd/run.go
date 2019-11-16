@@ -6,9 +6,9 @@ import (
 	"github.com/logrusorgru/aurora"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/trntv/wilson/pkg/config"
 	"github.com/trntv/wilson/pkg/scheduler"
 	"github.com/trntv/wilson/pkg/task"
+	"github.com/trntv/wilson/pkg/util"
 	"strings"
 )
 
@@ -37,7 +37,7 @@ func NewRunCommand() *cobra.Command {
 			if al := cmd.ArgsLenAtDash(); al > 0 {
 				pipelineArgs = args[cmd.ArgsLenAtDash():]
 			}
-			env := config.ConvertEnv(map[string]string{
+			env := util.ConvertEnv(map[string]string{
 				"ARGS": strings.Join(pipelineArgs, " "),
 			})
 

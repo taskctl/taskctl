@@ -132,7 +132,7 @@ func (cb *contextBuilder) buildDockerContext(c *Context) error {
 	return nil
 }
 
-func defaultShell(e *config.Executable) {
+func defaultShell(e *util.Executable) {
 	e.Bin = "/bin/sh"
 	e.Args = []string{"-c"}
 }
