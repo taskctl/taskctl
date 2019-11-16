@@ -3,8 +3,8 @@ Willows allows you to get rid of a bunch of bash scripts and to design you workf
 with yaml files. Wilson's automation based on four concepts:
 1. Execution contexts
 2. Tasks
-3. Pipelines that describe set of tasks to run
-4. Optional watchers that listen for filesystem events and trigger tasks
+3. Pipeline that describes set of tasks to run
+4. Optional watcher that listens for filesystem events and trigger tasks
 
 ## Warning
 Proof of concept, heavy work is in progress ;-)
@@ -103,7 +103,7 @@ watchers:
     watcher1:
       watch: ["README.*", "pkg/**/*.go"]
       events: [create, write, remove, rename, chmod]
-      
+      task: task1
 ```
 
 ## Tasks
