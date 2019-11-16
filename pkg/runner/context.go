@@ -100,7 +100,7 @@ func (cb *contextBuilder) buildDockerContext(c *Context) error {
 			c.executable.Args = append(c.executable.Args, cb.def.Container.Image)
 		}
 
-		for _, v := range util.ConvertEnv(cb.def.Env) {
+		for _, v := range util.ConvertEnv(cb.def.Container.Env) {
 			c.executable.Args = append(c.executable.Args, "-e", v)
 		}
 	case config.CONTEXT_CONTAINER_PROVIDER_DOCKER_COMPOSE:
@@ -119,7 +119,7 @@ func (cb *contextBuilder) buildDockerContext(c *Context) error {
 			c.executable.Args = append(c.executable.Args, "run", "--rm")
 		}
 
-		for _, v := range util.ConvertEnv(cb.def.Env) {
+		for _, v := range util.ConvertEnv(cb.def.Container.Env) {
 			c.executable.Args = append(c.executable.Args, "-e", v)
 		}
 
