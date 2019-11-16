@@ -3,51 +3,58 @@ package runner
 import (
 	"errors"
 	"github.com/trntv/wilson/pkg/config"
+	"github.com/trntv/wilson/pkg/util"
 	"os"
 	"strings"
 )
 
 type Context struct {
 	Type       string
-	container  Container
-	executable Executable
+	executable util.Executable
 	env        []string
 	def        *config.ContextConfig
 }
 
-type Executable struct {
-	Bin  string
-	Args []string
-}
-
-type Container struct {
-	Provider string
-	Name     string
-	Run      bool
+type contextBuilder struct {
+	def *config.ContextConfig
+	w   *config.WilsonConfig
 }
 
 func BuildContext(def *config.ContextConfig) (*Context, error) {
+	contextBuilder := &contextBuilder{def: def, w: &config.Get().WilsonConfig}
+
+	return contextBuilder.build()
+}
+
+func (cb *contextBuilder) build() (*Context, error) {
 	c := &Context{
-		Type:      def.Type,
-		container: Container{},
-		executable: Executable{
-			Bin:  def.Executable.Bin,
+		Type: cb.def.Type,
+		executable: util.Executable{
+			Bin:  cb.def.Executable.Bin,
 			Args: make([]string, 0),
 		},
-		env: append(os.Environ(), config.ConvertEnv(def.Env)...),
-		def: def,
+		env: append(os.Environ(), util.ConvertEnv(cb.def.Env)...),
+		def: cb.def,
 	}
 
-	switch def.Type {
+	switch cb.def.Type {
 	case config.CONTEXT_TYPE_LOCAL:
-		if c.executable.Bin == "" {
-			c.executable.Bin = "/bin/sh" // todo: move to config
+		if c.executable.Bin != "" {
+			break
+		}
+
+		if cb.w.Shell.Bin != "" {
+			c.executable.Bin = cb.w.Shell.Bin
+			c.executable.Args = cb.w.Shell.Args
+		} else {
+			c.executable.Bin = "/bin/sh"
 			c.executable.Args = []string{"-c"}
 		}
+
 	case config.CONTEXT_TYPE_CONTAINER:
-		switch def.Container.Provider {
+		switch cb.def.Container.Provider {
 		case config.CONTEXT_CONTAINER_PROVIDER_DOCKER, config.CONTEXT_CONTAINER_PROVIDER_DOCKER_COMPOSE:
-			err := buildDockerContext(def, c)
+			err := cb.buildDockerContext(c)
 			if err != nil {
 				return nil, err
 			}
@@ -66,45 +73,57 @@ func BuildContext(def *config.ContextConfig) (*Context, error) {
 	return c, nil
 }
 
-func buildDockerContext(def *config.ContextConfig, c *Context) error {
-	bin := def.Executable.Bin
+func (cb *contextBuilder) buildDockerContext(c *Context) error {
+	bin := cb.def.Executable.Bin
 	if bin == "" {
-		defaultShell(&def.Executable)
-		bin = def.Executable.Bin
+		defaultShell(&cb.def.Executable)
+		bin = cb.def.Executable.Bin
 	}
-	args := def.Executable.Args
+	args := cb.def.Executable.Args
 
-	switch def.Container.Provider {
+	switch cb.def.Container.Provider {
 	case config.CONTEXT_CONTAINER_PROVIDER_DOCKER:
-		c.executable.Bin = "docker" // todo: move to config
-		c.executable.Args = def.Container.Options
-
-		if def.Container.Exec {
-			c.executable.Args = append(c.executable.Args, "exec")
-			c.executable.Args = append(c.executable.Args, def.Container.Name)
+		if cb.w.Docker.Bin != "" {
+			c.executable.Bin = cb.w.Docker.Bin
 		} else {
-			c.executable.Args = append(c.executable.Args, "run", "--rm")
-			c.executable.Args = append(c.executable.Args, def.Container.Image)
+			c.executable.Bin = "docker"
 		}
 
-		for _, v := range config.ConvertEnv(def.Env) {
+		c.executable.Args = cb.w.Docker.Args
+		c.executable.Args = append(c.executable.Args, cb.def.Container.Options...)
+
+		if cb.def.Container.Exec {
+			c.executable.Args = append(c.executable.Args, "exec")
+			c.executable.Args = append(c.executable.Args, cb.def.Container.Name)
+		} else {
+			c.executable.Args = append(c.executable.Args, "run", "--rm")
+			c.executable.Args = append(c.executable.Args, cb.def.Container.Image)
+		}
+
+		for _, v := range util.ConvertEnv(cb.def.Env) {
 			c.executable.Args = append(c.executable.Args, "-e", v)
 		}
 	case config.CONTEXT_CONTAINER_PROVIDER_DOCKER_COMPOSE:
-		c.executable.Bin = "docker-compose" // todo: move to config
-		c.executable.Args = def.Container.Options
+		if cb.w.DockerCompose.Bin != "" {
+			c.executable.Bin = cb.w.DockerCompose.Bin
+		} else {
+			c.executable.Bin = "docker-compose"
+		}
 
-		if def.Container.Exec {
+		c.executable.Args = cb.w.DockerCompose.Args
+		c.executable.Args = append(c.executable.Args, cb.def.Container.Options...)
+
+		if cb.def.Container.Exec {
 			c.executable.Args = append(c.executable.Args, "exec", "-T")
 		} else {
 			c.executable.Args = append(c.executable.Args, "run", "--rm")
 		}
 
-		for _, v := range config.ConvertEnv(def.Env) {
+		for _, v := range util.ConvertEnv(cb.def.Env) {
 			c.executable.Args = append(c.executable.Args, "-e", v)
 		}
 
-		c.executable.Args = append(c.executable.Args, def.Container.Name)
+		c.executable.Args = append(c.executable.Args, cb.def.Container.Name)
 	}
 
 	c.executable.Args = append(c.executable.Args, bin)
@@ -139,5 +158,6 @@ func (c *Context) WithEnvs(env []string) (*Context, error) {
 		}
 		def.Env[kv[0]] = kv[1]
 	}
+
 	return BuildContext(&def)
 }

@@ -1,4 +1,4 @@
-package task
+package scheduler
 
 import (
 	log "github.com/sirupsen/logrus"

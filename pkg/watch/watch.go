@@ -5,6 +5,7 @@ import (
 	"github.com/trntv/wilson/pkg/config"
 	"github.com/trntv/wilson/pkg/runner"
 	"github.com/trntv/wilson/pkg/task"
+	"github.com/trntv/wilson/pkg/util"
 	"path/filepath"
 	"sync"
 
@@ -126,7 +127,7 @@ func (w *Watcher) handle(event fsnotify.Event) {
 		return
 	}
 
-	env := config.ConvertEnv(map[string]string{
+	env := util.ConvertEnv(map[string]string{
 		"EVENT_NAME": eventName,
 		"EVENT_PATH": event.Name,
 	})

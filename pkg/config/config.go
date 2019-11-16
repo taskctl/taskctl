@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"github.com/imdario/mergo"
+	"github.com/trntv/wilson/pkg/util"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
@@ -22,21 +23,18 @@ const (
 )
 
 var loaded = make(map[string]bool)
-
-type Executable struct {
-	Bin  string
-	Args []string
-}
+var cfg *Config
 
 type WilsonConfig struct {
-	Shell         Executable `yaml:"shell"`
-	DockerCompose Executable `yaml:"docker-compose"`
-	Kubectl       Executable `yaml:"kubectl"`
+	Shell         util.Executable `yaml:"shell"`
+	Docker        util.Executable `yaml:"docker"`
+	DockerCompose util.Executable `yaml:"docker-compose"`
+	Kubectl       util.Executable `yaml:"kubectl"`
 }
 
 type ContextConfig struct {
 	Type       string
-	Executable Executable
+	Executable util.Executable
 	Container  struct {
 		Provider string
 		Name     string
@@ -46,6 +44,11 @@ type ContextConfig struct {
 		Env      map[string]string
 	}
 	Env map[string]string
+}
+
+type PipelineConfig struct {
+	Task      string
+	DependsOn interface{} `yaml:"depends_on"`
 }
 
 type TaskConfig struct {
@@ -73,7 +76,24 @@ type Config struct {
 	WilsonConfig WilsonConfig
 }
 
-func Load(file string) (cfg *Config, err error) {
+func Load(file string) (*Config, error) {
+	var err error
+	cfg, err = loadGlobalConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	if cfg == nil {
+		cfg = &Config{
+			Contexts: make(map[string]*ContextConfig),
+			Tasks:    make(map[string]*TaskConfig),
+			Pipelines: make(map[string]struct {
+				Tasks []*PipelineConfig
+			}),
+			Watchers: make(map[string]*WatcherConfig),
+		}
+	}
+
 	dir, err := os.Getwd()
 	if err != nil {
 		return nil, err
@@ -81,29 +101,45 @@ func Load(file string) (cfg *Config, err error) {
 
 	if file == "" {
 		file = "wilson.yaml"
-		if _, err := os.Stat(path.Join(dir, file)); os.IsNotExist(err) {
-			return &Config{
-				Contexts: make(map[string]*ContextConfig),
-				Tasks:    make(map[string]*TaskConfig),
-				Pipelines: make(map[string]struct {
-					Tasks []*PipelineConfig
-				}),
-				Watchers: make(map[string]*WatcherConfig),
-			}, nil
+		if !util.FileExists(path.Join(dir, file)) {
+			return cfg, nil
 		}
 	}
 
 	file = path.Join(dir, file)
-	c, err := load(file)
+	localCfg, err := load(file)
 	if err != nil {
 		return nil, err
 	}
 
-	if _, ok := c.Contexts[CONTEXT_TYPE_LOCAL]; !ok {
-		c.Contexts[CONTEXT_TYPE_LOCAL] = &ContextConfig{Type: CONTEXT_TYPE_LOCAL}
+	err = cfg.merge(localCfg)
+	if err != nil {
+		return nil, err
 	}
 
-	return c, nil
+	if _, ok := cfg.Contexts[CONTEXT_TYPE_LOCAL]; !ok {
+		cfg.Contexts[CONTEXT_TYPE_LOCAL] = &ContextConfig{Type: CONTEXT_TYPE_LOCAL}
+	}
+
+	return cfg, nil
+}
+
+func Get() *Config {
+	return cfg
+}
+
+func loadGlobalConfig() (*Config, error) {
+	h, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+
+	file := path.Join(h, ".wilson", "config.yaml")
+	if !util.FileExists(file) {
+		return nil, nil
+	}
+
+	return load(file)
 }
 
 func load(file string) (*Config, error) {
@@ -159,36 +195,6 @@ func (c *Config) merge(src *Config) error {
 	return nil
 }
 
-func ConvertEnv(env map[string]string) []string {
-	var i int
-	enva := make([]string, len(env))
-	for k, v := range env {
-		enva[i] = fmt.Sprintf("%s=%s", k, v)
-		i++
-	}
-
-	return enva
-}
-
-func readStringsArray(v interface{}) (arr []string) {
-	if v == nil {
-		return arr
-	}
-
-	iarr, ok := v.([]interface{})
-	if ok {
-		arr = make([]string, len(iarr))
-		for i, dep := range iarr {
-			arr[i] = dep.(string)
-		}
-
-		return arr
-	}
-
-	item, ok := v.(string)
-	if ok {
-		arr = []string{item}
-	}
-
-	return arr
+func (pc PipelineConfig) GetDependsOn() (deps []string) {
+	return util.ReadStringsArray(pc.DependsOn)
 }

@@ -2,6 +2,7 @@ package task
 
 import (
 	"github.com/trntv/wilson/pkg/config"
+	"github.com/trntv/wilson/pkg/util"
 	"io"
 	"sync"
 	"sync/atomic"
@@ -42,7 +43,7 @@ func BuildTask(def *config.TaskConfig) *Task {
 	}
 	t.Command = def.Command
 	t.Context = def.Context
-	t.Env = config.ConvertEnv(def.Env)
+	t.Env = util.ConvertEnv(def.Env)
 	if t.Context == "" {
 		t.Context = "local"
 	}

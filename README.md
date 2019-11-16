@@ -166,7 +166,7 @@ watchers:
  - [x] skip error when root config file not found
  - [x] pass task env to container context
  - [x] move scheduler to separate package
- - [ ] global config
+ - [x] global config
  
  - [x] pipelines
  - [x] env
