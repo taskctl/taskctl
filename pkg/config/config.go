@@ -73,13 +73,28 @@ type Config struct {
 	WilsonConfig WilsonConfig
 }
 
-func Load(file string) (*Config, error) {
+func Load(file string) (cfg *Config, err error) {
 	dir, err := os.Getwd()
 	if err != nil {
 		return nil, err
 	}
 
-	c, err := load(path.Join(dir, file))
+	if file == "" {
+		file = "wilson.yaml"
+		if _, err := os.Stat(path.Join(dir, file)); os.IsNotExist(err) {
+			return &Config{
+				Contexts: make(map[string]*ContextConfig),
+				Tasks:    make(map[string]*TaskConfig),
+				Pipelines: make(map[string]struct {
+					Tasks []*PipelineConfig
+				}),
+				Watchers: make(map[string]*WatcherConfig),
+			}, nil
+		}
+	}
+
+	file = path.Join(dir, file)
+	c, err := load(file)
 	if err != nil {
 		return nil, err
 	}

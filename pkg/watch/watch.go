@@ -1,7 +1,7 @@
 package watch
 
 import (
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/trntv/wilson/pkg/config"
 	"github.com/trntv/wilson/pkg/runner"
 	"github.com/trntv/wilson/pkg/task"
@@ -88,18 +88,18 @@ func (w *Watcher) Run() (err error) {
 				}
 				w.wg.Add(1)
 				go w.handle(event)
-				logrus.Debugf("watch event %s", event.Name)
+				log.Debugf("watch event %s", event.Name)
 				if event.Op == fsnotify.Rename {
 					err = w.fsw.Add(event.Name)
 					if err != nil {
-						logrus.Error(err)
+						log.Error(err)
 					}
 				}
 			case err, ok := <-w.fsw.Errors:
 				if !ok {
 					return
 				}
-				logrus.Error(err)
+				log.Error(err)
 			}
 		}
 	}()
@@ -112,7 +112,7 @@ func (w *Watcher) Run() (err error) {
 func (w *Watcher) Close() {
 	err := w.fsw.Close()
 	if err != nil {
-		logrus.Error(err)
+		log.Error(err)
 		return
 	}
 	<-w.finished
@@ -133,6 +133,6 @@ func (w *Watcher) handle(event fsnotify.Event) {
 
 	err := w.r.RunWithEnv(w.task, env)
 	if err != nil {
-		logrus.Error(err)
+		log.Error(err)
 	}
 }

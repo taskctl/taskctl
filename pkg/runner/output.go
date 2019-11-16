@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/logrusorgru/aurora"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/trntv/wilson/pkg/task"
 	"io"
 	"io/ioutil"
@@ -43,7 +43,7 @@ func (o *taskOutput) Scan(t *task.Task, done chan struct{}, flushed chan struct{
 	if len(d) > 0 && err != nil {
 		_, err = fmt.Fprintf(o.stdout, "%s: %s\r\n", t.Name, d)
 		if err != nil {
-			logrus.Debug(err)
+			log.Debug(err)
 		}
 	}
 
@@ -51,7 +51,7 @@ func (o *taskOutput) Scan(t *task.Task, done chan struct{}, flushed chan struct{
 	if len(d) > 0 && err != nil {
 		_, err = fmt.Fprintf(o.stderr, "%s: %s\r\n", aurora.Red(t.Name), d)
 		if err != nil {
-			logrus.Debug(err)
+			log.Debug(err)
 		}
 	}
 
@@ -110,7 +110,7 @@ func (o *taskOutput) streamDecoratedStdoutOutput(t *task.Task) error {
 	for scanner.Scan() {
 		_, err := fmt.Fprintf(o.stdout, "%s: %s\r\n", t.Name, scanner.Text())
 		if err != nil {
-			logrus.Debug(err)
+			log.Debug(err)
 		}
 	}
 
@@ -128,7 +128,7 @@ func (o *taskOutput) streamDecoratedStderrOutput(t *task.Task) error {
 		t.WiteLog(line)
 		_, err := fmt.Fprintf(o.stderr, "%s: %s\r\n", aurora.Red(t.Name), line)
 		if err != nil {
-			logrus.Debug(err)
+			log.Debug(err)
 		}
 	}
 

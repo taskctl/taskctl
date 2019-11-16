@@ -3,17 +3,21 @@ package main
 import (
 	"github.com/sirupsen/logrus"
 	"github.com/trntv/wilson/cmd"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
 )
 
 func main() {
+	logrus.SetFormatter(&logrus.TextFormatter{
+		DisableColors:    true,
+		DisableTimestamp: true,
+	})
 	listenSignals()
 
 	if err := cmd.Execute(); err != nil {
-		logrus.Error(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 }
 

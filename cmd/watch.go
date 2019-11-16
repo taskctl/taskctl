@@ -1,7 +1,9 @@
 package cmd
 
 import (
-	"github.com/sirupsen/logrus"
+	"errors"
+	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/trntv/wilson/pkg/runner"
 	"github.com/trntv/wilson/pkg/watch"
@@ -12,7 +14,18 @@ func NewWatchCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "watch [WATCHERS...]",
 		Short: "Start watching for filesystem events",
-		Args:  cobra.MinimumNArgs(1),
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				return errors.New("no watcher specified")
+			}
+
+			_, ok := tasks[args[0]]
+			if !ok {
+				return fmt.Errorf("unknown watcher. Available: \r\n\t%s", mapNames(cfg.Watchers))
+			}
+
+			return nil
+		},
 		Run: func(cmd *cobra.Command, args []string) {
 			tr := runner.NewTaskRunner(contexts, make([]string, 0), true, false)
 
@@ -21,12 +34,11 @@ func NewWatchCommand() *cobra.Command {
 				def := cfg.Watchers[wname]
 				task, ok := tasks[def.Task]
 				if !ok {
-					// todo: validation
-					logrus.Fatal("task for watcher not found")
+					log.Fatal("task for watcher not found")
 				}
 				w, err := watch.BuildWatcher(def, task, tr)
 				if err != nil {
-					logrus.Fatal(err)
+					log.Fatal(err)
 				}
 
 				go func(w *watch.Watcher) {
@@ -43,7 +55,7 @@ func NewWatchCommand() *cobra.Command {
 
 					err = w.Run()
 					if err != nil {
-						logrus.Error()
+						log.Error(err)
 					}
 				}(w)
 			}

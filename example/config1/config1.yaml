@@ -47,6 +47,8 @@ tasks:
     context: alpine
     command:
       - echo "E"
+    env:
+      AAA: BBB
 
   env:
     command:

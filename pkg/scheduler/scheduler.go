@@ -1,7 +1,8 @@
-package runner
+package scheduler
 
 import (
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
+	"github.com/trntv/wilson/pkg/runner"
 	"github.com/trntv/wilson/pkg/task"
 	"sync"
 	"sync/atomic"
@@ -10,7 +11,7 @@ import (
 
 type PipelineScheduler struct {
 	pipeline   *task.Pipeline
-	taskRunner *TaskRunner
+	taskRunner *runner.TaskRunner
 	pause      time.Duration
 
 	cancelled int32
@@ -20,11 +21,11 @@ type PipelineScheduler struct {
 	End   time.Time
 }
 
-func NewScheduler(pipeline *task.Pipeline, contexts map[string]*Context, env []string, raw, quiet bool) *PipelineScheduler {
+func NewScheduler(pipeline *task.Pipeline, contexts map[string]*runner.Context, env []string, raw, quiet bool) *PipelineScheduler {
 	r := &PipelineScheduler{
 		pipeline:   pipeline,
 		pause:      50 * time.Millisecond,
-		taskRunner: NewTaskRunner(contexts, env, raw, quiet),
+		taskRunner: runner.NewTaskRunner(contexts, env, raw, quiet),
 	}
 
 	return r
@@ -77,7 +78,7 @@ func (s *PipelineScheduler) Schedule() {
 					defer s.wg.Done()
 					err := s.taskRunner.Run(t)
 					if err != nil {
-						logrus.Error(err)
+						log.Error(err)
 						t.UpdateStatus(task.STATUS_ERROR)
 						s.Cancel()
 					} else {
@@ -103,5 +104,5 @@ func (s *PipelineScheduler) stopTimer() {
 
 func (s *PipelineScheduler) Cancel() {
 	atomic.StoreInt32(&s.cancelled, 1)
-	s.taskRunner.cancel()
+	s.taskRunner.Cancel()
 }

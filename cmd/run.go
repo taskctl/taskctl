@@ -1,12 +1,13 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"github.com/logrusorgru/aurora"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/trntv/wilson/pkg/config"
-	"github.com/trntv/wilson/pkg/runner"
+	"github.com/trntv/wilson/pkg/scheduler"
 	"github.com/trntv/wilson/pkg/task"
 	"strings"
 )
@@ -17,13 +18,20 @@ func NewRunCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run [pipeline]",
 		Short: "Run pipeline",
-		Args:  cobra.MinimumNArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			var pname = args[0]
-			pipeline, ok := pipelines[pname]
-			if !ok {
-				logrus.Fatalf("unknown pipeline %s", pname)
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				return errors.New("no pipeline specified")
 			}
+
+			_, ok := pipelines[args[0]]
+			if !ok {
+				return errors.New("unknown pipeline")
+			}
+
+			return nil
+		},
+		Run: func(cmd *cobra.Command, args []string) {
+			pipeline := pipelines[args[0]]
 
 			var pipelineArgs []string
 			if al := cmd.ArgsLenAtDash(); al > 0 {
@@ -33,7 +41,7 @@ func NewRunCommand() *cobra.Command {
 				"ARGS": strings.Join(pipelineArgs, " "),
 			})
 
-			rr := runner.NewScheduler(pipeline, contexts, env, raw, quiet)
+			rr := scheduler.NewScheduler(pipeline, contexts, env, raw, quiet)
 			go func() {
 				select {
 				case <-cancel:
@@ -73,6 +81,6 @@ func printSummary(t *task.Task) {
 	case task.STATUS_WAITING:
 		fmt.Printf(aurora.Sprintf(aurora.Gray(12, "- Task %s skipped\r\n"), t.Name))
 	default:
-		logrus.Fatal(aurora.Sprintf(aurora.Red("- Unexpected status %d for task %s\r\n"), t.Status, t.Name))
+		log.Fatal(aurora.Sprintf(aurora.Red("- Unexpected status %d for task %s\r\n"), t.Status, t.Name))
 	}
 }

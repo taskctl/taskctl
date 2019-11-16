@@ -161,6 +161,12 @@ watchers:
 ```
 
 ## TODO
+ - [x] logrus, zap? plain formatting for log entries
+ - [x] skip error when root config file not found
+ - [x] pass task env to container context
+ - [x] move scheduler to separate package
+ - [ ] global config
+ 
  - [x] pipelines
  - [x] env
  - [x] command env processing
@@ -168,11 +174,9 @@ watchers:
  - [ ] autocomplete
  - [ ] import path
  - [ ] import url
- - [ ] global config
  - [ ] check for cycles in pipelines
  - [ ] tests
  - [ ] graceful shutdown +context specific
- - [ ] set task env with -e in container context
  - [x] docker context
  - [ ] kubectl context
  - [ ] ssh context
@@ -188,6 +192,7 @@ watchers:
  - [ ] ui dashboard
  - [ ] task and command as string
  - [ ] task's args in pipeline definition
+ - [ ] task's env in pipeline definition
 
 ## Why "Wilson"?
 https://en.wikipedia.org/wiki/Cast_Away#Wilson_the_volleyball

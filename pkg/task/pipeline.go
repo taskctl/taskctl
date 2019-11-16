@@ -1,7 +1,7 @@
 package task
 
 import (
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/trntv/wilson/pkg/config"
 )
 
@@ -23,7 +23,7 @@ func BuildPipeline(stages []*config.PipelineConfig, tasks map[string]*Task) *Pip
 	for _, stage := range stages {
 		t := tasks[stage.Task]
 		if t == nil {
-			logrus.Fatalf("unknown task %s", stage.Task)
+			log.Fatalf("unknown task %s", stage.Task)
 		}
 
 		graph.addNode(stage.Task, t)
@@ -53,7 +53,7 @@ func (p *Pipeline) Nodes() map[string]*Task {
 func (p *Pipeline) Node(name string) *Task {
 	t, ok := p.nodes[name]
 	if !ok {
-		logrus.Fatalf("unknown task name %s\r\n", name)
+		log.Fatalf("unknown task name %s\r\n", name)
 	}
 
 	return t

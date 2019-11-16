@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/logrusorgru/aurora"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/trntv/wilson/pkg/task"
 	"os"
 	"os/exec"
@@ -38,42 +38,42 @@ func (r *TaskRunner) Run(t *task.Task) (err error) {
 }
 
 func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
-	c, ok := r.contexts[t.Context]
-	if !ok {
+	c, err := r.contextForTask(t)
+	if err != nil {
 		return errors.New("unknown context")
 	}
 
-	env = append(env, c.Env...)
+	env = append(env, c.Env()...)
 	env = append(env, t.Env...)
 
 	cwd := t.Dir
 	if cwd == "" {
 		cwd, err = os.Getwd()
 		if err != nil {
-			logrus.Fatalln(err)
+			log.Fatalln(err)
 		}
 	}
 
 	t.Start = time.Now()
 	fmt.Println(aurora.Sprintf(aurora.Green("Running %s..."), aurora.Green(t.Name)))
 
-	exargs := c.Executable.Args
+	exargs := c.Args()
 	for _, command := range t.Command {
 		args := append(exargs, command)
 
-		cmd := exec.Command(c.Executable.Bin, args...)
+		cmd := exec.Command(c.Bin(), args...)
 		cmd.Dir = cwd
 		cmd.Env = env
 
 		stdout, err := cmd.StdoutPipe()
 		if err != nil {
-			logrus.Error(err)
+			log.Error(err)
 		}
 		t.SetStdout(stdout)
 
 		stderr, err := cmd.StderrPipe()
 		if err != nil {
-			logrus.Error(err)
+			log.Error(err)
 		}
 		t.SetStderr(stderr)
 
@@ -101,7 +101,7 @@ func (r *TaskRunner) runCommand(t *task.Task, cmd *exec.Cmd) error {
 	var flushed = make(chan struct{})
 	go r.output.Scan(t, done, flushed)
 
-	logrus.Debugf("Executing %s\r\n", cmd.String())
+	log.Debugf("Executing %s", cmd.String())
 	err := cmd.Start()
 	if err != nil {
 		<-flushed
@@ -130,12 +130,29 @@ func (r *TaskRunner) waitForInterruption(cmd exec.Cmd, done chan struct{}, kille
 			return
 		}
 		if err := cmd.Process.Kill(); err != nil {
-			logrus.Debug(err)
+			log.Debug(err)
 			return
 		}
-		logrus.Debugf("Killed %s", cmd.String())
+		log.Debugf("Killed %s", cmd.String())
 		return
 	case <-done:
 		return
 	}
+}
+
+func (r *TaskRunner) Cancel() {
+	r.cancel()
+}
+
+func (r *TaskRunner) contextForTask(t *task.Task) (*Context, error) {
+	c, ok := r.contexts[t.Context]
+	if !ok {
+		return nil, errors.New("no such context")
+	}
+
+	if len(t.Env) > 0 {
+		return c.WithEnvs(t.Env)
+	}
+
+	return c, nil
 }

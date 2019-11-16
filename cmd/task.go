@@ -1,7 +1,8 @@
 package cmd
 
 import (
-	"github.com/sirupsen/logrus"
+	"errors"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/trntv/wilson/pkg/config"
 	"github.com/trntv/wilson/pkg/runner"
@@ -12,15 +13,20 @@ func NewRunTaskCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "task [task]",
 		Short: "Schedule task",
-		Args:  cobra.MinimumNArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			// todo: OnlyValidArgs
-			var tname = args[0]
-			t, ok := tasks[tname]
-			if !ok {
-				logrus.Fatalf("unknown task %s", tname)
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				return errors.New("no task specified")
 			}
 
+			_, ok := tasks[args[0]]
+			if !ok {
+				return errors.New("unknown task")
+			}
+
+			return nil
+		},
+		Run: func(cmd *cobra.Command, args []string) {
+			t := tasks[args[0]]
 			var taskArgs []string
 			if al := cmd.ArgsLenAtDash(); al > 0 {
 				taskArgs = args[cmd.ArgsLenAtDash():]
@@ -32,7 +38,7 @@ func NewRunTaskCommand() *cobra.Command {
 			tr := runner.NewTaskRunner(contexts, env, true, quiet)
 			err := tr.Run(t)
 			if err != nil {
-				logrus.Error(err)
+				log.Error(err)
 			}
 
 			close(done)
