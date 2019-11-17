@@ -29,6 +29,7 @@ var fsnotifyMap = map[fsnotify.Op]string{
 }
 
 type Watcher struct {
+	name     string
 	r        *runner.TaskRunner
 	finished chan struct{}
 	paths    []string
@@ -39,8 +40,9 @@ type Watcher struct {
 	wg sync.WaitGroup
 }
 
-func BuildWatcher(def *config.WatcherConfig, t *task.Task, r *runner.TaskRunner) (w *Watcher, err error) {
+func BuildWatcher(name string, def *config.WatcherConfig, t *task.Task, r *runner.TaskRunner) (w *Watcher, err error) {
 	w = &Watcher{
+		name:     name,
 		r:        r,
 		paths:    make([]string, 0),
 		finished: make(chan struct{}),
@@ -89,7 +91,7 @@ func (w *Watcher) Run() (err error) {
 				}
 				w.wg.Add(1)
 				go w.handle(event)
-				log.Debugf("watch event %s", event.Name)
+				log.Debugf("watcher %; event %s; file: %s", w.name, event.Op.String(), event.Name)
 				if event.Op == fsnotify.Rename {
 					err = w.fsw.Add(event.Name)
 					if err != nil {
@@ -132,6 +134,7 @@ func (w *Watcher) handle(event fsnotify.Event) {
 		"EVENT_PATH": event.Name,
 	})
 
+	log.Debugf("triggering %s for %s", w.task.Name, w.name)
 	err := w.r.RunWithEnv(w.task, env)
 	if err != nil {
 		log.Error(err)

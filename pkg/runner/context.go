@@ -47,8 +47,7 @@ func (cb *contextBuilder) build() (*Context, error) {
 			c.executable.Bin = cb.w.Shell.Bin
 			c.executable.Args = cb.w.Shell.Args
 		} else {
-			c.executable.Bin = "/bin/sh"
-			c.executable.Args = []string{"-c"}
+			setDefaultShell(&c.executable)
 		}
 
 	case config.CONTEXT_TYPE_CONTAINER:
@@ -76,7 +75,7 @@ func (cb *contextBuilder) build() (*Context, error) {
 func (cb *contextBuilder) buildDockerContext(c *Context) error {
 	bin := cb.def.Executable.Bin
 	if bin == "" {
-		defaultShell(&cb.def.Executable)
+		setDefaultShell(&cb.def.Executable)
 		bin = cb.def.Executable.Bin
 	}
 	args := cb.def.Executable.Args
@@ -132,7 +131,7 @@ func (cb *contextBuilder) buildDockerContext(c *Context) error {
 	return nil
 }
 
-func defaultShell(e *util.Executable) {
+func setDefaultShell(e *util.Executable) {
 	e.Bin = "/bin/sh"
 	e.Args = []string{"-c"}
 }

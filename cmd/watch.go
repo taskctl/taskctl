@@ -36,7 +36,7 @@ func NewWatchCommand() *cobra.Command {
 				if !ok {
 					log.Fatal("task for watcher not found")
 				}
-				w, err := watch.BuildWatcher(def, task, tr)
+				w, err := watch.BuildWatcher(wname, def, task, tr)
 				if err != nil {
 					log.Fatal(err)
 				}
