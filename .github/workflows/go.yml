@@ -13,6 +13,11 @@ jobs:
         go-version: 1.13
       id: go
 
+    - name: Install wilson
+      run: |
+        go get -u github.com/trntv/wilson
+        wilson help
+
     - name: Check out code into the Go module directory
       uses: actions/checkout@v1
 

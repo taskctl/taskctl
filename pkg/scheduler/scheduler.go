@@ -76,7 +76,7 @@ func (s *PipelineScheduler) Schedule() {
 				t.UpdateStatus(task.STATUS_RUNNING)
 				go func(t *task.Task) {
 					defer s.wg.Done()
-					err := s.taskRunner.Run(t)
+					err := s.taskRunner.RunWithEnv(t, s.pipeline.env[t.Name])
 					if err != nil {
 						log.Error(err)
 						t.UpdateStatus(task.STATUS_ERROR)
@@ -92,6 +92,7 @@ func (s *PipelineScheduler) Schedule() {
 	}
 
 	s.wg.Wait()
+	s.taskRunner.DownContexts()
 }
 
 func (s *PipelineScheduler) startTimer() {

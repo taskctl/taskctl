@@ -21,7 +21,7 @@ curl -L https://github.com/trntv/wilson/releases/latest/download/wilson-linux-am
 ```
 ### From sources
 ```
-go get -i github.com/trntv/wilson
+go get -u github.com/trntv/wilson
 ```
 
 ## Full config example
@@ -47,6 +47,8 @@ contexts:
           exec: false
           env:
             VAR_NAME: VAR_VALUE
+          before: SOME COMMAND TO RUN BEFORE TASK 
+          after: SOME COMMAND TO RUN WHEN TASK FINISHED SUCCESSFULLY 
         env:
           VAR_NAME: VAR_VALUE # eg. "DOCKER_HOST"
     
@@ -58,6 +60,8 @@ contexts:
           exec: true
           options:
             - --user=root
+          up: docker-compose up -d --build --force-recreate api # Executes once before first context usage
+          down: docker-compose down api # Executes once when all tasks done
         env:
           VAR_NAME: VAR_VALUE # eg."COMPOSE_FILE"
 
@@ -70,6 +74,8 @@ pipelines:
       depends_on: task1 // task2 and task3 will run in parallel when task1 finished
     - task: task4
       depends_on: [task1, task2]
+      env:
+        VAR_NAME: VAR_VALUE # override task env
 
 tasks:
     task1:
@@ -170,7 +176,6 @@ WIF*
  - [x] pass task env to container context
  - [x] move scheduler to separate package
  - [x] global config
- 
  - [x] pipelines
  - [x] env
  - [x] command env processing
@@ -195,8 +200,8 @@ WIF*
  - [ ] write log file on error
  - [ ] ui dashboard
  - [ ] task and command as string
- - [ ] task's args in pipeline definition
- - [ ] task's env in pipeline definition
+ - [x] task env in pipeline definition
+ - [ ] set envs in []string format
 
 ## Why "Wilson"?
 https://en.wikipedia.org/wiki/Cast_Away#Wilson_the_volleyball

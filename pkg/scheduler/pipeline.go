@@ -4,14 +4,14 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/trntv/wilson/pkg/config"
 	"github.com/trntv/wilson/pkg/task"
+	"github.com/trntv/wilson/pkg/util"
 )
 
 type Pipeline struct {
 	nodes map[string]*task.Task
 	from  map[string][]string
 	to    map[string][]string
-
-	initial string
+	env   map[string][]string
 }
 
 func BuildPipeline(stages []*config.PipelineConfig, tasks map[string]*task.Task) *Pipeline {
@@ -19,6 +19,7 @@ func BuildPipeline(stages []*config.PipelineConfig, tasks map[string]*task.Task)
 		nodes: make(map[string]*task.Task),
 		from:  make(map[string][]string),
 		to:    make(map[string][]string),
+		env:   make(map[string][]string),
 	}
 
 	for _, stage := range stages {
@@ -32,6 +33,8 @@ func BuildPipeline(stages []*config.PipelineConfig, tasks map[string]*task.Task)
 		for _, dep := range stage.GetDependsOn() {
 			graph.addEdge(dep, stage.Task)
 		}
+
+		graph.env[stage.Task] = util.ConvertEnv(stage.Env)
 	}
 
 	return graph

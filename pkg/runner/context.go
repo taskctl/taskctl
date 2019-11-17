@@ -4,8 +4,11 @@ import (
 	"errors"
 	"github.com/trntv/wilson/pkg/config"
 	"github.com/trntv/wilson/pkg/util"
+	"log"
 	"os"
+	"os/exec"
 	"strings"
+	"sync"
 )
 
 type Context struct {
@@ -13,6 +16,13 @@ type Context struct {
 	executable util.Executable
 	env        []string
 	def        *config.ContextConfig
+
+	up     []string
+	down   []string
+	before []string
+	after  []string
+
+	once sync.Once
 }
 
 type contextBuilder struct {
@@ -159,4 +169,62 @@ func (c *Context) WithEnvs(env []string) (*Context, error) {
 	}
 
 	return BuildContext(&def)
+}
+
+func (c *Context) Up() {
+	c.once.Do(func() {
+		for _, command := range c.up {
+			err := c.runServiceCommand(command)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+	})
+}
+
+func (c *Context) Down() {
+	c.once.Do(func() {
+		for _, command := range c.down {
+			err := c.runServiceCommand(command)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+	})
+}
+
+func (c *Context) Before() error {
+	for _, command := range c.before {
+		err := c.runServiceCommand(command)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (c *Context) After() error {
+	for _, command := range c.after {
+		err := c.runServiceCommand(command)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (c *Context) runServiceCommand(command string) error {
+	ca := strings.Split(command, " ")
+	cmd := exec.Command(ca[0], ca[1:]...)
+	cmd.Env = c.Env()
+	cmd.Dir = config.Getcwd()
+
+	err := cmd.Run()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/trntv/wilson/pkg/util"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
 )
@@ -35,20 +36,14 @@ type WilsonConfig struct {
 type ContextConfig struct {
 	Type       string
 	Executable util.Executable
-	Container  struct {
-		Provider string
-		Name     string
-		Image    string
-		Exec     bool
-		Options  []string
-		Env      map[string]string
-	}
-	Env map[string]string
+	Container  Container
+	Env        map[string]string
 }
 
 type PipelineConfig struct {
 	Task      string
 	DependsOn interface{} `yaml:"depends_on"`
+	Env       map[string]string
 }
 
 type TaskConfig struct {
@@ -74,6 +69,19 @@ type Config struct {
 	Watchers map[string]*WatcherConfig
 
 	WilsonConfig WilsonConfig
+}
+
+type Container struct {
+	Provider string
+	Name     string
+	Image    string
+	Exec     bool
+	Options  []string
+	Env      map[string]string
+	Up       interface{}
+	Down     interface{}
+	Before   interface{}
+	After    interface{}
 }
 
 func Load(file string) (*Config, error) {
@@ -197,4 +205,29 @@ func (c *Config) merge(src *Config) error {
 
 func (pc PipelineConfig) GetDependsOn() (deps []string) {
 	return util.ReadStringsArray(pc.DependsOn)
+}
+
+func (c Container) GetUp() (up []string) {
+	return util.ReadStringsArray(c.Up)
+}
+
+func (c Container) GetDown() (up []string) {
+	return util.ReadStringsArray(c.Down)
+}
+
+func (c Container) GetBefore() (up []string) {
+	return util.ReadStringsArray(c.Before)
+}
+
+func (c Container) GetAfter() (up []string) {
+	return util.ReadStringsArray(c.After)
+}
+
+func Getcwd() string {
+	cwd, err := os.Getwd()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	return cwd
 }

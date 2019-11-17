@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"github.com/logrusorgru/aurora"
 	log "github.com/sirupsen/logrus"
+	"github.com/trntv/wilson/pkg/config"
 	"github.com/trntv/wilson/pkg/task"
-	"os"
 	"os/exec"
+	"sync"
 	"time"
 )
 
@@ -19,13 +20,17 @@ type TaskRunner struct {
 	output *taskOutput
 	ctx    context.Context
 	cancel context.CancelFunc
+
+	usedContextLock sync.Mutex
+	usedContexts    map[string]*Context
 }
 
 func NewTaskRunner(contexts map[string]*Context, env []string, raw, quiet bool) *TaskRunner {
 	tr := &TaskRunner{
-		contexts: contexts,
-		output:   NewTaskOutput(raw, quiet),
-		env:      env,
+		contexts:     contexts,
+		output:       NewTaskOutput(raw, quiet),
+		env:          env,
+		usedContexts: make(map[string]*Context),
 	}
 
 	tr.ctx, tr.cancel = context.WithCancel(context.Background())
@@ -43,21 +48,25 @@ func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
 		return errors.New("unknown context")
 	}
 
+	c.Up()
+	err = c.Before()
+	if err != nil {
+		return err
+	}
+
 	env = append(env, c.Env()...)
 	env = append(env, t.Env...)
 
 	cwd := t.Dir
 	if cwd == "" {
-		cwd, err = os.Getwd()
-		if err != nil {
-			log.Fatalln(err)
-		}
+		cwd = config.Getcwd()
 	}
 
 	t.Start = time.Now()
 	fmt.Println(aurora.Sprintf(aurora.Green("Running %s..."), aurora.Green(t.Name)))
 
 	exargs := c.Args()
+
 	for _, command := range t.Command {
 		args := append(exargs, command)
 
@@ -87,6 +96,11 @@ func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
 
 	t.End = time.Now()
 	t.UpdateStatus(task.STATUS_DONE)
+
+	err = c.After()
+	if err != nil {
+		return err
+	}
 
 	fmt.Println(aurora.Sprintf(aurora.Green("%s finished. Elapsed %s"), aurora.Green(t.Name), aurora.Yellow(t.Duration())))
 
@@ -150,9 +164,19 @@ func (r *TaskRunner) contextForTask(t *task.Task) (*Context, error) {
 		return nil, errors.New("no such context")
 	}
 
+	r.usedContextLock.Lock()
+	r.usedContexts[t.Context] = c
+	r.usedContextLock.Unlock()
+
 	if len(t.Env) > 0 {
 		return c.WithEnvs(t.Env)
 	}
 
 	return c, nil
+}
+
+func (r *TaskRunner) DownContexts() {
+	for _, c := range r.usedContexts {
+		c.Down()
+	}
 }

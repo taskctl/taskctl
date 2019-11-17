@@ -40,6 +40,7 @@ func NewRunTaskCommand() *cobra.Command {
 			if err != nil {
 				log.Error(err)
 			}
+			tr.DownContexts()
 
 			close(done)
 		},
