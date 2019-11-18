@@ -3,7 +3,7 @@ class Wilson < Formula
   desc "Wilson the task runner"
   homepage "https://github.com/trntv/wilson"
   url "https://github.com/trntv/wilson/releases/download/#{version}/wilson-darwin-amd64.tar.gz"
-  sha256 "69164670eedb95f6f13cc51f60b0ff6256594401217d73f168dd1aa47f859063"
+  sha256 "635034cc0c389e8a169e9752835eb8fe0a2e3304cde0d1904178712db1716e2e"
 
   def install
     bin.install "bin/wilson_darwin_amd64"
