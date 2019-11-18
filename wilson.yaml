@@ -43,4 +43,5 @@ tasks:
     command:
       - git commit -m "Release ${ARGS}"
       - git tag ${ARGS}
+      - git push origin master
       - git push origin ${ARGS}
