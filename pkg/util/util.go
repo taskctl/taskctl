@@ -28,24 +28,20 @@ func FileExists(file string) bool {
 	return !os.IsNotExist(err)
 }
 
-func ReadStringsArray(v interface{}) (arr []string) {
+func ReadStringsSlice(v interface{}) (arr []string) {
 	if v == nil {
 		return arr
 	}
 
-	iarr, ok := v.([]string)
-	if ok {
-		arr = make([]string, len(iarr))
-		for i, el := range iarr {
-			arr[i] = el
+	switch reflect.TypeOf(v).Kind() {
+	case reflect.Slice:
+		val := reflect.ValueOf(v)
+		arr = make([]string, val.Len())
+		for i := 0; i < val.Len(); i++ {
+			arr[i] = val.Index(i).String()
 		}
-
-		return arr
-	}
-
-	item, ok := v.(string)
-	if ok {
-		arr = []string{item}
+	case reflect.String:
+		arr = []string{reflect.ValueOf(v).String()}
 	}
 
 	return arr

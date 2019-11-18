@@ -19,12 +19,13 @@ jobs:
       run: |
         GOOS=darwin GOARCH=amd64 go build -o bin/wilson_darwin_amd64 -v .
         GOOS=linux GOARCH=amd64 go build -o bin/wilson_linux_amd64 -v .
-        tar -zcvf bin/wilson-darwin-amd64.tar.gz bin/wilson_darwin_amd64
-        tar -zcvf bin/wilson-linux-amd64.tar.gz bin/wilson_linux_amd64
-
+        tar cvf - bin/wilson_darwin_amd64 | gzip -n > bin/wilson-darwin-amd64.tar.gz
+        tar cvf - bin/wilson_linux_amd64 | gzip -n > bin/wilson-linux-amd64.tar.gz
+        sha256sum bin/wilson-darwin-amd64.tar.gz >> bin/checksums.txt
+        sha256sum bin/wilson-linux-amd64.tar.gz >> bin/checksums.txt
 
     - name: Publish release
       uses: ncipollo/release-action@v1
       with:
-        artifacts: "bin/wilson-linux-amd64.tar.gz, bin/wilson-darwin-amd64.tar.gz"
+        artifacts: "bin/wilson-linux-amd64.tar.gz, bin/wilson-darwin-amd64.tar.gz, bin/checksums.txt"
         token: ${{ secrets.GITHUB_TOKEN }}

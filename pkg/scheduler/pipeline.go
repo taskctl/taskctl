@@ -51,9 +51,6 @@ func BuildPipeline(stages []config.Stage, tasks map[string]*task.Task) (*Pipelin
 		p.addNode(def.Name(), stage)
 
 		for _, dep := range stage.DependsOn {
-			if _, ok := p.nodes[dep]; !ok {
-				return nil, errors.New(fmt.Sprintf("stage %s depends on unknown stage %s", stage.Name, dep))
-			}
 			err := p.addEdge(dep, def.Name())
 			if err != nil {
 				return nil, err

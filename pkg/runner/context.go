@@ -81,48 +81,57 @@ func BuildContext(def config.ContextConfig, wcfg *config.WilsonConfig) (*Context
 		dir:    def.Dir,
 		env:    append(os.Environ(), util.ConvertEnv(def.Env)...),
 		def:    &def,
-		up:     util.ReadStringsArray(def.Up),
-		down:   util.ReadStringsArray(def.Down),
-		before: util.ReadStringsArray(def.Before),
-		after:  util.ReadStringsArray(def.After),
+		up:     util.ReadStringsSlice(def.Up),
+		down:   util.ReadStringsSlice(def.Down),
+		before: util.ReadStringsSlice(def.Before),
+		after:  util.ReadStringsSlice(def.After),
 	}
 
 	switch c.ctxType {
 	case config.CONTEXT_TYPE_CONTAINER:
 		switch c.container.provider {
 		case config.CONTEXT_CONTAINER_PROVIDER_DOCKER:
-			if c.container.executable.Bin == "" && wcfg.Docker.Bin != "" {
-				c.container.executable.Bin = wcfg.Docker.Bin
-			} else {
-				c.container.executable.Bin = "docker"
+			if c.container.executable.Bin == "" {
+				if wcfg.Docker.Bin != "" {
+					c.container.executable.Bin = wcfg.Docker.Bin
+				} else {
+					c.container.executable.Bin = "docker"
+				}
 			}
 			if len(c.container.executable.Args) == 0 {
 				c.container.executable.Args = wcfg.Docker.Args
 			}
 		case config.CONTEXT_CONTAINER_PROVIDER_DOCKER_COMPOSE:
-			if c.container.executable.Bin == "" && wcfg.DockerCompose.Bin != "" {
-				c.container.executable.Bin = wcfg.DockerCompose.Bin
-			} else {
-				c.container.executable.Bin = "docker-compose"
+			if c.container.executable.Bin == "" {
+				if wcfg.DockerCompose.Bin != "" {
+					c.container.executable.Bin = wcfg.DockerCompose.Bin
+				} else {
+					c.container.executable.Bin = "docker-compose"
+				}
 			}
 			if len(c.container.executable.Args) == 0 {
 				c.container.executable.Args = wcfg.DockerCompose.Args
 			}
 		case config.CONTEXT_CONTAINER_PROVIDER_KUBECTL:
-			if c.container.executable.Bin == "" && wcfg.Kubectl.Bin != "" {
-				c.container.executable.Bin = wcfg.Kubectl.Bin
-			} else {
-				c.container.executable.Bin = "kubectl"
+			if c.container.executable.Bin == "" {
+				if wcfg.Kubectl.Bin != "" {
+					c.container.executable.Bin = wcfg.Kubectl.Bin
+				} else {
+					c.container.executable.Bin = "kubectl"
+				}
 			}
+
 			if len(c.container.executable.Args) == 0 {
 				c.container.executable.Args = wcfg.Kubectl.Args
 			}
 		}
 	case config.CONTEXT_TYPE_REMOTE:
-		if c.ssh.executable.Bin == "" && wcfg.Ssh.Bin != "" {
-			c.ssh.executable.Bin = wcfg.Ssh.Bin
-		} else {
-			c.ssh.executable.Bin = "ssh"
+		if c.ssh.executable.Bin == "" {
+			if wcfg.Ssh.Bin != "" {
+				c.ssh.executable.Bin = wcfg.Ssh.Bin
+			} else {
+				c.ssh.executable.Bin = "ssh"
+			}
 		}
 
 		if len(c.ssh.executable.Args) == 0 {

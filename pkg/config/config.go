@@ -213,7 +213,7 @@ func (c *Config) merge(src *Config) error {
 }
 
 func (pc Stage) GetDependsOn() (deps []string) {
-	return util.ReadStringsArray(pc.DependsOn)
+	return util.ReadStringsSlice(pc.DependsOn)
 }
 
 func (pc Stage) Name() string {

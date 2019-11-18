@@ -12,20 +12,27 @@ pipelines:
         BIN_OUT: bin/wilson_linux_amd64
 
   release:
+    - task: test
+    - task: update-cmd-version
+      depends_on: test
     - task: build
+      depends_on: update-cmd-version
       env:
         GOOS: darwin
         BIN_OUT: bin/wilson_darwin_amd64
-    - task: update-cmd-version
-    - task: update-brew-formula
-      depends_on: build
     - task: push-tag
-      depends_on: [update-brew-formula]
+      depends_on: update-cmd-version
+    - task: update-brew-formula
+      depends_on: push-tag
 
 tasks:
+  test:
+    command:
+      - go test ./...
+
   build:
     command:
-      - GOOS=${GOOS} GOARCH=amd64 go build -o ${BIN_OUT} main.go
+      - GOOS=${GOOS} GOARCH=amd64 go build -o ${BIN_OUT} -v main.go
 
   update-cmd-version:
     command:
@@ -34,10 +41,7 @@ tasks:
 
   update-brew-formula:
     command:
-      - tar -zcvf bin/wilson-darwin-amd64.tar.gz bin/wilson_darwin_amd64
       - sed -i '' '/  version/s/".*"/"'${ARGS}'"/' wilson.rb
-      - sed -i '' '/  sha256/s/".*"/"'$(shasum -a256 bin/wilson-darwin-amd64.tar.gz | awk '{print $1}')'"/' wilson.rb
-      - git add wilson.rb
 
   push-tag:
     command:

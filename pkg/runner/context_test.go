@@ -12,7 +12,7 @@ func TestContext_BuildContext(t *testing.T) {
 			Bin: "/opt/docker",
 		},
 	}
-	c, _ := BuildContext(&config.ContextConfig{
+	c, _ := BuildContext(config.ContextConfig{
 		Type: "local",
 		Env:  map[string]string{"TEST_VAR": "TEST_VAL"},
 	}, wcfg)
@@ -26,7 +26,7 @@ func TestContext_BuildContext(t *testing.T) {
 		t.Error("env not found")
 	}
 
-	c, _ = BuildContext(&config.ContextConfig{
+	c, _ = BuildContext(config.ContextConfig{
 		Type: "container",
 		Container: config.Container{
 			Provider: "docker",
@@ -41,7 +41,7 @@ func TestContext_BuildContext(t *testing.T) {
 		t.Errorf("docker build failed %s", cmd.String())
 	}
 
-	c, _ = BuildContext(&config.ContextConfig{
+	c, _ = BuildContext(config.ContextConfig{
 		Type: "container",
 		Container: config.Container{
 			Provider: "docker-compose",
@@ -61,7 +61,7 @@ func TestContext_BuildContext(t *testing.T) {
 		t.Errorf("docker-compose build failed %s", cmd.String())
 	}
 
-	c, _ = BuildContext(&config.ContextConfig{
+	c, _ = BuildContext(config.ContextConfig{
 		Type: "container",
 		Container: config.Container{
 			Provider: "kubectl",
@@ -69,17 +69,17 @@ func TestContext_BuildContext(t *testing.T) {
 			Options:  nil,
 			Env:      map[string]string{"TEST_VAR": "TEST_VAL"},
 			Executable: util.Executable{
-				Bin: "/usr/local/bin/kubectl",
+				Bin: "/usr/bin/kubectl",
 			},
 		},
 	}, wcfg)
 
 	cmd = c.createCommand("echo ${TEST_VAR}")
-	if cmd.String() != "/usr/local/bin/kubectl exec deployment/geocoder -- /bin/sh -c TEST_VAR=TEST_VAL echo ${TEST_VAR}" {
+	if cmd.String() != "/usr/bin/kubectl exec deployment/geocoder -- /bin/sh -c TEST_VAR=TEST_VAL echo ${TEST_VAR}" {
 		t.Errorf("kubectl build failed %s", cmd.String())
 	}
 
-	c, _ = BuildContext(&config.ContextConfig{
+	c, _ = BuildContext(config.ContextConfig{
 		Type: "remote",
 		Ssh: config.SshConfig{
 			Options: []string{"-6", "-C"},
