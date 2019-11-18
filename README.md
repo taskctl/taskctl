@@ -1,4 +1,4 @@
-# Wilson - routines automation toolkit
+# Wilson - routine tasks automation toolkit
 Willows allows you to get rid of a bunch of bash scripts and to design you workflow pipelines in nice and neat with way 
 with yaml files. Wilson's automation based on four concepts:
 1. Execution context
