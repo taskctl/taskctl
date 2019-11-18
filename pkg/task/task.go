@@ -37,7 +37,7 @@ type Task struct {
 	mu sync.Mutex
 }
 
-func BuildTask(def *config.TaskConfig) *Task {
+func BuildTask(def config.TaskConfig) *Task {
 	t := &Task{
 		Env: make([]string, 0),
 	}

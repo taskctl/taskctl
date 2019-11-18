@@ -68,6 +68,9 @@ func TestContext_BuildContext(t *testing.T) {
 			Name:     "deployment/geocoder",
 			Options:  nil,
 			Env:      map[string]string{"TEST_VAR": "TEST_VAL"},
+			Executable: util.Executable{
+				Bin: "/usr/local/bin/kubectl",
+			},
 		},
 	}, wcfg)
 

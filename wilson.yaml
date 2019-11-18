@@ -1,26 +1,26 @@
 pipelines:
   build:
-    tasks:
-      - task: build
-        env:
-          GOOS: darwin
-          BIN_OUT: bin/wilson_darwin_amd64
-      - task: build
-        env:
-          GOOS: linux
-          BIN_OUT: bin/wilson_linux_amd64
+    - name: Build "darwin"
+      task: build
+      env:
+        GOOS: darwin
+        BIN_OUT: bin/wilson_darwin_amd64
+    - name: Build "linux"
+      task: build
+      env:
+        GOOS: linux
+        BIN_OUT: bin/wilson_linux_amd64
 
   release:
-    tasks:
-      - task: build
-        env:
-          GOOS: darwin
-          BIN_OUT: bin/wilson_darwin_amd64
-      - task: update-cmd-version
-      - task: update-brew-formula
-        depends_on: build
-      - task: push-tag
-        depends_on: [update-brew-formula]
+    - task: build
+      env:
+        GOOS: darwin
+        BIN_OUT: bin/wilson_darwin_amd64
+    - task: update-cmd-version
+    - task: update-brew-formula
+      depends_on: build
+    - task: push-tag
+      depends_on: [update-brew-formula]
 
 tasks:
   build:

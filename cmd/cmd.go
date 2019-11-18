@@ -71,7 +71,7 @@ func parseConfigFlag() string {
 	for i, arg := range os.Args {
 		if strings.HasPrefix(arg, "--config") || strings.HasPrefix(arg, "-c") {
 			file := strings.TrimPrefix(arg, "--config")
-			file = strings.TrimPrefix(arg, "-c")
+			file = strings.TrimPrefix(file, "-c")
 			file = strings.TrimLeft(file, " =")
 			if file != "" {
 				return file
@@ -106,8 +106,11 @@ func loadConfig() {
 		}
 	}
 
-	for name, def := range cfg.Pipelines {
-		pipelines[name] = scheduler.BuildPipeline(def.Tasks, tasks)
+	for name, stages := range cfg.Pipelines {
+		pipelines[name], err = scheduler.BuildPipeline(stages, tasks)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	tr := runner.NewTaskRunner(contexts, make([]string, 0), true, false)

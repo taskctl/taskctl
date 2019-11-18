@@ -49,7 +49,7 @@ func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
 	}
 
 	t.Start = time.Now()
-	fmt.Println(aurora.Sprintf(aurora.Green("Running %s..."), aurora.Green(t.Name)))
+	fmt.Println(aurora.Sprintf(aurora.Green("Running task %s..."), aurora.Green(t.Name)))
 
 	for _, command := range t.Command {
 		cmd := c.createCommand(command)

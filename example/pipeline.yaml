@@ -3,41 +3,40 @@ import:
 
 pipelines:
   test-pipeline:
-    tasks:
-      - task: docker-env
-      - task: docker-compose-env
-        depends_on: [docker-env]
+    - task: docker-env
+    - task: docker-compose-env
+      depends_on: [docker-env]
 
   pipeline-with-error:
-    tasks:
-      - task: b
+    - task: b
 
   pipeline-with-args:
-    tasks:
-      - task: c
+    - task: c
 
   pipeline1:
-    tasks:
-      - task: a
-      - task: c
-        depends_on: a
-      - task: d
-        depends_on: c
-      - task: env
-        depends_on: c
-      - task: e
-        depends_on: [c, env]
+    - task: a
+    - task: c
+      depends_on: a
+    - task: d
+      depends_on: c
+    - task: env
+      depends_on: c
+    - task: e
+      depends_on: [c, env]
 
   pipeline2:
-    tasks:
-      - task: a
-      - task: b
-      - task: e
-        depends_on: ["a", "b"]
+    - task: a
+    - task: b
+    - task: e
+      depends_on: ["a", "b"]
 
   pipeline3:
-    tasks:
-      - task: env
+    - name: stage1
+      task: env
+    - name: stage2
+      task: env
+      depends_on: stage1
+
 tasks:
   docker-env:
     context: alpine-docker

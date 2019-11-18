@@ -50,7 +50,7 @@ type Context struct {
 	mu       sync.Mutex
 }
 
-func BuildContext(def *config.ContextConfig, wcfg *config.WilsonConfig) (*Context, error) {
+func BuildContext(def config.ContextConfig, wcfg *config.WilsonConfig) (*Context, error) {
 	c := &Context{
 		ctxType: def.Type,
 		executable: util.Executable{
@@ -80,7 +80,7 @@ func BuildContext(def *config.ContextConfig, wcfg *config.WilsonConfig) (*Contex
 		},
 		dir:    def.Dir,
 		env:    append(os.Environ(), util.ConvertEnv(def.Env)...),
-		def:    def,
+		def:    &def,
 		up:     util.ReadStringsArray(def.Up),
 		down:   util.ReadStringsArray(def.Down),
 		before: util.ReadStringsArray(def.Before),
@@ -259,7 +259,7 @@ func (c *Context) WithEnvs(env []string) (*Context, error) {
 		def.Env[kv[0]] = kv[1]
 	}
 
-	return BuildContext(&def, &config.Get().WilsonConfig)
+	return BuildContext(def, &config.Get().WilsonConfig)
 }
 
 func (c *Context) Up() {
@@ -311,7 +311,7 @@ func (c *Context) runServiceCommand(command string) error {
 	ca := strings.Split(command, " ")
 	cmd := exec.Command(ca[0], ca[1:]...)
 	cmd.Env = c.Env()
-	cmd.Dir = config.Getcwd()
+	cmd.Dir = util.Getcwd()
 
 	err := cmd.Run()
 	if err != nil {

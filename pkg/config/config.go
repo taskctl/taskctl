@@ -47,7 +47,8 @@ type ContextConfig struct {
 	util.Executable
 }
 
-type PipelineConfig struct {
+type Stage struct {
+	StageName string `yaml:"name"`
 	Task      string
 	DependsOn interface{} `yaml:"depends_on"`
 	Env       map[string]string
@@ -68,12 +69,10 @@ type WatcherConfig struct {
 
 type Config struct {
 	Import    []string
-	Contexts  map[string]*ContextConfig
-	Pipelines map[string]struct {
-		Tasks []*PipelineConfig
-	}
-	Tasks    map[string]*TaskConfig
-	Watchers map[string]*WatcherConfig
+	Contexts  map[string]ContextConfig
+	Pipelines map[string][]Stage
+	Tasks     map[string]TaskConfig
+	Watchers  map[string]WatcherConfig
 
 	WilsonConfig
 }
@@ -104,12 +103,10 @@ func Load(file string) (*Config, error) {
 
 	if cfg == nil {
 		cfg = &Config{
-			Contexts: make(map[string]*ContextConfig),
-			Tasks:    make(map[string]*TaskConfig),
-			Pipelines: make(map[string]struct {
-				Tasks []*PipelineConfig
-			}),
-			Watchers: make(map[string]*WatcherConfig),
+			Contexts:  make(map[string]ContextConfig),
+			Tasks:     make(map[string]TaskConfig),
+			Pipelines: make(map[string][]Stage, 0),
+			Watchers:  make(map[string]WatcherConfig),
 		}
 	}
 
@@ -137,7 +134,7 @@ func Load(file string) (*Config, error) {
 	}
 
 	if _, ok := cfg.Contexts[CONTEXT_TYPE_LOCAL]; !ok {
-		cfg.Contexts[CONTEXT_TYPE_LOCAL] = &ContextConfig{Type: CONTEXT_TYPE_LOCAL}
+		cfg.Contexts[CONTEXT_TYPE_LOCAL] = ContextConfig{Type: CONTEXT_TYPE_LOCAL}
 	}
 
 	log.Debugf("config %s loaded", file)
@@ -192,7 +189,7 @@ func load(file string) (*Config, error) {
 
 func readFile(filename string) (*Config, error) {
 	c := &Config{
-		Contexts: make(map[string]*ContextConfig),
+		Contexts: make(map[string]ContextConfig),
 	}
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -215,15 +212,14 @@ func (c *Config) merge(src *Config) error {
 	return nil
 }
 
-func (pc PipelineConfig) GetDependsOn() (deps []string) {
+func (pc Stage) GetDependsOn() (deps []string) {
 	return util.ReadStringsArray(pc.DependsOn)
 }
 
-func Getcwd() string {
-	cwd, err := os.Getwd()
-	if err != nil {
-		log.Fatalln(err)
+func (pc Stage) Name() string {
+	if pc.StageName != "" {
+		return pc.StageName
 	}
 
-	return cwd
+	return pc.Task
 }

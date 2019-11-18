@@ -40,7 +40,7 @@ type Watcher struct {
 	wg sync.WaitGroup
 }
 
-func BuildWatcher(name string, def *config.WatcherConfig, t *task.Task, r *runner.TaskRunner) (w *Watcher, err error) {
+func BuildWatcher(name string, def config.WatcherConfig, t *task.Task, r *runner.TaskRunner) (w *Watcher, err error) {
 	w = &Watcher{
 		name:     name,
 		r:        r,

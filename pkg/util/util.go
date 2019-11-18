@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"reflect"
 )
@@ -32,11 +33,11 @@ func ReadStringsArray(v interface{}) (arr []string) {
 		return arr
 	}
 
-	iarr, ok := v.([]interface{})
+	iarr, ok := v.([]string)
 	if ok {
 		arr = make([]string, len(iarr))
-		for i, dep := range iarr {
-			arr[i] = dep.(string)
+		for i, el := range iarr {
+			arr[i] = el
 		}
 
 		return arr
@@ -70,4 +71,13 @@ func InArray(arr []string, val string) bool {
 	}
 
 	return false
+}
+
+func Getcwd() string {
+	cwd, err := os.Getwd()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	return cwd
 }

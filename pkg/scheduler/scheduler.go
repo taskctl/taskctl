@@ -46,8 +46,8 @@ func (s *PipelineScheduler) Schedule() {
 		}
 
 		done = true
-		for _, t := range s.pipeline.Nodes() {
-			switch t.ReadStatus() {
+		for name, stage := range s.pipeline.Nodes() {
+			switch stage.Task.ReadStatus() {
 			case task.STATUS_WAITING, task.STATUS_SCHEDULED:
 				done = false
 			case task.STATUS_RUNNING:
@@ -58,14 +58,14 @@ func (s *PipelineScheduler) Schedule() {
 			}
 
 			var ready = true
-			for _, dep := range s.pipeline.To(t.Name) {
-				depTask := s.pipeline.Node(dep)
-				switch depTask.ReadStatus() {
+			for _, dep := range s.pipeline.To(name) {
+				depStage := s.pipeline.Node(dep)
+				switch depStage.Task.ReadStatus() {
 				case task.STATUS_DONE:
 					continue
 				case task.STATUS_ERROR, task.STATUS_CANCELED:
 					ready = false
-					t.UpdateStatus(task.STATUS_CANCELED)
+					stage.Task.UpdateStatus(task.STATUS_CANCELED)
 				default:
 					ready = false
 				}
@@ -73,10 +73,10 @@ func (s *PipelineScheduler) Schedule() {
 
 			if ready {
 				s.wg.Add(1)
-				t.UpdateStatus(task.STATUS_RUNNING)
-				go func(t *task.Task) {
+				stage.Task.UpdateStatus(task.STATUS_RUNNING)
+				go func(t *task.Task, env []string) {
 					defer s.wg.Done()
-					err := s.taskRunner.RunWithEnv(t, s.pipeline.env[t.Name])
+					err := s.taskRunner.RunWithEnv(t, env)
 					if err != nil {
 						log.Error(err)
 						t.UpdateStatus(task.STATUS_ERROR)
@@ -84,7 +84,7 @@ func (s *PipelineScheduler) Schedule() {
 					} else {
 						t.UpdateStatus(task.STATUS_DONE)
 					}
-				}(t)
+				}(&stage.Task, s.pipeline.env[name])
 			}
 		}
 

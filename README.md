@@ -28,14 +28,14 @@ go get -u github.com/trntv/wilson
 ### Tasks
 [Task config](https://github.com/trntv/wilson/blob/master/example/task.yaml)
 ```
-wilson -c task.yaml run task echo-date-local
-wilson -c task.yaml run task echo-date-docker
+wilson -c example/task.yaml run task echo-date-local
+wilson -c example/task.yaml run task echo-date-docker
 ``` 
 ### Pipelines
 [Pipelines config](https://github.com/trntv/wilson/blob/master/example/pipeline.yaml)
 ```
-wilson -c pipeline.yaml run test-pipeline
-wilson -c pipeline.yaml run pipeline1
+wilson -c example/pipeline.yaml run test-pipeline
+wilson -c example/pipeline.yaml run pipeline1
 ```
 
 ### Contexts
@@ -61,20 +61,20 @@ This configuration:
 ```yaml
 pipelines:
     pipeline1:
-        tasks:
-            - task: start task
-            - task: task A
-              depends_on: "start task"
-            - task: task B
-              depends_on: "start task"
-            - task: task C
-              depends_on: "start task"
-            - task: task D
-              depends_on: "task C"
-            - task: task E
-              depends_on: ["task A", "task B", "task D"]
-            - task: finish
-              depends_on: ["task A", "task B", "finish"]
+        - task: start task
+        - task: task A
+          depends_on: "start task"
+        - task: task B
+          depends_on: "start task"
+        - task: task C
+          depends_on: "start task"
+        - task: task D
+          depends_on: "task C"
+        - task: task E
+          depends_on: ["task A", "task B", "task D"]
+        - task: finish
+          depends_on: ["task A", "task B", "finish"]
+          
 tasks:
     start task: ...
     task A: ...

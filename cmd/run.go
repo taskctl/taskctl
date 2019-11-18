@@ -52,8 +52,8 @@ func NewRunCommand() *cobra.Command {
 			rr.Schedule()
 
 			fmt.Println(aurora.Yellow("\r\nSummary:"))
-			for _, t := range pipeline.Nodes() {
-				printSummary(t)
+			for _, stage := range pipeline.Nodes() {
+				printSummary(stage)
 			}
 
 			fmt.Printf(aurora.Sprintf(aurora.Green("\r\nTotal duration: %s\r\n"), rr.End.Sub(rr.Start)))
@@ -69,18 +69,18 @@ func NewRunCommand() *cobra.Command {
 	return cmd
 }
 
-func printSummary(t *task.Task) {
-	switch t.ReadStatus() {
+func printSummary(stage *scheduler.Stage) {
+	switch stage.Task.ReadStatus() {
 	case task.STATUS_DONE:
-		fmt.Printf(aurora.Sprintf(aurora.Green("- Task %s done in %s\r\n"), t.Name, t.Duration()))
+		fmt.Printf(aurora.Sprintf(aurora.Green("- Stage %s done in %s\r\n"), stage.Name, stage.Task.Duration()))
 	case task.STATUS_ERROR:
-		fmt.Printf(aurora.Sprintf(aurora.Red("- Task %s failed in %s\r\n"), t.Name, t.Duration()))
-		fmt.Printf(aurora.Sprintf(aurora.Red("  Error: %s\r\n"), t.ReadLog()))
+		fmt.Printf(aurora.Sprintf(aurora.Red("- Stage %s failed in %s\r\n"), stage.Name, stage.Task.Duration()))
+		fmt.Printf(aurora.Sprintf(aurora.Red("  Error: %s\r\n"), stage.Task.ReadLog()))
 	case task.STATUS_CANCELED:
-		fmt.Printf(aurora.Sprintf(aurora.Gray(12, "- Task %s is cancelled\r\n"), t.Name))
+		fmt.Printf(aurora.Sprintf(aurora.Gray(12, "- Stage %s is cancelled\r\n"), stage.Name))
 	case task.STATUS_WAITING:
-		fmt.Printf(aurora.Sprintf(aurora.Gray(12, "- Task %s skipped\r\n"), t.Name))
+		fmt.Printf(aurora.Sprintf(aurora.Gray(12, "- Stage %s skipped\r\n"), stage.Name))
 	default:
-		log.Fatal(aurora.Sprintf(aurora.Red("- Unexpected status %d for task %s\r\n"), t.Status, t.Name))
+		log.Fatal(aurora.Sprintf(aurora.Red("- Unexpected status %d for task %s in stage\r\n"), stage.Task.Status, stage.Task.Name, stage.Name))
 	}
 }
