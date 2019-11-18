@@ -140,7 +140,7 @@ func Load(file string) (*Config, error) {
 		cfg.Contexts[CONTEXT_TYPE_LOCAL] = &ContextConfig{Type: CONTEXT_TYPE_LOCAL}
 	}
 
-	log.Debugf("config %s loaded", cfg)
+	log.Debugf("config %s loaded", file)
 	return cfg, nil
 }
 
