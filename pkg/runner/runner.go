@@ -54,6 +54,8 @@ func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
 	for _, command := range t.Command {
 		cmd := c.createCommand(command)
 		cmd.Env = append(cmd.Env, env...)
+		cmd.Env = append(cmd.Env, r.env...)
+
 		if t.Dir != "" {
 			cmd.Dir = t.Dir
 		}
