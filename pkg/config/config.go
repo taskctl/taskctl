@@ -3,10 +3,10 @@ package config
 import (
 	"fmt"
 	"github.com/imdario/mergo"
+	log "github.com/sirupsen/logrus"
 	"github.com/trntv/wilson/pkg/util"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
-	"log"
 	"os"
 	"path"
 )
@@ -31,13 +31,20 @@ type WilsonConfig struct {
 	Docker        util.Executable `yaml:"docker"`
 	DockerCompose util.Executable `yaml:"docker-compose"`
 	Kubectl       util.Executable `yaml:"kubectl"`
+	Ssh           util.Executable `yaml:"ssh"`
 }
 
 type ContextConfig struct {
-	Type       string
-	Executable util.Executable
-	Container  Container
-	Env        map[string]string
+	Type      string
+	Dir       string
+	Container Container
+	Ssh       SshConfig
+	Env       map[string]string
+	Up        interface{}
+	Down      interface{}
+	Before    interface{}
+	After     interface{}
+	util.Executable
 }
 
 type PipelineConfig struct {
@@ -68,7 +75,7 @@ type Config struct {
 	Tasks    map[string]*TaskConfig
 	Watchers map[string]*WatcherConfig
 
-	WilsonConfig WilsonConfig
+	WilsonConfig
 }
 
 type Container struct {
@@ -78,10 +85,14 @@ type Container struct {
 	Exec     bool
 	Options  []string
 	Env      map[string]string
-	Up       interface{}
-	Down     interface{}
-	Before   interface{}
-	After    interface{}
+	util.Executable
+}
+
+type SshConfig struct {
+	Options []string
+	User    string
+	Host    string
+	util.Executable
 }
 
 func Load(file string) (*Config, error) {
@@ -129,6 +140,7 @@ func Load(file string) (*Config, error) {
 		cfg.Contexts[CONTEXT_TYPE_LOCAL] = &ContextConfig{Type: CONTEXT_TYPE_LOCAL}
 	}
 
+	log.Debugf("config %s loaded", cfg)
 	return cfg, nil
 }
 
@@ -205,22 +217,6 @@ func (c *Config) merge(src *Config) error {
 
 func (pc PipelineConfig) GetDependsOn() (deps []string) {
 	return util.ReadStringsArray(pc.DependsOn)
-}
-
-func (c Container) GetUp() (up []string) {
-	return util.ReadStringsArray(c.Up)
-}
-
-func (c Container) GetDown() (up []string) {
-	return util.ReadStringsArray(c.Down)
-}
-
-func (c Container) GetBefore() (up []string) {
-	return util.ReadStringsArray(c.Before)
-}
-
-func (c Container) GetAfter() (up []string) {
-	return util.ReadStringsArray(c.After)
 }
 
 func Getcwd() string {

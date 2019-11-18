@@ -1,0 +1,77 @@
+import:
+  - contexts.yaml
+
+pipelines:
+  test-pipeline:
+    tasks:
+      - task: docker-env
+      - task: docker-compose-env
+        depends_on: [docker-env]
+
+  pipeline-with-error:
+    tasks:
+      - task: b
+
+  pipeline-with-args:
+    tasks:
+      - task: c
+
+  pipeline1:
+    tasks:
+      - task: a
+      - task: c
+        depends_on: a
+      - task: d
+        depends_on: c
+      - task: env
+        depends_on: c
+      - task: e
+        depends_on: [c, env]
+
+  pipeline2:
+    tasks:
+      - task: a
+      - task: b
+      - task: e
+        depends_on: ["a", "b"]
+
+  pipeline3:
+    tasks:
+      - task: env
+tasks:
+  docker-env:
+    context: alpine-docker
+    command:
+      - env
+
+  docker-compose-env:
+    context: alpine-docker-compose
+    command:
+      - env
+  a:
+    command:
+      - echo "A"
+
+  b:
+    command:
+      - ">&2 echo \"error\" && exit 1"
+
+  c:
+    command:
+      - echo "C - ${ARGS}"
+
+  d:
+    command:
+      - echo "D"
+
+  e:
+    context: alpine-docker
+    command:
+      - echo "E"
+    env:
+      AAA: BBB
+
+  env:
+    command:
+      - env
+

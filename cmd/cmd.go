@@ -7,6 +7,7 @@ import (
 	"github.com/trntv/wilson/pkg/runner"
 	"github.com/trntv/wilson/pkg/scheduler"
 	"github.com/trntv/wilson/pkg/task"
+	"github.com/trntv/wilson/pkg/watch"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -20,6 +21,7 @@ var configFile string
 var tasks = make(map[string]*task.Task)
 var contexts = make(map[string]*runner.Context)
 var pipelines = make(map[string]*scheduler.Pipeline)
+var watchers = make(map[string]*watch.Watcher)
 
 var cancel = make(chan struct{})
 var done = make(chan bool)
@@ -47,8 +49,9 @@ func NewRootCommand() *cobra.Command {
 	cmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "config file to use")
 	cmd.PersistentFlags().BoolVarP(&quiet, "silent", "q", false, "silence output")
 
-	cmd.AddCommand(NewWatchCommand())
+	cmd.AddCommand(NewListCommand())
 	cmd.AddCommand(NewRunCommand())
+	cmd.AddCommand(NewWatchCommand())
 	cmd.AddCommand(NewCompletionsCommand(cmd))
 
 	return cmd
@@ -66,8 +69,9 @@ func Abort() {
 
 func parseConfigFlag() string {
 	for i, arg := range os.Args {
-		if strings.HasPrefix(arg, "--config") {
+		if strings.HasPrefix(arg, "--config") || strings.HasPrefix(arg, "-c") {
 			file := strings.TrimPrefix(arg, "--config")
+			file = strings.TrimPrefix(arg, "-c")
 			file = strings.TrimLeft(file, " =")
 			if file != "" {
 				return file
@@ -96,7 +100,7 @@ func loadConfig() {
 	}
 
 	for name, def := range cfg.Contexts {
-		contexts[name], err = runner.BuildContext(def)
+		contexts[name], err = runner.BuildContext(def, &config.Get().WilsonConfig)
 		if err != nil {
 			log.Fatalf("context %s build failed: %v", name, err)
 		}
@@ -105,22 +109,12 @@ func loadConfig() {
 	for name, def := range cfg.Pipelines {
 		pipelines[name] = scheduler.BuildPipeline(def.Tasks, tasks)
 	}
-}
 
-func mapNames(m interface{}) (list []string) {
-	var mm map[string]interface{}
-	mm, ok := m.(map[string]interface{})
-	if !ok {
-		return list
+	tr := runner.NewTaskRunner(contexts, make([]string, 0), true, false)
+	for name, def := range cfg.Watchers {
+		watchers[name], err = watch.BuildWatcher(name, def, tasks[def.Task], tr)
+		if err != nil {
+			log.Fatalf("watcher %s build failed: %v", name, err)
+		}
 	}
-
-	var i int
-	list = make([]string, len(mm))
-
-	for name := range mm {
-		list[i] = name
-		i++
-	}
-
-	return list
 }

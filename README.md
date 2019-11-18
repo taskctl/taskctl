@@ -24,106 +24,31 @@ curl -L https://github.com/trntv/wilson/releases/latest/download/wilson-linux-am
 go get -u github.com/trntv/wilson
 ```
 
-## Full config example
-```yaml
-contexts:
-    local: # will be created automatically if not set
-        type: local
-        executable:
-          bin: /bin/bash
-          args: 
-            - -c
-        env:
-          VAR_NAME: VAR_VALUE
-
-    docker-context-name:
-        type: container
-        container:
-          provider: docker
-          image: alpine:latest
-          options:
-            - -v /folder:/folder
-            ...
-          exec: false
-          env:
-            VAR_NAME: VAR_VALUE
-          before: SOME COMMAND TO RUN BEFORE TASK 
-          after: SOME COMMAND TO RUN WHEN TASK FINISHED SUCCESSFULLY 
-        env:
-          VAR_NAME: VAR_VALUE # eg. "DOCKER_HOST"
-    
-    docker-compose-context-name:
-        type: container
-        container:
-          provider: docker-compose
-          name: api
-          exec: true
-          options:
-            - --user=root
-          up: docker-compose up -d --build --force-recreate api # Executes once before first context usage
-          down: docker-compose down api # Executes once when all tasks done
-        env:
-          VAR_NAME: VAR_VALUE # eg."COMPOSE_FILE"
-
-pipelines:
-  pipeline1:
-    - task: task1
-    - task: task2
-      depends_on: task1
-    - task: task3 
-      depends_on: task1 // task2 and task3 will run in parallel when task1 finished
-    - task: task4
-      depends_on: [task1, task2]
-      env:
-        VAR_NAME: VAR_VALUE # override task env
-
-tasks:
-    task1:
-      context: local # optional. "local" is context by default
-      command:
-        - echo ${ARGS} # ARGS is populated by arguments passed to task. eg. wilson run task task1 -- arg1 arg2
-        - echo "My name is task1"
-      env:
-        VAR_NAME: VAR_VALUE
-      dir: /task/working/dir # current directory by default
-
-    task2:
-      context: docker-context-name
-      command:
-        - echo "Hello from container"
-      env:
-        VAR_NAME: VAR_VALUE
-
-    task3:
-      context: docker-compose-context-name # local is default context
-      command:
-        - echo "Hello from container created by docker-compose"
-      env:
-        VAR_NAME: VAR_VALUE
-
-    task-to-be-triggered-by-watcher:
-      command:
-        - echo ${EVENT_NAME} ${EVENT_PATH}
-
-watchers:
-    watcher1:
-      watch: ["README.*", "pkg/**/*.go"]
-      events: [create, write, remove, rename, chmod]
-      task: task1
+## Examples
+### Tasks
+[Task config](https://github.com/trntv/wilson/blob/master/example/task.yaml)
+```
+wilson -c task.yaml run task echo-date-local
+wilson -c task.yaml run task echo-date-docker
+``` 
+### Pipelines
+[Pipelines config](https://github.com/trntv/wilson/blob/master/example/pipeline.yaml)
+```
+wilson -c pipeline.yaml run test-pipeline
+wilson -c pipeline.yaml run pipeline1
 ```
 
-## Tasks
+### Contexts
+[Contexts config](https://github.com/trntv/wilson/blob/master/example/contexts.yaml)
+
+### Watchers
+[Watchers config](https://github.com/trntv/wilson/blob/master/example/contexts.yaml)
 ```
-tasks:
-  task-name:
-    context: api
-    command:
-      - some build command
-      - some other build command
-    env:
-        BUILD_ENV: dev
-        OTHER_VAR: 42  
+wilson -c watch.yaml --debug watch test-watcher test-watcher-2
 ```
+
+### Full config
+[Full config example](https://github.com/trntv/wilson/blob/master/example/contexts.yaml)
 
 ## Contexts
 Available context types:
@@ -169,39 +94,6 @@ start task --- |--- task B --------------|--- task E --- finish
 
 ## Watchers
 WIF*
-
-## TODO
- - [x] logrus, zap? plain formatting for log entries
- - [x] skip error when root config file not found
- - [x] pass task env to container context
- - [x] move scheduler to separate package
- - [x] global config
- - [x] pipelines
- - [x] env
- - [x] command env processing
- - [x] import file
- - [ ] kubectl context
- - [ ] ssh context
- - [ ] autocomplete
- - [ ] import path
- - [ ] import url
- - [ ] check for cycles in pipelines
- - [ ] tests
- - [ ] graceful shutdown +context specific
- - [x] docker context
- - [ ] visualize pipeline (ASCII)
- - [ ] links (pipeline-pipeline, task-task)
- - [ ] task timeout
- - [ ] raw/silence output in task definition
- - [ ] context preparation
- - [ ] add "--set" flag to replace config params
- - [x] better concurrent tasks outputs handling (decorating?)
- - [X] brew formula
- - [ ] write log file on error
- - [ ] ui dashboard
- - [ ] task and command as string
- - [x] task env in pipeline definition
- - [ ] set envs in []string format
 
 ## Why "Wilson"?
 https://en.wikipedia.org/wiki/Cast_Away#Wilson_the_volleyball

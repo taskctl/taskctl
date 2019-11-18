@@ -91,7 +91,7 @@ func (w *Watcher) Run() (err error) {
 				}
 				w.wg.Add(1)
 				go w.handle(event)
-				log.Debugf("watcher %; event %s; file: %s", w.name, event.Op.String(), event.Name)
+				log.Debugf("watcher %s; event %s; file: %s", w.name, event.Op.String(), event.Name)
 				if event.Op == fsnotify.Rename {
 					err = w.fsw.Add(event.Name)
 					if err != nil {

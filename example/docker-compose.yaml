@@ -3,3 +3,4 @@ version: "3.7"
 services:
   alpine:
     image: alpine:latest
+    command: tail -f /dev/null

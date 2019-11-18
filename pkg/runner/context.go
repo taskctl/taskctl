@@ -1,144 +1,235 @@
 package runner
 
 import (
-	"errors"
+	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/trntv/wilson/pkg/config"
 	"github.com/trntv/wilson/pkg/util"
-	"log"
 	"os"
 	"os/exec"
 	"strings"
 	"sync"
 )
 
+type container struct {
+	provider   string
+	name       string
+	image      string
+	exec       bool
+	options    []string
+	env        []string
+	executable util.Executable
+}
+
+type ssh struct {
+	user       string
+	host       string
+	options    []string
+	executable util.Executable
+}
+
 type Context struct {
-	Type       string
+	ctxType    string
 	executable util.Executable
 	env        []string
 	def        *config.ContextConfig
+	dir        string
+
+	container container
+	ssh       ssh
 
 	up     []string
 	down   []string
 	before []string
 	after  []string
 
-	once sync.Once
+	scheduledForCleanup bool
+
+	onceUp   sync.Once
+	onceDown sync.Once
+	mu       sync.Mutex
 }
 
-type contextBuilder struct {
-	def *config.ContextConfig
-	w   *config.WilsonConfig
-}
-
-func BuildContext(def *config.ContextConfig) (*Context, error) {
-	contextBuilder := &contextBuilder{def: def, w: &config.Get().WilsonConfig}
-
-	return contextBuilder.build()
-}
-
-func (cb *contextBuilder) build() (*Context, error) {
+func BuildContext(def *config.ContextConfig, wcfg *config.WilsonConfig) (*Context, error) {
 	c := &Context{
-		Type: cb.def.Type,
+		ctxType: def.Type,
 		executable: util.Executable{
-			Bin:  cb.def.Executable.Bin,
-			Args: make([]string, 0),
+			Bin:  def.Bin,
+			Args: def.Args,
 		},
-		env: append(os.Environ(), util.ConvertEnv(cb.def.Env)...),
-		def: cb.def,
+		container: container{
+			provider: def.Container.Provider,
+			name:     def.Container.Name,
+			image:    def.Container.Image,
+			exec:     def.Container.Exec,
+			options:  def.Container.Options,
+			env:      util.ConvertEnv(def.Container.Env),
+			executable: struct {
+				Bin  string
+				Args []string
+			}{Bin: def.Container.Bin, Args: def.Container.Args},
+		},
+		ssh: ssh{
+			user:    def.Ssh.User,
+			host:    def.Ssh.Host,
+			options: def.Ssh.Options,
+			executable: struct {
+				Bin  string
+				Args []string
+			}{Bin: def.Ssh.Bin, Args: def.Ssh.Options},
+		},
+		dir:    def.Dir,
+		env:    append(os.Environ(), util.ConvertEnv(def.Env)...),
+		def:    def,
+		up:     util.ReadStringsArray(def.Up),
+		down:   util.ReadStringsArray(def.Down),
+		before: util.ReadStringsArray(def.Before),
+		after:  util.ReadStringsArray(def.After),
 	}
 
-	switch cb.def.Type {
-	case config.CONTEXT_TYPE_LOCAL:
-		if c.executable.Bin != "" {
-			break
-		}
-
-		if cb.w.Shell.Bin != "" {
-			c.executable.Bin = cb.w.Shell.Bin
-			c.executable.Args = cb.w.Shell.Args
-		} else {
-			setDefaultShell(&c.executable)
-		}
-
+	switch c.ctxType {
 	case config.CONTEXT_TYPE_CONTAINER:
-		switch cb.def.Container.Provider {
-		case config.CONTEXT_CONTAINER_PROVIDER_DOCKER, config.CONTEXT_CONTAINER_PROVIDER_DOCKER_COMPOSE:
-			err := cb.buildDockerContext(c)
-			if err != nil {
-				return nil, err
+		switch c.container.provider {
+		case config.CONTEXT_CONTAINER_PROVIDER_DOCKER:
+			if c.container.executable.Bin == "" && wcfg.Docker.Bin != "" {
+				c.container.executable.Bin = wcfg.Docker.Bin
+			} else {
+				c.container.executable.Bin = "docker"
+			}
+			if len(c.container.executable.Args) == 0 {
+				c.container.executable.Args = wcfg.Docker.Args
+			}
+		case config.CONTEXT_CONTAINER_PROVIDER_DOCKER_COMPOSE:
+			if c.container.executable.Bin == "" && wcfg.DockerCompose.Bin != "" {
+				c.container.executable.Bin = wcfg.DockerCompose.Bin
+			} else {
+				c.container.executable.Bin = "docker-compose"
+			}
+			if len(c.container.executable.Args) == 0 {
+				c.container.executable.Args = wcfg.DockerCompose.Args
 			}
 		case config.CONTEXT_CONTAINER_PROVIDER_KUBECTL:
-			return nil, errors.New("kubectl provider not implemented")
+			if c.container.executable.Bin == "" && wcfg.Kubectl.Bin != "" {
+				c.container.executable.Bin = wcfg.Kubectl.Bin
+			} else {
+				c.container.executable.Bin = "kubectl"
+			}
+			if len(c.container.executable.Args) == 0 {
+				c.container.executable.Args = wcfg.Kubectl.Args
+			}
+		}
+	case config.CONTEXT_TYPE_REMOTE:
+		if c.ssh.executable.Bin == "" && wcfg.Ssh.Bin != "" {
+			c.ssh.executable.Bin = wcfg.Ssh.Bin
+		} else {
+			c.ssh.executable.Bin = "ssh"
 		}
 
-	default:
-		return nil, errors.New("context type not implemented")
+		if len(c.ssh.executable.Args) == 0 {
+			c.ssh.executable.Args = wcfg.Ssh.Args
+		}
+
+		c.ssh.executable.Args = append(c.ssh.executable.Args, "-T")
+
+		if c.ssh.user != "" {
+			c.ssh.executable.Args = append(c.ssh.executable.Args, fmt.Sprintf("%s@%s", c.ssh.user, c.ssh.host))
+		} else {
+			c.ssh.executable.Args = append(c.ssh.executable.Args, c.ssh.host)
+		}
+	}
+
+	if c.dir == "" {
+		var err error
+		c.dir, err = os.Getwd()
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	if c.executable.Bin == "" {
-		return nil, errors.New("invalid context config")
+		setDefaultShell(&c.executable)
 	}
 
 	return c, nil
 }
 
-func (cb *contextBuilder) buildDockerContext(c *Context) error {
-	bin := cb.def.Executable.Bin
-	if bin == "" {
-		setDefaultShell(&cb.def.Executable)
-		bin = cb.def.Executable.Bin
-	}
-	args := cb.def.Executable.Args
+func (c *Context) buildLocalCommand(command string) *exec.Cmd {
+	cmd := exec.Command(c.executable.Bin, c.executable.Args...)
+	cmd.Args = append(cmd.Args, command)
+	cmd.Env = c.env
+	cmd.Dir = c.dir
 
-	switch cb.def.Container.Provider {
+	return cmd
+}
+
+func (c *Context) buildDockerCommand(command string) *exec.Cmd {
+	cmd := exec.Command(c.container.executable.Bin, c.container.executable.Args...)
+	cmd.Env = c.env
+
+	switch c.container.provider {
 	case config.CONTEXT_CONTAINER_PROVIDER_DOCKER:
-		if cb.w.Docker.Bin != "" {
-			c.executable.Bin = cb.w.Docker.Bin
+		if c.container.exec {
+			cmd.Args = append(cmd.Args, "exec")
+			for _, v := range c.container.env {
+				cmd.Args = append(cmd.Args, "-e", v)
+			}
+			cmd.Args = append(cmd.Args, c.container.options...)
+			cmd.Args = append(cmd.Args, c.container.name)
 		} else {
-			c.executable.Bin = "docker"
-		}
-
-		c.executable.Args = cb.w.Docker.Args
-		c.executable.Args = append(c.executable.Args, cb.def.Container.Options...)
-
-		if cb.def.Container.Exec {
-			c.executable.Args = append(c.executable.Args, "exec")
-			c.executable.Args = append(c.executable.Args, cb.def.Container.Name)
-		} else {
-			c.executable.Args = append(c.executable.Args, "run", "--rm")
-			c.executable.Args = append(c.executable.Args, cb.def.Container.Image)
-		}
-
-		for _, v := range util.ConvertEnv(cb.def.Container.Env) {
-			c.executable.Args = append(c.executable.Args, "-e", v)
+			cmd.Args = append(cmd.Args, "run", "--rm")
+			if c.container.name != "" {
+				cmd.Args = append(cmd.Args, "--name", c.container.name)
+			}
+			for _, v := range c.container.env {
+				cmd.Args = append(cmd.Args, "-e", v)
+			}
+			cmd.Args = append(cmd.Args, c.container.options...)
+			cmd.Args = append(cmd.Args, c.container.image)
 		}
 	case config.CONTEXT_CONTAINER_PROVIDER_DOCKER_COMPOSE:
-		if cb.w.DockerCompose.Bin != "" {
-			c.executable.Bin = cb.w.DockerCompose.Bin
+		if c.container.exec {
+			cmd.Args = append(cmd.Args, "exec", "-T")
 		} else {
-			c.executable.Bin = "docker-compose"
+			cmd.Args = append(cmd.Args, "run", "--rm")
 		}
 
-		c.executable.Args = cb.w.DockerCompose.Args
-		c.executable.Args = append(c.executable.Args, cb.def.Container.Options...)
-
-		if cb.def.Container.Exec {
-			c.executable.Args = append(c.executable.Args, "exec", "-T")
-		} else {
-			c.executable.Args = append(c.executable.Args, "run", "--rm")
+		cmd.Args = append(cmd.Args, c.container.options...)
+		for _, v := range c.container.env {
+			cmd.Args = append(cmd.Args, "-e", v)
 		}
 
-		for _, v := range util.ConvertEnv(cb.def.Container.Env) {
-			c.executable.Args = append(c.executable.Args, "-e", v)
-		}
-
-		c.executable.Args = append(c.executable.Args, cb.def.Container.Name)
+		cmd.Args = append(cmd.Args, c.container.name)
 	}
 
-	c.executable.Args = append(c.executable.Args, bin)
-	c.executable.Args = append(c.executable.Args, args...)
+	cmd.Args = append(cmd.Args, c.executable.Bin)
+	cmd.Args = append(cmd.Args, c.executable.Args...)
+	cmd.Args = append(cmd.Args, command)
 
-	return nil
+	return cmd
+}
+
+func (c *Context) buildKubectlCommand(command string) *exec.Cmd {
+	cmd := exec.Command(c.container.executable.Bin, c.container.executable.Args...)
+	cmd.Env = append(c.env, c.container.env...)
+
+	cmd.Args = append(cmd.Args, "exec", c.container.name)
+	cmd.Args = append(cmd.Args, c.container.options...)
+	cmd.Args = append(cmd.Args, "--")
+	cmd.Args = append(cmd.Args, c.executable.Bin)
+	cmd.Args = append(cmd.Args, c.executable.Args...)
+	cmd.Args = append(cmd.Args, fmt.Sprintf("%s %s", strings.Join(c.container.env, " "), command))
+
+	return cmd
+}
+
+func (c *Context) buildRemoteCommand(command string) *exec.Cmd {
+	cmd := exec.Command(c.ssh.executable.Bin, c.ssh.executable.Args...)
+	cmd.Args = append(cmd.Args, c.executable.Bin)
+	cmd.Args = append(cmd.Args, c.executable.Args...)
+	cmd.Args = append(cmd.Args, command)
+	cmd.Env = c.env
+
+	return cmd
 }
 
 func setDefaultShell(e *util.Executable) {
@@ -168,11 +259,11 @@ func (c *Context) WithEnvs(env []string) (*Context, error) {
 		def.Env[kv[0]] = kv[1]
 	}
 
-	return BuildContext(&def)
+	return BuildContext(&def, &config.Get().WilsonConfig)
 }
 
 func (c *Context) Up() {
-	c.once.Do(func() {
+	c.onceUp.Do(func() {
 		for _, command := range c.up {
 			err := c.runServiceCommand(command)
 			if err != nil {
@@ -183,11 +274,11 @@ func (c *Context) Up() {
 }
 
 func (c *Context) Down() {
-	c.once.Do(func() {
+	c.onceDown.Do(func() {
 		for _, command := range c.down {
 			err := c.runServiceCommand(command)
 			if err != nil {
-				log.Fatal(err)
+				log.Error(err)
 			}
 		}
 	})
@@ -216,6 +307,7 @@ func (c *Context) After() error {
 }
 
 func (c *Context) runServiceCommand(command string) error {
+	log.Debugf("running service context service command: %s", command)
 	ca := strings.Split(command, " ")
 	cmd := exec.Command(ca[0], ca[1:]...)
 	cmd.Env = c.Env()
@@ -227,4 +319,31 @@ func (c *Context) runServiceCommand(command string) error {
 	}
 
 	return nil
+}
+
+func (c *Context) createCommand(command string) *exec.Cmd {
+	switch c.ctxType {
+	case config.CONTEXT_TYPE_LOCAL:
+		return c.buildLocalCommand(command)
+	case config.CONTEXT_TYPE_CONTAINER:
+		switch c.container.provider {
+		case config.CONTEXT_CONTAINER_PROVIDER_DOCKER, config.CONTEXT_CONTAINER_PROVIDER_DOCKER_COMPOSE:
+			return c.buildDockerCommand(command)
+		case config.CONTEXT_CONTAINER_PROVIDER_KUBECTL:
+			return c.buildKubectlCommand(command)
+		}
+	case config.CONTEXT_TYPE_REMOTE:
+		return c.buildRemoteCommand(command)
+	default:
+		log.Fatal("unknown context type")
+	}
+
+	return nil
+}
+
+func (c *Context) ScheduleForCleanup() {
+	c.mu.Lock()
+	c.scheduledForCleanup = true
+	c.mu.Unlock()
+
 }

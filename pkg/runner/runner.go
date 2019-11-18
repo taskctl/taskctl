@@ -6,10 +6,8 @@ import (
 	"fmt"
 	"github.com/logrusorgru/aurora"
 	log "github.com/sirupsen/logrus"
-	"github.com/trntv/wilson/pkg/config"
 	"github.com/trntv/wilson/pkg/task"
 	"os/exec"
-	"sync"
 	"time"
 )
 
@@ -20,17 +18,13 @@ type TaskRunner struct {
 	output *taskOutput
 	ctx    context.Context
 	cancel context.CancelFunc
-
-	usedContextLock sync.Mutex
-	usedContexts    map[string]*Context
 }
 
 func NewTaskRunner(contexts map[string]*Context, env []string, raw, quiet bool) *TaskRunner {
 	tr := &TaskRunner{
-		contexts:     contexts,
-		output:       NewTaskOutput(raw, quiet),
-		env:          env,
-		usedContexts: make(map[string]*Context),
+		contexts: contexts,
+		output:   NewTaskOutput(raw, quiet),
+		env:      env,
 	}
 
 	tr.ctx, tr.cancel = context.WithCancel(context.Background())
@@ -54,25 +48,15 @@ func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
 		return err
 	}
 
-	env = append(env, c.Env()...)
-	env = append(env, t.Env...)
-
-	cwd := t.Dir
-	if cwd == "" {
-		cwd = config.Getcwd()
-	}
-
 	t.Start = time.Now()
 	fmt.Println(aurora.Sprintf(aurora.Green("Running %s..."), aurora.Green(t.Name)))
 
-	exargs := c.Args()
-
 	for _, command := range t.Command {
-		args := append(exargs, command)
-
-		cmd := exec.Command(c.Bin(), args...)
-		cmd.Dir = cwd
-		cmd.Env = env
+		cmd := c.createCommand(command)
+		cmd.Env = append(cmd.Env, env...)
+		if t.Dir != "" {
+			cmd.Dir = t.Dir
+		}
 
 		stdout, err := cmd.StdoutPipe()
 		if err != nil {
@@ -158,25 +142,28 @@ func (r *TaskRunner) Cancel() {
 	r.cancel()
 }
 
-func (r *TaskRunner) contextForTask(t *task.Task) (*Context, error) {
+func (r *TaskRunner) contextForTask(t *task.Task) (c *Context, err error) {
 	c, ok := r.contexts[t.Context]
 	if !ok {
 		return nil, errors.New("no such context")
 	}
 
-	r.usedContextLock.Lock()
-	r.usedContexts[t.Context] = c
-	r.usedContextLock.Unlock()
-
 	if len(t.Env) > 0 {
-		return c.WithEnvs(t.Env)
+		c, err = c.WithEnvs(t.Env)
+		if err != nil {
+			return nil, err
+		}
 	}
+
+	c.ScheduleForCleanup()
 
 	return c, nil
 }
 
 func (r *TaskRunner) DownContexts() {
-	for _, c := range r.usedContexts {
-		c.Down()
+	for _, c := range r.contexts {
+		if c.scheduledForCleanup {
+			c.Down()
+		}
 	}
 }

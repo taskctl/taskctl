@@ -1,0 +1,12 @@
+import:
+  - contexts.yaml
+
+tasks:
+  echo-date-local:
+    command:
+      - date
+
+  echo-date-docker:
+    context: alpine-docker
+    command:
+      - date

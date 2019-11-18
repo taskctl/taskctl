@@ -5,8 +5,9 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/trntv/wilson/pkg/runner"
+	"github.com/trntv/wilson/pkg/util"
 	"github.com/trntv/wilson/pkg/watch"
+	"strings"
 	"sync"
 )
 
@@ -19,28 +20,20 @@ func NewWatchCommand() *cobra.Command {
 				return errors.New("no watcher specified")
 			}
 
-			_, ok := tasks[args[0]]
-			if !ok {
-				return fmt.Errorf("unknown watcher. Available: \r\n\t%s", mapNames(cfg.Watchers))
+			for _, arg := range args {
+				_, ok := watchers[arg]
+				if !ok {
+					return fmt.Errorf("unknown watcher. Available: %s\r\n", strings.Join(util.ListNames(cfg.Watchers), ", "))
+				}
 			}
 
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			tr := runner.NewTaskRunner(contexts, make([]string, 0), true, false)
-
 			var wg sync.WaitGroup
-			for _, wname := range args {
-				def := cfg.Watchers[wname]
-				task, ok := tasks[def.Task]
-				if !ok {
-					log.Fatal("task for watcher not found")
-				}
-				w, err := watch.BuildWatcher(wname, def, task, tr)
-				if err != nil {
-					log.Fatal(err)
-				}
-
+			for _, name := range args {
+				wg.Add(1)
+				w := watchers[name]
 				go func(w *watch.Watcher) {
 					select {
 					case <-cancel:
@@ -50,14 +43,14 @@ func NewWatchCommand() *cobra.Command {
 				}(w)
 
 				go func(w *watch.Watcher) {
-					wg.Add(1)
 					defer wg.Done()
 
-					err = w.Run()
+					err := w.Run()
 					if err != nil {
 						log.Error(err)
 					}
 				}(w)
+
 			}
 
 			wg.Wait()

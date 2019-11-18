@@ -6,14 +6,14 @@ tasks:
   test-watch-task-2:
     command:
       - echo TASK1 $EVENT_NAME $EVENT_PATH
-      -
+
 watchers:
   test-watcher:
     events: ["write", "rename"]
-    watch: ["README.*"]
+    watch: ["docker-compose.yaml"]
     task: test-watch-task
 
   test-watcher-2:
     events: ["write", "rename", "create"]
-    watch: ["bin/"]
+    watch: ["*.yaml"]
     task: test-watch-task-2

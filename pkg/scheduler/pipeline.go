@@ -1,6 +1,7 @@
 package scheduler
 
 import (
+	"errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/trntv/wilson/pkg/config"
 	"github.com/trntv/wilson/pkg/task"
@@ -35,6 +36,10 @@ func BuildPipeline(stages []*config.PipelineConfig, tasks map[string]*task.Task)
 		}
 
 		graph.env[stage.Task] = util.ConvertEnv(stage.Env)
+
+		if err := graph.dfs(stage.Task, make(map[string]bool)); err != nil {
+			log.Fatal("cyclic graph")
+		}
 	}
 
 	return graph
@@ -69,4 +74,20 @@ func (p *Pipeline) From(name string) []string {
 
 func (p *Pipeline) To(name string) []string {
 	return p.to[name]
+}
+
+func (p *Pipeline) dfs(t string, visited map[string]bool) error {
+	if visited[t] == true {
+		return errors.New("cycle detected")
+	}
+	visited[t] = true
+
+	for _, next := range p.from[t] {
+		err := p.dfs(next, visited)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

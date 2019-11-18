@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"os"
+	"reflect"
 )
 
 type Executable struct {
@@ -47,4 +48,26 @@ func ReadStringsArray(v interface{}) (arr []string) {
 	}
 
 	return arr
+}
+
+func ListNames(m interface{}) (list []string) {
+	v := reflect.ValueOf(m)
+	if v.Kind() != reflect.Map {
+		return list
+	}
+
+	for _, k := range v.MapKeys() {
+		list = append(list, k.String())
+	}
+	return list
+}
+
+func InArray(arr []string, val string) bool {
+	for _, v := range arr {
+		if v == val {
+			return true
+		}
+	}
+
+	return false
 }
