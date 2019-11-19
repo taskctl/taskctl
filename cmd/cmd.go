@@ -19,7 +19,7 @@ var cfg *config.Config
 var configFile string
 
 var tasks = make(map[string]*task.Task)
-var contexts = make(map[string]*runner.Context)
+var contexts = make(map[string]*runner.ExecutionContext)
 var pipelines = make(map[string]*scheduler.Pipeline)
 var watchers = make(map[string]*watch.Watcher)
 

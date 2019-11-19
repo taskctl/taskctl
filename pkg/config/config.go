@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"time"
 )
 
 const (
@@ -20,7 +21,6 @@ const (
 	CONTEXT_CONTAINER_PROVIDER_DOCKER         = "docker"
 	CONTEXT_CONTAINER_PROVIDER_DOCKER_COMPOSE = "docker-compose"
 	CONTEXT_CONTAINER_PROVIDER_KUBECTL        = "kubectl"
-	CONTEX_REMOTE_PROVIDER_SSH                = "ssh"
 )
 
 var loaded = make(map[string]bool)
@@ -59,6 +59,7 @@ type TaskConfig struct {
 	Context string
 	Env     map[string]string
 	Dir     string
+	Timeout *time.Duration
 }
 
 type WatcherConfig struct {

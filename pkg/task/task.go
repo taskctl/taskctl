@@ -23,6 +23,7 @@ type Task struct {
 	Context string
 	Env     []string
 	Dir     string
+	Timeout *time.Duration
 
 	Name   string
 	Status int32
@@ -32,22 +33,24 @@ type Task struct {
 	Stdout io.ReadCloser
 	Stderr io.ReadCloser
 
-	stderrLastLine string
+	log []byte
 
 	mu sync.Mutex
 }
 
 func BuildTask(def config.TaskConfig) *Task {
 	t := &Task{
-		Env: make([]string, 0),
+		Command: def.Command,
+		Env:     make([]string, 0),
+		Dir:     def.Dir,
+		Timeout: def.Timeout,
 	}
-	t.Command = def.Command
+
 	t.Context = def.Context
 	t.Env = util.ConvertEnv(def.Env)
 	if t.Context == "" {
 		t.Context = "local"
 	}
-	t.Dir = def.Dir
 
 	return t
 }
@@ -77,12 +80,12 @@ func (t *Task) Duration() time.Duration {
 	return t.End.Sub(t.Start)
 }
 
-func (t *Task) WiteLog(l string) {
-	t.stderrLastLine = l
+func (t *Task) WiteLog(l []byte) {
+	t.log = l
 }
 
-func (t *Task) ReadLog() string {
-	return t.stderrLastLine
+func (t *Task) ReadLog() []byte {
+	return t.log
 }
 
 func (t *Task) SetStdout(stdout io.ReadCloser) {

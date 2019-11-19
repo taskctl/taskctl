@@ -79,6 +79,7 @@ tasks:
     env:
       VAR_NAME: VAR_VALUE
     dir: /task/working/dir # current directory by default
+    timeout: 10s
 
   task2:
     context: docker-context-name

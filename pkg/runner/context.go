@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"context"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/trntv/wilson/pkg/config"
@@ -28,7 +29,7 @@ type ssh struct {
 	executable util.Executable
 }
 
-type Context struct {
+type ExecutionContext struct {
 	ctxType    string
 	executable util.Executable
 	env        []string
@@ -50,8 +51,8 @@ type Context struct {
 	mu       sync.Mutex
 }
 
-func BuildContext(def config.ContextConfig, wcfg *config.WilsonConfig) (*Context, error) {
-	c := &Context{
+func BuildContext(def config.ContextConfig, wcfg *config.WilsonConfig) (*ExecutionContext, error) {
+	c := &ExecutionContext{
 		ctxType: def.Type,
 		executable: util.Executable{
 			Bin:  def.Bin,
@@ -162,8 +163,8 @@ func BuildContext(def config.ContextConfig, wcfg *config.WilsonConfig) (*Context
 	return c, nil
 }
 
-func (c *Context) buildLocalCommand(command string) *exec.Cmd {
-	cmd := exec.Command(c.executable.Bin, c.executable.Args...)
+func (c *ExecutionContext) buildLocalCommand(command string, ctx context.Context) *exec.Cmd {
+	cmd := exec.CommandContext(ctx, c.executable.Bin, c.executable.Args...)
 	cmd.Args = append(cmd.Args, command)
 	cmd.Env = c.env
 	cmd.Dir = c.dir
@@ -171,9 +172,10 @@ func (c *Context) buildLocalCommand(command string) *exec.Cmd {
 	return cmd
 }
 
-func (c *Context) buildDockerCommand(command string) *exec.Cmd {
-	cmd := exec.Command(c.container.executable.Bin, c.container.executable.Args...)
+func (c *ExecutionContext) buildDockerCommand(command string, ctx context.Context) *exec.Cmd {
+	cmd := exec.CommandContext(ctx, c.container.executable.Bin, c.container.executable.Args...)
 	cmd.Env = c.env
+	cmd.Dir = c.dir
 
 	switch c.container.provider {
 	case config.CONTEXT_CONTAINER_PROVIDER_DOCKER:
@@ -217,9 +219,10 @@ func (c *Context) buildDockerCommand(command string) *exec.Cmd {
 	return cmd
 }
 
-func (c *Context) buildKubectlCommand(command string) *exec.Cmd {
-	cmd := exec.Command(c.container.executable.Bin, c.container.executable.Args...)
+func (c *ExecutionContext) buildKubectlCommand(command string, ctx context.Context) *exec.Cmd {
+	cmd := exec.CommandContext(ctx, c.container.executable.Bin, c.container.executable.Args...)
 	cmd.Env = append(c.env, c.container.env...)
+	cmd.Dir = c.dir
 
 	cmd.Args = append(cmd.Args, "exec", c.container.name)
 	cmd.Args = append(cmd.Args, c.container.options...)
@@ -231,12 +234,14 @@ func (c *Context) buildKubectlCommand(command string) *exec.Cmd {
 	return cmd
 }
 
-func (c *Context) buildRemoteCommand(command string) *exec.Cmd {
-	cmd := exec.Command(c.ssh.executable.Bin, c.ssh.executable.Args...)
+func (c *ExecutionContext) buildRemoteCommand(command string, ctx context.Context) *exec.Cmd {
+	cmd := exec.CommandContext(ctx, c.ssh.executable.Bin, c.ssh.executable.Args...)
+	cmd.Env = c.env
+	cmd.Dir = c.dir
+
 	cmd.Args = append(cmd.Args, c.executable.Bin)
 	cmd.Args = append(cmd.Args, c.executable.Args...)
 	cmd.Args = append(cmd.Args, command)
-	cmd.Env = c.env
 
 	return cmd
 }
@@ -246,19 +251,19 @@ func setDefaultShell(e *util.Executable) {
 	e.Args = []string{"-c"}
 }
 
-func (c *Context) Bin() string {
+func (c *ExecutionContext) Bin() string {
 	return c.executable.Bin
 }
 
-func (c *Context) Args() []string {
+func (c *ExecutionContext) Args() []string {
 	return c.executable.Args
 }
 
-func (c *Context) Env() []string {
+func (c *ExecutionContext) Env() []string {
 	return c.env
 }
 
-func (c *Context) WithEnvs(env []string) (*Context, error) {
+func (c *ExecutionContext) WithEnvs(env []string) (*ExecutionContext, error) {
 	def := *c.def
 	for _, v := range env {
 		kv := strings.Split(v, "=")
@@ -271,7 +276,7 @@ func (c *Context) WithEnvs(env []string) (*Context, error) {
 	return BuildContext(def, &config.Get().WilsonConfig)
 }
 
-func (c *Context) Up() {
+func (c *ExecutionContext) Up() {
 	c.onceUp.Do(func() {
 		for _, command := range c.up {
 			err := c.runServiceCommand(command)
@@ -282,7 +287,7 @@ func (c *Context) Up() {
 	})
 }
 
-func (c *Context) Down() {
+func (c *ExecutionContext) Down() {
 	c.onceDown.Do(func() {
 		for _, command := range c.down {
 			err := c.runServiceCommand(command)
@@ -293,7 +298,7 @@ func (c *Context) Down() {
 	})
 }
 
-func (c *Context) Before() error {
+func (c *ExecutionContext) Before() error {
 	for _, command := range c.before {
 		err := c.runServiceCommand(command)
 		if err != nil {
@@ -304,7 +309,7 @@ func (c *Context) Before() error {
 	return nil
 }
 
-func (c *Context) After() error {
+func (c *ExecutionContext) After() error {
 	for _, command := range c.after {
 		err := c.runServiceCommand(command)
 		if err != nil {
@@ -315,7 +320,7 @@ func (c *Context) After() error {
 	return nil
 }
 
-func (c *Context) runServiceCommand(command string) error {
+func (c *ExecutionContext) runServiceCommand(command string) error {
 	log.Debugf("running service context service command: %s", command)
 	ca := strings.Split(command, " ")
 	cmd := exec.Command(ca[0], ca[1:]...)
@@ -330,19 +335,19 @@ func (c *Context) runServiceCommand(command string) error {
 	return nil
 }
 
-func (c *Context) createCommand(command string) *exec.Cmd {
+func (c *ExecutionContext) createCommand(command string, ctx context.Context) *exec.Cmd {
 	switch c.ctxType {
 	case config.CONTEXT_TYPE_LOCAL:
-		return c.buildLocalCommand(command)
+		return c.buildLocalCommand(command, ctx)
 	case config.CONTEXT_TYPE_CONTAINER:
 		switch c.container.provider {
 		case config.CONTEXT_CONTAINER_PROVIDER_DOCKER, config.CONTEXT_CONTAINER_PROVIDER_DOCKER_COMPOSE:
-			return c.buildDockerCommand(command)
+			return c.buildDockerCommand(command, ctx)
 		case config.CONTEXT_CONTAINER_PROVIDER_KUBECTL:
-			return c.buildKubectlCommand(command)
+			return c.buildKubectlCommand(command, ctx)
 		}
 	case config.CONTEXT_TYPE_REMOTE:
-		return c.buildRemoteCommand(command)
+		return c.buildRemoteCommand(command, ctx)
 	default:
 		log.Fatal("unknown context type")
 	}
@@ -350,9 +355,8 @@ func (c *Context) createCommand(command string) *exec.Cmd {
 	return nil
 }
 
-func (c *Context) ScheduleForCleanup() {
+func (c *ExecutionContext) ScheduleForCleanup() {
 	c.mu.Lock()
 	c.scheduledForCleanup = true
 	c.mu.Unlock()
-
 }

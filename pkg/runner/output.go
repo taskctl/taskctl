@@ -19,6 +19,16 @@ type taskOutput struct {
 	stderr io.Writer
 }
 
+type logWriter struct {
+	t *task.Task
+}
+
+func (l logWriter) Write(p []byte) (n int, err error) {
+	l.t.WiteLog(p)
+
+	return len(p), nil
+}
+
 func NewTaskOutput(raw bool, quiet bool) *taskOutput {
 	o := &taskOutput{
 		raw:   raw,
@@ -84,22 +94,38 @@ func (o *taskOutput) streamOutput(t *task.Task, done chan struct{}) {
 }
 
 func (o *taskOutput) streamRawOutput(t *task.Task) error {
-	_, err := io.Copy(o.stdout, t.Stdout)
+	lw := &logWriter{t: t}
+	err := o.stream(o.stdout, t.Stdout, lw)
 	if err != nil {
 		return err
 	}
 
-	logw, logr, _ := os.Pipe()
-	stderr := io.MultiWriter(o.stderr, logw)
+	err = o.stream(o.stderr, t.Stderr, lw)
+	if err != nil {
+		return err
+	}
 
-	_, err = io.Copy(stderr, t.Stderr)
+	return nil
+}
+
+func (o *taskOutput) stream(dst io.Writer, src io.ReadCloser, log io.Writer) error {
+	logw, logr, _ := os.Pipe()
+	w := io.MultiWriter(dst, logw)
+
+	_, err := io.Copy(w, src)
 	if err == os.ErrClosed {
 		return err
 	}
 
 	scanner := bufio.NewScanner(logr)
 	for scanner.Scan() {
-		t.WiteLog(scanner.Text())
+		b := scanner.Bytes()
+		if len(b) > 0 {
+			_, err = log.Write(b)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil
@@ -125,7 +151,7 @@ func (o *taskOutput) streamDecoratedStderrOutput(t *task.Task) error {
 	scanner := bufio.NewScanner(t.Stderr)
 	for scanner.Scan() {
 		line := scanner.Text()
-		t.WiteLog(line)
+		t.WiteLog([]byte(line))
 		_, err := fmt.Fprintf(o.stderr, "%s: %s\r\n", aurora.Red(t.Name), line)
 		if err != nil {
 			log.Debug(err)

@@ -10,7 +10,7 @@ import (
 )
 
 type TaskRunner struct {
-	contexts map[string]*Context
+	contexts map[string]*ExecutionContext
 	env      []string
 
 	output *taskOutput
@@ -18,7 +18,7 @@ type TaskRunner struct {
 	cancel context.CancelFunc
 }
 
-func NewTaskRunner(contexts map[string]*Context, env []string, raw, quiet bool) *TaskRunner {
+func NewTaskRunner(contexts map[string]*ExecutionContext, env []string, raw, quiet bool) *TaskRunner {
 	tr := &TaskRunner{
 		contexts: contexts,
 		output:   NewTaskOutput(raw, quiet),
@@ -49,8 +49,14 @@ func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
 	t.Start = time.Now()
 	log.Infof("Running task %s...", t.Name)
 
+	var ctx = context.Background()
+	var cancel context.CancelFunc
 	for _, command := range t.Command {
-		cmd := c.createCommand(command)
+		if t.Timeout != nil {
+			ctx, cancel = context.WithTimeout(ctx, *t.Timeout)
+		}
+
+		cmd := c.createCommand(command, ctx)
 		cmd.Env = append(cmd.Env, env...)
 		cmd.Env = append(cmd.Env, r.env...)
 
@@ -70,7 +76,7 @@ func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
 		}
 		t.SetStderr(stderr)
 
-		err = r.runCommand(t, cmd)
+		err = r.runCommand(t, cmd, cancel)
 		if err != nil {
 			t.UpdateStatus(task.STATUS_ERROR)
 			t.End = time.Now()
@@ -91,7 +97,13 @@ func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
 	return nil
 }
 
-func (r *TaskRunner) runCommand(t *task.Task, cmd *exec.Cmd) error {
+func (r *TaskRunner) runCommand(t *task.Task, cmd *exec.Cmd, cancelFunc context.CancelFunc) error {
+	defer func(cancelFunc context.CancelFunc) {
+		if cancelFunc != nil {
+			cancelFunc()
+		}
+	}(cancelFunc)
+
 	var done = make(chan struct{})
 	var killed = make(chan struct{})
 	go r.waitForInterruption(*cmd, done, killed)
@@ -142,7 +154,7 @@ func (r *TaskRunner) Cancel() {
 	r.cancel()
 }
 
-func (r *TaskRunner) contextForTask(t *task.Task) (c *Context, err error) {
+func (r *TaskRunner) contextForTask(t *task.Task) (c *ExecutionContext, err error) {
 	c, ok := r.contexts[t.Context]
 	if !ok {
 		return nil, errors.New("no such context")
