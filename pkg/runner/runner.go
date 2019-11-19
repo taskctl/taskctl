@@ -3,8 +3,6 @@ package runner
 import (
 	"context"
 	"errors"
-	"fmt"
-	"github.com/logrusorgru/aurora"
 	log "github.com/sirupsen/logrus"
 	"github.com/trntv/wilson/pkg/task"
 	"os/exec"
@@ -49,7 +47,7 @@ func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
 	}
 
 	t.Start = time.Now()
-	fmt.Println(aurora.Sprintf(aurora.Green("Running task %s..."), aurora.Green(t.Name)))
+	log.Infof("Running task %s...", t.Name)
 
 	for _, command := range t.Command {
 		cmd := c.createCommand(command)
@@ -88,7 +86,7 @@ func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
 		return err
 	}
 
-	fmt.Println(aurora.Sprintf(aurora.Green("%s finished. Elapsed %s"), aurora.Green(t.Name), aurora.Yellow(t.Duration())))
+	log.Infof("%s finished. Duration %s", t.Name, t.Duration())
 
 	return nil
 }

@@ -11,7 +11,7 @@ import (
 
 func main() {
 	logrus.SetFormatter(&logrus.TextFormatter{
-		DisableColors:    true,
+		DisableColors:    false,
 		DisableTimestamp: true,
 	})
 	listenSignals()

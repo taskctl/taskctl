@@ -35,7 +35,7 @@ func NewRootCommand() *cobra.Command {
 			if debug {
 				log.SetLevel(log.DebugLevel)
 			} else {
-				log.SetLevel(log.WarnLevel)
+				log.SetLevel(log.InfoLevel)
 			}
 
 			if silent {
