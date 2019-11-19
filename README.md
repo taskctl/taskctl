@@ -6,9 +6,6 @@ with yaml files. Wilson's automation based on four concepts:
 3. Pipeline that describes set of tasks to run
 4. Optional watcher that listens for filesystem events and trigger tasks
 
-## Warning
-Proof of concept, heavy work is in progress ;-)
-
 ## Install
 ### MacOS
 ```
@@ -42,13 +39,13 @@ wilson -c example/pipeline.yaml run pipeline1
 [Contexts config](https://github.com/trntv/wilson/blob/master/example/contexts.yaml)
 
 ### Watchers
-[Watchers config](https://github.com/trntv/wilson/blob/master/example/contexts.yaml)
+[Watchers config](https://github.com/trntv/wilson/blob/master/example/watchers.yaml)
 ```
 wilson -c watch.yaml --debug watch test-watcher test-watcher-2
 ```
 
 ### Full config
-[Full config example](https://github.com/trntv/wilson/blob/master/example/contexts.yaml)
+[Full config example](https://github.com/trntv/wilson/blob/master/example/full.yaml)
 
 ## Contexts
 Available context types:
