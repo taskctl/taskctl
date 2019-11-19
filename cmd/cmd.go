@@ -30,7 +30,7 @@ func NewRootCommand() *cobra.Command {
 	loadConfig()
 	cmd := &cobra.Command{
 		Short:   "Wilson the task runner",
-		Version: "0.1.1",
+		Version: "0.1.2",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			if debug {
 				log.SetLevel(log.DebugLevel)
