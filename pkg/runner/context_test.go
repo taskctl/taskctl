@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"context"
 	"github.com/trntv/wilson/pkg/config"
 	"github.com/trntv/wilson/pkg/util"
 	"testing"
@@ -17,7 +18,7 @@ func TestContext_BuildContext(t *testing.T) {
 		Env:  map[string]string{"TEST_VAR": "TEST_VAL"},
 	}, wcfg)
 
-	cmd := c.createCommand("echo ${TEST_VAR}")
+	cmd := c.createCommand("echo ${TEST_VAR}", context.Background())
 	if cmd.String() != "/bin/sh -c echo ${TEST_VAR}" {
 		t.Errorf("local build failed %s", cmd.String())
 	}
@@ -36,7 +37,7 @@ func TestContext_BuildContext(t *testing.T) {
 		},
 	}, wcfg)
 
-	cmd = c.createCommand("echo ${TEST_VAR}")
+	cmd = c.createCommand("echo ${TEST_VAR}", context.Background())
 	if cmd.String() != "/opt/docker run --rm -e TEST_VAR=TEST_VAL alpine:latest /bin/sh -c echo ${TEST_VAR}" {
 		t.Errorf("docker build failed %s", cmd.String())
 	}
@@ -56,7 +57,7 @@ func TestContext_BuildContext(t *testing.T) {
 		Up: []string{"docker-compose up -d alpine"},
 	}, wcfg)
 
-	cmd = c.createCommand("echo ${TEST_VAR}")
+	cmd = c.createCommand("echo ${TEST_VAR}", context.Background())
 	if cmd.String() != "/usr/local/bin/docker-compose --file=example/docker-compose.yaml exec -T --user=root -e TEST_VAR=TEST_VAL alpine /bin/sh -c echo ${TEST_VAR}" {
 		t.Errorf("docker-compose build failed %s", cmd.String())
 	}
@@ -74,7 +75,7 @@ func TestContext_BuildContext(t *testing.T) {
 		},
 	}, wcfg)
 
-	cmd = c.createCommand("echo ${TEST_VAR}")
+	cmd = c.createCommand("echo ${TEST_VAR}", context.Background())
 	if cmd.String() != "/usr/bin/kubectl exec deployment/geocoder -- /bin/sh -c TEST_VAR=TEST_VAL echo ${TEST_VAR}" {
 		t.Errorf("kubectl build failed %s", cmd.String())
 	}
@@ -88,7 +89,7 @@ func TestContext_BuildContext(t *testing.T) {
 		},
 	}, wcfg)
 
-	cmd = c.createCommand("echo ${TEST_VAR}")
+	cmd = c.createCommand("echo ${TEST_VAR}", context.Background())
 	if cmd.String() != "/usr/bin/ssh -6 -C -T root@host /bin/sh -c echo ${TEST_VAR}" {
 		t.Errorf("ssh build failed %s", cmd.String())
 	}
