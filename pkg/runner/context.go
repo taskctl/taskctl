@@ -82,10 +82,10 @@ func BuildContext(def config.ContextConfig, wcfg *config.WilsonConfig) (*Executi
 		dir:    def.Dir,
 		env:    append(os.Environ(), util.ConvertEnv(def.Env)...),
 		def:    &def,
-		up:     util.ReadStringsSlice(def.Up),
-		down:   util.ReadStringsSlice(def.Down),
-		before: util.ReadStringsSlice(def.Before),
-		after:  util.ReadStringsSlice(def.After),
+		up:     def.Up,
+		down:   def.Down,
+		before: def.Before,
+		after:  def.After,
 	}
 
 	switch c.ctxType {

@@ -9,7 +9,6 @@ with yaml files. Wilson's automation based on four concepts:
 ## Install
 ### MacOS
 ```
-brew tap trntv/wilson https://github.com/trntv/wilson.git
 brew install trntv/wilson/wilson
 ```
 ### Linux

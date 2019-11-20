@@ -59,7 +59,7 @@ func (o *taskOutput) Scan(t *task.Task, done chan struct{}, flushed chan struct{
 
 	d, err = ioutil.ReadAll(t.Stderr)
 	if len(d) > 0 && err != nil {
-		_, err = fmt.Fprintf(o.stderr, "%s: %s\r\n", aurora.Red(t.Name), d)
+		_, err = fmt.Fprintf(o.stderr, "%s: %s\r\n", t.Name, d)
 		if err != nil {
 			log.Debug(err)
 		}
@@ -80,11 +80,11 @@ func (o *taskOutput) streamOutput(t *task.Task, done chan struct{}) {
 					return
 				}
 			} else {
-				err := o.streamDecoratedStdoutOutput(t)
+				err := o.streamDecoratedOutput(t, t.Stdout, o.stdout)
 				if err != nil {
 					return
 				}
-				err = o.streamDecoratedStderrOutput(t)
+				err = o.streamDecoratedOutput(t, t.Stderr, o.stderr)
 				if err != nil {
 					return
 				}
@@ -131,28 +131,12 @@ func (o *taskOutput) stream(dst io.Writer, src io.ReadCloser, log io.Writer) err
 	return nil
 }
 
-func (o *taskOutput) streamDecoratedStdoutOutput(t *task.Task) error {
-	scanner := bufio.NewScanner(t.Stdout)
+func (o *taskOutput) streamDecoratedOutput(t *task.Task, r io.ReadCloser, w io.Writer) error {
+	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
-		_, err := fmt.Fprintf(o.stdout, "%s: %s\r\n", t.Name, scanner.Text())
-		if err != nil {
-			log.Debug(err)
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (o *taskOutput) streamDecoratedStderrOutput(t *task.Task) error {
-	scanner := bufio.NewScanner(t.Stderr)
-	for scanner.Scan() {
-		line := scanner.Text()
-		t.WiteLog([]byte(line))
-		_, err := fmt.Fprintf(o.stderr, "%s: %s\r\n", aurora.Red(t.Name), line)
+		line := scanner.Bytes()
+		t.WiteLog(line)
+		_, err := fmt.Fprintf(o.stdout, "%s: %s\r\n", aurora.Gray(16, t.Name), line)
 		if err != nil {
 			log.Debug(err)
 		}

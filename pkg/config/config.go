@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"github.com/imdario/mergo"
 	log "github.com/sirupsen/logrus"
@@ -9,6 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"reflect"
 	"time"
 )
 
@@ -27,11 +29,11 @@ var loaded = make(map[string]bool)
 var cfg *Config
 
 type WilsonConfig struct {
-	Shell         util.Executable `yaml:"shell"`
-	Docker        util.Executable `yaml:"docker"`
-	DockerCompose util.Executable `yaml:"docker-compose"`
-	Kubectl       util.Executable `yaml:"kubectl"`
-	Ssh           util.Executable `yaml:"ssh"`
+	Shell         util.Executable
+	Docker        util.Executable
+	DockerCompose util.Executable
+	Kubectl       util.Executable
+	Ssh           util.Executable
 }
 
 type ContextConfig struct {
@@ -40,17 +42,17 @@ type ContextConfig struct {
 	Container Container
 	Ssh       SshConfig
 	Env       map[string]string
-	Up        interface{}
-	Down      interface{}
-	Before    interface{}
-	After     interface{}
+	Up        []string
+	Down      []string
+	Before    []string
+	After     []string
 	util.Executable
 }
 
 type Stage struct {
-	StageName string `yaml:"name"`
+	Name      string
 	Task      string
-	DependsOn interface{} `yaml:"depends_on"`
+	DependsOn []string
 	Env       map[string]string
 }
 
@@ -95,6 +97,10 @@ type SshConfig struct {
 	util.Executable
 }
 
+func Get() *Config {
+	return cfg
+}
+
 func Load(file string) (*Config, error) {
 	var err error
 	cfg, err = loadGlobalConfig()
@@ -106,7 +112,7 @@ func Load(file string) (*Config, error) {
 		cfg = &Config{
 			Contexts:  make(map[string]ContextConfig),
 			Tasks:     make(map[string]TaskConfig),
-			Pipelines: make(map[string][]Stage, 0),
+			Pipelines: make(map[string][]Stage),
 			Watchers:  make(map[string]WatcherConfig),
 		}
 	}
@@ -140,10 +146,6 @@ func Load(file string) (*Config, error) {
 
 	log.Debugf("config %s loaded", file)
 	return cfg, nil
-}
-
-func Get() *Config {
-	return cfg
 }
 
 func loadGlobalConfig() (*Config, error) {
@@ -189,9 +191,7 @@ func load(file string) (*Config, error) {
 }
 
 func readFile(filename string) (*Config, error) {
-	c := &Config{
-		Contexts: make(map[string]ContextConfig),
-	}
+	c := &Config{}
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %v", filename, err)
@@ -213,14 +213,155 @@ func (c *Config) merge(src *Config) error {
 	return nil
 }
 
-func (pc Stage) GetDependsOn() (deps []string) {
-	return util.ReadStringsSlice(pc.DependsOn)
-}
+func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var container struct {
+		Shell         util.Executable `yaml:"shell"`
+		Docker        util.Executable `yaml:"docker"`
+		DockerCompose util.Executable `yaml:"docker-compose"`
+		Kubectl       util.Executable `yaml:"kubectl"`
+		Ssh           util.Executable `yaml:"ssh"`
 
-func (pc Stage) Name() string {
-	if pc.StageName != "" {
-		return pc.StageName
+		Import   []string
+		Contexts map[string]struct {
+			Type      string
+			Dir       string
+			Container struct {
+				Provider string
+				Name     string
+				Image    string
+				Exec     bool
+				Options  []string
+				Env      map[string]string
+				util.Executable
+			}
+			Ssh struct {
+				Options []string
+				User    string
+				Host    string
+				util.Executable
+			}
+			Env    map[string]string
+			Up     interface{}
+			Down   interface{}
+			Before interface{}
+			After  interface{}
+			util.Executable
+		}
+		Pipelines map[string][]interface{}
+		Tasks     map[string]struct {
+			Command interface{}
+			Context string
+			Env     map[string]string
+			Dir     string
+			Timeout *time.Duration
+		}
+		Watchers map[string]struct {
+			Events []interface{}
+			Watch  []interface{}
+			Task   string
+		}
+	}
+	if err := unmarshal(&container); err != nil {
+		return err
 	}
 
-	return pc.Task
+	cfg := Config{
+		Contexts:  make(map[string]ContextConfig),
+		Tasks:     make(map[string]TaskConfig),
+		Pipelines: make(map[string][]Stage),
+		Watchers:  make(map[string]WatcherConfig),
+		Import:    container.Import,
+		WilsonConfig: WilsonConfig{
+			Shell:         container.Shell,
+			Docker:        container.Docker,
+			DockerCompose: container.DockerCompose,
+			Kubectl:       container.Kubectl,
+			Ssh:           container.Ssh,
+		},
+	}
+
+	for name, def := range container.Contexts {
+		cfg.Contexts[name] = ContextConfig{
+			Type: def.Type,
+			Dir:  def.Dir,
+			Container: Container{
+				Provider:   def.Container.Provider,
+				Name:       def.Container.Name,
+				Image:      def.Container.Image,
+				Exec:       def.Container.Exec,
+				Options:    def.Container.Options,
+				Env:        def.Container.Env,
+				Executable: util.Executable{},
+			},
+			Ssh: SshConfig{
+				Options:    def.Ssh.Options,
+				User:       def.Ssh.User,
+				Host:       def.Ssh.Host,
+				Executable: def.Ssh.Executable,
+			},
+			Env:        def.Env,
+			Up:         util.ReadStringsSlice(def.Up),
+			Down:       util.ReadStringsSlice(def.Down),
+			Before:     util.ReadStringsSlice(def.Before),
+			After:      util.ReadStringsSlice(def.After),
+			Executable: def.Executable,
+		}
+	}
+
+	for name, def := range container.Tasks {
+		cfg.Tasks[name] = TaskConfig{
+			Command: util.ReadStringsSlice(def.Command),
+			Context: def.Context,
+			Env:     def.Env,
+			Dir:     def.Dir,
+			Timeout: def.Timeout,
+		}
+	}
+
+	for name, stages := range container.Pipelines {
+		cfg.Pipelines[name] = make([]Stage, len(stages))
+		for i, def := range stages {
+			switch reflect.TypeOf(def).Kind() {
+			case reflect.Map:
+				stage, ok := def.(map[interface{}]interface{})
+				if !ok {
+					return errors.New("pipelines unmarshalling error")
+				}
+
+				for k, v := range stage {
+					switch k.(string) {
+					case "task":
+						cfg.Pipelines[name][i].Task = v.(string)
+					case "depends_on":
+						cfg.Pipelines[name][i].DependsOn = util.ReadStringsSlice(v)
+					case "name":
+						cfg.Pipelines[name][i].Name = v.(string)
+					}
+
+					if cfg.Pipelines[name][i].Name == "" {
+						cfg.Pipelines[name][i].Name = cfg.Pipelines[name][i].Task
+					}
+				}
+			case reflect.String:
+				task := reflect.ValueOf(def).String()
+				cfg.Pipelines[name][i] = Stage{
+					Name: task,
+					Task: task,
+					Env:  make(map[string]string),
+				}
+			}
+		}
+	}
+
+	for name, def := range container.Watchers {
+		cfg.Watchers[name] = WatcherConfig{
+			Events: util.ReadStringsSlice(def),
+			Watch:  util.ReadStringsSlice(def),
+			Task:   def.Task,
+		}
+	}
+
+	*c = cfg
+
+	return nil
 }

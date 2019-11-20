@@ -31,6 +31,10 @@ func NewRunCommand() *cobra.Command {
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
+			if raw && !debug {
+				log.SetLevel(log.FatalLevel)
+			}
+
 			pipeline := pipelines[args[0]]
 
 			var pipelineArgs []string

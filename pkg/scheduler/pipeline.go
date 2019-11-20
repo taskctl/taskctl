@@ -38,26 +38,26 @@ func BuildPipeline(stages []config.Stage, tasks map[string]*task.Task) (*Pipelin
 		}
 
 		stage := Stage{
-			Name:      def.Name(),
+			Name:      def.Name,
 			Task:      *t,
-			DependsOn: def.GetDependsOn(),
+			DependsOn: def.DependsOn,
 			Env:       def.Env,
 		}
 
-		if _, ok := p.nodes[def.Name()]; ok {
-			return nil, errors.New(fmt.Sprintf("stage with same name %s already exists", def.Name()))
+		if _, ok := p.nodes[def.Name]; ok {
+			return nil, errors.New(fmt.Sprintf("stage with same name %s already exists", def.Name))
 		}
 
-		p.addNode(def.Name(), stage)
+		p.addNode(def.Name, stage)
 
 		for _, dep := range stage.DependsOn {
-			err := p.addEdge(dep, def.Name())
+			err := p.addEdge(dep, def.Name)
 			if err != nil {
 				return nil, err
 			}
 		}
 
-		p.env[def.Name()] = util.ConvertEnv(stage.Env)
+		p.env[def.Name] = util.ConvertEnv(stage.Env)
 
 	}
 

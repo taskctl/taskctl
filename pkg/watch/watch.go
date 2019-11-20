@@ -74,8 +74,10 @@ func (w *Watcher) Run() (err error) {
 		return err
 	}
 
+	log.Debugf("starting watcher %s", w.name)
 	for _, path := range w.paths {
 		err = w.fsw.Add(path)
+		log.Debugf("watcher %s is watching %s", w.name, path)
 		if err != nil {
 			return err
 		}
