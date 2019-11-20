@@ -63,7 +63,12 @@ func (s *PipelineScheduler) Schedule() {
 				switch depStage.Task.ReadStatus() {
 				case task.STATUS_DONE:
 					continue
-				case task.STATUS_ERROR, task.STATUS_CANCELED:
+				case task.STATUS_ERROR:
+					if !depStage.Task.AllowFailure {
+						ready = false
+						stage.Task.UpdateStatus(task.STATUS_CANCELED)
+					}
+				case task.STATUS_CANCELED:
 					ready = false
 					stage.Task.UpdateStatus(task.STATUS_CANCELED)
 				default:
@@ -80,7 +85,9 @@ func (s *PipelineScheduler) Schedule() {
 					if err != nil {
 						log.Error(err)
 						t.UpdateStatus(task.STATUS_ERROR)
-						s.Cancel()
+						if !t.AllowFailure {
+							s.Cancel()
+						}
 					} else {
 						t.UpdateStatus(task.STATUS_DONE)
 					}

@@ -95,6 +95,11 @@ tasks:
     env:
       VAR_NAME: VAR_VALUE
 
+  task4:
+    command:
+      - echo "I'm task4"
+    allow_failure: true
+
   task-to-be-triggered-by-watcher:
     command:
       - echo ${EVENT_NAME} ${EVENT_PATH}

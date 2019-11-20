@@ -57,11 +57,12 @@ type Stage struct {
 }
 
 type TaskConfig struct {
-	Command []string
-	Context string
-	Env     map[string]string
-	Dir     string
-	Timeout *time.Duration
+	Command      []string
+	Context      string
+	Env          map[string]string
+	Dir          string
+	Timeout      *time.Duration
+	AllowFailure bool
 }
 
 type WatcherConfig struct {
@@ -249,11 +250,12 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		}
 		Pipelines map[string][]interface{}
 		Tasks     map[string]struct {
-			Command interface{}
-			Context string
-			Env     map[string]string
-			Dir     string
-			Timeout *time.Duration
+			Command      interface{}
+			Context      string
+			Env          map[string]string
+			Dir          string
+			Timeout      *time.Duration
+			AllowFailure bool `yaml:"allow_failure"`
 		}
 		Watchers map[string]struct {
 			Events []interface{}
@@ -310,11 +312,12 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 
 	for name, def := range container.Tasks {
 		cfg.Tasks[name] = TaskConfig{
-			Command: util.ReadStringsSlice(def.Command),
-			Context: def.Context,
-			Env:     def.Env,
-			Dir:     def.Dir,
-			Timeout: def.Timeout,
+			Command:      util.ReadStringsSlice(def.Command),
+			Context:      def.Context,
+			Env:          def.Env,
+			Dir:          def.Dir,
+			Timeout:      def.Timeout,
+			AllowFailure: def.AllowFailure,
 		}
 	}
 

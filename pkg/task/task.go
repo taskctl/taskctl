@@ -19,11 +19,12 @@ const (
 )
 
 type Task struct {
-	Command []string
-	Context string
-	Env     []string
-	Dir     string
-	Timeout *time.Duration
+	Command      []string
+	Context      string
+	Env          []string
+	Dir          string
+	Timeout      *time.Duration
+	AllowFailure bool
 
 	Name   string
 	Status int32
@@ -40,10 +41,11 @@ type Task struct {
 
 func BuildTask(def config.TaskConfig) *Task {
 	t := &Task{
-		Command: def.Command,
-		Env:     make([]string, 0),
-		Dir:     def.Dir,
-		Timeout: def.Timeout,
+		Command:      def.Command,
+		Env:          make([]string, 0),
+		Dir:          def.Dir,
+		Timeout:      def.Timeout,
+		AllowFailure: def.AllowFailure,
 	}
 
 	t.Context = def.Context
@@ -61,19 +63,6 @@ func (t *Task) UpdateStatus(status int32) {
 
 func (t *Task) ReadStatus() int32 {
 	return atomic.LoadInt32(&t.Status)
-}
-
-func (t *Task) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	type rawTask Task
-	raw := rawTask{
-		Context: "local",
-	}
-	if err := unmarshal(&raw); err != nil {
-		return err
-	}
-
-	*t = Task(raw)
-	return nil
 }
 
 func (t *Task) Duration() time.Duration {

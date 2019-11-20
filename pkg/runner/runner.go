@@ -66,13 +66,13 @@ func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
 
 		stdout, err := cmd.StdoutPipe()
 		if err != nil {
-			log.Error(err)
+			return err
 		}
 		t.SetStdout(stdout)
 
 		stderr, err := cmd.StderrPipe()
 		if err != nil {
-			log.Error(err)
+			return err
 		}
 		t.SetStderr(stderr)
 
@@ -120,6 +120,7 @@ func (r *TaskRunner) runCommand(t *task.Task, cmd *exec.Cmd, cancelFunc context.
 
 	err = cmd.Wait()
 	if err != nil {
+		close(done)
 		<-flushed
 		return err
 	}

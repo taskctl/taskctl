@@ -37,6 +37,11 @@ pipelines:
       task: env
       depends_on: stage1
 
+  pipeline4:
+    - f
+    - task: a
+      depends_on: f
+
 tasks:
   docker-env:
     context: alpine-docker
@@ -69,6 +74,11 @@ tasks:
       - echo "E"
     env:
       AAA: BBB
+
+  f:
+    command:
+      - ">&2 echo \"error\" && exit 1"
+    allow_failure: true
 
   env:
     command:
