@@ -1,3 +1,12 @@
+![Tests](https://github.com/trntv/wilson/workflows/Test/badge.svg)
+![Licence](https://img.shields.io/github/license/trntv/wilson)
+[![Requirements Status](https://requires.io/github/trntv/wilson/requirements.svg?branch=master)](https://requires.io/github/trntv/wilson/requirements/?branch=master)
+![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/trntv/wilson)
+![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/trntv/wilson)
+![GitHub closed issues](https://img.shields.io/github/issues-closed/trntv/wilson)
+![GitHub issues](https://img.shields.io/github/issues/trntv/wilson)
+![GitHub top language](https://img.shields.io/github/languages/top/trntv/wilson)
+
 # Wilson - routine tasks automation toolkit
 Willows allows you to get rid of a bunch of bash scripts and to design you workflow pipelines in nice and neat with way 
 with yaml files. Wilson's automation based on four concepts:
