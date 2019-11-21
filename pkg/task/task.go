@@ -34,9 +34,10 @@ type Task struct {
 	Stdout io.ReadCloser
 	Stderr io.ReadCloser
 
-	log []byte
-
-	mu sync.Mutex
+	log struct {
+		sync.Mutex
+		data []byte
+	}
 }
 
 func BuildTask(def config.TaskConfig) *Task {
@@ -70,21 +71,19 @@ func (t *Task) Duration() time.Duration {
 }
 
 func (t *Task) WiteLog(l []byte) {
-	t.log = l
+	t.log.Lock()
+	t.log.data = l
+	t.log.Unlock()
 }
 
 func (t *Task) ReadLog() []byte {
-	return t.log
+	return t.log.data
 }
 
 func (t *Task) SetStdout(stdout io.ReadCloser) {
-	t.mu.Lock()
 	t.Stdout = stdout
-	t.mu.Unlock()
 }
 
 func (t *Task) SetStderr(stderr io.ReadCloser) {
-	t.mu.Lock()
 	t.Stderr = stderr
-	t.mu.Unlock()
 }

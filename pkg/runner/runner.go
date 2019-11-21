@@ -50,10 +50,9 @@ func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
 	log.Infof("Running task %s...", t.Name)
 
 	var ctx = context.Background()
-	var cancel context.CancelFunc
 	for _, command := range t.Command {
 		if t.Timeout != nil {
-			ctx, cancel = context.WithTimeout(ctx, *t.Timeout)
+			ctx, _ = context.WithTimeout(ctx, *t.Timeout)
 		}
 
 		cmd := c.createCommand(ctx, command)
@@ -76,7 +75,7 @@ func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
 		}
 		t.SetStderr(stderr)
 
-		err = r.runCommand(t, cmd, cancel)
+		err = r.runCommand(t, cmd)
 		if err != nil {
 			t.UpdateStatus(task.StatusError)
 			t.End = time.Now()
@@ -97,13 +96,7 @@ func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
 	return nil
 }
 
-func (r *TaskRunner) runCommand(t *task.Task, cmd *exec.Cmd, cancelFunc context.CancelFunc) error {
-	defer func(cancelFunc context.CancelFunc) {
-		if cancelFunc != nil {
-			cancelFunc()
-		}
-	}(cancelFunc)
-
+func (r *TaskRunner) runCommand(t *task.Task, cmd *exec.Cmd) error {
 	var done = make(chan struct{})
 	var killed = make(chan struct{})
 	go r.waitForInterruption(*cmd, done, killed)

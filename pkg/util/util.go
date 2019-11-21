@@ -2,7 +2,6 @@ package util
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"reflect"
 )
@@ -70,11 +69,11 @@ func InArray(arr []string, val string) bool {
 	return false
 }
 
-func Getcwd() string {
+func Getcwd() (string, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
-		log.Fatalln(err)
+		return cwd, err
 	}
 
-	return cwd
+	return cwd, nil
 }

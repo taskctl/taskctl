@@ -17,7 +17,7 @@ func main() {
 	listenSignals()
 
 	if err := cmd.Execute(); err != nil {
-		log.Fatal(err)
+		log.Fatalf("Command execution error: %s", err)
 	}
 }
 

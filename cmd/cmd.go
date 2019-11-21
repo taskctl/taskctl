@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/trntv/wilson/pkg/config"
@@ -27,7 +28,11 @@ var cancel = make(chan struct{})
 var done = make(chan bool)
 
 func NewRootCommand() *cobra.Command {
-	loadConfig()
+	err := loadConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	cmd := &cobra.Command{
 		Use:     "wilson",
 		Short:   "Wilson the task runner",
@@ -50,7 +55,7 @@ func NewRootCommand() *cobra.Command {
 	cmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "config file to use")
 	cmd.PersistentFlags().BoolVarP(&quiet, "silent", "q", false, "silence output")
 
-	err := cmd.MarkPersistentFlagFilename("config", "yaml", "yml")
+	err = cmd.MarkPersistentFlagFilename("config", "yaml", "yml")
 	if err != nil {
 		log.Warning(err)
 	}
@@ -92,12 +97,12 @@ func parseConfigFlag() string {
 	return ""
 }
 
-func loadConfig() {
+func loadConfig() error {
 	var err error
 	configFile = parseConfigFlag()
 	cfg, err = config.Load(configFile)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	for name, def := range cfg.Tasks {
@@ -108,14 +113,14 @@ func loadConfig() {
 	for name, def := range cfg.Contexts {
 		contexts[name], err = runner.BuildContext(def, &config.Get().WilsonConfig)
 		if err != nil {
-			log.Fatalf("context %s build failed: %v", name, err)
+			return fmt.Errorf("context %s build failed: %v", name, err)
 		}
 	}
 
 	for name, stages := range cfg.Pipelines {
 		pipelines[name], err = scheduler.BuildPipeline(stages, tasks)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 	}
 
@@ -123,7 +128,9 @@ func loadConfig() {
 	for name, def := range cfg.Watchers {
 		watchers[name], err = watch.BuildWatcher(name, def, tasks[def.Task], tr)
 		if err != nil {
-			log.Fatalf("watcher %s build failed: %v", name, err)
+			return fmt.Errorf("watcher %s build failed: %v", name, err)
 		}
 	}
+
+	return nil
 }

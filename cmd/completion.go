@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"log"
 	"os"
 )
 
@@ -26,7 +25,7 @@ To configure your zsh shell to load completions for each session add to your zsh
 # ~/.zshrc
 . <(wilson completion zsh)
 `,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			var shell string
 			if len(args) == 0 {
 				shell = "bash"
@@ -38,14 +37,16 @@ To configure your zsh shell to load completions for each session add to your zsh
 			case "bash":
 				err := rootCmd.GenBashCompletion(os.Stdout)
 				if err != nil {
-					log.Fatal(err)
+					return err
 				}
 			case "zsh":
 				_, err := os.Stdout.Write([]byte(zshCompletion))
 				if err != nil {
-					log.Fatal(err)
+					return err
 				}
 			}
+
+			return nil
 		},
 	}
 }

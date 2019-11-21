@@ -79,6 +79,6 @@ func printSummary(stage *scheduler.Stage) {
 	case task.StatusWaiting:
 		fmt.Printf(aurora.Sprintf(aurora.Gray(12, "- Stage %s skipped\r\n"), stage.Name))
 	default:
-		log.Fatal(aurora.Sprintf(aurora.Red("- Unexpected status %d for task %s in stage\r\n"), stage.Task.Status, stage.Task.Name, stage.Name))
+		log.Errorf(aurora.Sprintf(aurora.Red("- Unexpected status %d for task %s in stage\r\n"), stage.Task.Status, stage.Task.Name, stage.Name))
 	}
 }

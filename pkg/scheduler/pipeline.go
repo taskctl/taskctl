@@ -37,7 +37,7 @@ func BuildPipeline(stages []config.Stage, tasks map[string]*task.Task) (*Pipelin
 			return nil, fmt.Errorf("unknown task %s", def.Task)
 		}
 
-		stage := Stage{
+		stage := &Stage{
 			Name:      def.Name,
 			Task:      *t,
 			DependsOn: def.DependsOn,
@@ -68,8 +68,8 @@ func BuildPipeline(stages []config.Stage, tasks map[string]*task.Task) (*Pipelin
 	return p, nil
 }
 
-func (p *Pipeline) addNode(name string, stage Stage) {
-	p.nodes[name] = &stage
+func (p *Pipeline) addNode(name string, stage *Stage) {
+	p.nodes[name] = stage
 }
 
 func (p *Pipeline) addEdge(from string, to string) error {

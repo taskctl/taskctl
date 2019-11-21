@@ -152,7 +152,7 @@ func BuildContext(def config.ContextConfig, wcfg *config.WilsonConfig) (*Executi
 		var err error
 		c.dir, err = os.Getwd()
 		if err != nil {
-			log.Fatal(err)
+			return c, nil
 		}
 	}
 
@@ -281,7 +281,7 @@ func (c *ExecutionContext) Up() {
 		for _, command := range c.up {
 			err := c.runServiceCommand(command)
 			if err != nil {
-				log.Fatal(err)
+				log.Errorf("context startup error: %s", err)
 			}
 		}
 	})
@@ -292,7 +292,7 @@ func (c *ExecutionContext) Down() {
 		for _, command := range c.down {
 			err := c.runServiceCommand(command)
 			if err != nil {
-				log.Error(err)
+				log.Errorf("context cleanup error: %s", err)
 			}
 		}
 	})
@@ -320,16 +320,23 @@ func (c *ExecutionContext) After() error {
 	return nil
 }
 
-func (c *ExecutionContext) runServiceCommand(command string) error {
+func (c *ExecutionContext) runServiceCommand(command string) (err error) {
 	log.Debugf("running service context service command: %s", command)
 	ca := strings.Split(command, " ")
 	cmd := exec.Command(ca[0], ca[1:]...)
 	cmd.Env = c.Env()
-	cmd.Dir = util.Getcwd()
-
-	err := cmd.Run()
+	cmd.Dir, err = util.Getcwd()
 	if err != nil {
 		return err
+	}
+
+	out, err := cmd.Output()
+	if err != nil {
+		if exerr, ok := err.(*exec.ExitError); ok {
+			return fmt.Errorf("%v\n%s\n%s\n", err, out, exerr.Stderr)
+		} else {
+			return err
+		}
 	}
 
 	return nil
