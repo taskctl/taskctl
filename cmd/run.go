@@ -18,28 +18,16 @@ func NewRunCommand() *cobra.Command {
 		Use:       "run (PIPELINE) [flags] [-- TASKS_ARGS]",
 		Short:     "Run pipeline",
 		ValidArgs: util.ListNames(cfg.Pipelines),
-		Annotations: map[string]string{
-			"cobra_annotations_zsh_completion_argument_annotation": `[
-				{"type": "cobra_annotations_zsh_completion_argument_word_completion", options: ["asdasdasd"]}
-			]`,
-		},
-		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
-				return err
-			}
-
-			if err := cobra.OnlyValidArgs(cmd, args); err != nil {
-				return err
-			}
-
-			return nil
-		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Args:      cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if raw && !debug {
 				log.SetLevel(log.FatalLevel)
 			}
 
-			pipeline := pipelines[args[0]]
+			pipeline, ok := pipelines[args[0]]
+			if !ok {
+				return fmt.Errorf("unknown pipeline %s", args[0])
+			}
 
 			var pipelineArgs []string
 			if al := cmd.ArgsLenAtDash(); al > 0 {
@@ -67,6 +55,8 @@ func NewRunCommand() *cobra.Command {
 			fmt.Printf(aurora.Sprintf(aurora.Green("\r\nTotal duration: %s\r\n"), rr.End.Sub(rr.Start)))
 
 			close(done)
+
+			return nil
 		},
 	}
 

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/trntv/wilson/pkg/runner"
@@ -13,24 +14,12 @@ func NewRunTaskCommand() *cobra.Command {
 		Use:       "task (TASK) [flags] [-- TASK_ARGS]",
 		Short:     "Run task",
 		ValidArgs: util.ListNames(cfg.Tasks),
-		Args: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
-				return err
+		Args:      cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			t, ok := tasks[args[0]]
+			if !ok {
+				return fmt.Errorf("unknown task %s", args[0])
 			}
-
-			if err := cobra.OnlyValidArgs(cmd, args); err != nil {
-				return err
-			}
-
-			return nil
-		},
-		Annotations: map[string]string{
-			"cobra_annotations_zsh_completion_argument_annotation": `{
-				"1": {"type": "cobra_annotations_zsh_completion_argument_word_completion", "options": ["$(wilson list tasks | awk '{printf(\"\"%\" \",$0)}')"]}
-			}`,
-		},
-		Run: func(cmd *cobra.Command, args []string) {
-			t := tasks[args[0]]
 			var taskArgs []string
 			if al := cmd.ArgsLenAtDash(); al > 0 {
 				taskArgs = args[cmd.ArgsLenAtDash():]
@@ -47,6 +36,8 @@ func NewRunTaskCommand() *cobra.Command {
 			tr.DownContexts()
 
 			close(done)
+
+			return nil
 		},
 	}
 }
