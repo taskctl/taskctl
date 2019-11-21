@@ -24,6 +24,11 @@ func NewRunTaskCommand() *cobra.Command {
 
 			return nil
 		},
+		Annotations: map[string]string{
+			"cobra_annotations_zsh_completion_argument_annotation": `{
+				"1": {"type": "cobra_annotations_zsh_completion_argument_word_completion", "options": ["$(wilson list tasks | awk '{printf(\"\"%\" \",$0)}')"]}
+			}`,
+		},
 		Run: func(cmd *cobra.Command, args []string) {
 			t := tasks[args[0]]
 			var taskArgs []string

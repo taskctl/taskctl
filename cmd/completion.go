@@ -6,42 +6,6 @@ import (
 	"os"
 )
 
-const (
-	bash_completion_func = `__wilson_parse_get()
-{
-    local wilson_output out
-    if wilson_output=$(wilson list "$1" 2>/dev/null); then
-        out=($(echo "${wilson_output}" | awk '{print $1}'))
-        COMPREPLY=( $( compgen -W "${out[*]}" -- "$cur" ) )
-    fi
-}
-
-__wilson_get_resource()
-{
-    if [[ ${#nouns[@]} -eq 0 ]]; then
-        return 1
-    fi
-	
-	echo  ${nouns[${#nouns[@]} -1]}
-    __wilson_parse_get ${nouns[${#nouns[@]} -1]}
-    if [[ $? -eq 0 ]]; then
-        return 0
-    fi
-}
-
-__custom_func() {
-    case ${last_command} in
-        wilson_run | wilson_run_task | wilson_watch)
-            __wilson_get_resource
-            return
-            ;;
-        *)
-            ;;
-    esac
-}
-`
-)
-
 func NewAutocompleteCommand(rootCmd *cobra.Command) *cobra.Command {
 	return &cobra.Command{
 		Use:       "completion [SHELL]",
@@ -55,7 +19,12 @@ func NewAutocompleteCommand(rootCmd *cobra.Command) *cobra.Command {
 To configure your bash shell to load completions for each session add to your bashrc
 
 # ~/.bashrc or ~/.profile
-. <(wilson completion)
+. <(wilson completion bash)
+		
+To configure your zsh shell to load completions for each session add to your zshrc
+
+# ~/.zshrc
+. <(wilson completion zsh)
 `,
 		Run: func(cmd *cobra.Command, args []string) {
 			var shell string
@@ -72,7 +41,7 @@ To configure your bash shell to load completions for each session add to your ba
 					log.Fatal(err)
 				}
 			case "zsh":
-				err := rootCmd.GenZshCompletion(os.Stdout)
+				_, err := os.Stdout.Write([]byte(zshCompletion))
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -80,3 +49,169 @@ To configure your bash shell to load completions for each session add to your ba
 		},
 	}
 }
+
+var zshCompletion = `compdef _wilson wilson
+
+function _wilson {
+  local -a commands
+
+  _arguments -C \
+    '(-c --config)'{-c,--config}'[config file to use]:filename:_files -g "yaml" -g "yml"' \
+    '(-d --debug)'{-d,--debug}'[enable debug]' \
+    '(-q --silent)'{-q,--silent}'[silence output]' \
+    "1: :->cmnds" \
+    "*::arg:->args"
+
+  case $state in
+  cmnds)
+    commands=(
+      "completion:Generates completion scripts"
+      "help:Help about any command"
+      "list:List contexts, pipelines, tasks and watchers"
+      "run:Run pipeline"
+      "watch:Start watching for filesystem events"
+    )
+    _describe "command" commands
+    ;;
+  esac
+
+  case "$words[1]" in
+  completion)
+    _wilson_completion
+    ;;
+  help)
+    _wilson_help
+    ;;
+  list)
+    _wilson_list
+    ;;
+  run)
+    _wilson_run
+    ;;
+  watch)
+    _wilson_watch
+    ;;
+  esac
+}
+
+function _wilson_completion {
+  _arguments \
+    '(-h --help)'{-h,--help}'[help for completion]' \
+    '(-c --config)'{-c,--config}'[config file to use]:filename:_files -g "yaml" -g "yml"' \
+    '(-d --debug)'{-d,--debug}'[enable debug]' \
+    '(-q --silent)'{-q,--silent}'[silence output]' \
+    '1: :("bash" "zsh")'
+}
+
+function _wilson_help {
+  _arguments \
+    '(-c --config)'{-c,--config}'[config file to use]:filename:_files -g "yaml" -g "yml"' \
+    '(-d --debug)'{-d,--debug}'[enable debug]' \
+    '(-q --silent)'{-q,--silent}'[silence output]'
+}
+
+
+function _wilson_list {
+  local -a commands
+
+  _arguments -C \
+    '(-c --config)'{-c,--config}'[config file to use]:filename:_files -g "yaml" -g "yml"' \
+    '(-d --debug)'{-d,--debug}'[enable debug]' \
+    '(-q --silent)'{-q,--silent}'[silence output]' \
+    "1: :->cmnds" \
+    "*::arg:->args"
+
+  case $state in
+  cmnds)
+    commands=(
+      "pipelines:List pipelines"
+      "tasks:List tasks"
+      "watchers:List watchers"
+    )
+    _describe "command" commands
+    ;;
+  esac
+
+  case "$words[1]" in
+  pipelines)
+    _wilson_list_pipelines
+    ;;
+  tasks)
+    _wilson_list_tasks
+    ;;
+  watchers)
+    _wilson_list_watchers
+    ;;
+  esac
+}
+
+function _wilson_list_pipelines {
+  _arguments \
+    '(-c --config)'{-c,--config}'[config file to use]:filename:_files -g "yaml" -g "yml"' \
+    '(-d --debug)'{-d,--debug}'[enable debug]' \
+    '(-q --silent)'{-q,--silent}'[silence output]'
+}
+
+function _wilson_list_tasks {
+  _arguments \
+    '(-c --config)'{-c,--config}'[config file to use]:filename:_files -g "yaml" -g "yml"' \
+    '(-d --debug)'{-d,--debug}'[enable debug]' \
+    '(-q --silent)'{-q,--silent}'[silence output]'
+}
+
+function _wilson_list_watchers {
+  _arguments \
+    '(-c --config)'{-c,--config}'[config file to use]:filename:_files -g "yaml" -g "yml"' \
+    '(-d --debug)'{-d,--debug}'[enable debug]' \
+    '(-q --silent)'{-q,--silent}'[silence output]'
+}
+
+
+function _wilson_run {
+  local -a commands
+  pipelines=("${(@f)$(wilson list pipelines)}")
+
+  _arguments -C \
+    '--quiet[disable tasks output]' \
+    '--raw-output[raw output]' \
+    '(-c --config)'{-c,--config}'[config file to use]:filename:_files -g "yaml" -g "yml"' \
+    '(-d --debug)'{-d,--debug}'[enable debug]' \
+    '(-q --silent)'{-q,--silent}'[silence output]' \
+    "1: :->cmnds" \
+    "*::arg:->args"
+
+  case $state in
+  cmnds)
+    commands=("task:Run task")
+    commands=($commands $pipelines)
+    _describe "command" commands
+    ;;
+  esac
+
+  case "$words[1]" in
+  task)
+    _wilson_run_task
+    ;;
+  esac
+}
+
+function _wilson_run_task {
+  tasks=$(wilson list tasks | awk '{printf("\"%s\" ",$0)}')
+
+  _arguments \
+    '(-c --config)'{-c,--config}'[config file to use]:filename:_files -g "yaml" -g "yml"' \
+    '(-d --debug)'{-d,--debug}'[enable debug]' \
+    '(-q --silent)'{-q,--silent}'[silence output]' \
+    '1: :('$tasks')'
+}
+
+function _wilson_watch {
+  watchers=$(wilson list watchers | awk '{printf("\"%s\" ",$0)}')
+
+  _arguments \
+    '(-c --config)'{-c,--config}'[config file to use]:filename:_files -g "yaml" -g "yml"' \
+    '(-d --debug)'{-d,--debug}'[enable debug]' \
+    '(-q --silent)'{-q,--silent}'[silence output]' \
+    '1: :('$watchers')'
+}
+`

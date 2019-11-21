@@ -29,10 +29,9 @@ var done = make(chan bool)
 func NewRootCommand() *cobra.Command {
 	loadConfig()
 	cmd := &cobra.Command{
-		Use:                    "wilson",
-		Short:                  "Wilson the task runner",
-		Version:                "0.2.0",
-		BashCompletionFunction: bash_completion_func,
+		Use:     "wilson",
+		Short:   "Wilson the task runner",
+		Version: "0.2.0",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			if debug {
 				log.SetLevel(log.DebugLevel)

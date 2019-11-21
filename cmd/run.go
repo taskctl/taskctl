@@ -18,6 +18,11 @@ func NewRunCommand() *cobra.Command {
 		Use:       "run (PIPELINE) [flags] [-- TASKS_ARGS]",
 		Short:     "Run pipeline",
 		ValidArgs: util.ListNames(cfg.Pipelines),
+		Annotations: map[string]string{
+			"cobra_annotations_zsh_completion_argument_annotation": `[
+				{"type": "cobra_annotations_zsh_completion_argument_word_completion", options: ["asdasdasd"]}
+			]`,
+		},
 		Args: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
 				return err

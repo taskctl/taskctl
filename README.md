@@ -9,12 +9,14 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/trntv/wilson)](https://goreportcard.com/report/github.com/trntv/wilson)
 
 # Wilson - routine tasks automation toolkit
-Willows allows you to get rid of a bunch of bash scripts and to design you workflow pipelines in nice and neat with way 
-with yaml files. Wilson's automation based on four concepts:
+Willows allows you to get rid of a bunch of bash scripts and to design you workflow pipelines in nice and neat way 
+in yaml files. With Wilson you can design pipelines which are directed acyclic graphs that are made up of tasks and their dependencies on each other.
+Automation is based on four concepts:
 1. Execution context
 2. Task
 3. Pipeline that describes set of tasks to run
 4. Optional watcher that listens for filesystem events and trigger tasks
+
 
 ## Install
 ### MacOS
@@ -100,6 +102,19 @@ start task --- |--- task B --------------|--- task E --- finish
 
 ## Watchers
 WIF*
+
+## Autocomplete
+### Bash
+Add to  ~/.bashrc or ~/.profile
+``
+. <(wilson completion bash)
+``
+
+### ZSH
+Add to  ~/.zshrc
+``
+. <(wilson completion zsh)
+``
 
 ## Why "Wilson"?
 https://en.wikipedia.org/wiki/Cast_Away#Wilson_the_volleyball
