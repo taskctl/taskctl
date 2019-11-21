@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/trntv/wilson/pkg/runner"
@@ -11,16 +10,16 @@ import (
 
 func NewRunTaskCommand() *cobra.Command {
 	return &cobra.Command{
-		Use:   "task [task]",
-		Short: "Schedule task",
+		Use:       "task (TASK) [flags] [-- TASK_ARGS]",
+		Short:     "Run task",
+		ValidArgs: util.ListNames(cfg.Tasks),
 		Args: func(cmd *cobra.Command, args []string) error {
-			if len(args) == 0 {
-				return errors.New("no task specified")
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
+				return err
 			}
 
-			_, ok := tasks[args[0]]
-			if !ok {
-				return errors.New("unknown task")
+			if err := cobra.OnlyValidArgs(cmd, args); err != nil {
+				return err
 			}
 
 			return nil

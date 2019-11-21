@@ -29,8 +29,10 @@ var done = make(chan bool)
 func NewRootCommand() *cobra.Command {
 	loadConfig()
 	cmd := &cobra.Command{
-		Short:   "Wilson the task runner",
-		Version: "0.2.0",
+		Use:                    "wilson",
+		Short:                  "Wilson the task runner",
+		Version:                "0.2.0",
+		BashCompletionFunction: bash_completion_func,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			if debug {
 				log.SetLevel(log.DebugLevel)
@@ -49,10 +51,15 @@ func NewRootCommand() *cobra.Command {
 	cmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "config file to use")
 	cmd.PersistentFlags().BoolVarP(&quiet, "silent", "q", false, "silence output")
 
+	err := cmd.MarkPersistentFlagFilename("config", "yaml", "yml")
+	if err != nil {
+		log.Warning(err)
+	}
+
 	cmd.AddCommand(NewListCommand())
 	cmd.AddCommand(NewRunCommand())
 	cmd.AddCommand(NewWatchCommand())
-	cmd.AddCommand(NewCompletionsCommand(cmd))
+	cmd.AddCommand(NewAutocompleteCommand(cmd))
 
 	return cmd
 }

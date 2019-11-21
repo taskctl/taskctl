@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/trntv/wilson/pkg/util"
 	"log"
@@ -12,7 +13,7 @@ var listTmpl = `Contexts:{{range $context := .Contexts}}
 - {{ $context }}{{else}} no contexts {{end}}
 
 Pipelines:
-{{-range $pipeline := .Pipelines}}
+{{- range $pipeline := .Pipelines}}
 - {{ $pipeline }}{{else}} no pipelines 
 {{end}}
 
@@ -22,13 +23,13 @@ Tasks:
 {{end}}
 
 Watchers:
-{{-range $watcher := .Watchers}}
+{{- range $watcher := .Watchers}}
 - {{ $watcher }}{{else}} no watchers 
 {{end}}
 `
 
 func NewListCommand() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List contexts, pipelines, tasks and watchers",
 		Args:  cobra.NoArgs,
@@ -47,6 +48,51 @@ func NewListCommand() *cobra.Command {
 			err := t.Execute(os.Stdout, data)
 			if err != nil {
 				log.Println("executing template:", err)
+			}
+		},
+	}
+
+	cmd.AddCommand(NewListTasksCommand())
+	cmd.AddCommand(NewListPipelinesCommand())
+	cmd.AddCommand(NewListWatchersCommand())
+
+	return cmd
+}
+
+func NewListTasksCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "tasks",
+		Short: "List tasks",
+		Args:  cobra.NoArgs,
+		Run: func(cmd *cobra.Command, args []string) {
+			for _, name := range util.ListNames(cfg.Tasks) {
+				fmt.Println(name)
+			}
+		},
+	}
+}
+
+func NewListPipelinesCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "pipelines",
+		Short: "List pipelines",
+		Args:  cobra.NoArgs,
+		Run: func(cmd *cobra.Command, args []string) {
+			for _, name := range util.ListNames(cfg.Pipelines) {
+				fmt.Println(name)
+			}
+		},
+	}
+}
+
+func NewListWatchersCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "watchers",
+		Short: "List watchers",
+		Args:  cobra.NoArgs,
+		Run: func(cmd *cobra.Command, args []string) {
+			for _, name := range util.ListNames(cfg.Watchers) {
+				fmt.Println(name)
 			}
 		},
 	}

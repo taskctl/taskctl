@@ -1,30 +1,25 @@
 package cmd
 
 import (
-	"errors"
-	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/trntv/wilson/pkg/util"
 	"github.com/trntv/wilson/pkg/watch"
-	"strings"
 	"sync"
 )
 
 func NewWatchCommand() *cobra.Command {
 	return &cobra.Command{
-		Use:   "watch [WATCHERS...]",
-		Short: "Start watching for filesystem events",
+		Use:       "watch [WATCHERS...]",
+		Short:     "Start watching for filesystem events",
+		ValidArgs: util.ListNames(cfg.Watchers),
 		Args: func(cmd *cobra.Command, args []string) error {
-			if len(args) == 0 {
-				return errors.New("no watcher specified")
+			if err := cobra.MinimumNArgs(1)(cmd, args); err != nil {
+				return err
 			}
 
-			for _, arg := range args {
-				_, ok := watchers[arg]
-				if !ok {
-					return fmt.Errorf("unknown watcher. Available: %s\r\n", strings.Join(util.ListNames(cfg.Watchers), ", "))
-				}
+			if err := cobra.OnlyValidArgs(cmd, args); err != nil {
+				return err
 			}
 
 			return nil

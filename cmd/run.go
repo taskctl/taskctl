@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"github.com/logrusorgru/aurora"
 	log "github.com/sirupsen/logrus"
@@ -16,16 +15,16 @@ var quiet, raw bool
 
 func NewRunCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "run [pipeline]",
-		Short: "Run pipeline",
+		Use:       "run (PIPELINE) [flags] [-- TASKS_ARGS]",
+		Short:     "Run pipeline",
+		ValidArgs: util.ListNames(cfg.Pipelines),
 		Args: func(cmd *cobra.Command, args []string) error {
-			if len(args) == 0 {
-				return errors.New("no pipeline specified")
+			if err := cobra.ExactArgs(1)(cmd, args); err != nil {
+				return err
 			}
 
-			_, ok := pipelines[args[0]]
-			if !ok {
-				return errors.New("unknown pipeline")
+			if err := cobra.OnlyValidArgs(cmd, args); err != nil {
+				return err
 			}
 
 			return nil
