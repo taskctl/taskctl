@@ -9,15 +9,18 @@ import (
 func TestBuildPipeline_Cyclic(t *testing.T) {
 	stages := []config.Stage{
 		{
+			Name:      "task1",
 			Task:      "task1",
-			DependsOn: []string{"task3"},
+			DependsOn: []string{"last-stage"},
 		},
 		{
+			Name:      "task2",
 			Task:      "task2",
 			DependsOn: []string{"task1"},
 			Env:       nil,
 		},
 		{
+			Name:      "last-stage",
 			Task:      "task3",
 			DependsOn: []string{"task2"},
 		},

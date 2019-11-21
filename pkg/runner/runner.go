@@ -109,25 +109,25 @@ func (r *TaskRunner) runCommand(t *task.Task, cmd *exec.Cmd, cancelFunc context.
 	go r.waitForInterruption(*cmd, done, killed)
 
 	var flushed = make(chan struct{})
-	go r.output.Scan(t, done, flushed)
+	go r.output.Scan(t, flushed)
 
 	log.Debugf("Executing %s", cmd.String())
 	err := cmd.Start()
-	if err != nil {
-		<-flushed
-		return err
-	}
-
-	err = cmd.Wait()
 	if err != nil {
 		close(done)
 		<-flushed
 		return err
 	}
 
+	<-flushed
+	err = cmd.Wait()
+	if err != nil {
+		close(done)
+		return err
+	}
+
 	close(done)
 	<-killed
-	<-flushed
 
 	return nil
 }

@@ -146,6 +146,10 @@ func TestConfig_UnmarshalYAML(t *testing.T) {
 		t.Fatal("pipelines parsing error")
 	}
 
+	if cfg.Pipelines["pipeline1"][0].Name == "" {
+		t.Errorf("stage parsing error")
+	}
+
 	if _, ok = cfg.Tasks["task1"]; !ok {
 		t.Fatal("tasks parsing error")
 	}

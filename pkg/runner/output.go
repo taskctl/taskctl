@@ -9,6 +9,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"sync"
 )
 
 type taskOutput struct {
@@ -23,8 +24,23 @@ type logWriter struct {
 	t *task.Task
 }
 
+type linearWriter struct {
+	dst io.Writer
+}
+
 func (l logWriter) Write(p []byte) (n int, err error) {
-	l.t.WiteLog(p)
+	if len(p) > 0 {
+		l.t.WiteLog(p)
+	}
+
+	return len(p), nil
+}
+
+func (l linearWriter) Write(p []byte) (n int, err error) {
+	_, err = fmt.Fprintln(l.dst, string(p))
+	if err != nil {
+		return 0, err
+	}
 
 	return len(p), nil
 }
@@ -46,97 +62,78 @@ func NewTaskOutput(raw bool, quiet bool) *taskOutput {
 	return o
 }
 
-func (o *taskOutput) Scan(t *task.Task, done chan struct{}, flushed chan struct{}) {
-	o.streamOutput(t, done)
+func (o *taskOutput) Scan(t *task.Task, flushed chan struct{}) {
+	lw := &logWriter{t: t}
 
-	d, err := ioutil.ReadAll(t.Stdout)
-	if len(d) > 0 && err != nil {
-		_, err = fmt.Fprintf(o.stdout, "%s: %s\r\n", t.Name, d)
-		if err != nil {
-			log.Debug(err)
-		}
+	var wg sync.WaitGroup
+	wg.Add(2)
+	if o.raw {
+		go func() {
+			defer wg.Done()
+			err := o.streamRawOutput(&linearWriter{dst: o.stdout}, t.Stdout, lw)
+			if err != nil {
+				log.Debug(err)
+			}
+		}()
+
+		go func() {
+			defer wg.Done()
+			err := o.streamRawOutput(&linearWriter{dst: o.stdout}, t.Stderr, lw)
+			if err != nil {
+				log.Debug(err)
+			}
+		}()
+	} else {
+		go func() {
+			defer wg.Done()
+			err := o.streamDecoratedOutput(t, t.Stdout, lw)
+			if err != nil {
+				log.Debug(err)
+			}
+		}()
+
+		go func() {
+			defer wg.Done()
+			err := o.streamDecoratedOutput(t, t.Stderr, lw)
+			if err != nil {
+				log.Debug(err)
+			}
+		}()
 	}
 
-	d, err = ioutil.ReadAll(t.Stderr)
-	if len(d) > 0 && err != nil {
-		_, err = fmt.Fprintf(o.stderr, "%s: %s\r\n", t.Name, d)
-		if err != nil {
-			log.Debug(err)
-		}
-	}
-
+	wg.Wait()
 	close(flushed)
 }
 
-func (o *taskOutput) streamOutput(t *task.Task, done chan struct{}) {
-	for {
-		select {
-		case <-done:
-			return
-		default:
-			if o.raw {
-				err := o.streamRawOutput(t)
-				if err != nil {
-					return
-				}
-			} else {
-				err := o.streamDecoratedOutput(t, t.Stdout, o.stdout)
-				if err != nil {
-					return
-				}
-				err = o.streamDecoratedOutput(t, t.Stderr, o.stderr)
-				if err != nil {
-					return
-				}
-			}
-		}
-	}
-}
+func (o *taskOutput) streamRawOutput(dst io.Writer, src io.ReadCloser, lw io.Writer) error {
+	w := io.MultiWriter(dst, lw)
 
-func (o *taskOutput) streamRawOutput(t *task.Task) error {
-	lw := &logWriter{t: t}
-	err := o.stream(o.stdout, t.Stdout, lw)
-	if err != nil {
-		return err
-	}
-
-	err = o.stream(o.stderr, t.Stderr, lw)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (o *taskOutput) stream(dst io.Writer, src io.ReadCloser, log io.Writer) error {
-	logw, logr, _ := os.Pipe()
-	w := io.MultiWriter(dst, logw)
-
-	_, err := io.Copy(w, src)
-	if err == os.ErrClosed {
-		return err
-	}
-
-	scanner := bufio.NewScanner(logr)
+	scanner := bufio.NewScanner(src)
 	for scanner.Scan() {
 		b := scanner.Bytes()
-		if len(b) > 0 {
-			_, err = log.Write(b)
-			if err != nil {
-				return err
-			}
+		_, err := w.Write(b)
+		if err != nil {
+			return err
 		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func (o *taskOutput) streamDecoratedOutput(t *task.Task, r io.ReadCloser, w io.Writer) error {
+func (o *taskOutput) streamDecoratedOutput(t *task.Task, r io.ReadCloser, lw io.Writer) error {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
-		line := scanner.Bytes()
-		t.WiteLog(line)
-		_, err := fmt.Fprintf(o.stdout, "%s: %s\r\n", aurora.Gray(16, t.Name), line)
+		b := scanner.Bytes()
+		_, err := fmt.Fprintf(o.stdout, "%s: %s\r\n", aurora.Gray(16, t.Name), b)
+		if err != nil {
+			log.Debug(err)
+		}
+
+		_, err = lw.Write(b)
 		if err != nil {
 			log.Debug(err)
 		}

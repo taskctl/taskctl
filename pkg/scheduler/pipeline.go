@@ -44,6 +44,10 @@ func BuildPipeline(stages []config.Stage, tasks map[string]*task.Task) (*Pipelin
 			Env:       def.Env,
 		}
 
+		if stage.Name == "" {
+			return nil, errors.New(fmt.Sprintf("stage for task %s must have name ", def.Task))
+		}
+
 		if _, ok := p.nodes[def.Name]; ok {
 			return nil, errors.New(fmt.Sprintf("stage with same name %s already exists", def.Name))
 		}
