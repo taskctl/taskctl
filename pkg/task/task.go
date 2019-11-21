@@ -10,12 +10,12 @@ import (
 )
 
 const (
-	STATUS_WAITING = iota
-	STATUS_SCHEDULED
-	STATUS_RUNNING
-	STATUS_DONE
-	STATUS_ERROR
-	STATUS_CANCELED
+	StatusWaiting = iota
+	StatusScheduled
+	StatusRunning
+	StatusDone
+	StatusError
+	StatusCanceled
 )
 
 type Task struct {

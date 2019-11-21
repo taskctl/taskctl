@@ -56,7 +56,7 @@ func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
 			ctx, cancel = context.WithTimeout(ctx, *t.Timeout)
 		}
 
-		cmd := c.createCommand(command, ctx)
+		cmd := c.createCommand(ctx, command)
 		cmd.Env = append(cmd.Env, env...)
 		cmd.Env = append(cmd.Env, r.env...)
 
@@ -78,14 +78,14 @@ func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
 
 		err = r.runCommand(t, cmd, cancel)
 		if err != nil {
-			t.UpdateStatus(task.STATUS_ERROR)
+			t.UpdateStatus(task.StatusError)
 			t.End = time.Now()
 			return err
 		}
 	}
 
 	t.End = time.Now()
-	t.UpdateStatus(task.STATUS_DONE)
+	t.UpdateStatus(task.StatusDone)
 
 	err = c.After()
 	if err != nil {

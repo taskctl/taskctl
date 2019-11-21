@@ -13,19 +13,19 @@ import (
 )
 
 const (
-	EVENT_CREATE = "create"
-	EVENT_WRITE  = "write"
-	EVENT_REMOVE = "remove"
-	EVENT_RENAME = "rename"
-	EVENT_CHMOD  = "chmod"
+	EventCreate = "create"
+	EventWrite  = "write"
+	EventRemove = "remove"
+	EventRename = "rename"
+	EventChmod  = "chmod"
 )
 
 var fsnotifyMap = map[fsnotify.Op]string{
-	fsnotify.Create: EVENT_CREATE,
-	fsnotify.Write:  EVENT_WRITE,
-	fsnotify.Remove: EVENT_REMOVE,
-	fsnotify.Rename: EVENT_RENAME,
-	fsnotify.Chmod:  EVENT_CHMOD,
+	fsnotify.Create: EventCreate,
+	fsnotify.Write:  EventWrite,
+	fsnotify.Remove: EventRemove,
+	fsnotify.Rename: EventRename,
+	fsnotify.Chmod:  EventChmod,
 }
 
 type Watcher struct {

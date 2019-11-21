@@ -71,13 +71,13 @@ func BuildContext(def config.ContextConfig, wcfg *config.WilsonConfig) (*Executi
 			}{Bin: def.Container.Bin, Args: def.Container.Args},
 		},
 		ssh: ssh{
-			user:    def.Ssh.User,
-			host:    def.Ssh.Host,
-			options: def.Ssh.Options,
+			user:    def.SSH.User,
+			host:    def.SSH.Host,
+			options: def.SSH.Options,
 			executable: struct {
 				Bin  string
 				Args []string
-			}{Bin: def.Ssh.Bin, Args: def.Ssh.Options},
+			}{Bin: def.SSH.Bin, Args: def.SSH.Options},
 		},
 		dir:    def.Dir,
 		env:    append(os.Environ(), util.ConvertEnv(def.Env)...),
@@ -89,9 +89,9 @@ func BuildContext(def config.ContextConfig, wcfg *config.WilsonConfig) (*Executi
 	}
 
 	switch c.ctxType {
-	case config.CONTEXT_TYPE_CONTAINER:
+	case config.ContextTypeContainer:
 		switch c.container.provider {
-		case config.CONTEXT_CONTAINER_PROVIDER_DOCKER:
+		case config.ContextContainerProviderDocker:
 			if c.container.executable.Bin == "" {
 				if wcfg.Docker.Bin != "" {
 					c.container.executable.Bin = wcfg.Docker.Bin
@@ -102,7 +102,7 @@ func BuildContext(def config.ContextConfig, wcfg *config.WilsonConfig) (*Executi
 			if len(c.container.executable.Args) == 0 {
 				c.container.executable.Args = wcfg.Docker.Args
 			}
-		case config.CONTEXT_CONTAINER_PROVIDER_DOCKER_COMPOSE:
+		case config.ContextContainerProviderDockerCompose:
 			if c.container.executable.Bin == "" {
 				if wcfg.DockerCompose.Bin != "" {
 					c.container.executable.Bin = wcfg.DockerCompose.Bin
@@ -113,7 +113,7 @@ func BuildContext(def config.ContextConfig, wcfg *config.WilsonConfig) (*Executi
 			if len(c.container.executable.Args) == 0 {
 				c.container.executable.Args = wcfg.DockerCompose.Args
 			}
-		case config.CONTEXT_CONTAINER_PROVIDER_KUBECTL:
+		case config.ContextContainerProviderKubectl:
 			if c.container.executable.Bin == "" {
 				if wcfg.Kubectl.Bin != "" {
 					c.container.executable.Bin = wcfg.Kubectl.Bin
@@ -126,7 +126,7 @@ func BuildContext(def config.ContextConfig, wcfg *config.WilsonConfig) (*Executi
 				c.container.executable.Args = wcfg.Kubectl.Args
 			}
 		}
-	case config.CONTEXT_TYPE_REMOTE:
+	case config.ContextTypeRemote:
 		if c.ssh.executable.Bin == "" {
 			if wcfg.Ssh.Bin != "" {
 				c.ssh.executable.Bin = wcfg.Ssh.Bin
@@ -163,7 +163,7 @@ func BuildContext(def config.ContextConfig, wcfg *config.WilsonConfig) (*Executi
 	return c, nil
 }
 
-func (c *ExecutionContext) buildLocalCommand(command string, ctx context.Context) *exec.Cmd {
+func (c *ExecutionContext) buildLocalCommand(ctx context.Context, command string) *exec.Cmd {
 	cmd := exec.CommandContext(ctx, c.executable.Bin, c.executable.Args...)
 	cmd.Args = append(cmd.Args, command)
 	cmd.Env = c.env
@@ -172,13 +172,13 @@ func (c *ExecutionContext) buildLocalCommand(command string, ctx context.Context
 	return cmd
 }
 
-func (c *ExecutionContext) buildDockerCommand(command string, ctx context.Context) *exec.Cmd {
+func (c *ExecutionContext) buildDockerCommand(ctx context.Context, command string) *exec.Cmd {
 	cmd := exec.CommandContext(ctx, c.container.executable.Bin, c.container.executable.Args...)
 	cmd.Env = c.env
 	cmd.Dir = c.dir
 
 	switch c.container.provider {
-	case config.CONTEXT_CONTAINER_PROVIDER_DOCKER:
+	case config.ContextContainerProviderDocker:
 		if c.container.exec {
 			cmd.Args = append(cmd.Args, "exec")
 			for _, v := range c.container.env {
@@ -197,7 +197,7 @@ func (c *ExecutionContext) buildDockerCommand(command string, ctx context.Contex
 			cmd.Args = append(cmd.Args, c.container.options...)
 			cmd.Args = append(cmd.Args, c.container.image)
 		}
-	case config.CONTEXT_CONTAINER_PROVIDER_DOCKER_COMPOSE:
+	case config.ContextContainerProviderDockerCompose:
 		if c.container.exec {
 			cmd.Args = append(cmd.Args, "exec", "-T")
 		} else {
@@ -219,7 +219,7 @@ func (c *ExecutionContext) buildDockerCommand(command string, ctx context.Contex
 	return cmd
 }
 
-func (c *ExecutionContext) buildKubectlCommand(command string, ctx context.Context) *exec.Cmd {
+func (c *ExecutionContext) buildKubectlCommand(ctx context.Context, command string) *exec.Cmd {
 	cmd := exec.CommandContext(ctx, c.container.executable.Bin, c.container.executable.Args...)
 	cmd.Env = append(c.env, c.container.env...)
 	cmd.Dir = c.dir
@@ -234,7 +234,7 @@ func (c *ExecutionContext) buildKubectlCommand(command string, ctx context.Conte
 	return cmd
 }
 
-func (c *ExecutionContext) buildRemoteCommand(command string, ctx context.Context) *exec.Cmd {
+func (c *ExecutionContext) buildRemoteCommand(ctx context.Context, command string) *exec.Cmd {
 	cmd := exec.CommandContext(ctx, c.ssh.executable.Bin, c.ssh.executable.Args...)
 	cmd.Env = c.env
 	cmd.Dir = c.dir
@@ -335,19 +335,19 @@ func (c *ExecutionContext) runServiceCommand(command string) error {
 	return nil
 }
 
-func (c *ExecutionContext) createCommand(command string, ctx context.Context) *exec.Cmd {
+func (c *ExecutionContext) createCommand(ctx context.Context, command string) *exec.Cmd {
 	switch c.ctxType {
-	case config.CONTEXT_TYPE_LOCAL:
-		return c.buildLocalCommand(command, ctx)
-	case config.CONTEXT_TYPE_CONTAINER:
+	case config.ContextTypeLocal:
+		return c.buildLocalCommand(ctx, command)
+	case config.ContextTypeContainer:
 		switch c.container.provider {
-		case config.CONTEXT_CONTAINER_PROVIDER_DOCKER, config.CONTEXT_CONTAINER_PROVIDER_DOCKER_COMPOSE:
-			return c.buildDockerCommand(command, ctx)
-		case config.CONTEXT_CONTAINER_PROVIDER_KUBECTL:
-			return c.buildKubectlCommand(command, ctx)
+		case config.ContextContainerProviderDocker, config.ContextContainerProviderDockerCompose:
+			return c.buildDockerCommand(ctx, command)
+		case config.ContextContainerProviderKubectl:
+			return c.buildKubectlCommand(ctx, command)
 		}
-	case config.CONTEXT_TYPE_REMOTE:
-		return c.buildRemoteCommand(command, ctx)
+	case config.ContextTypeRemote:
+		return c.buildRemoteCommand(ctx, command)
 	default:
 		log.Fatal("unknown context type")
 	}

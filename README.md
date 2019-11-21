@@ -6,6 +6,7 @@
 ![GitHub closed issues](https://img.shields.io/github/issues-closed/trntv/wilson)
 ![GitHub issues](https://img.shields.io/github/issues/trntv/wilson)
 ![GitHub top language](https://img.shields.io/github/languages/top/trntv/wilson)
+[![Go Report Card](https://goreportcard.com/badge/github.com/trntv/wilson)](https://goreportcard.com/report/github.com/trntv/wilson)
 
 # Wilson - routine tasks automation toolkit
 Willows allows you to get rid of a bunch of bash scripts and to design you workflow pipelines in nice and neat with way 

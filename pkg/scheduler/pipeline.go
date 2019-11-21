@@ -34,7 +34,7 @@ func BuildPipeline(stages []config.Stage, tasks map[string]*task.Task) (*Pipelin
 	for _, def := range stages {
 		t := tasks[def.Task]
 		if t == nil {
-			return nil, errors.New(fmt.Sprintf("unknown task %s", def.Task))
+			return nil, fmt.Errorf("unknown task %s", def.Task)
 		}
 
 		stage := Stage{
@@ -45,11 +45,11 @@ func BuildPipeline(stages []config.Stage, tasks map[string]*task.Task) (*Pipelin
 		}
 
 		if stage.Name == "" {
-			return nil, errors.New(fmt.Sprintf("stage for task %s must have name ", def.Task))
+			return nil, fmt.Errorf("stage for task %s must have name ", def.Task)
 		}
 
 		if _, ok := p.nodes[def.Name]; ok {
-			return nil, errors.New(fmt.Sprintf("stage with same name %s already exists", def.Name))
+			return nil, fmt.Errorf("stage with same name %s already exists", def.Name)
 		}
 
 		p.addNode(def.Name, stage)

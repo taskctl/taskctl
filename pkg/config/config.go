@@ -15,14 +15,13 @@ import (
 )
 
 const (
-	// todo: local, container, remote + providers
-	CONTEXT_TYPE_LOCAL     = "local"
-	CONTEXT_TYPE_CONTAINER = "container"
-	CONTEXT_TYPE_REMOTE    = "remote"
+	ContextTypeLocal     = "local"
+	ContextTypeContainer = "container"
+	ContextTypeRemote    = "remote"
 
-	CONTEXT_CONTAINER_PROVIDER_DOCKER         = "docker"
-	CONTEXT_CONTAINER_PROVIDER_DOCKER_COMPOSE = "docker-compose"
-	CONTEXT_CONTAINER_PROVIDER_KUBECTL        = "kubectl"
+	ContextContainerProviderDocker        = "docker"
+	ContextContainerProviderDockerCompose = "docker-compose"
+	ContextContainerProviderKubectl       = "kubectl"
 )
 
 var loaded = make(map[string]bool)
@@ -40,7 +39,7 @@ type ContextConfig struct {
 	Type      string
 	Dir       string
 	Container Container
-	Ssh       SshConfig
+	SSH       SSHConfig
 	Env       map[string]string
 	Up        []string
 	Down      []string
@@ -91,7 +90,7 @@ type Container struct {
 	util.Executable
 }
 
-type SshConfig struct {
+type SSHConfig struct {
 	Options []string
 	User    string
 	Host    string
@@ -141,8 +140,8 @@ func Load(file string) (*Config, error) {
 		return nil, err
 	}
 
-	if _, ok := cfg.Contexts[CONTEXT_TYPE_LOCAL]; !ok {
-		cfg.Contexts[CONTEXT_TYPE_LOCAL] = ContextConfig{Type: CONTEXT_TYPE_LOCAL}
+	if _, ok := cfg.Contexts[ContextTypeLocal]; !ok {
+		cfg.Contexts[ContextTypeLocal] = ContextConfig{Type: ContextTypeLocal}
 	}
 
 	log.Debugf("config %s loaded", file)
@@ -220,7 +219,7 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		Docker        util.Executable `yaml:"docker"`
 		DockerCompose util.Executable `yaml:"docker-compose"`
 		Kubectl       util.Executable `yaml:"kubectl"`
-		Ssh           util.Executable `yaml:"ssh"`
+		SSH           util.Executable `yaml:"ssh"`
 
 		Import   []string
 		Contexts map[string]struct {
@@ -235,7 +234,7 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 				Env      map[string]string
 				util.Executable
 			}
-			Ssh struct {
+			SSH struct {
 				Options []string
 				User    string
 				Host    string
@@ -278,7 +277,7 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 			Docker:        container.Docker,
 			DockerCompose: container.DockerCompose,
 			Kubectl:       container.Kubectl,
-			Ssh:           container.Ssh,
+			Ssh:           container.SSH,
 		},
 	}
 
@@ -295,11 +294,11 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 				Env:        def.Container.Env,
 				Executable: util.Executable{},
 			},
-			Ssh: SshConfig{
-				Options:    def.Ssh.Options,
-				User:       def.Ssh.User,
-				Host:       def.Ssh.Host,
-				Executable: def.Ssh.Executable,
+			SSH: SSHConfig{
+				Options:    def.SSH.Options,
+				User:       def.SSH.User,
+				Host:       def.SSH.Host,
+				Executable: def.SSH.Executable,
 			},
 			Env:        def.Env,
 			Up:         util.ReadStringsSlice(def.Up),

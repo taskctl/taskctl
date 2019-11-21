@@ -74,14 +74,14 @@ func NewRunCommand() *cobra.Command {
 
 func printSummary(stage *scheduler.Stage) {
 	switch stage.Task.ReadStatus() {
-	case task.STATUS_DONE:
+	case task.StatusDone:
 		fmt.Printf(aurora.Sprintf(aurora.Green("- Stage %s done in %s\r\n"), stage.Name, stage.Task.Duration()))
-	case task.STATUS_ERROR:
+	case task.StatusError:
 		fmt.Printf(aurora.Sprintf(aurora.Red("- Stage %s failed in %s\r\n"), stage.Name, stage.Task.Duration()))
 		fmt.Printf(aurora.Sprintf(aurora.Red("  Error: %s\r\n"), stage.Task.ReadLog()))
-	case task.STATUS_CANCELED:
+	case task.StatusCanceled:
 		fmt.Printf(aurora.Sprintf(aurora.Gray(12, "- Stage %s is cancelled\r\n"), stage.Name))
-	case task.STATUS_WAITING:
+	case task.StatusWaiting:
 		fmt.Printf(aurora.Sprintf(aurora.Gray(12, "- Stage %s skipped\r\n"), stage.Name))
 	default:
 		log.Fatal(aurora.Sprintf(aurora.Red("- Unexpected status %d for task %s in stage\r\n"), stage.Task.Status, stage.Task.Name, stage.Name))
