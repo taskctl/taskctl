@@ -12,18 +12,11 @@ pipelines:
         BIN_OUT: bin/wilson_linux_amd64
 
   release:
-    - task: test
     - task: update-cmd-version
-      depends_on: test
-    - task: build
+    - task: test
       depends_on: update-cmd-version
-      env:
-        GOOS: darwin
-        BIN_OUT: bin/wilson_darwin_amd64
     - task: push-tag
-      depends_on: update-cmd-version
-    - task: update-brew-formula
-      depends_on: push-tag
+      depends_on: test
 
 tasks:
   test:
@@ -38,10 +31,6 @@ tasks:
     command:
       - sed -i '' '/Version:/s/".*"/"'${ARGS}'"/' cmd/cmd.go
       - git add cmd/cmd.go
-
-  update-brew-formula:
-    command:
-      - sed -i '' '/  version/s/".*"/"'${ARGS}'"/' wilson.rb
 
   push-tag:
     command:

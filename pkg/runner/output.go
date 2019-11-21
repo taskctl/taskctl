@@ -9,8 +9,11 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"regexp"
 	"sync"
 )
+
+const ansiCodesToStrip = "\r\u001b\\[0K"
 
 type taskOutput struct {
 	raw   bool
@@ -18,6 +21,8 @@ type taskOutput struct {
 
 	stdout io.Writer
 	stderr io.Writer
+
+	ansiRegexp *regexp.Regexp
 }
 
 type logWriter struct {
@@ -47,8 +52,9 @@ func (l linearWriter) Write(p []byte) (n int, err error) {
 
 func NewTaskOutput(raw bool, quiet bool) *taskOutput {
 	o := &taskOutput{
-		raw:   raw,
-		quiet: quiet,
+		raw:        raw,
+		quiet:      quiet,
+		ansiRegexp: regexp.MustCompile(ansiCodesToStrip),
 	}
 
 	if quiet {
@@ -128,7 +134,8 @@ func (o *taskOutput) streamDecoratedOutput(t *task.Task, r io.ReadCloser, lw io.
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		b := scanner.Bytes()
-		_, err := fmt.Fprintf(o.stdout, "%s: %s\r\n", aurora.Gray(16, t.Name), b)
+		bs := o.ansiRegexp.ReplaceAllLiteral(b, []byte{})
+		_, err := fmt.Fprintf(o.stdout, "%s: %s\r\n", aurora.Gray(16, t.Name), bs)
 		if err != nil {
 			log.Debug(err)
 		}
