@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/sirupsen/logrus"
-	"github.com/trntv/wilson/cmd"
 	"log"
 	"os"
 	"os/signal"
@@ -16,7 +15,7 @@ func main() {
 	})
 	listenSignals()
 
-	if err := cmd.Execute(); err != nil {
+	if err := Execute(); err != nil {
 		log.Fatalf("Command execution error: %s", err)
 	}
 }
@@ -35,7 +34,7 @@ func listenSignals() {
 				case syscall.SIGTERM:
 					exit = 143
 				}
-				cmd.Abort()
+				Abort()
 				os.Exit(exit)
 			}
 		}

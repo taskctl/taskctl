@@ -2,9 +2,10 @@ package runner
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	log "github.com/sirupsen/logrus"
-	"github.com/trntv/wilson/pkg/config"
+	"github.com/trntv/wilson/internal/config"
 	"github.com/trntv/wilson/pkg/util"
 	"os"
 	"os/exec"
@@ -342,24 +343,24 @@ func (c *ExecutionContext) runServiceCommand(command string) (err error) {
 	return nil
 }
 
-func (c *ExecutionContext) createCommand(ctx context.Context, command string) *exec.Cmd {
+func (c *ExecutionContext) createCommand(ctx context.Context, command string) (*exec.Cmd, error) {
 	switch c.ctxType {
 	case config.ContextTypeLocal:
-		return c.buildLocalCommand(ctx, command)
+		return c.buildLocalCommand(ctx, command), nil
 	case config.ContextTypeContainer:
 		switch c.container.provider {
 		case config.ContextContainerProviderDocker, config.ContextContainerProviderDockerCompose:
-			return c.buildDockerCommand(ctx, command)
+			return c.buildDockerCommand(ctx, command), nil
 		case config.ContextContainerProviderKubectl:
-			return c.buildKubectlCommand(ctx, command)
+			return c.buildKubectlCommand(ctx, command), nil
 		}
 	case config.ContextTypeRemote:
-		return c.buildRemoteCommand(ctx, command)
+		return c.buildRemoteCommand(ctx, command), nil
 	default:
-		log.Fatal("unknown context type")
+		return nil, errors.New("unknown context type")
 	}
 
-	return nil
+	return nil, nil
 }
 
 func (c *ExecutionContext) ScheduleForCleanup() {

@@ -1,11 +1,11 @@
-package cmd
+package main
 
 import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/trntv/wilson/internal/watch"
 	"github.com/trntv/wilson/pkg/util"
-	"github.com/trntv/wilson/pkg/watch"
 	"sync"
 )
 

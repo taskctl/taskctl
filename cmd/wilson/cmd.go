@@ -1,19 +1,20 @@
-package cmd
+package main
 
 import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/trntv/wilson/pkg/config"
+	"github.com/trntv/wilson/internal/config"
+	"github.com/trntv/wilson/internal/watch"
 	"github.com/trntv/wilson/pkg/runner"
 	"github.com/trntv/wilson/pkg/scheduler"
 	"github.com/trntv/wilson/pkg/task"
-	"github.com/trntv/wilson/pkg/watch"
 	"io/ioutil"
 	"os"
 	"strings"
 )
 
+// todo: remove global variables
 var debug, silent bool
 var cfg *config.Config
 

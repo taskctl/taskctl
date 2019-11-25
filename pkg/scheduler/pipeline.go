@@ -3,8 +3,7 @@ package scheduler
 import (
 	"errors"
 	"fmt"
-	log "github.com/sirupsen/logrus"
-	"github.com/trntv/wilson/pkg/config"
+	"github.com/trntv/wilson/internal/config"
 	"github.com/trntv/wilson/pkg/task"
 	"github.com/trntv/wilson/pkg/util"
 )
@@ -87,13 +86,13 @@ func (p *Pipeline) Nodes() map[string]*Stage {
 	return p.nodes
 }
 
-func (p *Pipeline) Node(name string) *Stage {
+func (p *Pipeline) Node(name string) (*Stage, error) {
 	t, ok := p.nodes[name]
 	if !ok {
-		log.Fatalf("unknown task name %s\r\n", name)
+		return nil, fmt.Errorf("unknown task name %s\r\n", name)
 	}
 
-	return t
+	return t, nil
 }
 
 func (p *Pipeline) From(name string) []string {

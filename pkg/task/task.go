@@ -1,7 +1,7 @@
 package task
 
 import (
-	"github.com/trntv/wilson/pkg/config"
+	"github.com/trntv/wilson/internal/config"
 	"github.com/trntv/wilson/pkg/util"
 	"io"
 	"sync"

@@ -1,10 +1,9 @@
-package cmd
+package main
 
 import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/trntv/wilson/pkg/util"
-	"log"
 	"os"
 	"text/template"
 )
@@ -33,7 +32,7 @@ func NewListCommand() *cobra.Command {
 		Use:   "list",
 		Short: "List contexts, pipelines, tasks and watchers",
 		Args:  cobra.NoArgs,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			t := template.Must(template.New("list").Parse(listTmpl))
 
 			data := struct {
@@ -46,9 +45,7 @@ func NewListCommand() *cobra.Command {
 			}
 
 			err := t.Execute(os.Stdout, data)
-			if err != nil {
-				log.Println("executing template:", err)
-			}
+			return err
 		},
 	}
 

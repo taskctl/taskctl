@@ -13,7 +13,8 @@ import (
 	"sync"
 )
 
-const ansi = "[\u001B\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?\u0007)|(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))"
+// ANSI escape codes except colors
+const ansi = "[\u001B\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?\u0007)|(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-LN-PRZcf-lntqry=><~]))"
 
 type taskOutput struct {
 	raw   bool
@@ -92,7 +93,7 @@ func (o *taskOutput) Scan(t *task.Task, flushed chan struct{}) {
 	} else {
 		go func() {
 			defer wg.Done()
-			err := o.streamDecoratedOutput(t, t.Stdout, lw)
+			err := o.streamDecoratedOutput(t, o.stdout, t.Stdout, lw)
 			if err != nil {
 				log.Debug(err)
 			}
@@ -100,7 +101,7 @@ func (o *taskOutput) Scan(t *task.Task, flushed chan struct{}) {
 
 		go func() {
 			defer wg.Done()
-			err := o.streamDecoratedOutput(t, t.Stderr, lw)
+			err := o.streamDecoratedOutput(t, o.stderr, t.Stderr, lw)
 			if err != nil {
 				log.Debug(err)
 			}
@@ -130,12 +131,14 @@ func (o *taskOutput) streamRawOutput(dst io.Writer, src io.ReadCloser, lw io.Wri
 	return nil
 }
 
-func (o *taskOutput) streamDecoratedOutput(t *task.Task, r io.ReadCloser, lw io.Writer) error {
-	scanner := bufio.NewScanner(r)
+func (o *taskOutput) streamDecoratedOutput(t *task.Task, dst io.Writer, src io.ReadCloser, lw io.Writer) error {
+	w := io.MultiWriter(dst, lw)
+
+	scanner := bufio.NewScanner(src)
 	for scanner.Scan() {
 		b := scanner.Bytes()
 		bs := o.ansiRegexp.ReplaceAllLiteral(b, []byte{})
-		_, err := fmt.Fprintf(o.stdout, "%s: %s\r\n", aurora.Gray(16, t.Name), bs)
+		_, err := fmt.Fprintf(w, "%s: %s\r\n", aurora.Cyan(t.Name), bs)
 		if err != nil {
 			log.Debug(err)
 		}

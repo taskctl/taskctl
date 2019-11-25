@@ -55,7 +55,11 @@ func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
 			ctx, _ = context.WithTimeout(ctx, *t.Timeout)
 		}
 
-		cmd := c.createCommand(ctx, command)
+		cmd, err := c.createCommand(ctx, command)
+		if err != nil {
+			return err
+		}
+
 		cmd.Env = append(cmd.Env, env...)
 		cmd.Env = append(cmd.Env, r.env...)
 

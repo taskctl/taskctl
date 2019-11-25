@@ -2,7 +2,7 @@ package watch
 
 import (
 	log "github.com/sirupsen/logrus"
-	"github.com/trntv/wilson/pkg/config"
+	"github.com/trntv/wilson/internal/config"
 	"github.com/trntv/wilson/pkg/runner"
 	"github.com/trntv/wilson/pkg/task"
 	"github.com/trntv/wilson/pkg/util"

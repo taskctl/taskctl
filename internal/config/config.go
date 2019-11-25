@@ -103,7 +103,7 @@ func Get() *Config {
 
 func Load(file string) (*Config, error) {
 	var err error
-	cfg, err = loadGlobalConfig()
+	cfg, err = LoadGlobalConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +130,7 @@ func Load(file string) (*Config, error) {
 	}
 
 	file = path.Join(dir, file)
-	localCfg, err := load(file)
+	localCfg, err := LoadFile(file)
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +148,7 @@ func Load(file string) (*Config, error) {
 	return cfg, nil
 }
 
-func loadGlobalConfig() (*Config, error) {
+func LoadGlobalConfig() (*Config, error) {
 	h, err := os.UserHomeDir()
 	if err != nil {
 		return nil, err
@@ -159,10 +159,10 @@ func loadGlobalConfig() (*Config, error) {
 		return nil, nil
 	}
 
-	return load(file)
+	return LoadFile(file)
 }
 
-func load(file string) (*Config, error) {
+func LoadFile(file string) (*Config, error) {
 	loaded[file] = true
 	config, err := readFile(file)
 	if err != nil {
@@ -176,7 +176,7 @@ func load(file string) (*Config, error) {
 			continue
 		}
 
-		lconfig, err := load(importFile)
+		lconfig, err := LoadFile(importFile)
 		if err != nil {
 			return nil, err
 		}

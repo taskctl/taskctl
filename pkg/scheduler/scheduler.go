@@ -59,7 +59,11 @@ func (s *PipelineScheduler) Schedule() {
 
 			var ready = true
 			for _, dep := range s.pipeline.To(name) {
-				depStage := s.pipeline.Node(dep)
+				depStage, err := s.pipeline.Node(dep)
+				if err != nil {
+					log.Fatal(err)
+				}
+
 				switch depStage.Task.ReadStatus() {
 				case task.StatusDone:
 					continue
