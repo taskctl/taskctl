@@ -1,14 +1,15 @@
+# Wilson - routine tasks automation toolkit
 ![Tests](https://github.com/trntv/wilson/workflows/Test/badge.svg)
-![Licence](https://img.shields.io/github/license/trntv/wilson)
 [![Requirements Status](https://requires.io/github/trntv/wilson/requirements.svg?branch=master)](https://requires.io/github/trntv/wilson/requirements/?branch=master)
+![GitHub top language](https://img.shields.io/github/languages/top/trntv/wilson)
+[![Go Report Card](https://goreportcard.com/badge/github.com/trntv/wilson)](https://goreportcard.com/report/github.com/trntv/wilson)
+
 ![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/trntv/wilson)
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/trntv/wilson)
 ![GitHub closed issues](https://img.shields.io/github/issues-closed/trntv/wilson)
 ![GitHub issues](https://img.shields.io/github/issues/trntv/wilson)
-![GitHub top language](https://img.shields.io/github/languages/top/trntv/wilson)
-[![Go Report Card](https://goreportcard.com/badge/github.com/trntv/wilson)](https://goreportcard.com/report/github.com/trntv/wilson)
+![Licence](https://img.shields.io/github/license/trntv/wilson)
 
-# Wilson - routine tasks automation toolkit
 Wilson allows you to get rid of a bunch of bash scripts and to design you workflow pipelines in nice and neat way 
 in yaml files. With Wilson you can design pipelines which are directed acyclic graphs that are made up of tasks and their dependencies on each other.
 
