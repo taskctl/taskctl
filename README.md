@@ -18,6 +18,8 @@ Automation is based on four concepts:
 3. Optional watcher that listens for filesystem events and trigger tasks
 4. Execution context
 
+[![asciicast](https://asciinema.org/a/283740.svg)](https://asciinema.org/a/283740)
+
 # Getting started
 ## Install
 ### MacOS
