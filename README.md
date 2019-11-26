@@ -115,15 +115,15 @@ WIF*
 ## Autocomplete
 ### Bash
 Add to  ~/.bashrc or ~/.profile
-``
+```
 . <(wilson completion bash)
-``
+```
 
 ### ZSH
 Add to  ~/.zshrc
-``
+```
 . <(wilson completion zsh)
-``
+```
 
 ## Why "Wilson"?
 https://en.wikipedia.org/wiki/Cast_Away#Wilson_the_volleyball 🏐
