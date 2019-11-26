@@ -32,7 +32,12 @@ func NewListCommand() *cobra.Command {
 		Use:   "list",
 		Short: "List contexts, pipelines, tasks and watchers",
 		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			cfg, err := loadConfig()
+			if err != nil {
+				return err
+			}
+
 			t := template.Must(template.New("list").Parse(listTmpl))
 
 			data := struct {
@@ -44,7 +49,7 @@ func NewListCommand() *cobra.Command {
 				Watchers:  util.ListNames(cfg.Watchers),
 			}
 
-			err := t.Execute(os.Stdout, data)
+			err = t.Execute(os.Stdout, data)
 			return err
 		},
 	}
@@ -61,10 +66,17 @@ func NewListTasksCommand() *cobra.Command {
 		Use:   "tasks",
 		Short: "List tasks",
 		Args:  cobra.NoArgs,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := loadConfig()
+			if err != nil {
+				return err
+			}
+
 			for _, name := range util.ListNames(cfg.Tasks) {
 				fmt.Println(name)
 			}
+
+			return nil
 		},
 	}
 }
@@ -74,10 +86,17 @@ func NewListPipelinesCommand() *cobra.Command {
 		Use:   "pipelines",
 		Short: "List pipelines",
 		Args:  cobra.NoArgs,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := loadConfig()
+			if err != nil {
+				return err
+			}
+
 			for _, name := range util.ListNames(cfg.Pipelines) {
 				fmt.Println(name)
 			}
+
+			return nil
 		},
 	}
 }
@@ -87,10 +106,17 @@ func NewListWatchersCommand() *cobra.Command {
 		Use:   "watchers",
 		Short: "List watchers",
 		Args:  cobra.NoArgs,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := loadConfig()
+			if err != nil {
+				return err
+			}
+
 			for _, name := range util.ListNames(cfg.Watchers) {
 				fmt.Println(name)
 			}
+
+			return nil
 		},
 	}
 }

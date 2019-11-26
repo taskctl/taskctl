@@ -66,19 +66,19 @@ func BuildContext(def config.ContextConfig, wcfg *config.WilsonConfig) (*Executi
 			exec:     def.Container.Exec,
 			options:  def.Container.Options,
 			env:      util.ConvertEnv(def.Container.Env),
-			executable: struct {
-				Bin  string
-				Args []string
-			}{Bin: def.Container.Bin, Args: def.Container.Args},
+			executable: util.Executable{
+				Bin:  def.Container.Bin,
+				Args: def.Container.Args,
+			},
 		},
 		ssh: ssh{
 			user:    def.SSH.User,
 			host:    def.SSH.Host,
 			options: def.SSH.Options,
-			executable: struct {
-				Bin  string
-				Args []string
-			}{Bin: def.SSH.Bin, Args: def.SSH.Options},
+			executable: util.Executable{
+				Bin:  def.SSH.Bin,
+				Args: def.SSH.Options,
+			},
 		},
 		dir:    def.Dir,
 		env:    append(os.Environ(), util.ConvertEnv(def.Env)...),

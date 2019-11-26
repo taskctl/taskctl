@@ -11,11 +11,15 @@ import (
 
 func NewRunTaskCommand() *cobra.Command {
 	return &cobra.Command{
-		Use:       "task (TASK) [flags] [-- TASK_ARGS]",
-		Short:     "Run task",
-		ValidArgs: util.ListNames(cfg.Tasks),
-		Args:      cobra.MinimumNArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Use:   "task (TASK) [flags] [-- TASK_ARGS]",
+		Short: "Run task",
+		Args:  cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			_, err = loadConfig()
+			if err != nil {
+				return err
+			}
+
 			t, ok := tasks[args[0]]
 			if !ok {
 				return fmt.Errorf("unknown task %s", args[0])
@@ -29,7 +33,7 @@ func NewRunTaskCommand() *cobra.Command {
 			})
 
 			tr := runner.NewTaskRunner(contexts, env, true, quiet)
-			err := tr.Run(t)
+			err = tr.Run(t)
 			if err != nil {
 				log.Error(err)
 			}

@@ -18,6 +18,11 @@ pipelines:
     - task: push-tag
       depends_on: test
 
+  lints:
+    - task: golint
+    - task: govet
+      depends_on: golint
+
 tasks:
   test:
     command:
@@ -38,3 +43,11 @@ tasks:
       - git tag ${ARGS}
       - git push origin master
       - git push origin ${ARGS}
+
+  golint:
+    command:
+      - golint $(go list ./... | grep -v /vendor/)
+
+  govet:
+    command:
+      - go vet $(go list ./... | grep -v /vendor/)

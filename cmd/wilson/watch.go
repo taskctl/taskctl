@@ -5,17 +5,20 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/trntv/wilson/internal/watch"
-	"github.com/trntv/wilson/pkg/util"
 	"sync"
 )
 
 func NewWatchCommand() *cobra.Command {
 	return &cobra.Command{
-		Use:       "watch [WATCHERS...]",
-		Short:     "Start watching for filesystem events",
-		ValidArgs: util.ListNames(cfg.Watchers),
-		Args:      cobra.MinimumNArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Use:   "watch [WATCHERS...]",
+		Short: "Start watching for filesystem events",
+		Args:  cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			_, err = loadConfig()
+			if err != nil {
+				return err
+			}
+
 			var wg sync.WaitGroup
 			for _, name := range args {
 				wg.Add(1)

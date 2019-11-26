@@ -338,6 +338,15 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 						cfg.Pipelines[name][i].DependsOn = util.ReadStringsSlice(v)
 					case "name":
 						cfg.Pipelines[name][i].Name = v.(string)
+					case "env":
+						envs, ok := v.(map[interface{}]interface{})
+						if !ok {
+							return fmt.Errorf("failed to parse %s envs", name)
+						}
+						cfg.Pipelines[name][i].Env = make(map[string]string)
+						for kk, vv := range envs {
+							cfg.Pipelines[name][i].Env[kk.(string)] = vv.(string)
+						}
 					}
 
 					if cfg.Pipelines[name][i].Name == "" {

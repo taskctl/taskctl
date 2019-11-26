@@ -60,7 +60,7 @@ func BuildPipeline(stages []config.Stage, tasks map[string]*task.Task) (*Pipelin
 			}
 		}
 
-		p.env[def.Name] = util.ConvertEnv(stage.Env)
+		p.env[t.Name] = util.ConvertEnv(stage.Env)
 
 	}
 

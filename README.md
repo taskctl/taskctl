@@ -10,16 +10,15 @@
 ![GitHub issues](https://img.shields.io/github/issues/trntv/wilson)
 ![Licence](https://img.shields.io/github/license/trntv/wilson)
 
-Wilson allows you to get rid of a bunch of bash scripts and to design you workflow pipelines in nice and neat way 
-in yaml files. With Wilson you can design pipelines which are directed acyclic graphs that are made up of tasks and their dependencies on each other.
+Wilson allows you to design you development workflow pipelines in nice and neat way in yaml files. Pipelines are directed acyclic graphs that are made up of tasks and their dependencies on each other.
 
 Automation is based on four concepts:
-1. Execution context
-2. Task
-3. Pipeline that describes set of tasks to run
-4. Optional watcher that listens for filesystem events and trigger tasks
+1. Task
+2. Pipeline that describes set of tasks to run
+3. Optional watcher that listens for filesystem events and trigger tasks
+4. Execution context
 
-
+# Getting started
 ## Install
 ### MacOS
 ```
@@ -32,6 +31,12 @@ curl -L https://github.com/trntv/wilson/releases/latest/download/wilson-linux-am
 ### From sources
 ```
 go get -u github.com/trntv/wilson
+```
+
+### First run
+```
+wilson init
+wilson run pipeline1
 ```
 
 ## Examples

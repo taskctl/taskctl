@@ -15,11 +15,15 @@ var quiet, raw bool
 
 func NewRunCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:       "run (PIPELINE) [flags] [-- TASKS_ARGS]",
-		Short:     "Run pipeline",
-		ValidArgs: util.ListNames(cfg.Pipelines),
-		Args:      cobra.MinimumNArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Use:   "run (PIPELINE) [flags] [-- TASKS_ARGS]",
+		Short: "Run pipeline or task",
+		Args:  cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			_, err = loadConfig()
+			if err != nil {
+				return err
+			}
+
 			if raw && !debug {
 				log.SetLevel(log.FatalLevel)
 			}
