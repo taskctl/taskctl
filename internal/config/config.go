@@ -1,7 +1,6 @@
 package config
 
 import (
-	"errors"
 	"fmt"
 	"github.com/imdario/mergo"
 	log "github.com/sirupsen/logrus"
@@ -49,19 +48,20 @@ type ContextConfig struct {
 }
 
 type Stage struct {
-	Name      string
-	Task      string
-	DependsOn []string
-	Env       map[string]string
+	Name         string
+	Task         string
+	Pipeline     string
+	DependsOn    []string
+	Env          map[string]string
+	AllowFailure bool
 }
 
 type TaskConfig struct {
-	Command      []string
-	Context      string
-	Env          map[string]string
-	Dir          string
-	Timeout      *time.Duration
-	AllowFailure bool
+	Command []string
+	Context string
+	Env     map[string]string
+	Dir     string
+	Timeout *time.Duration
 }
 
 type WatcherConfig struct {
@@ -311,12 +311,11 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 
 	for name, def := range container.Tasks {
 		cfg.Tasks[name] = TaskConfig{
-			Command:      util.ReadStringsSlice(def.Command),
-			Context:      def.Context,
-			Env:          def.Env,
-			Dir:          def.Dir,
-			Timeout:      def.Timeout,
-			AllowFailure: def.AllowFailure,
+			Command: util.ReadStringsSlice(def.Command),
+			Context: def.Context,
+			Env:     def.Env,
+			Dir:     def.Dir,
+			Timeout: def.Timeout,
 		}
 	}
 
@@ -327,13 +326,17 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 			case reflect.Map:
 				stage, ok := def.(map[interface{}]interface{})
 				if !ok {
-					return errors.New("pipelines unmarshalling error")
+					return fmt.Errorf("pipeline %s unmarshalling error", name)
 				}
 
 				for k, v := range stage {
 					switch k.(string) {
+					case "allow_failure":
+						cfg.Pipelines[name][i].AllowFailure = v.(bool)
 					case "task":
 						cfg.Pipelines[name][i].Task = v.(string)
+					case "pipeline":
+						cfg.Pipelines[name][i].Pipeline = v.(string)
 					case "depends_on":
 						cfg.Pipelines[name][i].DependsOn = util.ReadStringsSlice(v)
 					case "name":
@@ -348,10 +351,10 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 							cfg.Pipelines[name][i].Env[kk.(string)] = vv.(string)
 						}
 					}
+				}
 
-					if cfg.Pipelines[name][i].Name == "" {
-						cfg.Pipelines[name][i].Name = cfg.Pipelines[name][i].Task
-					}
+				if cfg.Pipelines[name][i].Name == "" {
+					cfg.Pipelines[name][i].Name = cfg.Pipelines[name][i].Task
 				}
 			case reflect.String:
 				task := reflect.ValueOf(def).String()

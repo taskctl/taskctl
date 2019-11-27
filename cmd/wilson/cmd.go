@@ -93,7 +93,7 @@ func loadConfig() (cfg *config.Config, err error) {
 	for name, stages := range cfg.Pipelines {
 		pipelines[name], err = scheduler.BuildPipeline(stages, tasks)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("pipeline %s build failed: %w", name, err)
 		}
 	}
 

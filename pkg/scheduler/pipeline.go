@@ -15,13 +15,6 @@ type Pipeline struct {
 	env   map[string][]string
 }
 
-type Stage struct {
-	Name      string
-	Task      task.Task
-	DependsOn []string
-	Env       map[string]string
-}
-
 func BuildPipeline(stages []config.Stage, tasks map[string]*task.Task) (*Pipeline, error) {
 	var p = &Pipeline{
 		nodes: make(map[string]*Stage),
@@ -37,30 +30,32 @@ func BuildPipeline(stages []config.Stage, tasks map[string]*task.Task) (*Pipelin
 		}
 
 		stage := &Stage{
-			Name:      def.Name,
-			Task:      *t,
-			DependsOn: def.DependsOn,
-			Env:       def.Env,
+			Name:         def.Name,
+			Task:         *t,
+			Pipeline:     def.Pipeline,
+			DependsOn:    def.DependsOn,
+			Env:          def.Env,
+			AllowFailure: def.AllowFailure,
 		}
 
 		if stage.Name == "" {
-			return nil, fmt.Errorf("stage for task %s must have name ", def.Task)
+			return nil, fmt.Errorf("stage for task %s must have name", def.Task)
 		}
 
-		if _, ok := p.nodes[def.Name]; ok {
-			return nil, fmt.Errorf("stage with same name %s already exists", def.Name)
+		if _, ok := p.nodes[stage.Name]; ok {
+			return nil, fmt.Errorf("stage with same name %s already exists", stage.Name)
 		}
 
-		p.addNode(def.Name, stage)
+		p.addNode(stage.Name, stage)
 
 		for _, dep := range stage.DependsOn {
-			err := p.addEdge(dep, def.Name)
+			err := p.addEdge(dep, stage.Name)
 			if err != nil {
 				return nil, err
 			}
 		}
 
-		p.env[t.Name] = util.ConvertEnv(stage.Env)
+		p.env[stage.Name] = util.ConvertEnv(stage.Env)
 
 	}
 
@@ -89,7 +84,7 @@ func (p *Pipeline) Nodes() map[string]*Stage {
 func (p *Pipeline) Node(name string) (*Stage, error) {
 	t, ok := p.nodes[name]
 	if !ok {
-		return nil, fmt.Errorf("unknown task name %s\r\n", name)
+		return nil, fmt.Errorf("unknown task %s", name)
 	}
 
 	return t, nil

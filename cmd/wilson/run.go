@@ -6,7 +6,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/trntv/wilson/pkg/scheduler"
-	"github.com/trntv/wilson/pkg/task"
 	"github.com/trntv/wilson/pkg/util"
 	"strings"
 )
@@ -41,7 +40,7 @@ func NewRunCommand() *cobra.Command {
 				"ARGS": strings.Join(pipelineArgs, " "),
 			})
 
-			rr := scheduler.NewScheduler(pipeline, contexts, env, raw, quiet)
+			rr := scheduler.NewScheduler(contexts, env, raw, quiet)
 			go func() {
 				select {
 				case <-cancel:
@@ -49,12 +48,10 @@ func NewRunCommand() *cobra.Command {
 					return
 				}
 			}()
-			rr.Schedule()
+			rr.Schedule(pipeline)
 
 			fmt.Println(aurora.Yellow("\r\nSummary:"))
-			for _, stage := range pipeline.Nodes() {
-				printSummary(stage)
-			}
+			printSummary(pipeline)
 
 			fmt.Printf(aurora.Sprintf(aurora.Green("\r\nTotal duration: %s\r\n"), rr.End.Sub(rr.Start)))
 
@@ -71,18 +68,21 @@ func NewRunCommand() *cobra.Command {
 	return cmd
 }
 
-func printSummary(stage *scheduler.Stage) {
-	switch stage.Task.ReadStatus() {
-	case task.StatusDone:
-		fmt.Printf(aurora.Sprintf(aurora.Green("- Stage %s done in %s\r\n"), stage.Name, stage.Task.Duration()))
-	case task.StatusError:
-		fmt.Printf(aurora.Sprintf(aurora.Red("- Stage %s failed in %s\r\n"), stage.Name, stage.Task.Duration()))
-		fmt.Printf(aurora.Sprintf(aurora.Red("  Error: %s\r\n"), stage.Task.ReadLog()))
-	case task.StatusCanceled:
-		fmt.Printf(aurora.Sprintf(aurora.Gray(12, "- Stage %s is cancelled\r\n"), stage.Name))
-	case task.StatusWaiting:
-		fmt.Printf(aurora.Sprintf(aurora.Gray(12, "- Stage %s skipped\r\n"), stage.Name))
-	default:
-		log.Errorf(aurora.Sprintf(aurora.Red("- Unexpected status %d for task %s in stage\r\n"), stage.Task.Status, stage.Task.Name, stage.Name))
+func printSummary(pipeline *scheduler.Pipeline) {
+	// todo: order by start time
+	for _, stage := range pipeline.Nodes() {
+		switch stage.ReadStatus() {
+		case scheduler.StatusDone:
+			fmt.Printf(aurora.Sprintf(aurora.Green("- Stage %s done in %s\r\n"), stage.Name, stage.Task.Duration()))
+		case scheduler.StatusError:
+			fmt.Printf(aurora.Sprintf(aurora.Red("- Stage %s failed in %s\r\n"), stage.Name, stage.Task.Duration()))
+			fmt.Printf(aurora.Sprintf(aurora.Red("  Error: %s\r\n"), stage.Task.ReadLog()))
+		case scheduler.StatusCanceled:
+			fmt.Printf(aurora.Sprintf(aurora.Gray(12, "- Stage %s is cancelled\r\n"), stage.Name))
+		case scheduler.StatusWaiting:
+			fmt.Printf(aurora.Sprintf(aurora.Gray(12, "- Stage %s skipped\r\n"), stage.Name))
+		default:
+			log.Errorf(aurora.Sprintf(aurora.Red("- Unexpected status %d for stage %s\r\n"), stage.Status, stage.Name))
+		}
 	}
 }

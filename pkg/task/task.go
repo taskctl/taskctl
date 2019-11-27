@@ -5,31 +5,19 @@ import (
 	"github.com/trntv/wilson/pkg/util"
 	"io"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
-const (
-	StatusWaiting = iota
-	StatusScheduled
-	StatusRunning
-	StatusDone
-	StatusError
-	StatusCanceled
-)
-
 type Task struct {
-	Command      []string
-	Context      string
-	Env          []string
-	Dir          string
-	Timeout      *time.Duration
-	AllowFailure bool
+	Command []string
+	Context string
+	Env     []string
+	Dir     string
+	Timeout *time.Duration
 
-	Name   string
-	Status int32
-	Start  time.Time
-	End    time.Time
+	Name  string
+	Start time.Time
+	End   time.Time
 
 	Stdout io.ReadCloser
 	Stderr io.ReadCloser
@@ -42,11 +30,10 @@ type Task struct {
 
 func BuildTask(def config.TaskConfig) *Task {
 	t := &Task{
-		Command:      def.Command,
-		Env:          make([]string, 0),
-		Dir:          def.Dir,
-		Timeout:      def.Timeout,
-		AllowFailure: def.AllowFailure,
+		Command: def.Command,
+		Env:     make([]string, 0),
+		Dir:     def.Dir,
+		Timeout: def.Timeout,
 	}
 
 	t.Context = def.Context
@@ -56,14 +43,6 @@ func BuildTask(def config.TaskConfig) *Task {
 	}
 
 	return t
-}
-
-func (t *Task) UpdateStatus(status int32) {
-	atomic.StoreInt32(&t.Status, status)
-}
-
-func (t *Task) ReadStatus() int32 {
-	return atomic.LoadInt32(&t.Status)
 }
 
 func (t *Task) Duration() time.Duration {

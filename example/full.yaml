@@ -1,3 +1,77 @@
+pipelines:
+  pipeline1:
+    - task: task1
+    - name: some-stage-name
+      task: task2
+      depends_on: task1
+      allow_failure: true
+    - task: task3
+      depends_on: task1 # task2 and task3 will run in parallel when task1 finished
+    - task: task4
+      depends_on: [task1, some-stage-name]
+      env:
+        VAR_NAME: VAR_VALUE # overrides task env
+
+tasks:
+  task1:
+    context: local # optional. "local" is context by default
+    command:
+      - echo ${ARGS} # ARGS is populated by arguments passed to task. eg. wilson run task task1 -- arg1 arg2
+      - echo "My name is task1"
+    env:
+      VAR_NAME: VAR_VALUE
+    dir: /task/working/dir # current directory by default
+    timeout: 10s
+
+  task2:
+    context: docker-context-name
+    command:
+      - echo "Hello from container"
+    env:
+      VAR_NAME: VAR_VALUE
+
+  task3:
+    context: docker-compose-context-name # local is default context
+    command:
+      - echo "Hello from container created by docker-compose"
+    env:
+      VAR_NAME: VAR_VALUE
+
+  task4:
+    command:
+      - echo "I'm task4"
+
+  task-to-be-triggered-by-watcher:
+    command:
+      - echo ${EVENT_NAME} ${EVENT_PATH}
+
+watchers:
+  watcher1:
+    watch: ["README.*", "pkg/**/*.go"]
+    events: [create, write, remove, rename, chmod]
+    task: task1
+
+# Default values for different providers
+shell:
+  bin: bin
+  args: [arg1, arg2]
+
+docker:
+  bin: bin
+  args: [arg1, arg2]
+
+docker-compose:
+  bin: bin
+  args: [arg1, arg2]
+
+kubectl:
+  bin: bin
+  args: [arg1, arg2]
+
+ssh:
+  bin: bin
+  args: [arg1, arg2]
+
 contexts:
   local: # will be created automatically if not set
     type: local
@@ -56,77 +130,3 @@ contexts:
       VAR_NAME: VAR_VALUE # eg. "DOCKER_HOST"
     before: SOME COMMAND TO RUN BEFORE TASK
     after: SOME COMMAND TO RUN WHEN TASK FINISHED SUCCESSFULLY
-
-pipelines:
-  pipeline1:
-    - task: task1
-    - name: some-stage-name
-      task: task2
-      depends_on: task1
-    - task: task3
-      depends_on: task1 # task2 and task3 will run in parallel when task1 finished
-    - task: task4
-      depends_on: [task1, some-stage-name]
-      env:
-        VAR_NAME: VAR_VALUE # overrides task env
-
-tasks:
-  task1:
-    context: local # optional. "local" is context by default
-    command:
-      - echo ${ARGS} # ARGS is populated by arguments passed to task. eg. wilson run task task1 -- arg1 arg2
-      - echo "My name is task1"
-    env:
-      VAR_NAME: VAR_VALUE
-    dir: /task/working/dir # current directory by default
-    timeout: 10s
-
-  task2:
-    context: docker-context-name
-    command:
-      - echo "Hello from container"
-    env:
-      VAR_NAME: VAR_VALUE
-
-  task3:
-    context: docker-compose-context-name # local is default context
-    command:
-      - echo "Hello from container created by docker-compose"
-    env:
-      VAR_NAME: VAR_VALUE
-
-  task4:
-    command:
-      - echo "I'm task4"
-    allow_failure: true
-
-  task-to-be-triggered-by-watcher:
-    command:
-      - echo ${EVENT_NAME} ${EVENT_PATH}
-
-watchers:
-  watcher1:
-    watch: ["README.*", "pkg/**/*.go"]
-    events: [create, write, remove, rename, chmod]
-    task: task1
-
-# Default values for different providers
-shell:
-  bin: bin
-  args: [arg1, arg2]
-
-docker:
-  bin: bin
-  args: [arg1, arg2]
-
-docker-compose:
-  bin: bin
-  args: [arg1, arg2]
-
-kubectl:
-  bin: bin
-  args: [arg1, arg2]
-
-ssh:
-  bin: bin
-  args: [arg1, arg2]

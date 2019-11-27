@@ -38,7 +38,8 @@ pipelines:
       depends_on: stage1
 
   pipeline4:
-    - f
+    - task: f
+      allow_failure: true
     - task: a
       depends_on: f
 
@@ -78,7 +79,6 @@ tasks:
   f:
     command:
       - ">&2 echo \"error\" && exit 1"
-    allow_failure: true
 
   env:
     command:
