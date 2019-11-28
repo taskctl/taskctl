@@ -24,7 +24,7 @@ var watchers = make(map[string]*watch.Watcher)
 var cancel = make(chan struct{})
 var done = make(chan bool)
 
-func NewRootCommand() *cobra.Command {
+func NewRootCommand(gcfg *config.Config) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "wilson",
 		Short:   "Wilson the task runner",
@@ -43,7 +43,7 @@ func NewRootCommand() *cobra.Command {
 		},
 	}
 
-	cmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "enable debug")
+	cmd.PersistentFlags().BoolVarP(&debug, "debug", "d", gcfg.Debug, "enable debug")
 	cmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "config file to use")
 	cmd.PersistentFlags().BoolVarP(&quiet, "silent", "q", false, "silence output")
 
@@ -63,7 +63,12 @@ func NewRootCommand() *cobra.Command {
 }
 
 func Execute() error {
-	cmd := NewRootCommand()
+	gcfg, err := config.LoadGlobalConfig()
+	if err != nil {
+		return err
+	}
+
+	cmd := NewRootCommand(gcfg)
 	return cmd.Execute()
 }
 
@@ -80,18 +85,17 @@ func loadConfig() (cfg *config.Config, err error) {
 
 	for name, def := range cfg.Tasks {
 		tasks[name] = task.BuildTask(def)
-		tasks[name].Name = name
 	}
 
 	for name, def := range cfg.Contexts {
-		contexts[name], err = runner.BuildContext(def, &config.Get().WilsonConfig)
+		contexts[name], err = runner.BuildContext(def, &config.Get().WilsonConfigDefinition)
 		if err != nil {
 			return nil, fmt.Errorf("context %s build failed: %v", name, err)
 		}
 	}
 
 	for name, stages := range cfg.Pipelines {
-		pipelines[name], err = scheduler.BuildPipeline(stages, tasks)
+		pipelines[name], err = scheduler.BuildPipeline(stages, cfg.Pipelines, cfg.Tasks)
 		if err != nil {
 			return nil, fmt.Errorf("pipeline %s build failed: %w", name, err)
 		}

@@ -2,7 +2,7 @@ package watch
 
 import (
 	log "github.com/sirupsen/logrus"
-	"github.com/trntv/wilson/internal/config"
+	"github.com/trntv/wilson/pkg/builder"
 	"github.com/trntv/wilson/pkg/runner"
 	"github.com/trntv/wilson/pkg/task"
 	"github.com/trntv/wilson/pkg/util"
@@ -40,7 +40,7 @@ type Watcher struct {
 	wg sync.WaitGroup
 }
 
-func BuildWatcher(name string, def config.WatcherConfig, t *task.Task, r *runner.TaskRunner) (w *Watcher, err error) {
+func BuildWatcher(name string, def builder.WatcherDefinition, t *task.Task, r *runner.TaskRunner) (w *Watcher, err error) {
 	w = &Watcher{
 		name:     name,
 		r:        r,
@@ -77,7 +77,7 @@ func (w *Watcher) Run() (err error) {
 	log.Debugf("starting watcher %s", w.name)
 	for _, path := range w.paths {
 		err = w.fsw.Add(path)
-		log.Debugf("watcher %s is watching %s", w.name, path)
+		log.Debugf("watcher %s is waiting for events in %s", w.name, path)
 		if err != nil {
 			return err
 		}

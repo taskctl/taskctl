@@ -1,7 +1,7 @@
 package task
 
 import (
-	"github.com/trntv/wilson/internal/config"
+	"github.com/trntv/wilson/pkg/builder"
 	"github.com/trntv/wilson/pkg/util"
 	"io"
 	"sync"
@@ -28,8 +28,9 @@ type Task struct {
 	}
 }
 
-func BuildTask(def config.TaskConfig) *Task {
+func BuildTask(def builder.TaskDefinition) *Task {
 	t := &Task{
+		Name:    def.Name,
 		Command: def.Command,
 		Env:     make([]string, 0),
 		Dir:     def.Dir,

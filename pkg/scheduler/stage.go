@@ -3,6 +3,7 @@ package scheduler
 import (
 	"github.com/trntv/wilson/pkg/task"
 	"sync/atomic"
+	"time"
 )
 
 const (
@@ -16,12 +17,15 @@ const (
 
 type Stage struct {
 	Name         string
-	Task         task.Task
-	Pipeline     string
+	Task         *task.Task
+	Pipeline     *Pipeline
 	DependsOn    []string
 	Env          map[string]string
 	AllowFailure bool
 	Status       int32
+
+	Start time.Time
+	End   time.Time
 }
 
 func (s *Stage) UpdateStatus(status int32) {
@@ -30,4 +34,8 @@ func (s *Stage) UpdateStatus(status int32) {
 
 func (s *Stage) ReadStatus() int32 {
 	return atomic.LoadInt32(&s.Status)
+}
+
+func (s *Stage) Duration() time.Duration {
+	return s.End.Sub(s.Start)
 }

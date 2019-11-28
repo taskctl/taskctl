@@ -43,6 +43,12 @@ pipelines:
     - task: a
       depends_on: f
 
+  pipeline5:
+    - task: a
+      allow_failure: true
+    - pipeline: pipeline3
+      depends_on: a
+
 tasks:
   docker-env:
     context: alpine-docker

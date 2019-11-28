@@ -3,7 +3,7 @@ package scheduler
 import (
 	"errors"
 	"fmt"
-	"github.com/trntv/wilson/internal/config"
+	"github.com/trntv/wilson/pkg/builder"
 	"github.com/trntv/wilson/pkg/task"
 	"github.com/trntv/wilson/pkg/util"
 )
@@ -13,10 +13,11 @@ type Pipeline struct {
 	from  map[string][]string
 	to    map[string][]string
 	env   map[string][]string
+	error error
 }
 
-func BuildPipeline(stages []config.Stage, tasks map[string]*task.Task) (*Pipeline, error) {
-	var p = &Pipeline{
+func BuildPipeline(stages []builder.StageDefinition, pipelines map[string][]builder.StageDefinition, tasks map[string]builder.TaskDefinition) (p *Pipeline, err error) {
+	p = &Pipeline{
 		nodes: make(map[string]*Stage),
 		from:  make(map[string][]string),
 		to:    make(map[string][]string),
@@ -24,15 +25,32 @@ func BuildPipeline(stages []config.Stage, tasks map[string]*task.Task) (*Pipelin
 	}
 
 	for _, def := range stages {
-		t := tasks[def.Task]
-		if t == nil {
-			return nil, fmt.Errorf("unknown task %s", def.Task)
+		var stageTask *task.Task
+		var stagePipeline *Pipeline
+
+		if def.Task != "" {
+			stageTaskDef, ok := tasks[def.Task]
+			if !ok {
+				return nil, fmt.Errorf("unknown task %s", def.Task)
+			}
+
+			stageTask = task.BuildTask(stageTaskDef)
+		} else if def.Pipeline != "" {
+			stagePipelineDef, ok := pipelines[def.Pipeline]
+			if !ok {
+				return nil, fmt.Errorf("unknown pipeline %s", def.Task)
+			}
+
+			stagePipeline, err = BuildPipeline(stagePipelineDef, pipelines, tasks) // todo: detect cycles
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		stage := &Stage{
 			Name:         def.Name,
-			Task:         *t,
-			Pipeline:     def.Pipeline,
+			Task:         stageTask,
+			Pipeline:     stagePipeline,
 			DependsOn:    def.DependsOn,
 			Env:          def.Env,
 			AllowFailure: def.AllowFailure,

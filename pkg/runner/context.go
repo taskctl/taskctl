@@ -6,6 +6,7 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/trntv/wilson/internal/config"
+	"github.com/trntv/wilson/pkg/builder"
 	"github.com/trntv/wilson/pkg/util"
 	"os"
 	"os/exec"
@@ -34,7 +35,7 @@ type ExecutionContext struct {
 	ctxType    string
 	executable util.Executable
 	env        []string
-	def        *config.ContextConfig
+	def        *builder.ContextDefinition
 	dir        string
 
 	container container
@@ -52,7 +53,7 @@ type ExecutionContext struct {
 	mu       sync.Mutex
 }
 
-func BuildContext(def config.ContextConfig, wcfg *config.WilsonConfig) (*ExecutionContext, error) {
+func BuildContext(def builder.ContextDefinition, wcfg *builder.WilsonConfigDefinition) (*ExecutionContext, error) {
 	c := &ExecutionContext{
 		ctxType: def.Type,
 		executable: util.Executable{
@@ -274,7 +275,7 @@ func (c *ExecutionContext) WithEnvs(env []string) (*ExecutionContext, error) {
 		def.Env[kv[0]] = kv[1]
 	}
 
-	return BuildContext(def, &config.Get().WilsonConfig)
+	return BuildContext(def, &config.Get().WilsonConfigDefinition)
 }
 
 func (c *ExecutionContext) Up() {

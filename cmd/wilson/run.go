@@ -49,6 +49,7 @@ func NewRunCommand() *cobra.Command {
 				}
 			}()
 			rr.Schedule(pipeline)
+			rr.DownContexts()
 
 			fmt.Println(aurora.Yellow("\r\nSummary:"))
 			printSummary(pipeline)
@@ -73,9 +74,9 @@ func printSummary(pipeline *scheduler.Pipeline) {
 	for _, stage := range pipeline.Nodes() {
 		switch stage.ReadStatus() {
 		case scheduler.StatusDone:
-			fmt.Printf(aurora.Sprintf(aurora.Green("- Stage %s done in %s\r\n"), stage.Name, stage.Task.Duration()))
+			fmt.Printf(aurora.Sprintf(aurora.Green("- Stage %s done in %s\r\n"), stage.Name, stage.Duration()))
 		case scheduler.StatusError:
-			fmt.Printf(aurora.Sprintf(aurora.Red("- Stage %s failed in %s\r\n"), stage.Name, stage.Task.Duration()))
+			fmt.Printf(aurora.Sprintf(aurora.Red("- Stage %s failed in %s\r\n"), stage.Name, stage.Duration()))
 			fmt.Printf(aurora.Sprintf(aurora.Red("  Error: %s\r\n"), stage.Task.ReadLog()))
 		case scheduler.StatusCanceled:
 			fmt.Printf(aurora.Sprintf(aurora.Gray(12, "- Stage %s is cancelled\r\n"), stage.Name))

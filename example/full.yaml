@@ -72,6 +72,7 @@ ssh:
   bin: bin
   args: [arg1, arg2]
 
+debug: true # debug enabled by default. To disable run with "--debug=false"
 contexts:
   local: # will be created automatically if not set
     type: local

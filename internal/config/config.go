@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/imdario/mergo"
 	log "github.com/sirupsen/logrus"
+	"github.com/trntv/wilson/pkg/builder"
 	"github.com/trntv/wilson/pkg/util"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
@@ -26,79 +27,18 @@ const (
 var loaded = make(map[string]bool)
 var cfg *Config
 
-type WilsonConfig struct {
-	Shell         util.Executable
-	Docker        util.Executable
-	DockerCompose util.Executable
-	Kubectl       util.Executable
-	Ssh           util.Executable
-}
-
-type ContextConfig struct {
-	Type      string
-	Dir       string
-	Container Container
-	SSH       SSHConfig
-	Env       map[string]string
-	Up        []string
-	Down      []string
-	Before    []string
-	After     []string
-	util.Executable
-}
-
-type Stage struct {
-	Name         string
-	Task         string
-	Pipeline     string
-	DependsOn    []string
-	Env          map[string]string
-	AllowFailure bool
-}
-
-type TaskConfig struct {
-	Command []string
-	Context string
-	Env     map[string]string
-	Dir     string
-	Timeout *time.Duration
-}
-
-type WatcherConfig struct {
-	Events []string
-	Watch  []string
-	Task   string
+func Get() *Config {
+	return cfg
 }
 
 type Config struct {
 	Import    []string
-	Contexts  map[string]ContextConfig
-	Pipelines map[string][]Stage
-	Tasks     map[string]TaskConfig
-	Watchers  map[string]WatcherConfig
+	Contexts  map[string]builder.ContextDefinition
+	Pipelines map[string][]builder.StageDefinition
+	Tasks     map[string]builder.TaskDefinition
+	Watchers  map[string]builder.WatcherDefinition
 
-	WilsonConfig
-}
-
-type Container struct {
-	Provider string
-	Name     string
-	Image    string
-	Exec     bool
-	Options  []string
-	Env      map[string]string
-	util.Executable
-}
-
-type SSHConfig struct {
-	Options []string
-	User    string
-	Host    string
-	util.Executable
-}
-
-func Get() *Config {
-	return cfg
+	builder.WilsonConfigDefinition
 }
 
 func Load(file string) (*Config, error) {
@@ -110,10 +50,10 @@ func Load(file string) (*Config, error) {
 
 	if cfg == nil {
 		cfg = &Config{
-			Contexts:  make(map[string]ContextConfig),
-			Tasks:     make(map[string]TaskConfig),
-			Pipelines: make(map[string][]Stage),
-			Watchers:  make(map[string]WatcherConfig),
+			Contexts:  make(map[string]builder.ContextDefinition),
+			Tasks:     make(map[string]builder.TaskDefinition),
+			Pipelines: make(map[string][]builder.StageDefinition),
+			Watchers:  make(map[string]builder.WatcherDefinition),
 		}
 	}
 
@@ -141,7 +81,7 @@ func Load(file string) (*Config, error) {
 	}
 
 	if _, ok := cfg.Contexts[ContextTypeLocal]; !ok {
-		cfg.Contexts[ContextTypeLocal] = ContextConfig{Type: ContextTypeLocal}
+		cfg.Contexts[ContextTypeLocal] = builder.ContextDefinition{Type: ContextTypeLocal}
 	}
 
 	log.Debugf("config %s loaded", file)
@@ -220,6 +160,7 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		DockerCompose util.Executable `yaml:"docker-compose"`
 		Kubectl       util.Executable `yaml:"kubectl"`
 		SSH           util.Executable `yaml:"ssh"`
+		Debug         bool
 
 		Import   []string
 		Contexts map[string]struct {
@@ -267,25 +208,26 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	}
 
 	cfg := Config{
-		Contexts:  make(map[string]ContextConfig),
-		Tasks:     make(map[string]TaskConfig),
-		Pipelines: make(map[string][]Stage),
-		Watchers:  make(map[string]WatcherConfig),
+		Contexts:  make(map[string]builder.ContextDefinition),
+		Tasks:     make(map[string]builder.TaskDefinition),
+		Pipelines: make(map[string][]builder.StageDefinition),
+		Watchers:  make(map[string]builder.WatcherDefinition),
 		Import:    container.Import,
-		WilsonConfig: WilsonConfig{
+		WilsonConfigDefinition: builder.WilsonConfigDefinition{
 			Shell:         container.Shell,
 			Docker:        container.Docker,
 			DockerCompose: container.DockerCompose,
 			Kubectl:       container.Kubectl,
 			Ssh:           container.SSH,
+			Debug:         container.Debug,
 		},
 	}
 
 	for name, def := range container.Contexts {
-		cfg.Contexts[name] = ContextConfig{
+		cfg.Contexts[name] = builder.ContextDefinition{
 			Type: def.Type,
 			Dir:  def.Dir,
-			Container: Container{
+			Container: builder.ContainerDefinition{
 				Provider:   def.Container.Provider,
 				Name:       def.Container.Name,
 				Image:      def.Container.Image,
@@ -294,7 +236,7 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 				Env:        def.Container.Env,
 				Executable: util.Executable{},
 			},
-			SSH: SSHConfig{
+			SSH: builder.SSHConfigDefinition{
 				Options:    def.SSH.Options,
 				User:       def.SSH.User,
 				Host:       def.SSH.Host,
@@ -310,7 +252,8 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	}
 
 	for name, def := range container.Tasks {
-		cfg.Tasks[name] = TaskConfig{
+		cfg.Tasks[name] = builder.TaskDefinition{
+			Name:    name,
 			Command: util.ReadStringsSlice(def.Command),
 			Context: def.Context,
 			Env:     def.Env,
@@ -320,7 +263,7 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	}
 
 	for name, stages := range container.Pipelines {
-		cfg.Pipelines[name] = make([]Stage, len(stages))
+		cfg.Pipelines[name] = make([]builder.StageDefinition, len(stages))
 		for i, def := range stages {
 			switch reflect.TypeOf(def).Kind() {
 			case reflect.Map:
@@ -335,8 +278,14 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 						cfg.Pipelines[name][i].AllowFailure = v.(bool)
 					case "task":
 						cfg.Pipelines[name][i].Task = v.(string)
+						if cfg.Pipelines[name][i].Name == "" {
+							cfg.Pipelines[name][i].Name = v.(string)
+						}
 					case "pipeline":
 						cfg.Pipelines[name][i].Pipeline = v.(string)
+						if cfg.Pipelines[name][i].Name == "" {
+							cfg.Pipelines[name][i].Name = v.(string)
+						}
 					case "depends_on":
 						cfg.Pipelines[name][i].DependsOn = util.ReadStringsSlice(v)
 					case "name":
@@ -350,15 +299,13 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 						for kk, vv := range envs {
 							cfg.Pipelines[name][i].Env[kk.(string)] = vv.(string)
 						}
+					default:
+						return fmt.Errorf("failed to parse pipeline %s, unknown key %s", k.(string))
 					}
-				}
-
-				if cfg.Pipelines[name][i].Name == "" {
-					cfg.Pipelines[name][i].Name = cfg.Pipelines[name][i].Task
 				}
 			case reflect.String:
 				task := reflect.ValueOf(def).String()
-				cfg.Pipelines[name][i] = Stage{
+				cfg.Pipelines[name][i] = builder.StageDefinition{
 					Name: task,
 					Task: task,
 					Env:  make(map[string]string),
@@ -368,7 +315,7 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	}
 
 	for name, def := range container.Watchers {
-		cfg.Watchers[name] = WatcherConfig{
+		cfg.Watchers[name] = builder.WatcherDefinition{
 			Events: util.ReadStringsSlice(def),
 			Watch:  util.ReadStringsSlice(def),
 			Task:   def.Task,

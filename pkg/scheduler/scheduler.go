@@ -1,6 +1,7 @@
 package scheduler
 
 import (
+	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/trntv/wilson/pkg/runner"
 	"sync"
@@ -13,7 +14,6 @@ type PipelineScheduler struct {
 	pause      time.Duration
 
 	cancelled int32
-	wg        sync.WaitGroup
 
 	Start time.Time
 	End   time.Time
@@ -28,54 +28,42 @@ func NewScheduler(contexts map[string]*runner.ExecutionContext, env []string, ra
 	return r
 }
 
-func (s *PipelineScheduler) Schedule(pipeline *Pipeline) {
+func (s *PipelineScheduler) Schedule(pipeline *Pipeline) error {
 	s.startTimer()
 	defer s.stopTimer()
+	var wg = sync.WaitGroup{}
 
 	for !s.isDone(pipeline) {
 		if atomic.LoadInt32(&s.cancelled) == 1 {
 			break
 		}
 
-		for name, stage := range pipeline.Nodes() {
+		for _, stage := range pipeline.Nodes() {
 			switch stage.ReadStatus() {
 			case StatusWaiting, StatusScheduled:
 			default:
 				continue
 			}
 
-			var ready = true
-			for _, dep := range pipeline.To(name) {
-				depStage, err := pipeline.Node(dep)
-				if err != nil {
-					log.Fatal(err)
-				}
-
-				switch depStage.ReadStatus() {
-				case StatusDone:
-					continue
-				case StatusError:
-					if !depStage.AllowFailure {
-						ready = false
-						stage.UpdateStatus(StatusCanceled)
-					}
-				case StatusCanceled:
-					ready = false
-					stage.UpdateStatus(StatusCanceled)
-				default:
-					ready = false
-				}
-			}
-
-			if !ready {
+			if !s.checkStatus(pipeline, stage) {
 				continue
 			}
 
-			s.wg.Add(1)
+			wg.Add(1)
 			stage.UpdateStatus(StatusRunning)
 			go func(stage *Stage) {
-				defer s.wg.Done()
-				err := s.taskRunner.RunWithEnv(&stage.Task, pipeline.env[stage.Name])
+				defer func() {
+					stage.End = time.Now()
+					wg.Done()
+				}()
+				stage.Start = time.Now()
+				var err error
+				if stage.Pipeline != nil {
+					err = s.Schedule(stage.Pipeline)
+					fmt.Print("test")
+				} else {
+					err = s.taskRunner.RunWithEnv(stage.Task, pipeline.env[stage.Name])
+				}
 				if err != nil {
 					log.Error(err)
 					stage.UpdateStatus(StatusError)
@@ -91,8 +79,9 @@ func (s *PipelineScheduler) Schedule(pipeline *Pipeline) {
 		time.Sleep(s.pause)
 	}
 
-	s.wg.Wait()
-	s.taskRunner.DownContexts()
+	wg.Wait()
+
+	return pipeline.error
 }
 
 func (s *PipelineScheduler) startTimer() {
@@ -117,4 +106,35 @@ func (s *PipelineScheduler) isDone(pipeline *Pipeline) bool {
 	}
 
 	return true
+}
+
+func (s *PipelineScheduler) DownContexts() {
+	s.taskRunner.DownContexts()
+}
+
+func (s *PipelineScheduler) checkStatus(pipeline *Pipeline, stage *Stage) (ready bool) {
+	ready = true
+	for _, dep := range pipeline.To(stage.Name) {
+		depStage, err := pipeline.Node(dep)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		switch depStage.ReadStatus() {
+		case StatusDone:
+			continue
+		case StatusError:
+			if !depStage.AllowFailure {
+				ready = false
+				stage.UpdateStatus(StatusCanceled)
+			}
+		case StatusCanceled:
+			ready = false
+			stage.UpdateStatus(StatusCanceled)
+		default:
+			ready = false
+		}
+	}
+
+	return ready
 }
