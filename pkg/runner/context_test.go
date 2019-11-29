@@ -2,18 +2,18 @@ package runner
 
 import (
 	"context"
-	"github.com/trntv/wilson/internal/config"
+	"github.com/trntv/wilson/pkg/builder"
 	"github.com/trntv/wilson/pkg/util"
 	"testing"
 )
 
 func TestContext_BuildContext(t *testing.T) {
-	wcfg := &config.WilsonConfig{
+	wcfg := &builder.WilsonConfigDefinition{
 		Docker: util.Executable{
 			Bin: "/opt/docker",
 		},
 	}
-	c, _ := BuildContext(config.ContextConfig{
+	c, _ := BuildContext(builder.ContextDefinition{
 		Type: "local",
 		Env:  map[string]string{"TEST_VAR": "TEST_VAL"},
 	}, wcfg)
@@ -27,9 +27,9 @@ func TestContext_BuildContext(t *testing.T) {
 		t.Error("env not found")
 	}
 
-	c, _ = BuildContext(config.ContextConfig{
+	c, _ = BuildContext(builder.ContextDefinition{
 		Type: "container",
-		Container: config.Container{
+		Container: builder.ContainerDefinition{
 			Provider: "docker",
 			Image:    "alpine:latest",
 			Exec:     false,
@@ -42,9 +42,9 @@ func TestContext_BuildContext(t *testing.T) {
 		t.Errorf("docker build failed %s", cmd.String())
 	}
 
-	c, _ = BuildContext(config.ContextConfig{
+	c, _ = BuildContext(builder.ContextDefinition{
 		Type: "container",
-		Container: config.Container{
+		Container: builder.ContainerDefinition{
 			Provider: "docker-compose",
 			Name:     "alpine",
 			Exec:     true,
@@ -62,9 +62,9 @@ func TestContext_BuildContext(t *testing.T) {
 		t.Errorf("docker-compose build failed %s", cmd.String())
 	}
 
-	c, _ = BuildContext(config.ContextConfig{
+	c, _ = BuildContext(builder.ContextDefinition{
 		Type: "container",
-		Container: config.Container{
+		Container: builder.ContainerDefinition{
 			Provider: "kubectl",
 			Name:     "deployment/geocoder",
 			Options:  nil,
@@ -80,9 +80,9 @@ func TestContext_BuildContext(t *testing.T) {
 		t.Errorf("kubectl build failed %s", cmd.String())
 	}
 
-	c, _ = BuildContext(config.ContextConfig{
+	c, _ = BuildContext(builder.ContextDefinition{
 		Type: "remote",
-		SSH: config.SSHConfig{
+		SSH: builder.SSHConfigDefinition{
 			Options: []string{"-6", "-C"},
 			User:    "root",
 			Host:    "host",

@@ -301,7 +301,7 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 							cfg.Pipelines[name][i].Env[kk.(string)] = vv.(string)
 						}
 					default:
-						return fmt.Errorf("failed to parse pipeline %s, unknown key %s", k.(string))
+						return fmt.Errorf("failed to parse pipeline %s, unknown key %s", name, k.(string))
 					}
 				}
 			case reflect.String:

@@ -1,13 +1,12 @@
 package scheduler
 
 import (
-	"github.com/trntv/wilson/internal/config"
-	"github.com/trntv/wilson/pkg/task"
+	"github.com/trntv/wilson/pkg/builder"
 	"testing"
 )
 
 func TestBuildPipeline_Cyclic(t *testing.T) {
-	stages := []config.Stage{
+	stages := []builder.StageDefinition{
 		{
 			Name:      "task1",
 			Task:      "task1",
@@ -26,7 +25,7 @@ func TestBuildPipeline_Cyclic(t *testing.T) {
 		},
 	}
 
-	tasks := map[string]*task.Task{
+	tasks := map[string]builder.TaskDefinition{
 		"task1": {
 			Name: "task1",
 		},
@@ -38,7 +37,7 @@ func TestBuildPipeline_Cyclic(t *testing.T) {
 		},
 	}
 
-	_, err := BuildPipeline(stages, tasks)
+	_, err := BuildPipeline(stages, make(map[string][]builder.StageDefinition), tasks)
 	if err == nil || err.Error() != "cycle detected" {
 		t.Errorf("cycles detection failed")
 	}
