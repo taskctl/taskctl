@@ -13,9 +13,9 @@
 Wilson allows you to design you development workflow pipelines in nice and neat way in yaml files. Each pipeline composed from tasks or other pipelines and allows them to run in parallel or one-by-one. Tasks may be runned manually or triggered by filesystem watcher.
 
 Automation is based on four concepts:
-1. Task
-2. Pipeline that describes set of stages (tasks, other pipeline) to run
-3. Optional watcher that listens for filesystem events and triggers tasks
+1. Tasks
+2. Pipelines that describe set of stages (tasks or other pipelines) to run
+3. Watchers that listen for filesystem events and triggers tasks
 4. Execution context
 
 [![asciicast](https://asciinema.org/a/283740.svg)](https://asciinema.org/a/283740)
