@@ -45,7 +45,7 @@ func NewRootCommand(gcfg *config.Config) *cobra.Command {
 
 	cmd.PersistentFlags().BoolVarP(&debug, "debug", "d", gcfg.Debug, "enable debug")
 	cmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "config file to use")
-	cmd.PersistentFlags().BoolVarP(&quiet, "silent", "q", false, "silence output")
+	cmd.PersistentFlags().BoolVarP(&silent, "silent", "s", false, "silence output")
 
 	err := cmd.MarkPersistentFlagFilename("config", "yaml", "yml")
 	if err != nil {

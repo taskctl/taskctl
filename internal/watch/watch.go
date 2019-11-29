@@ -6,9 +6,9 @@ import (
 	"github.com/trntv/wilson/pkg/runner"
 	"github.com/trntv/wilson/pkg/task"
 	"github.com/trntv/wilson/pkg/util"
-	"path/filepath"
 	"sync"
 
+	"github.com/bmatcuk/doublestar"
 	"github.com/fsnotify/fsnotify"
 )
 
@@ -51,13 +51,28 @@ func BuildWatcher(name string, def builder.WatcherDefinition, t *task.Task, r *r
 	}
 
 	for _, p := range def.Watch {
-		matches, err := filepath.Glob(p)
+		matches, err := doublestar.Glob(p)
 		if err != nil {
 			return nil, err
 		}
 
 		for _, path := range matches {
-			w.paths = append(w.paths, path)
+			var excluded bool
+			for _, exclude := range def.Exclude {
+				matched, err := doublestar.PathMatch(exclude, path)
+				if err != nil {
+					return nil, err
+				}
+
+				if matched {
+					excluded = true
+					break
+				}
+			}
+
+			if !excluded {
+				w.paths = append(w.paths, path)
+			}
 		}
 	}
 

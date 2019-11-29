@@ -46,9 +46,10 @@ type TaskDefinition struct {
 }
 
 type WatcherDefinition struct {
-	Events []string
-	Watch  []string
-	Task   string
+	Events  []string
+	Watch   []string
+	Exclude []string
+	Task    string
 }
 
 type ContainerDefinition struct {

@@ -17,3 +17,9 @@ watchers:
     events: ["write", "rename", "create"]
     watch: ["*.yaml"]
     task: test-watch-task-2
+
+  test-watcher-3:
+    events: ["write", "rename", "create"]
+    watch: ["*.md", "internal/**/*.go"]
+    exclude: "LICENSE.md"
+    task: test-watch-task-2

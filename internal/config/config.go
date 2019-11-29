@@ -198,9 +198,10 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 			AllowFailure bool `yaml:"allow_failure"`
 		}
 		Watchers map[string]struct {
-			Events []interface{}
-			Watch  []interface{}
-			Task   string
+			Events  []string
+			Watch   interface{}
+			Exclude interface{}
+			Task    string
 		}
 	}
 	if err := unmarshal(&container); err != nil {
@@ -316,9 +317,10 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 
 	for name, def := range container.Watchers {
 		cfg.Watchers[name] = builder.WatcherDefinition{
-			Events: util.ReadStringsSlice(def),
-			Watch:  util.ReadStringsSlice(def),
-			Task:   def.Task,
+			Events:  util.ReadStringsSlice(def.Events),
+			Watch:   util.ReadStringsSlice(def.Watch),
+			Exclude: util.ReadStringsSlice(def.Exclude),
+			Task:    def.Task,
 		}
 	}
 
