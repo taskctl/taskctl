@@ -15,8 +15,8 @@ Wilson allows you to design you development workflow pipelines in nice and neat 
 Automation is based on four concepts:
 1. Tasks
 2. Pipelines that describe set of stages (tasks or other pipelines) to run
-3. Watchers that listen for filesystem events and triggers tasks
-4. Execution context
+3. Watchers that listen for filesystem events and trigger tasks
+4. Execution contexts
 
 [![asciicast](https://asciinema.org/a/283740.svg)](https://asciinema.org/a/283740)
 
