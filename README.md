@@ -59,7 +59,7 @@ wilson -c example/pipeline.yaml run pipeline1
 [Contexts config](https://github.com/trntv/wilson/blob/master/example/contexts.yaml)
 
 ### Watchers
-[Watchers config](https://github.com/trntv/wilson/blob/master/example/watchers.yaml)
+[Watchers config](https://github.com/trntv/wilson/blob/master/example/watch.yaml)
 ```
 wilson -c watch.yaml --debug watch test-watcher test-watcher-2
 ```
