@@ -91,15 +91,20 @@ func Load(file string) (*Config, error) {
 func LoadGlobalConfig() (*Config, error) {
 	h, err := os.UserHomeDir()
 	if err != nil {
-		return nil, err
+		return &Config{}, err
 	}
 
 	file := path.Join(h, ".wilson", "config.yaml")
 	if !util.FileExists(file) {
-		return nil, nil
+		return &Config{}, nil
 	}
 
-	return LoadFile(file)
+	cfg, err := LoadFile(file)
+	if err != nil {
+		return &Config{}, err
+	}
+
+	return cfg, nil
 }
 
 func LoadFile(file string) (*Config, error) {
