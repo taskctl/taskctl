@@ -32,7 +32,7 @@ curl -L https://github.com/trntv/wilson/releases/latest/download/wilson-linux-am
 ```
 ### From sources
 ```
-go get -u github.com/trntv/wilson
+go get -u github.com/trntv/wilson/cmd/wilson
 ```
 
 ### First run
