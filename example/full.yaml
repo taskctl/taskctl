@@ -76,9 +76,10 @@ debug: true # debug enabled by default. To disable run with "--debug=false"
 contexts:
   local: # will be created automatically if not set
     type: local
-    bin: /bin/bash
-    args:
-      - -c
+    executable:
+      bin: /bin/zsh
+      args:
+        - -c
     env:
       VAR_NAME: VAR_VALUE
     before: SOME COMMAND TO RUN BEFORE EVERY TASK

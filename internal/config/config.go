@@ -41,6 +41,57 @@ type Config struct {
 	builder.WilsonConfigDefinition
 }
 
+type configContainer struct {
+	Shell         util.Executable `yaml:"shell"`
+	Docker        util.Executable `yaml:"docker"`
+	DockerCompose util.Executable `yaml:"docker-compose"`
+	Kubectl       util.Executable `yaml:"kubectl"`
+	SSH           util.Executable `yaml:"ssh"`
+	Debug         bool
+
+	Import   []string
+	Contexts map[string]struct {
+		Type      string
+		Dir       string
+		Container struct {
+			Provider string
+			Name     string
+			Image    string
+			Exec     bool
+			Options  []string
+			Env      map[string]string
+			util.Executable
+		}
+		SSH struct {
+			Options []string
+			User    string
+			Host    string
+			util.Executable
+		}
+		Env    map[string]string
+		Up     interface{}
+		Down   interface{}
+		Before interface{}
+		After  interface{}
+		util.Executable
+	}
+	Pipelines map[string][]interface{}
+	Tasks     map[string]struct {
+		Command      interface{}
+		Context      string
+		Env          map[string]string
+		Dir          string
+		Timeout      *time.Duration
+		AllowFailure bool `yaml:"allow_failure"`
+	}
+	Watchers map[string]struct {
+		Events  []string
+		Watch   interface{}
+		Exclude interface{}
+		Task    string
+	}
+}
+
 func Load(file string) (*Config, error) {
 	var err error
 	cfg, err = LoadGlobalConfig()
@@ -159,56 +210,8 @@ func (c *Config) merge(src *Config) error {
 }
 
 func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	var container struct {
-		Shell         util.Executable `yaml:"shell"`
-		Docker        util.Executable `yaml:"docker"`
-		DockerCompose util.Executable `yaml:"docker-compose"`
-		Kubectl       util.Executable `yaml:"kubectl"`
-		SSH           util.Executable `yaml:"ssh"`
-		Debug         bool
+	var container configContainer
 
-		Import   []string
-		Contexts map[string]struct {
-			Type      string
-			Dir       string
-			Container struct {
-				Provider string
-				Name     string
-				Image    string
-				Exec     bool
-				Options  []string
-				Env      map[string]string
-				util.Executable
-			}
-			SSH struct {
-				Options []string
-				User    string
-				Host    string
-				util.Executable
-			}
-			Env    map[string]string
-			Up     interface{}
-			Down   interface{}
-			Before interface{}
-			After  interface{}
-			util.Executable
-		}
-		Pipelines map[string][]interface{}
-		Tasks     map[string]struct {
-			Command      interface{}
-			Context      string
-			Env          map[string]string
-			Dir          string
-			Timeout      *time.Duration
-			AllowFailure bool `yaml:"allow_failure"`
-		}
-		Watchers map[string]struct {
-			Events  []string
-			Watch   interface{}
-			Exclude interface{}
-			Task    string
-		}
-	}
 	if err := unmarshal(&container); err != nil {
 		return err
 	}
@@ -240,7 +243,7 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 				Exec:       def.Container.Exec,
 				Options:    def.Container.Options,
 				Env:        def.Container.Env,
-				Executable: util.Executable{},
+				Executable: def.Container.Executable,
 			},
 			SSH: builder.SSHConfigDefinition{
 				Options:    def.SSH.Options,
