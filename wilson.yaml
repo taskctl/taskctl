@@ -51,7 +51,3 @@ tasks:
   govet:
     command:
       - go vet $(go list ./... | grep -v /vendor/)
-
-  tmp:
-    command:
-      - echo $SHELL

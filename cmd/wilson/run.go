@@ -28,33 +28,16 @@ func NewRunCommand() *cobra.Command {
 			}
 
 			pipeline, ok := pipelines[args[0]]
-			if !ok {
-				return fmt.Errorf("unknown pipeline %s", args[0])
-			}
-
-			var pipelineArgs []string
-			if al := cmd.ArgsLenAtDash(); al > 0 {
-				pipelineArgs = args[cmd.ArgsLenAtDash():]
-			}
-			env := util.ConvertEnv(map[string]string{
-				"ARGS": strings.Join(pipelineArgs, " "),
-			})
-
-			rr := scheduler.NewScheduler(contexts, env, raw, quiet)
-			go func() {
-				select {
-				case <-cancel:
-					rr.Cancel()
-					return
+			if ok {
+				runPipeline(pipeline, cmd, args)
+			} else {
+				t, ok := tasks[args[0]]
+				if !ok {
+					return fmt.Errorf("unknown task %s", args[0])
 				}
-			}()
-			rr.Schedule(pipeline)
-			rr.DownContexts()
 
-			fmt.Println(aurora.Yellow("\r\nSummary:"))
-			printSummary(pipeline)
-
-			fmt.Printf(aurora.Sprintf(aurora.Green("\r\nTotal duration: %s\r\n"), rr.End.Sub(rr.Start)))
+				runTask(t, cmd, args)
+			}
 
 			close(done)
 
@@ -67,6 +50,32 @@ func NewRunCommand() *cobra.Command {
 	cmd.AddCommand(NewRunTaskCommand())
 
 	return cmd
+}
+
+func runPipeline(pipeline *scheduler.Pipeline, cmd *cobra.Command, args []string) {
+	var pipelineArgs []string
+	if al := cmd.ArgsLenAtDash(); al > 0 {
+		pipelineArgs = args[cmd.ArgsLenAtDash():]
+	}
+	env := util.ConvertEnv(map[string]string{
+		"ARGS": strings.Join(pipelineArgs, " "),
+	})
+
+	rr := scheduler.NewScheduler(contexts, env, raw, quiet)
+	go func() {
+		select {
+		case <-cancel:
+			rr.Cancel()
+			return
+		}
+	}()
+	rr.Schedule(pipeline)
+	rr.DownContexts()
+
+	fmt.Println(aurora.Yellow("\r\nSummary:"))
+	printSummary(pipeline)
+
+	fmt.Printf(aurora.Sprintf(aurora.Green("\r\nTotal duration: %s\r\n"), rr.End.Sub(rr.Start)))
 }
 
 func printSummary(pipeline *scheduler.Pipeline) {

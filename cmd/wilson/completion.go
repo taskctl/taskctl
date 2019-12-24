@@ -176,6 +176,7 @@ function _wilson_list_watchers {
 function _wilson_run {
   local -a commands
   pipelines=("${(@f)$(wilson list pipelines --silent)}")
+  tasks=("${(@f)$(wilson list tasks --silent)}")
 
   _arguments -C \
     '--quiet[disable tasks output]' \
@@ -191,7 +192,7 @@ function _wilson_run {
   case $state in
   cmnds)
     commands=("task:Run task")
-    commands=($commands $pipelines)
+    commands=($commands $pipelines $tasks)
     _describe "command" commands
     ;;
   esac

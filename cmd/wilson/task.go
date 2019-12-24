@@ -5,6 +5,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/trntv/wilson/pkg/runner"
+	"github.com/trntv/wilson/pkg/task"
 	"github.com/trntv/wilson/pkg/util"
 	"strings"
 )
@@ -24,24 +25,29 @@ func NewRunTaskCommand() *cobra.Command {
 			if !ok {
 				return fmt.Errorf("unknown task %s", args[0])
 			}
-			var taskArgs []string
-			if al := cmd.ArgsLenAtDash(); al > 0 {
-				taskArgs = args[cmd.ArgsLenAtDash():]
-			}
-			env := util.ConvertEnv(map[string]string{
-				"ARGS": strings.Join(taskArgs, " "),
-			})
 
-			tr := runner.NewTaskRunner(contexts, env, true, quiet)
-			err = tr.Run(t)
-			if err != nil {
-				log.Error(err)
-			}
-			tr.DownContexts()
+			runTask(t, cmd, args)
 
 			close(done)
 
 			return nil
 		},
 	}
+}
+
+func runTask(t *task.Task, cmd *cobra.Command, args []string) {
+	var taskArgs []string
+	if al := cmd.ArgsLenAtDash(); al > 0 {
+		taskArgs = args[cmd.ArgsLenAtDash():]
+	}
+	env := util.ConvertEnv(map[string]string{
+		"ARGS": strings.Join(taskArgs, " "),
+	})
+
+	tr := runner.NewTaskRunner(contexts, env, true, quiet)
+	err := tr.Run(t)
+	if err != nil {
+		log.Error(err)
+	}
+	tr.DownContexts()
 }
