@@ -28,7 +28,7 @@ func NewRootCommand(gcfg *config.Config) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "wilson",
 		Short:   "Wilson the task runner",
-		Version: "0.2.4",
+		Version: "0.2.5",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			if debug {
 				log.SetLevel(log.DebugLevel)
