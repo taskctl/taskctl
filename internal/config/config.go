@@ -202,6 +202,12 @@ func readFile(filename string) (*Config, error) {
 }
 
 func (c *Config) merge(src *Config) error {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Error(err)
+		}
+	}()
+
 	if err := mergo.Merge(c, src); err != nil {
 		return err
 	}
@@ -242,7 +248,7 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 				Image:      def.Container.Image,
 				Exec:       def.Container.Exec,
 				Options:    def.Container.Options,
-				Env:        def.Container.Env,
+				Env:        ensureNotEmptyEnv(def.Container.Env),
 				Executable: def.Container.Executable,
 			},
 			SSH: builder.SSHConfigDefinition{
@@ -251,7 +257,7 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 				Host:       def.SSH.Host,
 				Executable: def.SSH.Executable,
 			},
-			Env:        def.Env,
+			Env:        ensureNotEmptyEnv(def.Env),
 			Up:         util.ReadStringsSlice(def.Up),
 			Down:       util.ReadStringsSlice(def.Down),
 			Before:     util.ReadStringsSlice(def.Before),
@@ -265,7 +271,7 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 			Name:    name,
 			Command: util.ReadStringsSlice(def.Command),
 			Context: def.Context,
-			Env:     def.Env,
+			Env:     ensureNotEmptyEnv(def.Env),
 			Dir:     def.Dir,
 			Timeout: def.Timeout,
 		}
@@ -335,4 +341,12 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	*c = cfg
 
 	return nil
+}
+
+func ensureNotEmptyEnv(m map[string]string) map[string]string {
+	if m == nil {
+		return make(map[string]string)
+	}
+
+	return m
 }
