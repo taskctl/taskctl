@@ -24,7 +24,8 @@ Automation is based on four concepts:
 ## Install
 ### MacOS
 ```
-brew install trntv/wilson/wilson
+brew tap trntv/wilson
+brew install wilson
 ```
 ### Linux
 ```
