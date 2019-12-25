@@ -48,12 +48,32 @@ wilson run pipeline1
 
 ## How it works?
 Automation is based on four concepts:
-1. Tasks
-2. Pipelines that describe set of stages (tasks or other pipelines) to run
-3. Watchers that listen for filesystem events and trigger tasks
-4. Execution contexts
+1. [Tasks](https://github.com/trntv/wilson#tasks)
+2. [Pipelines](https://github.com/trntv/wilson#pipelines) that describe set of stages (tasks or other pipelines) to run
+3. [Watchers](https://github.com/trntv/wilson#watchers) that listen for filesystem events and trigger tasks
+4. [Tasks contexts](https://github.com/trntv/wilson#contexts)
+
+## Tasks
+Task is a foundation of *wilson*. It describes one or more commands to run, their environment, executors and attributes such as working directory, execution timeout, acceptance of failure, etc.
+```yaml
+tasks:
+    build:
+        command:
+          - golint $(go list ./... | grep -v /vendor/)
+          - go vet $(go list ./... | grep -v /vendor/)
+          - go build ./...
+          
+    release:
+        command:
+          - git commit -m "Release ${ARGS}"
+          - git tag ${ARGS}
+          - git push origin master
+          - git push origin ${ARGS}
+```
 
 ## Pipelines
+Pipeline is a set of stages (tasks or other pipelines) to be executed in a certain order. Stages may be executed in parallel or one-by-one. Stage may override task environment. 
+
 This configuration:
 ```yaml
 pipelines:
