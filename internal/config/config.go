@@ -8,6 +8,7 @@ import (
 	"github.com/trntv/wilson/pkg/util"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -168,44 +169,80 @@ func LoadFile(file string) (*Config, error) {
 
 	importDir := path.Dir(file)
 	for _, v := range config.Import {
-		importFile := path.Join(importDir, v)
-
-		fi, err := os.Stat(importFile)
+		if util.IsUrl(v) {
+			err = loadImportUrl(v, config)
+		} else {
+			err = loadImportPath(v, importDir, config)
+		}
 		if err != nil {
-			return nil, fmt.Errorf("%s: %v", importFile, err)
-		}
-
-		q := make([]string, 1)
-		switch mode := fi.Mode(); {
-		case mode.IsDir():
-			pattern := filepath.Join(importFile, "*.yaml")
-			q, err = filepath.Glob(pattern)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %v", importFile, err)
-			}
-		case mode.IsRegular():
-			q[0] = importFile
-		}
-
-		for _, importFile := range q {
-			if loaded[importFile] == true {
-				continue
-			}
-
-			lconfig, err := LoadFile(importFile)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %v", importFile, err)
-			}
-
-			err = lconfig.merge(config)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %v", importFile, err)
-			}
-			config = lconfig
+			return nil, fmt.Errorf("load import error: %v", err)
 		}
 	}
 
 	return config, nil
+}
+
+func loadImportPath(file string, dir string, config *Config) error {
+	importFile := path.Join(dir, file)
+
+	fi, err := os.Stat(importFile)
+	if err != nil {
+		return fmt.Errorf("%s: %v", importFile, err)
+	}
+
+	q := make([]string, 1)
+	if !fi.IsDir() {
+		q[0] = importFile
+	} else {
+		pattern := filepath.Join(importFile, "*.yaml")
+		q, err = filepath.Glob(pattern)
+		if err != nil {
+			return fmt.Errorf("%s: %v", importFile, err)
+		}
+	}
+
+	for _, importFile := range q {
+		if loaded[importFile] == true {
+			continue
+		}
+
+		lconfig, err := LoadFile(importFile)
+		if err != nil {
+			return fmt.Errorf("%s: %v", importFile, err)
+		}
+
+		err = config.merge(lconfig)
+		if err != nil {
+			return fmt.Errorf("%s: %v", importFile, err)
+		}
+	}
+
+	return nil
+}
+
+func loadImportUrl(u string, config *Config) error {
+	resp, err := http.Get(u)
+	if err != nil {
+		return err
+	}
+
+	c := &Config{}
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("%s: %v", u, err)
+	}
+
+	err = yaml.UnmarshalStrict(data, c)
+	if err != nil {
+		return fmt.Errorf("%s: %v", u, err)
+	}
+
+	err = config.merge(c)
+	if err != nil {
+		return fmt.Errorf("%s: %v", u, err)
+	}
+
+	return nil
 }
 
 func readFile(filename string) (*Config, error) {

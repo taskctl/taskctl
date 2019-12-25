@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"reflect"
 )
@@ -76,4 +77,17 @@ func Getcwd() (string, error) {
 	}
 
 	return cwd, nil
+}
+
+func IsUrl(s string) bool {
+	u, err := url.Parse(s)
+	if err != nil {
+		return false
+	}
+
+	if u.Scheme != "" {
+		return true
+	}
+
+	return false
 }
