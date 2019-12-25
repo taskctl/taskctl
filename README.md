@@ -53,15 +53,6 @@ Automation is based on four concepts:
 3. Watchers that listen for filesystem events and trigger tasks
 4. Execution contexts
 
-### Contexts
-[Contexts config](https://github.com/trntv/wilson/blob/master/example/contexts.yaml)
-
-### Watchers
-[Watchers config](https://github.com/trntv/wilson/blob/master/example/watch.yaml)
-```
-wilson -c watch.yaml --debug watch test-watcher test-watcher-2
-```
-
 ## Pipelines
 This configuration:
 ```yaml
@@ -109,19 +100,29 @@ WIF*
 
 ## Examples
 ### Tasks config example
-[Task config](https://github.com/trntv/wilson/blob/master/example/task.yaml)
+[task.yaml](https://github.com/trntv/wilson/blob/master/example/task.yaml)
 ```
 wilson -c example/task.yaml run task echo-date-local
 wilson -c example/task.yaml run task echo-date-docker
 ``` 
 ### Pipelines config example
-[Pipelines config](https://github.com/trntv/wilson/blob/master/example/pipeline.yaml)
+[pipeline.yaml](https://github.com/trntv/wilson/blob/master/example/pipeline.yaml)
 ```
 wilson -c example/pipeline.yaml run test-pipeline
 wilson -c example/pipeline.yaml run pipeline1
 ```
+
+### Contexts config example
+[contexts.yaml](https://github.com/trntv/wilson/blob/master/example/contexts.yaml)
+
+### Watchers config example
+[watch.yaml](https://github.com/trntv/wilson/blob/master/example/watch.yaml)
+```
+wilson -c watch.yaml --debug watch test-watcher test-watcher-2
+```
+
 ### Full config example
-[Full config example](https://github.com/trntv/wilson/blob/master/example/full.yaml)
+[full.yaml](https://github.com/trntv/wilson/blob/master/example/full.yaml)
 
 ## Autocomplete
 ### Bash
