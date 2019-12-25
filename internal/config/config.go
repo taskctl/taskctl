@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"reflect"
 	"time"
 )
@@ -168,19 +169,40 @@ func LoadFile(file string) (*Config, error) {
 	importDir := path.Dir(file)
 	for _, v := range config.Import {
 		importFile := path.Join(importDir, v)
-		if loaded[importFile] == true {
-			continue
-		}
 
-		lconfig, err := LoadFile(importFile)
-		if err != nil {
-			return nil, err
-		}
-		err = lconfig.merge(config)
+		fi, err := os.Stat(importFile)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %v", importFile, err)
 		}
-		config = lconfig
+
+		q := make([]string, 1)
+		switch mode := fi.Mode(); {
+		case mode.IsDir():
+			pattern := filepath.Join(importFile, "*.yaml")
+			q, err = filepath.Glob(pattern)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %v", importFile, err)
+			}
+		case mode.IsRegular():
+			q[0] = importFile
+		}
+
+		for _, importFile := range q {
+			if loaded[importFile] == true {
+				continue
+			}
+
+			lconfig, err := LoadFile(importFile)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %v", importFile, err)
+			}
+
+			err = lconfig.merge(config)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %v", importFile, err)
+			}
+			config = lconfig
+		}
 	}
 
 	return config, nil
