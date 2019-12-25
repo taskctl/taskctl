@@ -53,20 +53,6 @@ Automation is based on four concepts:
 3. Watchers that listen for filesystem events and trigger tasks
 4. Execution contexts
 
-## Examples
-### Tasks
-[Task config](https://github.com/trntv/wilson/blob/master/example/task.yaml)
-```
-wilson -c example/task.yaml run task echo-date-local
-wilson -c example/task.yaml run task echo-date-docker
-``` 
-### Pipelines
-[Pipelines config](https://github.com/trntv/wilson/blob/master/example/pipeline.yaml)
-```
-wilson -c example/pipeline.yaml run test-pipeline
-wilson -c example/pipeline.yaml run pipeline1
-```
-
 ### Contexts
 [Contexts config](https://github.com/trntv/wilson/blob/master/example/contexts.yaml)
 
@@ -75,15 +61,6 @@ wilson -c example/pipeline.yaml run pipeline1
 ```
 wilson -c watch.yaml --debug watch test-watcher test-watcher-2
 ```
-
-### Full config
-[Full config example](https://github.com/trntv/wilson/blob/master/example/full.yaml)
-
-## Contexts
-Available context types:
-- local - shell
-- container - docker, docker-compose, kubectl
-- remote - ssh
 
 ## Pipelines
 This configuration:
@@ -121,8 +98,30 @@ start task --- |--- task B --------------|--- task E --- finish
                |___ task C ___ task D ___|
 ```
 
+## Contexts
+Available context types:
+- local - shell
+- container - docker, docker-compose, kubectl
+- remote - ssh
+
 ## Watchers
 WIF*
+
+## Examples
+### Tasks config example
+[Task config](https://github.com/trntv/wilson/blob/master/example/task.yaml)
+```
+wilson -c example/task.yaml run task echo-date-local
+wilson -c example/task.yaml run task echo-date-docker
+``` 
+### Pipelines config example
+[Pipelines config](https://github.com/trntv/wilson/blob/master/example/pipeline.yaml)
+```
+wilson -c example/pipeline.yaml run test-pipeline
+wilson -c example/pipeline.yaml run pipeline1
+```
+### Full config example
+[Full config example](https://github.com/trntv/wilson/blob/master/example/full.yaml)
 
 ## Autocomplete
 ### Bash
