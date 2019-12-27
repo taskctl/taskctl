@@ -9,11 +9,12 @@ import (
 )
 
 type Task struct {
-	Command []string
-	Context string
-	Env     []string
-	Dir     string
-	Timeout *time.Duration
+	Command      []string
+	Context      string
+	Env          []string
+	Dir          string
+	Timeout      *time.Duration
+	AllowFailure bool
 
 	Name  string
 	Start time.Time
@@ -30,11 +31,12 @@ type Task struct {
 
 func BuildTask(def builder.TaskDefinition) *Task {
 	t := &Task{
-		Name:    def.Name,
-		Command: def.Command,
-		Env:     make([]string, 0),
-		Dir:     def.Dir,
-		Timeout: def.Timeout,
+		Name:         def.Name,
+		Command:      def.Command,
+		Env:          make([]string, 0),
+		Dir:          def.Dir,
+		Timeout:      def.Timeout,
+		AllowFailure: def.AllowFailure,
 	}
 
 	t.Context = def.Context

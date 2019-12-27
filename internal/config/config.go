@@ -327,12 +327,13 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 
 	for name, def := range container.Tasks {
 		cfg.Tasks[name] = builder.TaskDefinition{
-			Name:    name,
-			Command: util.ReadStringsSlice(def.Command),
-			Context: def.Context,
-			Env:     ensureNotEmptyEnv(def.Env),
-			Dir:     def.Dir,
-			Timeout: def.Timeout,
+			Name:         name,
+			Command:      util.ReadStringsSlice(def.Command),
+			Context:      def.Context,
+			Env:          ensureNotEmptyEnv(def.Env),
+			Dir:          def.Dir,
+			Timeout:      def.Timeout,
+			AllowFailure: def.AllowFailure,
 		}
 	}
 

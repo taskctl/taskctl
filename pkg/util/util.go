@@ -39,7 +39,9 @@ func ReadStringsSlice(v interface{}) (arr []string) {
 		arr = make([]string, val.Len())
 		for i := 0; i < val.Len(); i++ {
 			vi := val.Index(i).Interface()
-			arr[i] = vi.(string)
+			if vi != nil {
+				arr[i] = vi.(string)
+			}
 		}
 	case reflect.String:
 		arr = []string{reflect.ValueOf(v).String()}

@@ -37,12 +37,13 @@ type StageDefinition struct {
 }
 
 type TaskDefinition struct {
-	Name    string
-	Command []string
-	Context string
-	Env     map[string]string
-	Dir     string
-	Timeout *time.Duration
+	Name         string
+	Command      []string
+	Context      string
+	Env          map[string]string
+	Dir          string
+	Timeout      *time.Duration
+	AllowFailure bool
 }
 
 type WatcherDefinition struct {

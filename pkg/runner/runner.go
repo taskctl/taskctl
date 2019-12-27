@@ -79,8 +79,9 @@ func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
 		}
 		t.SetStderr(stderr)
 
+		var e *exec.ExitError
 		err = r.runCommand(t, cmd)
-		if err != nil {
+		if err != nil && !errors.As(err, &e) || !t.AllowFailure {
 			t.End = time.Now()
 			return err
 		}
