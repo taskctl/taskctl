@@ -100,7 +100,7 @@ tasks:
     command:
       - echo "Hello from container created by docker-compose"
     env:
-      VAR_NAME: VAR_VALUE
+      - VAR_NAME=VAR_VALUE
 
   task-to-be-triggered-by-watcher:
     command:
@@ -152,6 +152,10 @@ func TestConfig_UnmarshalYAML(t *testing.T) {
 
 	if _, ok = cfg.Tasks["task1"]; !ok {
 		t.Fatal("tasks parsing error")
+	}
+
+	if v, ok := cfg.Tasks["task3"].Env["VAR_NAME"]; !ok || v != "VAR_VALUE" {
+		t.Fatal("tasks env parsing error")
 	}
 
 	if _, ok = cfg.Contexts["docker-compose-context-name"]; !ok {

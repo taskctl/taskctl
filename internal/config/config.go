@@ -61,7 +61,7 @@ type configContainer struct {
 			Image    string
 			Exec     bool
 			Options  []string
-			Env      map[string]string
+			Env      interface{}
 			util.Executable
 		}
 		SSH struct {
@@ -70,7 +70,7 @@ type configContainer struct {
 			Host    string
 			util.Executable
 		}
-		Env    map[string]string
+		Env    interface{}
 		Up     interface{}
 		Down   interface{}
 		Before interface{}
@@ -81,7 +81,7 @@ type configContainer struct {
 	Tasks     map[string]struct {
 		Command      interface{}
 		Context      string
-		Env          map[string]string
+		Env          interface{}
 		Dir          string
 		Timeout      *time.Duration
 		AllowFailure bool `yaml:"allow_failure"`
@@ -307,7 +307,7 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 				Image:      def.Container.Image,
 				Exec:       def.Container.Exec,
 				Options:    def.Container.Options,
-				Env:        ensureNotEmptyEnv(def.Container.Env),
+				Env:        util.ReadStringsMap(def.Container.Env),
 				Executable: def.Container.Executable,
 			},
 			SSH: builder.SSHConfigDefinition{
@@ -316,7 +316,7 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 				Host:       def.SSH.Host,
 				Executable: def.SSH.Executable,
 			},
-			Env:        ensureNotEmptyEnv(def.Env),
+			Env:        util.ReadStringsMap(def.Env),
 			Up:         util.ReadStringsSlice(def.Up),
 			Down:       util.ReadStringsSlice(def.Down),
 			Before:     util.ReadStringsSlice(def.Before),
@@ -330,7 +330,7 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 			Name:         name,
 			Command:      util.ReadStringsSlice(def.Command),
 			Context:      def.Context,
-			Env:          ensureNotEmptyEnv(def.Env),
+			Env:          util.ReadStringsMap(def.Env),
 			Dir:          def.Dir,
 			Timeout:      def.Timeout,
 			AllowFailure: def.AllowFailure,
@@ -401,12 +401,4 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	*c = cfg
 
 	return nil
-}
-
-func ensureNotEmptyEnv(m map[string]string) map[string]string {
-	if m == nil {
-		return make(map[string]string)
-	}
-
-	return m
 }
