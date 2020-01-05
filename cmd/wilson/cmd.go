@@ -15,6 +15,7 @@ import (
 // todo: remove global variables
 var debug, silent bool
 var configFile string
+var overrides []string
 
 var tasks = make(map[string]*task.Task)
 var contexts = make(map[string]*runner.ExecutionContext)
@@ -46,6 +47,7 @@ func NewRootCommand(gcfg *config.Config) *cobra.Command {
 	cmd.PersistentFlags().BoolVarP(&debug, "debug", "d", gcfg.Debug, "enable debug")
 	cmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "config file to use")
 	cmd.PersistentFlags().BoolVarP(&silent, "silent", "s", false, "silence output")
+	cmd.PersistentFlags().StringSliceVar(&overrides, "set", make([]string, 0), "override config value")
 
 	err := cmd.MarkPersistentFlagFilename("config", "yaml", "yml")
 	if err != nil {
@@ -107,6 +109,10 @@ func loadConfig() (cfg *config.Config, err error) {
 		if err != nil {
 			return nil, fmt.Errorf("watcher %s build failed: %v", name, err)
 		}
+	}
+
+	for k, v := range overrides {
+		fmt.Println(k, v)
 	}
 
 	return cfg, nil

@@ -53,7 +53,7 @@ type ExecutionContext struct {
 	mu       sync.Mutex
 }
 
-func BuildContext(def builder.ContextDefinition, wcfg *builder.WilsonConfigDefinition) (*ExecutionContext, error) {
+func BuildContext(def *builder.ContextDefinition, wcfg *builder.WilsonConfigDefinition) (*ExecutionContext, error) {
 	c := &ExecutionContext{
 		ctxType: def.Type,
 		executable: util.Executable{
@@ -83,7 +83,7 @@ func BuildContext(def builder.ContextDefinition, wcfg *builder.WilsonConfigDefin
 		},
 		dir:    def.Dir,
 		env:    append(os.Environ(), util.ConvertEnv(def.Env)...),
-		def:    &def,
+		def:    def,
 		up:     def.Up,
 		down:   def.Down,
 		before: def.Before,
@@ -275,7 +275,7 @@ func (c *ExecutionContext) WithEnvs(env []string) (*ExecutionContext, error) {
 		def.Env[kv[0]] = kv[1]
 	}
 
-	return BuildContext(def, &config.Get().WilsonConfigDefinition)
+	return BuildContext(&def, &config.Get().WilsonConfigDefinition)
 }
 
 func (c *ExecutionContext) Up() {

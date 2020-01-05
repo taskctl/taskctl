@@ -1,3 +1,6 @@
+import:
+  - "http://google.com"
+
 pipelines:
   build:
     - name: Build "darwin"

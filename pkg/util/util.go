@@ -58,7 +58,6 @@ func ReadStringsMap(v interface{}) (m map[string]string) {
 		return
 	}
 
-	m = make(map[string]string)
 	switch reflect.TypeOf(v).Kind() {
 	case reflect.Slice:
 		val := reflect.ValueOf(v)

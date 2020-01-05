@@ -16,7 +16,7 @@ type Pipeline struct {
 	error error
 }
 
-func BuildPipeline(stages []builder.StageDefinition, pipelines map[string][]builder.StageDefinition, tasks map[string]builder.TaskDefinition) (p *Pipeline, err error) {
+func BuildPipeline(stages []*builder.StageDefinition, pipelines map[string][]*builder.StageDefinition, tasks map[string]*builder.TaskDefinition) (p *Pipeline, err error) {
 	p = &Pipeline{
 		nodes: make(map[string]*Stage),
 		from:  make(map[string][]string),

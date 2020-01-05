@@ -29,7 +29,7 @@ type Task struct {
 	}
 }
 
-func BuildTask(def builder.TaskDefinition) *Task {
+func BuildTask(def *builder.TaskDefinition) *Task {
 	t := &Task{
 		Name:         def.Name,
 		Command:      def.Command,

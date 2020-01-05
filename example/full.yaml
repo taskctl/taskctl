@@ -92,7 +92,6 @@ contexts:
       image: alpine:latest
       options:
         - -v /folder:/folder
-        ...
       exec: false
       env:
         VAR_NAME: VAR_VALUE
@@ -107,8 +106,9 @@ contexts:
       provider: docker-compose
       name: api
       exec: true
-      args:
-        - --file=docker-compose.yaml
+      executable:
+        args:
+          - --file=docker-compose.yaml
       options:
         - --user=root
       env:

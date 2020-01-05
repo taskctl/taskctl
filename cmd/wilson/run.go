@@ -29,19 +29,19 @@ func NewRunCommand() *cobra.Command {
 
 			pipeline, ok := pipelines[args[0]]
 			if ok {
-				runPipeline(pipeline, cmd, args)
+				err = runPipeline(pipeline, cmd, args)
 			} else {
 				t, ok := tasks[args[0]]
 				if !ok {
 					return fmt.Errorf("unknown task %s", args[0])
 				}
 
-				runTask(t, cmd, args)
+				err = runTask(t, cmd, args)
 			}
 
 			close(done)
 
-			return nil
+			return err
 		},
 	}
 
@@ -52,7 +52,7 @@ func NewRunCommand() *cobra.Command {
 	return cmd
 }
 
-func runPipeline(pipeline *scheduler.Pipeline, cmd *cobra.Command, args []string) {
+func runPipeline(pipeline *scheduler.Pipeline, cmd *cobra.Command, args []string) error {
 	var pipelineArgs []string
 	if al := cmd.ArgsLenAtDash(); al > 0 {
 		pipelineArgs = args[cmd.ArgsLenAtDash():]
@@ -69,13 +69,19 @@ func runPipeline(pipeline *scheduler.Pipeline, cmd *cobra.Command, args []string
 			return
 		}
 	}()
-	rr.Schedule(pipeline)
+
+	err := rr.Schedule(pipeline)
+	if err != nil {
+		return err
+	}
 	rr.DownContexts()
 
 	fmt.Println(aurora.Yellow("\r\nSummary:"))
 	printSummary(pipeline)
 
 	fmt.Printf(aurora.Sprintf(aurora.Green("\r\nTotal duration: %s\r\n"), rr.End.Sub(rr.Start)))
+
+	return nil
 }
 
 func printSummary(pipeline *scheduler.Pipeline) {

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/trntv/wilson/pkg/runner"
 	"github.com/trntv/wilson/pkg/task"
@@ -26,16 +25,15 @@ func NewRunTaskCommand() *cobra.Command {
 				return fmt.Errorf("unknown task %s", args[0])
 			}
 
-			runTask(t, cmd, args)
-
+			err = runTask(t, cmd, args)
 			close(done)
 
-			return nil
+			return err
 		},
 	}
 }
 
-func runTask(t *task.Task, cmd *cobra.Command, args []string) {
+func runTask(t *task.Task, cmd *cobra.Command, args []string) error {
 	var taskArgs []string
 	if al := cmd.ArgsLenAtDash(); al > 0 {
 		taskArgs = args[cmd.ArgsLenAtDash():]
@@ -47,7 +45,9 @@ func runTask(t *task.Task, cmd *cobra.Command, args []string) {
 	tr := runner.NewTaskRunner(contexts, env, true, quiet)
 	err := tr.Run(t)
 	if err != nil {
-		log.Error(err)
+		return err
 	}
 	tr.DownContexts()
+
+	return nil
 }

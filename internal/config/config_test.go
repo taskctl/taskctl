@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/trntv/wilson/pkg/builder"
 	"gopkg.in/yaml.v2"
 	"testing"
 )
@@ -167,4 +168,31 @@ func TestConfig_UnmarshalYAML(t *testing.T) {
 	}
 
 	// todo: assertions
+}
+
+func TestConfig_Set(t *testing.T) {
+	cfg := Config{
+		Contexts: map[string]*builder.ContextDefinition{
+			"local": {
+				Type: "local",
+				Env:  make(map[string]string),
+			},
+		},
+		Tasks: map[string]*builder.TaskDefinition{
+			"test": {
+				Context: "local",
+				Env:     make(map[string]string),
+			},
+		},
+	}
+
+	err := cfg.Set("tasks.test.context", "remote")
+	if err != nil || cfg.Tasks["test"].Context != "remote" {
+		t.Fatalf("errors setting config value: %v", err)
+	}
+
+	err = cfg.Set("tasks.test.env.TEST_VAR", "TEST_VAR_VALUE")
+	if err != nil || cfg.Tasks["test"].Env["TEST_VAR"] != "TEST_VAR_VALUE" {
+		t.Fatalf("errors setting config value: %v", err)
+	}
 }
