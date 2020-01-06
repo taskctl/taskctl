@@ -77,18 +77,13 @@ Automation is based on four concepts:
 Task is a foundation of *wilson*. It describes one or more commands to run, their environment, executors and attributes such as working directory, execution timeout, acceptance of failure, etc.
 ```yaml
 tasks:
-    build:
+    lint:
         command:
           - golint $(go list ./... | grep -v /vendor/)
           - go vet $(go list ./... | grep -v /vendor/)
-          - go build ./...
           
-    release:
-        command:
-          - git commit -m "Release ${ARGS}"
-          - git tag ${ARGS}
-          - git push origin master
-          - git push origin ${ARGS}
+    build:
+        command: go build ./...
 ```
 Task definition takes following parameters:
 - ``name`` - task name (optional)
