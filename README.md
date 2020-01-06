@@ -31,19 +31,39 @@ Beside pipelines, each single task can be performed manually or triggered by fil
 brew tap trntv/wilson
 brew install wilson
 ```
+or
+```
+sudo curl -Lo /usr/local/bin/sampler https://github.com/trntv/wilson/releases/latest/download/wilson-darwin-amd64
+sudo chmod +x /usr/local/bin/sampler
+```
+
 ### Linux
 ```
-curl -L https://github.com/trntv/wilson/releases/latest/download/wilson-linux-amd64.tar.gz | tar xz
+sudo wget https://github.com/trntv/wilson/releases/latest/download/wilson-linux-amd64 -O /usr/local/bin/wilson
+sudo chmod +x /usr/local/bin/wilson
 ```
 ### From sources
 ```
 go get -u github.com/trntv/wilson/cmd/wilson
 ```
 
+## Usage
 ### First run
 ```
 wilson init
 wilson run pipeline1
+```
+### Run task
+```
+wilson run task1
+```
+### Run pipeline
+```
+wilson run pipeline1
+```
+### Start filesystem watcher
+```
+wilson watch watcher1
 ```
 
 ## How it works?
