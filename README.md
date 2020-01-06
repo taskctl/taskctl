@@ -33,13 +33,13 @@ brew install wilson
 ```
 or
 ```
-sudo curl -Lo /usr/local/bin/wilson https://github.com/trntv/wilson/releases/latest/download/wilson-darwin-amd64
+sudo curl -Lo /usr/local/bin/wilson https://github.com/trntv/wilson/releases/latest/download/wilson_darwin_amd64
 sudo chmod +x /usr/local/bin/wilson
 ```
 
 ### Linux
 ```
-sudo wget https://github.com/trntv/wilson/releases/latest/download/wilson-linux-amd64 -O /usr/local/bin/wilson
+sudo wget https://github.com/trntv/wilson/releases/latest/download/wilson_linux_amd64 -O /usr/local/bin/wilson
 sudo chmod +x /usr/local/bin/wilson
 ```
 ### From sources
