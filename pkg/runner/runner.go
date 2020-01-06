@@ -3,6 +3,7 @@ package runner
 import (
 	"context"
 	"errors"
+	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/trntv/wilson/pkg/task"
 	"os/exec"
@@ -62,6 +63,7 @@ func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
 
 		cmd.Env = append(cmd.Env, env...)
 		cmd.Env = append(cmd.Env, r.env...)
+		cmd.Env = append(cmd.Env, fmt.Sprintf("WI_TASK_NAME=%s"), t.Name)
 
 		if t.Dir != "" {
 			cmd.Dir = t.Dir

@@ -42,6 +42,7 @@ func runTask(t *task.Task, cmd *cobra.Command, args []string) error {
 		"ARGS": strings.Join(taskArgs, " "),
 	})
 
+	cmd.SilenceUsage = true
 	tr := runner.NewTaskRunner(contexts, env, true, quiet)
 	err := tr.Run(t)
 	if err != nil {

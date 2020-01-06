@@ -35,7 +35,6 @@ func NewRunCommand() *cobra.Command {
 				if !ok {
 					return fmt.Errorf("unknown task %s", args[0])
 				}
-
 				err = runTask(t, cmd, args)
 			}
 
@@ -70,6 +69,7 @@ func runPipeline(pipeline *scheduler.Pipeline, cmd *cobra.Command, args []string
 		}
 	}()
 
+	cmd.SilenceUsage = true
 	err := rr.Schedule(pipeline)
 	if err != nil {
 		return err
