@@ -64,7 +64,10 @@ func BuildPipeline(stages []*builder.StageDefinition, pipelines map[string][]*bu
 			if def.Pipeline != "" {
 				stage.Name = def.Pipeline
 			}
-			return nil, fmt.Errorf("stage for task %s must have name", def.Task)
+
+			if stage.Name == "" {
+				return nil, fmt.Errorf("stage for task %s must have name", def.Task)
+			}
 		}
 
 		if _, ok := p.nodes[stage.Name]; ok {

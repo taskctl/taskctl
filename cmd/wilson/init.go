@@ -12,7 +12,7 @@ import (
 
 var configTmpl = `pipelines:
   pipeline1:
-    - task1
+    - task: task1
     - task: task2
       depends_on: task1
     - task: task3
