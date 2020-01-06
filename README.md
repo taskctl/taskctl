@@ -10,7 +10,7 @@
 ![GitHub issues](https://img.shields.io/github/issues/trntv/wilson)
 ![Licence](https://img.shields.io/github/license/trntv/wilson)
 
-Wilson allows you to design you development workflow pipelines in nice and neat way in YAML files. Each pipeline composed of tasks or other pipelines and allows them to run in parallel or one-by-one. 
+Wilson allows you to design you development workflow pipelines in nice and neat way in human-readable format (YAML, JSON or TOML). Each pipeline composed of tasks or other pipelines and allows them to run in parallel or one-by-one. 
 Beside pipelines, each single task can be performed manually or triggered by filesystem watcher.
 
 ## Features
