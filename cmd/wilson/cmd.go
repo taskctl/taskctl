@@ -6,7 +6,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/trntv/wilson/internal/config"
 	"github.com/trntv/wilson/internal/watch"
-	"github.com/trntv/wilson/pkg/builder"
 	"github.com/trntv/wilson/pkg/runner"
 	"github.com/trntv/wilson/pkg/scheduler"
 	"github.com/trntv/wilson/pkg/task"
@@ -98,20 +97,12 @@ func loadConfig() (cfg *config.Config, err error) {
 
 	for name, def := range cfg.Tasks {
 		tasks[name] = task.BuildTask(def)
-		tasks[name].Name = name
 	}
 
-	if len(cfg.Contexts) == 0 {
-		contexts[config.ContextTypeLocal], err = runner.BuildContext(&builder.ContextDefinition{Type: config.ContextTypeLocal}, &config.Get().WilsonConfigDefinition)
+	for name, def := range cfg.Contexts {
+		contexts[name], err = runner.BuildContext(def, &config.Get().WilsonConfigDefinition)
 		if err != nil {
-			return nil, fmt.Errorf("local context build failed: %v", err)
-		}
-	} else {
-		for name, def := range cfg.Contexts {
-			contexts[name], err = runner.BuildContext(def, &config.Get().WilsonConfigDefinition)
-			if err != nil {
-				return nil, fmt.Errorf("context %s build failed: %v", name, err)
-			}
+			return nil, fmt.Errorf("context %s build failed: %v", name, err)
 		}
 	}
 

@@ -47,3 +47,15 @@ func (c *Config) merge(src *Config) error {
 
 	return nil
 }
+
+func (c *Config) init() {
+	for name, v := range c.Tasks {
+		if v.Name == "" {
+			v.Name = name
+		}
+	}
+
+	if _, ok := c.Contexts[ContextTypeLocal]; !ok {
+		c.Contexts[ContextTypeLocal] = &builder.ContextDefinition{Type: ContextTypeLocal}
+	}
+}

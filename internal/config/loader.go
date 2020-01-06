@@ -75,6 +75,7 @@ func (cl *ConfigLoader) Load(file string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+	cfg.init()
 
 	log.Debugf("config %s loaded", file)
 	return cfg, nil
@@ -108,17 +109,17 @@ func (cl *ConfigLoader) loadFile(file string) (map[string]interface{}, error) {
 	var cm = make(map[string]interface{})
 	importDir := path.Dir(file)
 	if imports, ok := config["import"]; ok {
-		for _, v := range imports.([]string) {
-			if util.IsUrl(v) {
-				cm, err = cl.loadImportUrl(v)
+		for _, v := range imports.([]interface{}) {
+			if util.IsUrl(v.(string)) {
+				cm, err = cl.loadImportUrl(v.(string))
 			} else {
-				cm, err = cl.loadImportPath(v, importDir)
+				cm, err = cl.loadImportPath(v.(string), importDir)
 			}
 			if err != nil {
 				return nil, fmt.Errorf("load import error: %v", err)
 			}
 		}
-		err = mergo.Merge(config, cm)
+		err = mergo.Merge(&config, cm)
 		if err != nil {
 			return nil, err
 		}
@@ -157,7 +158,7 @@ func (cl *ConfigLoader) loadImportPath(file string, dir string) (map[string]inte
 			return nil, fmt.Errorf("%s: %v", importFile, err)
 		}
 
-		err = mergo.Merge(cm, cml)
+		err = mergo.Merge(&cm, cml, mergo.WithOverride, mergo.WithAppendSlice, mergo.WithTypeCheck)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %v", importFile, err)
 		}
