@@ -1,11 +1,9 @@
 package config
 
 import (
-	"fmt"
 	"github.com/imdario/mergo"
 	log "github.com/sirupsen/logrus"
 	"github.com/trntv/wilson/pkg/builder"
-	"github.com/trntv/wilson/pkg/util"
 )
 
 const (
@@ -18,7 +16,6 @@ const (
 	ContextContainerProviderKubectl       = "kubectl"
 )
 
-var loaded = make(map[string]bool)
 var cfg *Config
 
 func Get() *Config {
@@ -32,16 +29,9 @@ type Config struct {
 	Tasks     map[string]*builder.TaskDefinition
 	Watchers  map[string]*builder.WatcherDefinition
 
-	builder.WilsonConfigDefinition
-}
+	builder.WilsonConfigDefinition `mapstructure:",squash"`
 
-func (c *Config) Set(key string, value string) error {
-	err := util.SetByPath(key, value, c)
-	if err != nil {
-		return fmt.Errorf("error setting value for key %s: %w", key, err)
-	}
-
-	return nil
+	configMap map[string]interface{}
 }
 
 func (c *Config) merge(src *Config) error {

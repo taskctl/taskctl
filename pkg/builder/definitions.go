@@ -6,34 +6,34 @@ import (
 )
 
 type WilsonConfigDefinition struct {
-	Shell         *util.Executable
-	Docker        *util.Executable
-	DockerCompose *util.Executable
-	Kubectl       *util.Executable
-	Ssh           *util.Executable
+	Shell         util.Executable
+	Docker        util.Executable
+	DockerCompose util.Executable `mapstructure:"docker-compose"`
+	Kubectl       util.Executable
+	Ssh           util.Executable
 	Debug         bool
 }
 
 type ContextDefinition struct {
 	Type      string
 	Dir       string
-	Container *ContainerDefinition
-	SSH       *SSHConfigDefinition
+	Container ContainerDefinition
+	SSH       SSHConfigDefinition
 	Env       map[string]string
 	Up        []string
 	Down      []string
 	Before    []string
 	After     []string
-	*util.Executable
+	util.Executable
 }
 
 type StageDefinition struct {
 	Name         string
 	Task         string
 	Pipeline     string
-	DependsOn    []string
+	DependsOn    []string `mapstructure:"depends_on"`
 	Env          map[string]string
-	AllowFailure bool
+	AllowFailure bool `mapstructure:"allow_failure"`
 }
 
 type TaskDefinition struct {
@@ -43,7 +43,7 @@ type TaskDefinition struct {
 	Env          map[string]string
 	Dir          string
 	Timeout      *time.Duration
-	AllowFailure bool
+	AllowFailure bool `mapstructure:"allow_failure"`
 }
 
 type WatcherDefinition struct {
@@ -60,12 +60,12 @@ type ContainerDefinition struct {
 	Exec     bool
 	Options  []string
 	Env      map[string]string
-	*util.Executable
+	util.Executable
 }
 
 type SSHConfigDefinition struct {
 	Options []string
 	User    string
 	Host    string
-	*util.Executable
+	util.Executable
 }

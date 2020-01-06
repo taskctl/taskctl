@@ -1,9 +1,14 @@
 package config
 
 import (
+	"bytes"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/imdario/mergo"
+	"github.com/mitchellh/mapstructure"
+	"github.com/pelletier/go-toml"
 	log "github.com/sirupsen/logrus"
-	"github.com/trntv/wilson/pkg/builder"
 	"github.com/trntv/wilson/pkg/util"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
@@ -11,155 +16,123 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"reflect"
-	"time"
+	"strings"
 )
 
-type configContainer struct {
-	Shell         *util.Executable `yaml:"shell"`
-	Docker        *util.Executable `yaml:"docker"`
-	DockerCompose *util.Executable `yaml:"docker-compose"`
-	Kubectl       *util.Executable `yaml:"kubectl"`
-	SSH           *util.Executable `yaml:"ssh"`
-	Debug         bool
-
-	Import   []string
-	Contexts map[string]struct {
-		Type      string
-		Dir       string
-		Container struct {
-			Provider string
-			Name     string
-			Image    string
-			Exec     bool
-			Options  []string
-			Env      interface{}
-			*util.Executable
-		}
-		SSH struct {
-			Options []string
-			User    string
-			Host    string
-			*util.Executable
-		}
-		Env    interface{}
-		Up     interface{}
-		Down   interface{}
-		Before interface{}
-		After  interface{}
-		*util.Executable
-	}
-	Pipelines map[string][]interface{}
-	Tasks     map[string]struct {
-		Command      interface{}
-		Context      string
-		Env          interface{}
-		Dir          string
-		Timeout      *time.Duration
-		AllowFailure bool `yaml:"allow_failure"`
-	}
-	Watchers map[string]struct {
-		Events  []string
-		Watch   interface{}
-		Exclude interface{}
-		Task    string
-	}
+type ConfigLoader struct {
+	Values  map[string]string
+	imports map[string]bool
+	dir     string
+	homeDir string
 }
 
-func Load(file string) (*Config, error) {
-	var err error
-	cfg, err = LoadGlobalConfig()
+func NewConfigLoader() ConfigLoader {
+	h, err := os.UserHomeDir()
 	if err != nil {
-		return nil, err
-	}
-
-	if cfg == nil {
-		cfg = &Config{
-			Contexts:  make(map[string]*builder.ContextDefinition),
-			Tasks:     make(map[string]*builder.TaskDefinition),
-			Pipelines: make(map[string][]*builder.StageDefinition),
-			Watchers:  make(map[string]*builder.WatcherDefinition),
-		}
+		log.Warning(err)
 	}
 
 	dir, err := os.Getwd()
 	if err != nil {
-		return nil, err
+		log.Warning(err)
 	}
 
-	if file == "" {
-		file = "wilson.yaml"
-		if !util.FileExists(path.Join(dir, file)) {
-			return cfg, nil
-		}
+	return ConfigLoader{
+		Values:  make(map[string]string),
+		imports: make(map[string]bool),
+		homeDir: h,
+		dir:     dir,
 	}
+}
 
-	file = path.Join(dir, file)
-	localCfg, err := loadFile(file)
+func (cl *ConfigLoader) Set(key string, value string) {
+	cl.Values[key] = value
+}
+
+func (cl *ConfigLoader) Load(file string) (*Config, error) {
+	var err error
+	cfg, err = cl.LoadGlobalConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	err = cfg.merge(localCfg)
+	if !util.FileExists(path.Join(cl.dir, file)) {
+		return cfg, nil
+	}
+
+	file = path.Join(cl.dir, file)
+	localCfg, err := cl.loadFile(file)
 	if err != nil {
 		return nil, err
 	}
 
-	if _, ok := cfg.Contexts[ContextTypeLocal]; !ok {
-		cfg.Contexts[ContextTypeLocal] = &builder.ContextDefinition{Type: ContextTypeLocal}
+	lcfg, err := cl.decode(localCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	err = cfg.merge(lcfg)
+	if err != nil {
+		return nil, err
 	}
 
 	log.Debugf("config %s loaded", file)
 	return cfg, nil
 }
 
-func LoadGlobalConfig() (*Config, error) {
-	h, err := os.UserHomeDir()
-	if err != nil {
-		return &Config{}, err
+func (cl *ConfigLoader) LoadGlobalConfig() (*Config, error) {
+	if cl.homeDir == "" {
+		return &Config{}, nil
 	}
 
-	file := path.Join(h, ".wilson", "config.yaml")
+	file := path.Join(cl.homeDir, ".wilson", "config.yaml")
 	if !util.FileExists(file) {
 		return &Config{}, nil
 	}
 
-	cfg, err := loadFile(file)
+	cfg, err := cl.loadFile(file)
 	if err != nil {
 		return &Config{}, err
 	}
 
-	return cfg, nil
+	return cl.decode(cfg)
 }
 
-func loadFile(file string) (*Config, error) {
-	loaded[file] = true
-	config, err := readFile(file)
+func (cl *ConfigLoader) loadFile(file string) (map[string]interface{}, error) {
+	cl.imports[file] = true
+	config, err := cl.readFile(file)
 	if err != nil {
 		return nil, err
 	}
 
+	var cm = make(map[string]interface{})
 	importDir := path.Dir(file)
-	for _, v := range config.Import {
-		if util.IsUrl(v) {
-			err = loadImportUrl(v, config)
-		} else {
-			err = loadImportPath(v, importDir, config)
+	if imports, ok := config["import"]; ok {
+		for _, v := range imports.([]string) {
+			if util.IsUrl(v) {
+				cm, err = cl.loadImportUrl(v)
+			} else {
+				cm, err = cl.loadImportPath(v, importDir)
+			}
+			if err != nil {
+				return nil, fmt.Errorf("load import error: %v", err)
+			}
 		}
+		err = mergo.Merge(config, cm)
 		if err != nil {
-			return nil, fmt.Errorf("load import error: %v", err)
+			return nil, err
 		}
 	}
 
 	return config, nil
 }
 
-func loadImportPath(file string, dir string, config *Config) error {
+func (cl *ConfigLoader) loadImportPath(file string, dir string) (map[string]interface{}, error) {
 	importFile := path.Join(dir, file)
 
 	fi, err := os.Stat(importFile)
 	if err != nil {
-		return fmt.Errorf("%s: %v", importFile, err)
+		return nil, fmt.Errorf("%s: %v", importFile, err)
 	}
 
 	q := make([]string, 1)
@@ -169,194 +142,111 @@ func loadImportPath(file string, dir string, config *Config) error {
 		pattern := filepath.Join(importFile, "*.yaml")
 		q, err = filepath.Glob(pattern)
 		if err != nil {
-			return fmt.Errorf("%s: %v", importFile, err)
+			return nil, fmt.Errorf("%s: %v", importFile, err)
 		}
 	}
 
+	cm := make(map[string]interface{})
 	for _, importFile := range q {
-		if loaded[importFile] == true {
+		if cl.imports[importFile] == true {
 			continue
 		}
 
-		lconfig, err := loadFile(importFile)
+		cml, err := cl.loadFile(importFile)
 		if err != nil {
-			return fmt.Errorf("%s: %v", importFile, err)
+			return nil, fmt.Errorf("%s: %v", importFile, err)
 		}
 
-		err = config.merge(lconfig)
+		err = mergo.Merge(cm, cml)
 		if err != nil {
-			return fmt.Errorf("%s: %v", importFile, err)
+			return nil, fmt.Errorf("%s: %v", importFile, err)
 		}
 	}
 
-	return nil
+	return cm, nil
 }
 
-func loadImportUrl(u string, config *Config) error {
+func (cl *ConfigLoader) loadImportUrl(u string) (map[string]interface{}, error) {
 	resp, err := http.Get(u)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	c := &Config{}
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("%s: %v", u, err)
+		return nil, fmt.Errorf("%s: %v", u, err)
 	}
 
-	err = yaml.UnmarshalStrict(data, c)
-	if err != nil {
-		return fmt.Errorf("%s: %v", u, err)
-	}
-
-	err = config.merge(c)
-	if err != nil {
-		return fmt.Errorf("%s: %v", u, err)
-	}
-
-	return nil
+	ext := filepath.Ext(u)
+	return cl.unmarshallData(data, ext)
 }
 
-func readFile(filename string) (*Config, error) {
-	c := &Config{}
+func (cl *ConfigLoader) readFile(filename string) (map[string]interface{}, error) {
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %v", filename, err)
 	}
 
-	err = yaml.UnmarshalStrict(data, c)
+	ext := filepath.Ext(filename)
+
+	return cl.unmarshallData(data, ext)
+}
+
+func (cl *ConfigLoader) unmarshallData(data []byte, ext string) (map[string]interface{}, error) {
+	var cm = make(map[string]interface{})
+
+	switch strings.ToLower(ext) {
+	case ".yaml", ".yml":
+		err := yaml.NewDecoder(bytes.NewReader(data)).Decode(cm)
+		if err != nil {
+			return nil, err
+		}
+	case ".json":
+		err := json.NewDecoder(bytes.NewReader(data)).Decode(cm)
+		if err != nil {
+			return nil, err
+		}
+	case ".toml":
+		err := toml.NewDecoder(bytes.NewReader(data)).Decode(cm)
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, errors.New("unsupported config file type")
+	}
+
+	return cm, nil
+}
+
+func (cl *ConfigLoader) applyValues(cm map[string]interface{}) (err error) {
+	for k, v := range cl.Values {
+		err = util.SetByPath(cm, k, v)
+	}
+
+	return err
+}
+
+func (cl *ConfigLoader) decode(cm map[string]interface{}) (*Config, error) {
+	err := cl.applyValues(cm)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %v", filename, err)
+		return nil, err
+	}
+
+	c := &Config{}
+	md, _ := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+		DecodeHook: mapstructure.ComposeDecodeHookFunc(
+			mapstructure.StringToTimeDurationHookFunc(),
+		),
+		ErrorUnused:      true,
+		WeaklyTypedInput: true,
+		Result:           c,
+		TagName:          "",
+	})
+
+	err = md.Decode(cm)
+	if err != nil {
+		return nil, err
 	}
 
 	return c, nil
-}
-
-func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	var container configContainer
-
-	if err := unmarshal(&container); err != nil {
-		return err
-	}
-
-	cfg := Config{
-		Contexts:  make(map[string]*builder.ContextDefinition),
-		Tasks:     make(map[string]*builder.TaskDefinition),
-		Pipelines: make(map[string][]*builder.StageDefinition),
-		Watchers:  make(map[string]*builder.WatcherDefinition),
-		Import:    container.Import,
-		WilsonConfigDefinition: builder.WilsonConfigDefinition{
-			Shell:         container.Shell,
-			Docker:        container.Docker,
-			DockerCompose: container.DockerCompose,
-			Kubectl:       container.Kubectl,
-			Ssh:           container.SSH,
-			Debug:         container.Debug,
-		},
-	}
-
-	for name, def := range container.Contexts {
-		cfg.Contexts[name] = &builder.ContextDefinition{
-			Type: def.Type,
-			Dir:  def.Dir,
-			Container: &builder.ContainerDefinition{
-				Provider:   def.Container.Provider,
-				Name:       def.Container.Name,
-				Image:      def.Container.Image,
-				Exec:       def.Container.Exec,
-				Options:    def.Container.Options,
-				Env:        util.ReadStringsMap(def.Container.Env),
-				Executable: def.Container.Executable,
-			},
-			SSH: &builder.SSHConfigDefinition{
-				Options:    def.SSH.Options,
-				User:       def.SSH.User,
-				Host:       def.SSH.Host,
-				Executable: def.SSH.Executable,
-			},
-			Env:        util.ReadStringsMap(def.Env),
-			Up:         util.ReadStringsSlice(def.Up),
-			Down:       util.ReadStringsSlice(def.Down),
-			Before:     util.ReadStringsSlice(def.Before),
-			After:      util.ReadStringsSlice(def.After),
-			Executable: def.Executable,
-		}
-	}
-
-	for name, def := range container.Tasks {
-		cfg.Tasks[name] = &builder.TaskDefinition{
-			Name:         name,
-			Command:      util.ReadStringsSlice(def.Command),
-			Context:      def.Context,
-			Env:          util.ReadStringsMap(def.Env),
-			Dir:          def.Dir,
-			Timeout:      def.Timeout,
-			AllowFailure: def.AllowFailure,
-		}
-	}
-
-	for name, stages := range container.Pipelines {
-		cfg.Pipelines[name] = make([]*builder.StageDefinition, len(stages))
-		for i, def := range stages {
-			switch reflect.TypeOf(def).Kind() {
-			case reflect.Map:
-				stage, ok := def.(map[interface{}]interface{})
-				if !ok {
-					return fmt.Errorf("pipeline %s unmarshalling error", name)
-				}
-
-				for k, v := range stage {
-					switch k.(string) {
-					case "allow_failure":
-						cfg.Pipelines[name][i].AllowFailure = v.(bool)
-					case "task":
-						cfg.Pipelines[name][i].Task = v.(string)
-						if cfg.Pipelines[name][i].Name == "" {
-							cfg.Pipelines[name][i].Name = v.(string)
-						}
-					case "pipeline":
-						cfg.Pipelines[name][i].Pipeline = v.(string)
-						if cfg.Pipelines[name][i].Name == "" {
-							cfg.Pipelines[name][i].Name = v.(string)
-						}
-					case "depends_on":
-						cfg.Pipelines[name][i].DependsOn = util.ReadStringsSlice(v)
-					case "name":
-						cfg.Pipelines[name][i].Name = v.(string)
-					case "env":
-						envs, ok := v.(map[interface{}]interface{})
-						if !ok {
-							return fmt.Errorf("failed to parse %s envs", name)
-						}
-						cfg.Pipelines[name][i].Env = make(map[string]string)
-						for kk, vv := range envs {
-							cfg.Pipelines[name][i].Env[kk.(string)] = vv.(string)
-						}
-					default:
-						return fmt.Errorf("failed to parse pipeline %s, unknown key %s", name, k.(string))
-					}
-				}
-			case reflect.String:
-				task := reflect.ValueOf(def).String()
-				cfg.Pipelines[name][i] = &builder.StageDefinition{
-					Name: task,
-					Task: task,
-					Env:  make(map[string]string),
-				}
-			}
-		}
-	}
-
-	for name, def := range container.Watchers {
-		cfg.Watchers[name] = &builder.WatcherDefinition{
-			Events:  util.ReadStringsSlice(def.Events),
-			Watch:   util.ReadStringsSlice(def.Watch),
-			Exclude: util.ReadStringsSlice(def.Exclude),
-			Task:    def.Task,
-		}
-	}
-
-	*c = cfg
-
-	return nil
 }

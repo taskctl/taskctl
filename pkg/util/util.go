@@ -5,7 +5,6 @@ import (
 	"net/url"
 	"os"
 	"reflect"
-	"strings"
 )
 
 type Executable struct {
@@ -27,75 +26,6 @@ func ConvertEnv(env map[string]string) []string {
 func FileExists(file string) bool {
 	_, err := os.Stat(file)
 	return !os.IsNotExist(err)
-}
-
-func ReadStringsSlice(v interface{}) (arr []string) {
-	if v == nil {
-		return arr
-	}
-
-	switch reflect.TypeOf(v).Kind() {
-	case reflect.Slice:
-		val := reflect.ValueOf(v)
-		arr = make([]string, val.Len())
-		for i := 0; i < val.Len(); i++ {
-			vi := val.Index(i).Interface()
-			if vi != nil {
-				arr[i] = vi.(string)
-			}
-		}
-	case reflect.String:
-		arr = []string{reflect.ValueOf(v).String()}
-	}
-
-	return arr
-}
-
-func ReadStringsMap(v interface{}) (m map[string]string) {
-	m = make(map[string]string)
-
-	if v == nil {
-		return
-	}
-
-	switch reflect.TypeOf(v).Kind() {
-	case reflect.Slice:
-		val := reflect.ValueOf(v)
-		m = make(map[string]string, val.Len())
-		for i := 0; i < val.Len(); i++ {
-			vi := val.Index(i).Interface()
-			if vi != nil {
-				vis, ok := vi.(string)
-				if !ok {
-					return
-				}
-
-				kv := strings.Split(vis, "=")
-				m[kv[0]] = kv[1]
-			}
-		}
-	case reflect.Map:
-		iter := reflect.ValueOf(v).MapRange()
-		for iter.Next() {
-			k := iter.Key().Interface()
-			v := iter.Value().Interface()
-
-			var ok bool
-			var ks, vs string
-			if ks, ok = k.(string); !ok {
-				return
-			}
-
-			if v != nil {
-				if vs, ok = v.(string); !ok {
-					return
-				}
-				m[ks] = vs
-			}
-		}
-	}
-
-	return
 }
 
 func ListNames(m interface{}) (list []string) {

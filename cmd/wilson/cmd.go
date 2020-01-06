@@ -6,16 +6,18 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/trntv/wilson/internal/config"
 	"github.com/trntv/wilson/internal/watch"
+	"github.com/trntv/wilson/pkg/builder"
 	"github.com/trntv/wilson/pkg/runner"
 	"github.com/trntv/wilson/pkg/scheduler"
 	"github.com/trntv/wilson/pkg/task"
 	"io/ioutil"
+	"strings"
 )
 
 // todo: remove global variables
 var debug, silent bool
 var configFile string
-var overrides []string
+var configValues []string
 
 var tasks = make(map[string]*task.Task)
 var contexts = make(map[string]*runner.ExecutionContext)
@@ -24,6 +26,7 @@ var watchers = make(map[string]*watch.Watcher)
 
 var cancel = make(chan struct{})
 var done = make(chan bool)
+var cl config.ConfigLoader
 
 func NewRootCommand(gcfg *config.Config) *cobra.Command {
 	cmd := &cobra.Command{
@@ -41,13 +44,20 @@ func NewRootCommand(gcfg *config.Config) *cobra.Command {
 				log.SetOutput(ioutil.Discard)
 				quiet = true
 			}
+
+			for _, v := range configValues {
+				vv := strings.Split(v, "=")
+				if len(vv) == 2 {
+					cl.Set(vv[0], vv[1])
+				}
+			}
 		},
 	}
 
 	cmd.PersistentFlags().BoolVarP(&debug, "debug", "d", gcfg.Debug, "enable debug")
 	cmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "config file to use")
 	cmd.PersistentFlags().BoolVarP(&silent, "silent", "s", false, "silence output")
-	cmd.PersistentFlags().StringSliceVar(&overrides, "set", make([]string, 0), "override config value")
+	cmd.PersistentFlags().StringSliceVar(&configValues, "set", make([]string, 0), "override config value")
 
 	err := cmd.MarkPersistentFlagFilename("config", "yaml", "yml")
 	if err != nil {
@@ -65,7 +75,8 @@ func NewRootCommand(gcfg *config.Config) *cobra.Command {
 }
 
 func Execute() error {
-	gcfg, err := config.LoadGlobalConfig()
+	cl = config.NewConfigLoader()
+	gcfg, err := cl.LoadGlobalConfig()
 	if err != nil {
 		return err
 	}
@@ -80,19 +91,27 @@ func Abort() {
 }
 
 func loadConfig() (cfg *config.Config, err error) {
-	cfg, err = config.Load(configFile)
+	cfg, err = cl.Load(configFile)
 	if err != nil {
 		return nil, err
 	}
 
 	for name, def := range cfg.Tasks {
 		tasks[name] = task.BuildTask(def)
+		tasks[name].Name = name
 	}
 
-	for name, def := range cfg.Contexts {
-		contexts[name], err = runner.BuildContext(def, &config.Get().WilsonConfigDefinition)
+	if len(cfg.Contexts) == 0 {
+		contexts[config.ContextTypeLocal], err = runner.BuildContext(&builder.ContextDefinition{Type: config.ContextTypeLocal}, &config.Get().WilsonConfigDefinition)
 		if err != nil {
-			return nil, fmt.Errorf("context %s build failed: %v", name, err)
+			return nil, fmt.Errorf("local context build failed: %v", err)
+		}
+	} else {
+		for name, def := range cfg.Contexts {
+			contexts[name], err = runner.BuildContext(def, &config.Get().WilsonConfigDefinition)
+			if err != nil {
+				return nil, fmt.Errorf("context %s build failed: %v", name, err)
+			}
 		}
 	}
 
@@ -111,7 +130,7 @@ func loadConfig() (cfg *config.Config, err error) {
 		}
 	}
 
-	for k, v := range overrides {
+	for k, v := range configValues {
 		fmt.Println(k, v)
 	}
 

@@ -18,6 +18,7 @@ tasks:
     command:
       - echo ${ARGS} # ARGS is populated by arguments passed to task. eg. wilson run task task1 -- arg1 arg2
       - echo "My name is task1"
+      - pwd
     env:
       VAR_NAME: VAR_VALUE
     dir: /task/working/dir # current directory by default
@@ -82,8 +83,8 @@ contexts:
         - -c
     env:
       VAR_NAME: VAR_VALUE
-    before: SOME COMMAND TO RUN BEFORE EVERY TASK
-    after: SOME COMMAND TO RUN WHEN TASK FINISHED SUCCESSFULLY
+    before: echo "SOME COMMAND TO RUN BEFORE EVERY TASK"
+    after: echo "SOME COMMAND TO RUN WHEN TASK FINISHED SUCCESSFULLY"
 
   docker-context-name:
     type: container
@@ -97,8 +98,8 @@ contexts:
         VAR_NAME: VAR_VALUE
     env:
       VAR_NAME: VAR_VALUE # eg. "DOCKER_HOST"
-    before: SOME COMMAND TO RUN BEFORE TASK
-    after: SOME COMMAND TO RUN WHEN TASK FINISHED SUCCESSFULLY
+    before: echo "SOME COMMAND TO RUN BEFORE TASK"
+    after: echo "SOME COMMAND TO RUN WHEN TASK FINISHED SUCCESSFULLY"
 
   docker-compose-context-name:
     type: container

@@ -1,8 +1,8 @@
 package config
 
 import (
-	"github.com/trntv/wilson/pkg/builder"
 	"gopkg.in/yaml.v2"
+	"strings"
 	"testing"
 )
 
@@ -10,9 +10,10 @@ var testConfig = `
 contexts:
   local: # will be created automatically if not set
     type: local
-    bin: /bin/bash
-    args:
-      - -c
+    executable:
+      bin: /bin/bash
+      args:
+        - -c
     env:
       VAR_NAME: VAR_VALUE
     before: SOME COMMAND TO RUN BEFORE EVERY TASK
@@ -39,8 +40,9 @@ contexts:
       provider: docker-compose
       name: api
       exec: true
-      args:
-        - --file=docker-compose.yaml
+      executable:
+        args:
+          - --file=docker-compose.yaml
       options:
         - --user=root
       env:
@@ -101,11 +103,10 @@ tasks:
     command:
       - echo "Hello from container created by docker-compose"
     env:
-      - VAR_NAME=VAR_VALUE
+      VAR_NAME: VAR_VALUE
 
   task-to-be-triggered-by-watcher:
-    command:
-      - echo ${EVENT_NAME} ${EVENT_PATH}
+    command: echo ${EVENT_NAME} ${EVENT_PATH}
 
 watchers:
   watcher1:
@@ -135,9 +136,20 @@ ssh:
   args: [arg1, arg2]
 `
 
-func TestConfig_UnmarshalYAML(t *testing.T) {
-	cfg := &Config{}
-	err := yaml.Unmarshal([]byte(testConfig), cfg)
+func TestConfig_decode(t *testing.T) {
+	loader := NewConfigLoader()
+	loader.Set("tasks.task1.dir", "/tmp")
+
+	var cm = make(map[string]interface{})
+	var dec = yaml.NewDecoder(strings.NewReader(testConfig))
+	dec.SetStrict(true)
+
+	err := dec.Decode(cm)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := loader.decode(cm)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -147,12 +159,16 @@ func TestConfig_UnmarshalYAML(t *testing.T) {
 		t.Fatal("pipelines parsing error")
 	}
 
-	if cfg.Pipelines["pipeline1"][0].Name == "" {
+	if cfg.Pipelines["pipeline1"][1].Task == "some-stage-name" {
 		t.Errorf("stage parsing error")
 	}
 
 	if _, ok = cfg.Tasks["task1"]; !ok {
 		t.Fatal("tasks parsing error")
+	}
+
+	if cfg.Tasks["task1"].Dir != "/tmp" {
+		t.Fatal("override error")
 	}
 
 	if v, ok := cfg.Tasks["task3"].Env["VAR_NAME"]; !ok || v != "VAR_VALUE" {
@@ -165,34 +181,5 @@ func TestConfig_UnmarshalYAML(t *testing.T) {
 
 	if _, ok = cfg.Watchers["watcher1"]; !ok {
 		t.Fatal("watchers parsing error")
-	}
-
-	// todo: assertions
-}
-
-func TestConfig_Set(t *testing.T) {
-	cfg := Config{
-		Contexts: map[string]*builder.ContextDefinition{
-			"local": {
-				Type: "local",
-				Env:  make(map[string]string),
-			},
-		},
-		Tasks: map[string]*builder.TaskDefinition{
-			"test": {
-				Context: "local",
-				Env:     make(map[string]string),
-			},
-		},
-	}
-
-	err := cfg.Set("tasks.test.context", "remote")
-	if err != nil || cfg.Tasks["test"].Context != "remote" {
-		t.Fatalf("errors setting config value: %v", err)
-	}
-
-	err = cfg.Set("tasks.test.env.TEST_VAR", "TEST_VAR_VALUE")
-	if err != nil || cfg.Tasks["test"].Env["TEST_VAR"] != "TEST_VAR_VALUE" {
-		t.Fatalf("errors setting config value: %v", err)
 	}
 }

@@ -57,29 +57,8 @@ func BuildContext(def *builder.ContextDefinition, wcfg *builder.WilsonConfigDefi
 	c := &ExecutionContext{
 		ctxType: def.Type,
 		executable: util.Executable{
-			Bin:  def.Bin,
-			Args: def.Args,
-		},
-		container: container{
-			provider: def.Container.Provider,
-			name:     def.Container.Name,
-			image:    def.Container.Image,
-			exec:     def.Container.Exec,
-			options:  def.Container.Options,
-			env:      util.ConvertEnv(def.Container.Env),
-			executable: util.Executable{
-				Bin:  def.Container.Bin,
-				Args: def.Container.Args,
-			},
-		},
-		ssh: ssh{
-			user:    def.SSH.User,
-			host:    def.SSH.Host,
-			options: def.SSH.Options,
-			executable: util.Executable{
-				Bin:  def.SSH.Bin,
-				Args: def.SSH.Options,
-			},
+			Bin:  def.Executable.Bin,
+			Args: def.Executable.Args,
 		},
 		dir:    def.Dir,
 		env:    append(os.Environ(), util.ConvertEnv(def.Env)...),
@@ -92,6 +71,19 @@ func BuildContext(def *builder.ContextDefinition, wcfg *builder.WilsonConfigDefi
 
 	switch c.ctxType {
 	case config.ContextTypeContainer:
+		c.container = container{
+			provider: def.Container.Provider,
+			name:     def.Container.Name,
+			image:    def.Container.Image,
+			exec:     def.Container.Exec,
+			options:  def.Container.Options,
+			env:      util.ConvertEnv(def.Container.Env),
+			executable: util.Executable{
+				Bin:  def.Container.Bin,
+				Args: def.Container.Args,
+			},
+		}
+
 		switch c.container.provider {
 		case config.ContextContainerProviderDocker:
 			if c.container.executable.Bin == "" {
@@ -129,6 +121,15 @@ func BuildContext(def *builder.ContextDefinition, wcfg *builder.WilsonConfigDefi
 			}
 		}
 	case config.ContextTypeRemote:
+		c.ssh = ssh{
+			user:    def.SSH.User,
+			host:    def.SSH.Host,
+			options: def.SSH.Options,
+			executable: util.Executable{
+				Bin:  def.SSH.Bin,
+				Args: def.SSH.Options,
+			},
+		}
 		if c.ssh.executable.Bin == "" {
 			if wcfg.Ssh.Bin != "" {
 				c.ssh.executable.Bin = wcfg.Ssh.Bin

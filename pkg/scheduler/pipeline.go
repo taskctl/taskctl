@@ -48,12 +48,19 @@ func BuildPipeline(stages []*builder.StageDefinition, pipelines map[string][]*bu
 		}
 
 		stage := &Stage{
-			Name:         def.Name,
 			Task:         stageTask,
 			Pipeline:     stagePipeline,
 			DependsOn:    def.DependsOn,
 			Env:          def.Env,
 			AllowFailure: def.AllowFailure,
+		}
+
+		if def.Task != "" {
+			stage.Name = def.Task
+		}
+
+		if def.Pipeline != "" {
+			stage.Name = def.Pipeline
 		}
 
 		if stage.Name == "" {
