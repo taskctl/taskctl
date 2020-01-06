@@ -35,5 +35,5 @@ jobs:
     - name: Publish release
       uses: ncipollo/release-action@v1
       with:
-        artifacts: "bin/wilson-linux-amd64.tar.gz, bin/wilson-darwin-amd64.tar.gz, bin/checksums.txt"
+        artifacts: "bin/wilson-linux-amd64, bin/wilson-darwin-amd64, bin/wilson-linux-amd64.tar.gz, bin/wilson-darwin-amd64.tar.gz, bin/checksums.txt"
         token: ${{ secrets.GITHUB_TOKEN }}

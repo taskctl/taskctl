@@ -38,6 +38,12 @@ tasks:
     command:
       - echo "SHELL is ${SHELL}"
       - echo "Goodbye!"
+
+watchers:
+  watcher1:
+    watch: ["README.*", "pkg/**/*.go"]
+    events: [create, write, remove, rename, chmod]
+    task: task1
 `
 
 func NewInitCommand() *cobra.Command {
