@@ -13,7 +13,7 @@ func TestContext_BuildContext(t *testing.T) {
 			Bin: "/opt/docker",
 		},
 	}
-	c, _ := BuildContext(builder.ContextDefinition{
+	c, _ := BuildContext(&builder.ContextDefinition{
 		Type: "local",
 		Env:  map[string]string{"TEST_VAR": "TEST_VAL"},
 	}, wcfg)
@@ -27,7 +27,7 @@ func TestContext_BuildContext(t *testing.T) {
 		t.Error("env not found")
 	}
 
-	c, _ = BuildContext(builder.ContextDefinition{
+	c, _ = BuildContext(&builder.ContextDefinition{
 		Type: "container",
 		Container: builder.ContainerDefinition{
 			Provider: "docker",
@@ -42,7 +42,7 @@ func TestContext_BuildContext(t *testing.T) {
 		t.Errorf("docker build failed %s", cmd.String())
 	}
 
-	c, _ = BuildContext(builder.ContextDefinition{
+	c, _ = BuildContext(&builder.ContextDefinition{
 		Type: "container",
 		Container: builder.ContainerDefinition{
 			Provider: "docker-compose",
@@ -62,7 +62,7 @@ func TestContext_BuildContext(t *testing.T) {
 		t.Errorf("docker-compose build failed %s", cmd.String())
 	}
 
-	c, _ = BuildContext(builder.ContextDefinition{
+	c, _ = BuildContext(&builder.ContextDefinition{
 		Type: "container",
 		Container: builder.ContainerDefinition{
 			Provider: "kubectl",
@@ -80,7 +80,7 @@ func TestContext_BuildContext(t *testing.T) {
 		t.Errorf("kubectl build failed %s", cmd.String())
 	}
 
-	c, _ = BuildContext(builder.ContextDefinition{
+	c, _ = BuildContext(&builder.ContextDefinition{
 		Type: "remote",
 		SSH: builder.SSHConfigDefinition{
 			Options: []string{"-6", "-C"},

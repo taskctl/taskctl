@@ -6,7 +6,7 @@ import (
 )
 
 func TestBuildPipeline_Cyclic(t *testing.T) {
-	stages := []builder.StageDefinition{
+	stages := []*builder.StageDefinition{
 		{
 			Name:      "task1",
 			Task:      "task1",
@@ -25,7 +25,7 @@ func TestBuildPipeline_Cyclic(t *testing.T) {
 		},
 	}
 
-	tasks := map[string]builder.TaskDefinition{
+	tasks := map[string]*builder.TaskDefinition{
 		"task1": {
 			Name: "task1",
 		},
@@ -37,7 +37,7 @@ func TestBuildPipeline_Cyclic(t *testing.T) {
 		},
 	}
 
-	_, err := BuildPipeline(stages, make(map[string][]builder.StageDefinition), tasks)
+	_, err := BuildPipeline(stages, make(map[string][]*builder.StageDefinition), tasks)
 	if err == nil || err.Error() != "cycle detected" {
 		t.Errorf("cycles detection failed")
 	}
