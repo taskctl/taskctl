@@ -19,7 +19,7 @@ Beside pipelines, each single task can be performed manually or triggered by fil
 - stderr/stdout output capturing
 - File watcher integrated with tasks and pipelines
 - Customizable contexts for each task
-- YAML configuration format
+- Human-readable configuration format (YAML, JSON or TOML)
 - and many more...
 
 [![asciicast](https://asciinema.org/a/283740.svg)](https://asciinema.org/a/283740)
@@ -70,6 +70,14 @@ tasks:
           - git push origin master
           - git push origin ${ARGS}
 ```
+Task definition takes following parameters:
+- ``name`` - task name (optional)
+- ``command`` - one or more commands to run
+- ``context`` - name of the context to run commands in (optional). ``local`` by default
+- ``env`` - environment variables (optional). All existing environment variables will be passed automatically
+- ``dir`` - working directory. If not set, current working directory will be used
+- ``timeout`` - command execution timeout (optional)
+- ``allow_failure`` - if set to ``true`` failed commands will no interrupt task execution. ``false`` by default
 
 ## Pipelines
 Pipeline is a set of stages (tasks or other pipelines) to be executed in a certain order. Stages may be executed in parallel or one-by-one. Stage may override task environment. 
@@ -108,6 +116,13 @@ will create this pipeline:
 start task --- |--- task B --------------|--- task E --- finish
                |___ task C ___ task D ___|
 ```
+Stage definition takes following parameters:
+- ``name`` - stage name (optional). If not set - referenced task or pipeline name will be used.
+- ``task`` - task to execute on this stage (optional)
+- ``pipeline`` - pipeline to execute on this stage (optional)
+- ``env`` - environment variables (optional). All existing environment variables will be passed automatically
+- ``depends_on`` - name of stage on which this stage depends on (optional). This stage will be started only after referenced stage is completed.
+- ``allow_failure`` - if set to ``true`` failing stage will no interrupt pipeline execution. ``false`` by default
 
 ## Contexts
 Available context types:
