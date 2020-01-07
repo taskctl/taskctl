@@ -66,6 +66,18 @@ wilson run pipeline1
 wilson watch watcher1
 ```
 
+## Contents  
+
+- [Getting started](#getting-started)
+- [Tasks](#tasks)
+- [Pipelines](#pipelines)
+- [Filesystem watchers](#filesystem-watchers)
+- [Contexts](#contexts)
+- [Configs examples](#examples)
+- [FAQ](#faq)
+  - [Why "Wilson"?](#why-wilson)
+- [Autocomplete](#autocomplete)
+
 ## Tasks
 Task is a foundation of *wilson*. It describes one or more commands to run, their environment, executors and attributes such as working directory, execution timeout, acceptance of failure, etc.
 ```yaml
@@ -149,7 +161,8 @@ Available context types:
 - container - docker, docker-compose, kubectl
 - remote - ssh
 
-## Why "Wilson"?
+## FAQ
+### Why "Wilson"?
 In the "Cast Away" film, Wilson the volleyball 🏐 serves as Chuck Noland's (Tom Hanks) personified friend and only companion during the four years that Noland spends alone on a deserted island [wiki](https://en.wikipedia.org/wiki/Cast_Away#Wilson_the_volleyball)
 
 ## Examples
