@@ -33,13 +33,13 @@ brew install wilson
 ```
 or
 ```
-sudo curl -Lo /usr/local/bin/sampler https://github.com/trntv/wilson/releases/latest/download/wilson-darwin-amd64
-sudo chmod +x /usr/local/bin/sampler
+sudo curl -Lo /usr/local/bin/wilson https://github.com/trntv/wilson/releases/latest/download/wilson_darwin_amd64
+sudo chmod +x /usr/local/bin/wilson
 ```
 
 ### Linux
 ```
-sudo wget https://github.com/trntv/wilson/releases/latest/download/wilson-linux-amd64 -O /usr/local/bin/wilson
+sudo wget https://github.com/trntv/wilson/releases/latest/download/wilson_linux_amd64 -O /usr/local/bin/wilson
 sudo chmod +x /usr/local/bin/wilson
 ```
 ### From sources
@@ -77,18 +77,13 @@ Automation is based on four concepts:
 Task is a foundation of *wilson*. It describes one or more commands to run, their environment, executors and attributes such as working directory, execution timeout, acceptance of failure, etc.
 ```yaml
 tasks:
-    build:
+    lint:
         command:
           - golint $(go list ./... | grep -v /vendor/)
           - go vet $(go list ./... | grep -v /vendor/)
-          - go build ./...
           
-    release:
-        command:
-          - git commit -m "Release ${ARGS}"
-          - git tag ${ARGS}
-          - git push origin master
-          - git push origin ${ARGS}
+    build:
+        command: go build ./...
 ```
 Task definition takes following parameters:
 - ``name`` - task name (optional)
