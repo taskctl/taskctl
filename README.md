@@ -1,4 +1,4 @@
-# Wilson - routine tasks automation toolkit
+# Wilson - developer's routine tasks automation toolkit
 ![Tests](https://github.com/trntv/wilson/workflows/Test/badge.svg)
 [![Requirements Status](https://requires.io/github/trntv/wilson/requirements.svg?branch=master)](https://requires.io/github/trntv/wilson/requirements/?branch=master)
 ![GitHub top language](https://img.shields.io/github/languages/top/trntv/wilson)
@@ -66,13 +66,6 @@ wilson run pipeline1
 wilson watch watcher1
 ```
 
-## How it works?
-Automation is based on four concepts:
-1. [Tasks](https://github.com/trntv/wilson#tasks)
-2. [Pipelines](https://github.com/trntv/wilson#pipelines) that describe set of stages (tasks or other pipelines) to run
-3. [Watchers](https://github.com/trntv/wilson#watchers) that listen for filesystem events and trigger tasks
-4. [Tasks contexts](https://github.com/trntv/wilson#contexts)
-
 ## Tasks
 Task is a foundation of *wilson*. It describes one or more commands to run, their environment, executors and attributes such as working directory, execution timeout, acceptance of failure, etc.
 ```yaml
@@ -139,15 +132,9 @@ Stage definition takes following parameters:
 - ``depends_on`` - name of stage on which this stage depends on (optional). This stage will be started only after referenced stage is completed.
 - ``allow_failure`` - if set to ``true`` failing stage will no interrupt pipeline execution. ``false`` by default
 
-## Contexts
-Available context types:
-- local - shell
-- container - docker, docker-compose, kubectl
-- remote - ssh
-
-## Watchers
+## Filesystem watchers
 Watcher watches for changes in files selected by provided patterns and triggers a task anytime an event has occurred.
-```
+```yaml
 watchers:
   watcher1:
     watch: ["README.*", "pkg/**/*.go"]
@@ -155,6 +142,12 @@ watchers:
     events: [create, write, remove, rename, chmod]
     task: task1
 ```
+
+## Contexts
+Available context types:
+- local - shell
+- container - docker, docker-compose, kubectl
+- remote - ssh
 
 ## Why "Wilson"?
 In the "Cast Away" film, Wilson the volleyball 🏐 serves as Chuck Noland's (Tom Hanks) personified friend and only companion during the four years that Noland spends alone on a deserted island [wiki](https://en.wikipedia.org/wiki/Cast_Away#Wilson_the_volleyball)
