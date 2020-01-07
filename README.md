@@ -151,7 +151,18 @@ Available context types:
 - remote - ssh
 
 ## Watchers
-WIF*
+Watcher watches for changes in files selected by provided patterns and triggers a task anytime an event has occurred.
+```
+watchers:
+  watcher1:
+    watch: ["README.*", "pkg/**/*.go"]
+    exclude: ["pkg/excluded.go", "pkg/excluded-dir/*"]
+    events: [create, write, remove, rename, chmod]
+    task: task1
+```
+
+## Why "Wilson"?
+In the "Cast Away" film, Wilson the volleyball 🏐 serves as Chuck Noland's (Tom Hanks) personified friend and only companion during the four years that Noland spends alone on a deserted island [wiki](https://en.wikipedia.org/wiki/Cast_Away#Wilson_the_volleyball)
 
 ## Examples
 ### Tasks config example
@@ -191,9 +202,3 @@ Add to  ~/.zshrc
 ```
 . <(wilson completion zsh)
 ```
-
-## Why "Wilson"?
-https://en.wikipedia.org/wiki/Cast_Away#Wilson_the_volleyball 🏐
-
----
-*waiting for inspiration
