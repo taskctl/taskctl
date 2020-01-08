@@ -86,12 +86,16 @@ Task is a foundation of *wilson*. It describes one or more commands to run, thei
 ```yaml
 tasks:
     lint:
+        allow_failure: true
         command:
           - golint $(go list ./... | grep -v /vendor/)
           - go vet $(go list ./... | grep -v /vendor/)
           
     build:
         command: go build ./...
+        env: 
+          GOOS: linux
+          GOARCH: amd64
 ```
 Task definition takes following parameters:
 - ``name`` - task name (optional)
