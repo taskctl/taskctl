@@ -26,6 +26,18 @@ Beside pipelines, each single task can be performed manually or triggered by fil
 
 [![asciicast](https://asciinema.org/a/283740.svg)](https://asciinema.org/a/283740)
 
+## Contents  
+
+- [Getting started](#getting-started)
+- [Tasks](#tasks)
+- [Pipelines](#pipelines)
+- [Filesystem watchers](#filesystem-watchers)
+- [Contexts](#contexts)
+- [Configs examples](#examples)
+- [FAQ](#faq)
+  - [Why "Wilson"?](#why-wilson)
+- [Autocomplete](#autocomplete)
+
 # Getting started
 ## Install
 ### MacOS
@@ -67,18 +79,6 @@ wilson run pipeline1
 ```
 wilson watch watcher1
 ```
-
-## Contents  
-
-- [Getting started](#getting-started)
-- [Tasks](#tasks)
-- [Pipelines](#pipelines)
-- [Filesystem watchers](#filesystem-watchers)
-- [Contexts](#contexts)
-- [Configs examples](#examples)
-- [FAQ](#faq)
-  - [Why "Wilson"?](#why-wilson)
-- [Autocomplete](#autocomplete)
 
 ## Tasks
 Task is a foundation of *wilson*. It describes one or more commands to run, their environment, executors and attributes such as working directory, execution timeout, acceptance of failure, etc.
