@@ -12,7 +12,7 @@
 ![GitHub issues](https://img.shields.io/github/issues/trntv/wilson)
 ![Licence](https://img.shields.io/github/license/trntv/wilson)
 
-Simple, modern alternative to Make. Wilson allows you to design you development workflow pipelines in nice and neat way in human-readable format (YAML, JSON or TOML). Each pipeline composed of tasks or other pipelines and allows them to run in parallel or one-by-one. 
+Simple modern alternative to Make. Wilson allows you to design you development workflow pipelines in nice and neat way in human-readable format (YAML, JSON or TOML). Each pipeline composed of tasks or other pipelines and allows them to run in parallel or one-by-one. 
 Beside pipelines, each single task can be performed manually or triggered by filesystem watcher.
 
 ## Features
@@ -24,7 +24,7 @@ Beside pipelines, each single task can be performed manually or triggered by fil
 - Human-readable configuration format (YAML, JSON or TOML)
 - and many more...
 
-[![asciicast](https://asciinema.org/a/283740.svg)](https://asciinema.org/a/283740)
+[![asciicast](https://asciinema.org/a/292379.svg)](https://asciinema.org/a/292379)
 
 ## Contents  
 
