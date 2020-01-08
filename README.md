@@ -36,6 +36,7 @@ Beside pipelines, each single task can be performed manually or triggered by fil
 - [Configs examples](#examples)
 - [FAQ](#faq)
   - [Why "Wilson"?](#why-wilson)
+  - [Where doeas global config stored?](#where-does-global-config-stored)
 - [Autocomplete](#autocomplete)
 
 # Getting started
