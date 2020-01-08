@@ -167,6 +167,9 @@ Available context types:
 ### Why "Wilson"?
 In the "Cast Away" film, Wilson the volleyball 🏐 serves as Chuck Noland's (Tom Hanks) personified friend and only companion during the four years that Noland spends alone on a deserted island [wiki](https://en.wikipedia.org/wiki/Cast_Away#Wilson_the_volleyball)
 
+### Where does global config stored?
+It is stored in ``$HOME/.wilson/config.yaml`` file
+
 ## Examples
 ### Tasks config example
 [task.yaml](https://github.com/trntv/wilson/blob/master/example/task.yaml)
