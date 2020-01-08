@@ -1,5 +1,5 @@
 <p align="center">
-<img width="150" src="https://avatars1.githubusercontent.com/u/1162056?s=150&u=2f944e6acb1a8e441049c699a2d25102d8731780&v=4" alt="Wilson logo" title="Wilson" />
+<img width="150" src="https://raw.githubusercontent.com/trntv/wilson/master/docs/logo.png" alt="Wilson logo" title="Wilson" />
 </p>
 
 # Wilson - developer's routine tasks automation toolkit
