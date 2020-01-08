@@ -24,7 +24,7 @@ Beside pipelines, each single task can be performed manually or triggered by fil
 - Human-readable configuration format (YAML, JSON or TOML)
 - and many more...
 
-[![asciicast](https://asciinema.org/a/283740.svg)](https://asciinema.org/a/283740)
+[![asciicast](https://asciinema.org/a/292379.svg)](https://asciinema.org/a/292379)
 
 ## Contents  
 
@@ -36,6 +36,7 @@ Beside pipelines, each single task can be performed manually or triggered by fil
 - [Configs examples](#examples)
 - [FAQ](#faq)
   - [Why "Wilson"?](#why-wilson)
+  - [Where doeas global config stored?](#where-does-global-config-stored)
 - [Autocomplete](#autocomplete)
 
 # Getting started
@@ -166,6 +167,9 @@ Available context types:
 ## FAQ
 ### Why "Wilson"?
 In the "Cast Away" film, Wilson the volleyball 🏐 serves as Chuck Noland's (Tom Hanks) personified friend and only companion during the four years that Noland spends alone on a deserted island [wiki](https://en.wikipedia.org/wiki/Cast_Away#Wilson_the_volleyball)
+
+### Where does global config stored?
+It is stored in ``$HOME/.wilson/config.yaml`` file
 
 ## Examples
 ### Tasks config example
