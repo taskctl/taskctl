@@ -55,6 +55,10 @@ func (c *Config) init() {
 		}
 	}
 
+	if c.Contexts == nil {
+		c.Contexts = make(map[string]*builder.ContextDefinition)
+	}
+
 	if _, ok := c.Contexts[ContextTypeLocal]; !ok {
 		c.Contexts[ContextTypeLocal] = &builder.ContextDefinition{Type: ContextTypeLocal}
 	}

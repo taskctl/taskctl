@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -92,7 +93,9 @@ func Abort() {
 func loadConfig() (cfg *config.Config, err error) {
 	cfg, err = cl.Load(configFile)
 	if err != nil {
-		return nil, err
+		if configFile != "wilson.yaml" || !errors.Is(err, config.ErrConfigNotFound) {
+			return nil, err
+		}
 	}
 
 	for name, def := range cfg.Tasks {

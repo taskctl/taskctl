@@ -19,6 +19,8 @@ import (
 	"strings"
 )
 
+var ErrConfigNotFound = errors.New("config file not found")
+
 type ConfigLoader struct {
 	Values  map[string]string
 	imports map[string]bool
@@ -57,7 +59,7 @@ func (cl *ConfigLoader) Load(file string) (*Config, error) {
 	}
 
 	if !util.FileExists(path.Join(cl.dir, file)) {
-		return cfg, nil
+		return cfg, ErrConfigNotFound
 	}
 
 	file = path.Join(cl.dir, file)
@@ -118,10 +120,11 @@ func (cl *ConfigLoader) loadFile(file string) (map[string]interface{}, error) {
 			if err != nil {
 				return nil, fmt.Errorf("load import error: %v", err)
 			}
-		}
-		err = mergo.Merge(&config, cm)
-		if err != nil {
-			return nil, err
+
+			err = mergo.Merge(&config, cm)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
