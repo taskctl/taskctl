@@ -31,8 +31,8 @@ Beside pipelines, each single task can be performed manually or triggered by bui
 [![asciicast](https://asciinema.org/a/292379.svg)](https://asciinema.org/a/292379)
 
 ## Contents  
-
 - [Getting started](#getting-started)
+- [](#getting-started)
 - [Tasks](#tasks)
 - [Pipelines](#pipelines)
 - [Filesystem watchers](#filesystem-watchers)
@@ -40,7 +40,8 @@ Beside pipelines, each single task can be performed manually or triggered by bui
 - [Configs examples](#examples)
 - [FAQ](#faq)
   - [Why "Wilson"?](#why-wilson)
-  - [Where doeas global config stored?](#where-does-global-config-stored)
+  - [Where does global config stored?](#where-does-global-config-stored)
+  - [How does it differ from go-task/task?]
 - [Autocomplete](#autocomplete)
 
 # Getting started
@@ -84,6 +85,8 @@ wilson run pipeline1
 ```
 wilson watch watcher1
 ```
+
+## Config basics
 
 ## Tasks
 Task is a foundation of *wilson*. It describes one or more commands to run, their environment, executors and attributes such as working directory, execution timeout, acceptance of failure, etc.
@@ -178,6 +181,12 @@ In the "Cast Away" film, Wilson the volleyball 🏐 serves as Chuck Noland's (To
 
 ### Where does global config stored?
 It is stored in ``$HOME/.wilson/config.yaml`` file
+
+### How does it differ from go-task/task?
+It's amazing how solving same problems lead to same solutions. wilson and go-task have a lot of concepts in common but also have some differences. 
+1. Main is pipelines. Pipelines and stages allows more precise workflow design because same tasks may have different dependencies (or no dependencies) in different scenarios.
+2. Contexts allows you to set up execution environment, shell or binaries which will run your task. Now there is several available context types: local (shell or binary), remote (ssh), container (docker, docker-compose, kubernetes via kubectl)
+
 
 ## Examples
 ### Tasks config example
