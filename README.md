@@ -41,8 +41,9 @@ Beside pipelines, each single task can be performed manually or triggered by bui
 - [FAQ](#faq)
   - [Why "Wilson"?](#why-wilson)
   - [Where does global config stored?](#where-does-global-config-stored)
-  - [How does it differ from go-task/task?]
+  - [How does it differ from go-task/task?](#how-does-it-differ-from-go-tasktask)
 - [Autocomplete](#autocomplete)
+- [Similar projects](#similar-projects)
 
 # Getting started
 ## Install
@@ -50,6 +51,10 @@ Beside pipelines, each single task can be performed manually or triggered by bui
 ```
 brew tap trntv/wilson
 brew install wilson
+```
+or just
+```
+brew install trntv/wilson/wilson
 ```
 or
 ```
@@ -170,10 +175,47 @@ watchers:
 ```
 
 ## Contexts
+Contexts allows you to set up execution environment, shell or binaries which will run your task, up/down commands etc
 Available context types:
-- local - shell
-- container - docker, docker-compose, kubectl
-- remote - ssh
+- local (shell or binary)
+- remote (ssh)
+- container (docker, docker-compose, kubernetes via kubectl)
+
+### Local context with zsh
+```yaml
+contexts:
+  local:
+    type: local
+    executable:
+      bin: /bin/zsh
+      args:
+        - -c
+    env:
+      VAR_NAME: VAR_VALUE
+    before: echo "I'm local context!"
+    after: echo "Have a nice day!"
+```
+
+### Docker context
+```yaml
+  mysql:
+    type: container
+    container:
+      provider: docker
+      image: mysql:latest
+    executable:
+        bin: mysql
+        args:
+          - -hdb.example.com
+          - -uroot
+          - -psecure-password
+          - database_name
+          - -e
+tasks:
+  mysql-task:
+    context: mysql
+    command: TRUNCATE TABLE queue
+```
 
 ## FAQ
 ### Why "Wilson"?
@@ -226,3 +268,9 @@ Add to  ~/.zshrc
 ```
 . <(wilson completion zsh)
 ```
+
+### Similar projects
+- [GNU Make](https://github.com/mirror/make)
+- [go-task/task](https://github.com/go-task/task)
+- [mage](https://github.com/magefile/mage)
+- [tusk](https://github.com/rliebz/tusk)
