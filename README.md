@@ -32,7 +32,6 @@ Beside pipelines, each single task can be performed manually or triggered by bui
 
 ## Contents  
 - [Getting started](#getting-started)
-- [](#getting-started)
 - [Tasks](#tasks)
 - [Pipelines](#pipelines)
 - [Filesystem watchers](#filesystem-watchers)
@@ -90,8 +89,6 @@ wilson run pipeline1
 ```
 wilson watch watcher1
 ```
-
-## Config basics
 
 ## Tasks
 Task is a foundation of *wilson*. It describes one or more commands to run, their environment, executors and attributes such as working directory, execution timeout, acceptance of failure, etc.
@@ -274,3 +271,4 @@ Add to  ~/.zshrc
 - [go-task/task](https://github.com/go-task/task)
 - [mage](https://github.com/magefile/mage)
 - [tusk](https://github.com/rliebz/tusk)
+- [just](https://github.com/casey/just)
