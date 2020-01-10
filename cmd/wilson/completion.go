@@ -57,7 +57,7 @@ To configure your zsh shell to load completions for each session add to your zsh
 }
 
 var zshCompletion = `compdef _wilson wilson
-
+alias wi=wilson
 function _wilson {
   local -a commands
 

@@ -271,12 +271,19 @@ func (cl *ConfigLoader) decode(cm map[string]interface{}) (*Config, error) {
 }
 
 func (cl *ConfigLoader) resolveDefaultConfigFile() (file string, err error) {
-	files := []string{
-		filepath.Join(cl.dir, "wilson.yaml"),
-		filepath.Join(cl.dir, "wi.yaml"),
+	files := make([]string, 0)
+
+	dir := cl.dir
+	for {
+		if dir == "/" {
+			break
+		}
+
+		files = append(files, filepath.Join(dir, "wilson.yaml"), filepath.Join(dir, "wi.yaml"))
+		dir = filepath.Dir(dir)
 	}
 
-	for _, file := range files {
+	for _, file = range files {
 		if util.FileExists(file) {
 			return file, nil
 		}
