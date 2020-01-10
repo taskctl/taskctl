@@ -5,7 +5,9 @@ import (
 	"github.com/logrusorgru/aurora"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/trntv/wilson/pkg/runner"
 	"github.com/trntv/wilson/pkg/scheduler"
+	"github.com/trntv/wilson/pkg/task"
 	"github.com/trntv/wilson/pkg/util"
 	"strings"
 )
@@ -14,7 +16,7 @@ var quiet, raw bool
 
 func NewRunCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "run (PIPELINE) [flags] [-- TASKS_ARGS]",
+		Use:   "run (PIPELINE1 OR TASK1) [PIPELINE2 OR TASK2]... [flags] [-- TASKS_ARGS]",
 		Short: "Run pipeline or task",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
@@ -27,17 +29,21 @@ func NewRunCommand() *cobra.Command {
 				log.SetLevel(log.FatalLevel)
 			}
 
-			pipeline, ok := pipelines[args[0]]
-			if ok {
-				err = runPipeline(pipeline, cmd, args)
-			} else {
-				t, ok := tasks[args[0]]
-				if !ok {
-					return fmt.Errorf("unknown task %s", args[0])
+			for _, v := range args {
+				pipeline, ok := pipelines[v]
+				if ok {
+					err = runPipeline(pipeline, cmd, args)
+				} else {
+					t, ok := tasks[v]
+					if !ok {
+						return fmt.Errorf("unknown task or pipeline %s", v)
+					}
+					err = runTask(t, cmd, args)
 				}
-				err = runTask(t, cmd, args)
+				if err != nil {
+					break
+				}
 			}
-
 			close(done)
 
 			return err
@@ -49,6 +55,34 @@ func NewRunCommand() *cobra.Command {
 	cmd.AddCommand(NewRunTaskCommand())
 
 	return cmd
+}
+
+func NewRunTaskCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "task (TASK1) [TASK2]... [flags] [-- TASK_ARGS]",
+		Short: "Run task",
+		Args:  cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			_, err = loadConfig()
+			if err != nil {
+				return err
+			}
+
+			for _, v := range args {
+				t, ok := tasks[v]
+				if !ok {
+					return fmt.Errorf("unknown task %s", v)
+				}
+
+				err = runTask(t, cmd, args)
+				if err != nil {
+					break
+				}
+			}
+			close(done)
+			return err
+		},
+	}
 }
 
 func runPipeline(pipeline *scheduler.Pipeline, cmd *cobra.Command, args []string) error {
@@ -80,6 +114,26 @@ func runPipeline(pipeline *scheduler.Pipeline, cmd *cobra.Command, args []string
 	printSummary(pipeline)
 
 	fmt.Printf(aurora.Sprintf(aurora.Green("\r\nTotal duration: %s\r\n"), rr.End.Sub(rr.Start)))
+
+	return nil
+}
+
+func runTask(t *task.Task, cmd *cobra.Command, args []string) error {
+	var taskArgs []string
+	if al := cmd.ArgsLenAtDash(); al > 0 {
+		taskArgs = args[cmd.ArgsLenAtDash():]
+	}
+	env := util.ConvertEnv(map[string]string{
+		"ARGS": strings.Join(taskArgs, " "),
+	})
+
+	cmd.SilenceUsage = true
+	tr := runner.NewTaskRunner(contexts, env, true, quiet)
+	err := tr.Run(t)
+	if err != nil {
+		return err
+	}
+	tr.DownContexts()
 
 	return nil
 }

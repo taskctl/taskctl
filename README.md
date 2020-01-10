@@ -74,12 +74,13 @@ go get -u github.com/trntv/wilson/cmd/wilson
 ## Usage
 ### First run
 ```
-wilson init
-wilson run pipeline1
+wilson run pipeline1 // single pipeline
+wilson run pipeline1 pipeline2 // multiple pipelines
 ```
 ### Run task
 ```
-wilson run task1
+wilson run task1 // single task
+wilson run task1 task2 // multiple tasks
 ```
 ### Run pipeline
 ```
