@@ -58,12 +58,18 @@ func (cl *ConfigLoader) Load(file string) (*Config, error) {
 		return nil, err
 	}
 
-	if !util.FileExists(path.Join(cl.dir, file)) {
-		return cfg, ErrConfigNotFound
+	if file == "" {
+		file, err = cl.resolveDefaultConfigFile()
+		if err != nil {
+			return cfg, err
+		}
 	}
 
-	file = path.Join(cl.dir, file)
-	localCfg, err := cl.loadFile(file)
+	if !util.IsUrl(file) && !filepath.IsAbs(file) {
+		file = path.Join(cl.dir, file)
+	}
+
+	localCfg, err := cl.load(file)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +99,7 @@ func (cl *ConfigLoader) LoadGlobalConfig() (*Config, error) {
 		return &Config{}, nil
 	}
 
-	cfg, err := cl.loadFile(file)
+	cfg, err := cl.load(file)
 	if err != nil {
 		return &Config{}, err
 	}
@@ -101,9 +107,17 @@ func (cl *ConfigLoader) LoadGlobalConfig() (*Config, error) {
 	return cl.decode(cfg)
 }
 
-func (cl *ConfigLoader) loadFile(file string) (map[string]interface{}, error) {
+func (cl *ConfigLoader) load(file string) (config map[string]interface{}, err error) {
 	cl.imports[file] = true
-	config, err := cl.readFile(file)
+
+	if util.IsUrl(file) {
+		config, err = cl.readUrl(file)
+	} else {
+		if !util.FileExists(file) {
+			return config, fmt.Errorf("%s: %w", file, ErrConfigNotFound)
+		}
+		config, err = cl.readFile(file)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -113,15 +127,24 @@ func (cl *ConfigLoader) loadFile(file string) (map[string]interface{}, error) {
 	if imports, ok := config["import"]; ok {
 		for _, v := range imports.([]interface{}) {
 			if util.IsUrl(v.(string)) {
-				cm, err = cl.loadImportUrl(v.(string))
+				cm, err = cl.load(v.(string))
 			} else {
-				cm, err = cl.loadImportPath(v.(string), importDir)
+				importFile := path.Join(importDir, v.(string))
+				fi, err := os.Stat(importFile)
+				if err != nil {
+					return nil, fmt.Errorf("%s: %v", importFile, err)
+				}
+				if !fi.IsDir() {
+					cm, err = cl.load(importFile)
+				} else {
+					cm, err = cl.loadDir(importFile)
+				}
 			}
 			if err != nil {
 				return nil, fmt.Errorf("load import error: %v", err)
 			}
 
-			err = mergo.Merge(&config, cm)
+			err = mergo.Merge(&config, cm, mergo.WithOverride, mergo.WithAppendSlice, mergo.WithTypeCheck)
 			if err != nil {
 				return nil, err
 			}
@@ -131,23 +154,11 @@ func (cl *ConfigLoader) loadFile(file string) (map[string]interface{}, error) {
 	return config, nil
 }
 
-func (cl *ConfigLoader) loadImportPath(file string, dir string) (map[string]interface{}, error) {
-	importFile := path.Join(dir, file)
-
-	fi, err := os.Stat(importFile)
+func (cl *ConfigLoader) loadDir(dir string) (map[string]interface{}, error) {
+	pattern := filepath.Join(dir, "*.yaml")
+	q, err := filepath.Glob(pattern)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %v", importFile, err)
-	}
-
-	q := make([]string, 1)
-	if !fi.IsDir() {
-		q[0] = importFile
-	} else {
-		pattern := filepath.Join(importFile, "*.yaml")
-		q, err = filepath.Glob(pattern)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %v", importFile, err)
-		}
+		return nil, fmt.Errorf("%s: %v", dir, err)
 	}
 
 	cm := make(map[string]interface{})
@@ -156,7 +167,7 @@ func (cl *ConfigLoader) loadImportPath(file string, dir string) (map[string]inte
 			continue
 		}
 
-		cml, err := cl.loadFile(importFile)
+		cml, err := cl.load(importFile)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %v", importFile, err)
 		}
@@ -170,10 +181,14 @@ func (cl *ConfigLoader) loadImportPath(file string, dir string) (map[string]inte
 	return cm, nil
 }
 
-func (cl *ConfigLoader) loadImportUrl(u string) (map[string]interface{}, error) {
+func (cl *ConfigLoader) readUrl(u string) (map[string]interface{}, error) {
 	resp, err := http.Get(u)
 	if err != nil {
 		return nil, err
+	}
+
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("%d: config request failed - %s", resp.StatusCode, u)
 	}
 
 	data, err := ioutil.ReadAll(resp.Body)
@@ -253,4 +268,19 @@ func (cl *ConfigLoader) decode(cm map[string]interface{}) (*Config, error) {
 	}
 
 	return c, nil
+}
+
+func (cl *ConfigLoader) resolveDefaultConfigFile() (file string, err error) {
+	files := []string{
+		filepath.Join(cl.dir, "wilson.yaml"),
+		filepath.Join(cl.dir, "wi.yaml"),
+	}
+
+	for _, file := range files {
+		if util.FileExists(file) {
+			return file, nil
+		}
+	}
+
+	return file, fmt.Errorf("default config resolution failed: %w", ErrConfigNotFound)
 }

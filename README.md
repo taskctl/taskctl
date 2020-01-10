@@ -90,6 +90,11 @@ wilson run pipeline1
 ```
 wilson watch watcher1
 ```
+### Set config file
+```
+wilson -c tasks.yaml run lint
+wilson -c https://raw.githubusercontent.com/trntv/wilson/master/example/full.yaml run task4
+```
 
 ## Tasks
 Task is a foundation of *wilson*. It describes one or more commands to run, their environment, executors and attributes such as working directory, execution timeout, acceptance of failure, etc.

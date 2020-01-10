@@ -55,7 +55,7 @@ func NewRootCommand(gcfg *config.Config) *cobra.Command {
 	}
 
 	cmd.PersistentFlags().BoolVarP(&debug, "debug", "d", gcfg.Debug, "enable debug")
-	cmd.PersistentFlags().StringVarP(&configFile, "config", "c", "wilson.yaml", "config file to use")
+	cmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "config file to use (wilson.yaml or wi.yaml by default)")
 	cmd.PersistentFlags().BoolVarP(&silent, "silent", "s", false, "silence output")
 	cmd.PersistentFlags().StringSliceVar(&configValues, "set", make([]string, 0), "override config value")
 
@@ -93,7 +93,7 @@ func Abort() {
 func loadConfig() (cfg *config.Config, err error) {
 	cfg, err = cl.Load(configFile)
 	if err != nil {
-		if configFile != "wilson.yaml" || !errors.Is(err, config.ErrConfigNotFound) {
+		if configFile != "" || !errors.Is(err, config.ErrConfigNotFound) {
 			return nil, err
 		}
 	}
