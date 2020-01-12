@@ -1,4 +1,4 @@
-package scheduler
+package pipeline
 
 import (
 	"errors"
@@ -9,19 +9,20 @@ import (
 )
 
 type Pipeline struct {
+	Env map[string][]string
+
 	nodes map[string]*Stage
 	from  map[string][]string
 	to    map[string][]string
-	env   map[string][]string
 	error error
 }
 
 func BuildPipeline(stages []*builder.StageDefinition, pipelines map[string][]*builder.StageDefinition, tasks map[string]*builder.TaskDefinition) (p *Pipeline, err error) {
 	p = &Pipeline{
+		Env:   make(map[string][]string),
 		nodes: make(map[string]*Stage),
 		from:  make(map[string][]string),
 		to:    make(map[string][]string),
-		env:   make(map[string][]string),
 	}
 
 	for _, def := range stages {
@@ -83,7 +84,7 @@ func BuildPipeline(stages []*builder.StageDefinition, pipelines map[string][]*bu
 			}
 		}
 
-		p.env[stage.Name] = util.ConvertEnv(stage.Env)
+		p.Env[stage.Name] = util.ConvertEnv(stage.Env)
 
 	}
 
@@ -140,4 +141,8 @@ func (p *Pipeline) cycleDfs(t string, visited map[string]bool) error {
 	}
 
 	return nil
+}
+
+func (p *Pipeline) Error() error {
+	return p.error
 }

@@ -5,6 +5,7 @@ import (
 	"github.com/logrusorgru/aurora"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/trntv/wilson/pkg/pipeline"
 	"github.com/trntv/wilson/pkg/runner"
 	"github.com/trntv/wilson/pkg/scheduler"
 	"github.com/trntv/wilson/pkg/task"
@@ -85,7 +86,7 @@ func NewRunTaskCommand() *cobra.Command {
 	}
 }
 
-func runPipeline(pipeline *scheduler.Pipeline, cmd *cobra.Command, args []string) error {
+func runPipeline(pipeline *pipeline.Pipeline, cmd *cobra.Command, args []string) error {
 	var pipelineArgs []string
 	if al := cmd.ArgsLenAtDash(); al > 0 {
 		pipelineArgs = args[cmd.ArgsLenAtDash():]
@@ -138,18 +139,18 @@ func runTask(t *task.Task, cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func printSummary(pipeline *scheduler.Pipeline) {
+func printSummary(p *pipeline.Pipeline) {
 	// todo: order by start time
-	for _, stage := range pipeline.Nodes() {
+	for _, stage := range p.Nodes() {
 		switch stage.ReadStatus() {
-		case scheduler.StatusDone:
+		case pipeline.StatusDone:
 			fmt.Printf(aurora.Sprintf(aurora.Green("- Stage %s done in %s\r\n"), stage.Name, stage.Duration()))
-		case scheduler.StatusError:
+		case pipeline.StatusError:
 			fmt.Printf(aurora.Sprintf(aurora.Red("- Stage %s failed in %s\r\n"), stage.Name, stage.Duration()))
 			fmt.Printf(aurora.Sprintf(aurora.Red("  Error: %s\r\n"), stage.Task.ReadLog()))
-		case scheduler.StatusCanceled:
+		case pipeline.StatusCanceled:
 			fmt.Printf(aurora.Sprintf(aurora.Gray(12, "- Stage %s is cancelled\r\n"), stage.Name))
-		case scheduler.StatusWaiting:
+		case pipeline.StatusWaiting:
 			fmt.Printf(aurora.Sprintf(aurora.Gray(12, "- Stage %s skipped\r\n"), stage.Name))
 		default:
 			log.Errorf(aurora.Sprintf(aurora.Red("- Unexpected status %d for stage %s\r\n"), stage.Status, stage.Name))

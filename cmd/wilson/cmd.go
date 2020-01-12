@@ -7,8 +7,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/trntv/wilson/internal/config"
 	"github.com/trntv/wilson/internal/watch"
+	"github.com/trntv/wilson/pkg/context"
+	"github.com/trntv/wilson/pkg/pipeline"
 	"github.com/trntv/wilson/pkg/runner"
-	"github.com/trntv/wilson/pkg/scheduler"
 	"github.com/trntv/wilson/pkg/task"
 	"io/ioutil"
 	"strings"
@@ -20,8 +21,8 @@ var configFile string
 var configValues []string
 
 var tasks = make(map[string]*task.Task)
-var contexts = make(map[string]*runner.ExecutionContext)
-var pipelines = make(map[string]*scheduler.Pipeline)
+var contexts = make(map[string]*context.ExecutionContext)
+var pipelines = make(map[string]*pipeline.Pipeline)
 var watchers = make(map[string]*watch.Watcher)
 
 var cancel = make(chan struct{})
@@ -103,14 +104,14 @@ func loadConfig() (cfg *config.Config, err error) {
 	}
 
 	for name, def := range cfg.Contexts {
-		contexts[name], err = runner.BuildContext(def, &config.Get().WilsonConfigDefinition)
+		contexts[name], err = context.BuildContext(def, &config.Get().WilsonConfigDefinition)
 		if err != nil {
 			return nil, fmt.Errorf("context %s build failed: %v", name, err)
 		}
 	}
 
 	for name, stages := range cfg.Pipelines {
-		pipelines[name], err = scheduler.BuildPipeline(stages, cfg.Pipelines, cfg.Tasks)
+		pipelines[name], err = pipeline.BuildPipeline(stages, cfg.Pipelines, cfg.Tasks)
 		if err != nil {
 			return nil, fmt.Errorf("pipeline %s build failed: %w", name, err)
 		}

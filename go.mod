@@ -11,6 +11,8 @@ require (
 	github.com/pelletier/go-toml v1.2.0
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/cobra v0.0.5
-	gopkg.in/oleiade/reflections.v1 v1.0.0
+	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
+	gopkg.in/oleiade/reflections.v1 v1.0.0 // indirect
 	gopkg.in/yaml.v2 v2.2.4
+	mvdan.cc/sh v2.6.4+incompatible
 )

@@ -1,4 +1,4 @@
-package scheduler
+package pipeline
 
 import (
 	"github.com/trntv/wilson/pkg/builder"

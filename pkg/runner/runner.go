@@ -5,13 +5,14 @@ import (
 	"errors"
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	taskctx "github.com/trntv/wilson/pkg/context"
 	"github.com/trntv/wilson/pkg/task"
 	"os/exec"
 	"time"
 )
 
 type TaskRunner struct {
-	contexts map[string]*ExecutionContext
+	contexts map[string]*taskctx.ExecutionContext
 	env      []string
 
 	output *taskOutput
@@ -19,7 +20,7 @@ type TaskRunner struct {
 	cancel context.CancelFunc
 }
 
-func NewTaskRunner(contexts map[string]*ExecutionContext, env []string, raw, quiet bool) *TaskRunner {
+func NewTaskRunner(contexts map[string]*taskctx.ExecutionContext, env []string, raw, quiet bool) *TaskRunner {
 	tr := &TaskRunner{
 		contexts: contexts,
 		output:   NewTaskOutput(raw, quiet),
@@ -56,7 +57,7 @@ func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
 			ctx, _ = context.WithTimeout(ctx, *t.Timeout)
 		}
 
-		cmd, err := c.createCommand(ctx, command)
+		cmd, err := c.CreateCommand(ctx, command)
 		if err != nil {
 			return err
 		}
@@ -156,7 +157,7 @@ func (r *TaskRunner) Cancel() {
 	r.cancel()
 }
 
-func (r *TaskRunner) contextForTask(t *task.Task) (c *ExecutionContext, err error) {
+func (r *TaskRunner) contextForTask(t *task.Task) (c *taskctx.ExecutionContext, err error) {
 	c, ok := r.contexts[t.Context]
 	if !ok {
 		return nil, errors.New("no such context")
@@ -176,7 +177,7 @@ func (r *TaskRunner) contextForTask(t *task.Task) (c *ExecutionContext, err erro
 
 func (r *TaskRunner) DownContexts() {
 	for _, c := range r.contexts {
-		if c.scheduledForCleanup {
+		if c.ScheduledForCleanup {
 			c.Down()
 		}
 	}
