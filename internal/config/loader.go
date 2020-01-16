@@ -279,7 +279,7 @@ func (cl *ConfigLoader) resolveDefaultConfigFile() (file string, err error) {
 			break
 		}
 
-		files = append(files, filepath.Join(dir, "wilson.yaml"), filepath.Join(dir, "wi.yaml"))
+		files = append(files, filepath.Join(dir, "wilson.yaml"), filepath.Join(dir, "tasks.yaml"))
 		dir = filepath.Dir(dir)
 	}
 
