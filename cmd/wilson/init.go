@@ -1,8 +1,10 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"github.com/logrusorgru/aurora"
+	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"github.com/trntv/wilson/pkg/util"
 	"os"
@@ -10,17 +12,12 @@ import (
 	"text/template"
 )
 
-var configTmpl = `pipelines:
+var configTmpl = `# This is an example of wilson tasks configuration file. Adjust it to fit your needs
+pipelines:
   pipeline1:
     - task: task1
     - task: task2
       depends_on: task1
-    - task: task3
-      depends_on: task1
-      env:
-        GREETING: "Task 3 greeting"
-    - task: task4
-      depends_on: [task2, task3]
 
 tasks:
   task1:
@@ -28,16 +25,6 @@ tasks:
   
   task2:
     command: echo "I'm task2. Your date is $(date)"
-  
-  task3:
-    command: 
-      - echo ${GREETING}
-      - echo "I'm running in parallel with task2'"
-  
-  task4:
-    command:
-      - echo "SHELL is ${SHELL}"
-      - echo "Goodbye!"
 
 watchers:
   watcher1:
@@ -55,13 +42,40 @@ func NewInitCommand() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			fileSelect := promptui.Select{
+				Label: "Choose file name",
+				Items: []string{"wilson.yaml", "tasks.yaml"},
+			}
+
+			_, filename, err := fileSelect.Run()
+
+			if err != nil {
+				return err
+			}
+
 			cwd, err := util.Getcwd()
 			if err != nil {
 				return err
 			}
 
-			file := filepath.Join(cwd, "wilson.yaml")
-			fw, err := os.OpenFile(file, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0755)
+			file := filepath.Join(cwd, filename)
+
+			if util.FileExists(file) {
+				replaceConfirmation := promptui.Prompt{
+					Label:     "File already exists. Overwrite",
+					IsConfirm: true,
+				}
+
+				_, err = replaceConfirmation.Run()
+				if err != nil {
+					if !errors.Is(err, promptui.ErrAbort) {
+						return err
+					}
+					return nil
+				}
+			}
+
+			fw, err := os.OpenFile(file, os.O_CREATE|os.O_WRONLY, 0755)
 			if err != nil {
 				return err
 			}
@@ -73,7 +87,7 @@ func NewInitCommand() *cobra.Command {
 				return err
 			}
 
-			fmt.Println(aurora.Green("wilson.yaml was successfully created. Run test pipeline with \"wilson run pipeline1\""))
+			fmt.Println(aurora.Sprintf(aurora.Green("%s was successfully created"), aurora.Green(filename)))
 
 			return nil
 		},
