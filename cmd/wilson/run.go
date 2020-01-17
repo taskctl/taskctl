@@ -30,11 +30,14 @@ func NewRunCommand() *cobra.Command {
 				log.SetLevel(log.FatalLevel)
 			}
 
-			list := make([]string, 0)
+			targets := make([]string, 0)
 			if cmd.ArgsLenAtDash() > 0 {
-				list = args[:cmd.ArgsLenAtDash()]
+				targets = args[:cmd.ArgsLenAtDash()]
+			} else {
+				targets = args
 			}
-			for _, v := range list {
+
+			for _, v := range targets {
 				pipeline, ok := pipelines[v]
 				if ok {
 					err = runPipeline(pipeline, cmd, args)

@@ -87,7 +87,8 @@ func NewInitCommand() *cobra.Command {
 				return err
 			}
 
-			fmt.Println(aurora.Sprintf(aurora.Green("%s was successfully created"), aurora.Green(filename)))
+			fmt.Println(aurora.Sprintf(aurora.Magenta("%s was created. Edit it accordingly to your needs"), aurora.Green(filename)))
+			fmt.Println(aurora.Cyan("To run example pipeline - wilson run pipeline1"))
 
 			return nil
 		},
