@@ -170,7 +170,7 @@ func (c *ExecutionContext) runServiceCommand(command string) (err error) {
 	ca := strings.Split(command, " ")
 	cmd := exec.Command(ca[0], ca[1:]...)
 	cmd.Env = c.Env()
-	cmd.Dir, err = util.Getcwd()
+	cmd.Dir, err = os.Getwd()
 	if err != nil {
 		return err
 	}

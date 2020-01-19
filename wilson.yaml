@@ -33,6 +33,7 @@ tasks:
       - GOOS=${GOOS} GOARCH=amd64 go build -o ${BIN_OUT} ./cmd/wilson
 
   update-cmd-version:
+    dir: for internal usage
     command:
       - sed -i '' '/Version:/s/".*"/"'${ARGS}'"/' cmd/wilson/cmd.go
       - git add cmd/wilson/cmd.go

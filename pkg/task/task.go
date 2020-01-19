@@ -16,9 +16,10 @@ type Task struct {
 	Timeout      *time.Duration
 	AllowFailure bool
 
-	Name  string
-	Start time.Time
-	End   time.Time
+	Name        string
+	Description string
+	Start       time.Time
+	End         time.Time
 
 	Stdout io.ReadCloser
 	Stderr io.ReadCloser
@@ -32,6 +33,7 @@ type Task struct {
 func BuildTask(def *builder.TaskDefinition) *Task {
 	t := &Task{
 		Name:         def.Name,
+		Description:  def.Description,
 		Command:      def.Command,
 		Env:          make([]string, 0),
 		Dir:          def.Dir,

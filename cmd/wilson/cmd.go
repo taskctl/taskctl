@@ -69,6 +69,7 @@ func NewRootCommand(gcfg *config.Config) *cobra.Command {
 	cmd.AddCommand(NewRunCommand())
 	cmd.AddCommand(NewWatchCommand())
 	cmd.AddCommand(NewInitCommand())
+	cmd.AddCommand(NewShowCommand())
 
 	cmd.AddCommand(NewAutocompleteCommand(cmd))
 

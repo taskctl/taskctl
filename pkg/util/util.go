@@ -50,15 +50,6 @@ func InArray(arr []string, val string) bool {
 	return false
 }
 
-func Getcwd() (string, error) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return cwd, err
-	}
-
-	return cwd, nil
-}
-
 func IsUrl(s string) bool {
 	u, err := url.Parse(s)
 	if err != nil {

@@ -53,7 +53,7 @@ func NewInitCommand() *cobra.Command {
 				return err
 			}
 
-			cwd, err := util.Getcwd()
+			cwd, err := os.Getwd()
 			if err != nil {
 				return err
 			}

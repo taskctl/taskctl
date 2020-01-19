@@ -38,12 +38,13 @@ type StageDefinition struct {
 
 type TaskDefinition struct {
 	Name         string
+	Description  string
 	Command      []string
 	Context      string
-	Env          map[string]string
+	Env          map[string]string `yaml:",omitempty"`
 	Dir          string
-	Timeout      *time.Duration
-	AllowFailure bool `mapstructure:"allow_failure"`
+	Timeout      *time.Duration `yaml:",omitempty"`
+	AllowFailure bool           `mapstructure:"allow_failure"`
 }
 
 type WatcherDefinition struct {
