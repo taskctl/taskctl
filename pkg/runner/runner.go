@@ -18,13 +18,15 @@ type TaskRunner struct {
 	output *taskOutput
 	ctx    context.Context
 	cancel context.CancelFunc
+	dryRun bool
 }
 
-func NewTaskRunner(contexts map[string]*taskctx.ExecutionContext, env []string, raw, quiet bool) *TaskRunner {
+func NewTaskRunner(contexts map[string]*taskctx.ExecutionContext, env []string, raw, quiet, dryRun bool) *TaskRunner {
 	tr := &TaskRunner{
 		contexts: contexts,
 		output:   NewTaskOutput(raw, quiet),
 		env:      env,
+		dryRun:   dryRun,
 	}
 
 	tr.ctx, tr.cancel = context.WithCancel(context.Background())
@@ -107,6 +109,8 @@ func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
 
 func (r *TaskRunner) runCommand(t *task.Task, cmd *exec.Cmd) error {
 	var done = make(chan struct{})
+	defer close(done)
+
 	var killed = make(chan struct{})
 	go r.waitForInterruption(*cmd, done, killed)
 
@@ -114,6 +118,10 @@ func (r *TaskRunner) runCommand(t *task.Task, cmd *exec.Cmd) error {
 	go r.output.Scan(t, flushed)
 
 	log.Debugf("Executing %s", cmd.String())
+	if r.dryRun {
+		return nil
+	}
+
 	err := cmd.Start()
 	if err != nil {
 		close(done)

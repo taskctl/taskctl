@@ -21,10 +21,10 @@ type PipelineScheduler struct {
 	End   time.Time
 }
 
-func NewScheduler(contexts map[string]*context.ExecutionContext, env []string, raw, quiet bool) *PipelineScheduler {
+func NewScheduler(contexts map[string]*context.ExecutionContext, env []string, raw, quiet, dryRun bool) *PipelineScheduler {
 	r := &PipelineScheduler{
 		pause:      50 * time.Millisecond,
-		taskRunner: runner.NewTaskRunner(contexts, env, raw, quiet),
+		taskRunner: runner.NewTaskRunner(contexts, env, raw, quiet, dryRun),
 	}
 
 	return r

@@ -118,7 +118,7 @@ func loadConfig() (cfg *config.Config, err error) {
 		}
 	}
 
-	tr := runner.NewTaskRunner(contexts, make([]string, 0), true, false)
+	tr := runner.NewTaskRunner(contexts, make([]string, 0), true, false, dryRun)
 	for name, def := range cfg.Watchers {
 		watchers[name], err = watch.BuildWatcher(name, def, tasks[def.Task], tr)
 		if err != nil {

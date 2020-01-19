@@ -13,7 +13,7 @@ import (
 	"strings"
 )
 
-var quiet, raw bool
+var quiet, raw, dryRun bool
 
 func NewRunCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -38,9 +38,9 @@ func NewRunCommand() *cobra.Command {
 			}
 
 			for _, v := range targets {
-				pipeline, ok := pipelines[v]
+				p, ok := pipelines[v]
 				if ok {
-					err = runPipeline(pipeline, cmd, args)
+					err = runPipeline(p, cmd, args)
 				} else {
 					t, ok := tasks[v]
 					if !ok {
@@ -60,6 +60,7 @@ func NewRunCommand() *cobra.Command {
 
 	cmd.Flags().BoolVar(&raw, "raw-output", false, "raw output")
 	cmd.Flags().BoolVar(&quiet, "quiet", false, "disable tasks output")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Dry run")
 	cmd.AddCommand(NewRunTaskCommand())
 
 	return cmd
@@ -102,7 +103,7 @@ func runPipeline(pipeline *pipeline.Pipeline, cmd *cobra.Command, args []string)
 		"ARGS": strings.Join(pipelineArgs, " "),
 	})
 
-	rr := scheduler.NewScheduler(contexts, env, raw, quiet)
+	rr := scheduler.NewScheduler(contexts, env, raw, quiet, dryRun)
 	go func() {
 		select {
 		case <-cancel:
@@ -136,7 +137,7 @@ func runTask(t *task.Task, cmd *cobra.Command, args []string) error {
 	})
 
 	cmd.SilenceUsage = true
-	tr := runner.NewTaskRunner(contexts, env, true, quiet)
+	tr := runner.NewTaskRunner(contexts, env, true, quiet, dryRun)
 	err := tr.Run(t)
 	if err != nil {
 		return err
