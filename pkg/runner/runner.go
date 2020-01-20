@@ -109,8 +109,6 @@ func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
 
 func (r *TaskRunner) runCommand(t *task.Task, cmd *exec.Cmd) error {
 	var done = make(chan struct{})
-	defer close(done)
-
 	var killed = make(chan struct{})
 	go r.waitForInterruption(*cmd, done, killed)
 
