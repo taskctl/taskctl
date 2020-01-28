@@ -32,6 +32,8 @@ type ssh struct {
 }
 
 type ExecutionContext struct {
+	ScheduledForCleanup bool
+
 	ctxType    string
 	executable util.Executable
 	env        []string
@@ -41,12 +43,11 @@ type ExecutionContext struct {
 	container container
 	ssh       ssh
 
-	up     []string
-	down   []string
-	before []string
-	after  []string
-
-	ScheduledForCleanup bool
+	up           []string
+	down         []string
+	before       []string
+	after        []string
+	startupError error
 
 	onceUp   sync.Once
 	onceDown sync.Once
@@ -121,15 +122,20 @@ func (c *ExecutionContext) WithEnvs(env []string) (*ExecutionContext, error) {
 	return BuildContext(&def, &config.Get().WilsonConfigDefinition)
 }
 
-func (c *ExecutionContext) Up() {
+func (c *ExecutionContext) Up() error {
 	c.onceUp.Do(func() {
 		for _, command := range c.up {
 			err := c.runServiceCommand(command)
 			if err != nil {
+				c.mu.Lock()
+				c.startupError = err
+				c.mu.Unlock()
 				log.Errorf("context startup error: %s", err)
 			}
 		}
 	})
+
+	return c.startupError
 }
 
 func (c *ExecutionContext) Down() {

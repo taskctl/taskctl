@@ -45,7 +45,11 @@ func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
 		return errors.New("unknown context")
 	}
 
-	c.Up()
+	err = c.Up()
+	if err != nil {
+		return err
+	}
+
 	err = c.Before()
 	if err != nil {
 		return err

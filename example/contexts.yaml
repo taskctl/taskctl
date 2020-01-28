@@ -20,3 +20,7 @@ contexts:
       - docker-compose --file=docker-compose.yaml up -d alpine
     down:
       - docker-compose --file=docker-compose.yaml stop alpine
+
+  failing-context:
+    type: local
+    up: /bin/sh -c "false"
