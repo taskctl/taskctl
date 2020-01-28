@@ -111,6 +111,7 @@ tasks:
         env: 
           GOOS: linux
           GOARCH: amd64
+        after: rm -rf tmp/*
 ```
 Task definition takes following parameters:
 - ``name`` - task name (optional)
@@ -121,6 +122,7 @@ Task definition takes following parameters:
 - ``dir`` - working directory. If not set, current working directory will be used
 - ``timeout`` - command execution timeout (optional)
 - ``allow_failure`` - if set to ``true`` failed commands will no interrupt task execution. ``false`` by default
+- ``after`` - command that will be executed after command completes
 
 ### Task variations
 Every task may run one or more variations. It allows to reuse task with different env variables:

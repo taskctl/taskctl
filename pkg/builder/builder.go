@@ -40,6 +40,7 @@ type TaskDefinition struct {
 	Name         string
 	Description  string
 	Command      []string
+	After        []string
 	Context      string
 	Env          map[string]string   `yaml:",omitempty"`
 	Variations   []map[string]string `yaml:",omitempty"`

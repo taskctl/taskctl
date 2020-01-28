@@ -53,6 +53,7 @@ tasks:
       - GOOS: linux
       - GOOS: darwin
       - GOOS: windows
+    afrer: rm -rf ./tmp/*
 
 watchers:
   watcher1:

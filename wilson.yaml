@@ -35,6 +35,8 @@ tasks:
       - GOOS: linux
       - GOOS: darwin
       - GOOS: windows
+    after:
+      - echo date
 
   update-cmd-version:
     dir: for internal usage

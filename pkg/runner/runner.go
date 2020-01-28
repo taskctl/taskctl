@@ -62,6 +62,9 @@ func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
 		variations = make([]map[string]string, 1)
 	}
 
+	env = append(env, r.env...)
+	env = append(env, fmt.Sprintf("WI_TASK_NAME=%s", t.Name))
+
 	for i, variant := range variations {
 		log.Infof("Running task %s, variant %d...", t.Name, i+1)
 
@@ -77,24 +80,6 @@ func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
 
 			cmd.Env = append(cmd.Env, util.ConvertEnv(variant)...)
 			cmd.Env = append(cmd.Env, env...)
-			cmd.Env = append(cmd.Env, r.env...)
-			cmd.Env = append(cmd.Env, fmt.Sprintf("WI_TASK_NAME=%s", t.Name))
-
-			if t.Dir != "" {
-				cmd.Dir = t.Dir
-			}
-
-			stdout, err := cmd.StdoutPipe()
-			if err != nil {
-				return err
-			}
-			t.SetStdout(stdout)
-
-			stderr, err := cmd.StderrPipe()
-			if err != nil {
-				return err
-			}
-			t.SetStderr(stderr)
 
 			var e *exec.ExitError
 			err = r.runCommand(t, cmd)
@@ -104,6 +89,21 @@ func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
 				}
 				t.End = time.Now()
 				return err
+			}
+		}
+	}
+
+	if len(t.After) > 0 {
+		for _, command := range t.After {
+			cmd, err := c.CreateCommand(context.Background(), command)
+			if err != nil {
+				return err
+			}
+
+			cmd.Env = append(cmd.Env, env...)
+			err = r.runCommand(t, cmd)
+			if err != nil {
+				log.Warn(err)
 			}
 		}
 	}
@@ -125,15 +125,31 @@ func (r *TaskRunner) runCommand(t *task.Task, cmd *exec.Cmd) error {
 	var killed = make(chan struct{})
 	go r.waitForInterruption(*cmd, done, killed)
 
-	var flushed = make(chan struct{})
-	go r.output.Scan(t, flushed)
-
 	log.Debugf("Executing %s", cmd.String())
 	if r.dryRun {
 		return nil
 	}
 
-	err := cmd.Start()
+	if t.Dir != "" {
+		cmd.Dir = t.Dir
+	}
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	t.SetStdout(stdout)
+
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return err
+	}
+	t.SetStderr(stderr)
+
+	var flushed = make(chan struct{})
+	go r.output.Scan(t, flushed)
+
+	err = cmd.Start()
 	if err != nil {
 		close(done)
 		<-flushed

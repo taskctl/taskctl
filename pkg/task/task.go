@@ -16,6 +16,7 @@ type Task struct {
 	Dir          string
 	Timeout      *time.Duration
 	AllowFailure bool
+	After        []string
 
 	Name        string
 	Description string
@@ -41,6 +42,7 @@ func BuildTask(def *builder.TaskDefinition) *Task {
 		Dir:          def.Dir,
 		Timeout:      def.Timeout,
 		AllowFailure: def.AllowFailure,
+		After:        def.After,
 	}
 
 	t.Context = def.Context
