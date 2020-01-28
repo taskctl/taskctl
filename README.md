@@ -115,11 +115,28 @@ tasks:
 Task definition takes following parameters:
 - ``name`` - task name (optional)
 - ``command`` - one or more commands to run
+- ``variations`` - list of variations to apply to command
 - ``context`` - name of the context to run commands in (optional). ``local`` by default
 - ``env`` - environment variables (optional). All existing environment variables will be passed automatically
 - ``dir`` - working directory. If not set, current working directory will be used
 - ``timeout`` - command execution timeout (optional)
 - ``allow_failure`` - if set to ``true`` failed commands will no interrupt task execution. ``false`` by default
+
+### Task variations
+Every task may run one or more variations. It allows to reuse task with different env variables:
+```yaml
+tasks:
+  build:
+    command:
+      - GOOS=${GOOS} GOARCH=amd64 go build -o bin/wilson_${GOOS} ./cmd/wilson
+    env:
+      GOFLAGS: -ldflags=-s -ldflags=-w
+    variations:
+      - GOOS: linux
+      - GOOS: darwin
+      - GOOS: windows
+```
+this config will run build 3 times with different build GOOS
 
 ## Pipelines
 Pipeline is a set of stages (tasks or other pipelines) to be executed in a certain order. Stages may be executed in parallel or one-by-one. Stage may override task environment. 

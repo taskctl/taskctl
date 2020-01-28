@@ -46,6 +46,14 @@ tasks:
     command:
       - echo ${EVENT_NAME} ${EVENT_PATH}
 
+  task-with-variations:
+    command:
+      - GOOS=${GOOS} GOARCH=amd64 go build -o bin/binary_${GOOS} ./...
+    variations:
+      - GOOS: linux
+      - GOOS: darwin
+      - GOOS: windows
+
 watchers:
   watcher1:
     watch: ["README.*", "pkg/**/*.go"]

@@ -12,6 +12,7 @@ type Task struct {
 	Command      []string
 	Context      string
 	Env          []string
+	Variations   []map[string]string
 	Dir          string
 	Timeout      *time.Duration
 	AllowFailure bool
@@ -36,6 +37,7 @@ func BuildTask(def *builder.TaskDefinition) *Task {
 		Description:  def.Description,
 		Command:      def.Command,
 		Env:          make([]string, 0),
+		Variations:   def.Variations,
 		Dir:          def.Dir,
 		Timeout:      def.Timeout,
 		AllowFailure: def.AllowFailure,
@@ -54,7 +56,7 @@ func (t *Task) Duration() time.Duration {
 	return t.End.Sub(t.Start)
 }
 
-func (t *Task) WiteLog(l []byte) {
+func (t *Task) WriteLog(l []byte) {
 	t.log.Lock()
 	t.log.data = l
 	t.log.Unlock()

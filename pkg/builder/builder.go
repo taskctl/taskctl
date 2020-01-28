@@ -41,7 +41,8 @@ type TaskDefinition struct {
 	Description  string
 	Command      []string
 	Context      string
-	Env          map[string]string `yaml:",omitempty"`
+	Env          map[string]string   `yaml:",omitempty"`
+	Variations   []map[string]string `yaml:",omitempty"`
 	Dir          string
 	Timeout      *time.Duration `yaml:",omitempty"`
 	AllowFailure bool           `mapstructure:"allow_failure"`

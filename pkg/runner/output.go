@@ -35,7 +35,7 @@ type linearWriter struct {
 
 func (l logWriter) Write(p []byte) (n int, err error) {
 	if len(p) > 0 {
-		l.t.WiteLog(p)
+		l.t.WriteLog(p)
 	}
 
 	return len(p), nil

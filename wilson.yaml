@@ -30,7 +30,11 @@ tasks:
 
   build:
     command:
-      - GOOS=${GOOS} GOARCH=amd64 go build -o ${BIN_OUT} ./cmd/wilson
+      - GOOS=${GOOS} GOARCH=amd64 go build -o bin/wilson_${GOOS} ./cmd/wilson
+    variations:
+      - GOOS: linux
+      - GOOS: darwin
+      - GOOS: windows
 
   update-cmd-version:
     dir: for internal usage
