@@ -36,7 +36,7 @@ Beside pipelines, each single task can be performed manually or triggered by bui
 - [Pipelines](#pipelines)
 - [Filesystem watchers](#filesystem-watchers)
 - [Contexts](#contexts)
-- [Configs examples](#examples)
+- [Config example](#examples)
 - [FAQ](#faq)
   - [Why "Wilson"?](#why-wilson)
   - [Where does global config stored?](#where-does-global-config-stored)
@@ -251,32 +251,9 @@ It's amazing how solving same problems lead to same solutions. wilson and go-tas
 1. Main is pipelines. Pipelines and stages allows more precise workflow design because same tasks may have different dependencies (or no dependencies) in different scenarios.
 2. Contexts allows you to set up execution environment, shell or binaries which will run your task. Now there is several available context types: local (shell or binary), remote (ssh), container (docker, docker-compose, kubernetes via kubectl)
 
-
 ## Examples
-### Tasks config example
-[task.yaml](https://github.com/trntv/wilson/blob/master/example/task.yaml)
-```
-wilson -c example/task.yaml run task echo-date-local
-wilson -c example/task.yaml run task echo-date-docker
-``` 
-### Pipelines config example
-[pipeline.yaml](https://github.com/trntv/wilson/blob/master/example/pipeline.yaml)
-```
-wilson -c example/pipeline.yaml run test-pipeline
-wilson -c example/pipeline.yaml run pipeline1
-```
-
-### Contexts config example
-[contexts.yaml](https://github.com/trntv/wilson/blob/master/example/contexts.yaml)
-
-### Watchers config example
-[watch.yaml](https://github.com/trntv/wilson/blob/master/example/watch.yaml)
-```
-wilson -c example/watch.yaml --debug watch test-watcher test-watcher-2
-```
-
 ### Full config example
-[full.yaml](https://github.com/trntv/wilson/blob/master/example/full.yaml)
+[full.yaml](https://github.com/trntv/wilson/blob/master/docs/example.yaml)
 
 ## Autocomplete
 ### Bash
