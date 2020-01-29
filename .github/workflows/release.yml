@@ -41,6 +41,7 @@ jobs:
 
         sha256sum bin/wilson-linux-amd64.tar.gz >> bin/checksums.txt
         sha256sum bin/wilson-windows-amd64.tar.gz >> bin/checksums.txt
+        sha256sum bin/wilson-darwin-amd64.tar.gz >> bin/checksums.txt
 
         sha256sum bin/wilson-linux-386.tar.gz >> bin/checksums.txt
         sha256sum bin/wilson-windows-386.tar.gz >> bin/checksums.txt
@@ -53,7 +54,7 @@ jobs:
         artifacts: |-
           bin/wilson_linux_amd64, bin/wilson-linux-amd64.tar.gz,
           bin/wilson_linux_386, bin/wilson-linux-386.tar.gz,
-          bin/wilson_darwin_amd64, bin/wilson-linux-amd64.tar.gz,
+          bin/wilson_darwin_amd64, bin/wilson-darwin-amd64.tar.gz,
           bin/wilson_windows_amd64, bin/wilson-windows-amd64.tar.gz,
           bin/wilson_windows_386, bin/wilson-windows-386.tar.gz,
           bin/checksums.txt
