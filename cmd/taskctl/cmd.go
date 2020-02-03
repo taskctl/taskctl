@@ -33,7 +33,7 @@ func NewRootCommand(gcfg *config.Config) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "taskctl",
 		Short:   "Taskctl the task runner",
-		Version: "0.4.0",
+		Version: "0.5.0",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			if debug {
 				log.SetLevel(log.DebugLevel)
