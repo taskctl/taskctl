@@ -5,11 +5,11 @@ import (
 	"github.com/logrusorgru/aurora"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/trntv/wilson/pkg/pipeline"
-	"github.com/trntv/wilson/pkg/runner"
-	"github.com/trntv/wilson/pkg/scheduler"
-	"github.com/trntv/wilson/pkg/task"
-	"github.com/trntv/wilson/pkg/util"
+	"github.com/taskctl/taskctl/pkg/pipeline"
+	"github.com/taskctl/taskctl/pkg/runner"
+	"github.com/taskctl/taskctl/pkg/scheduler"
+	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/taskctl/taskctl/pkg/util"
 	"strings"
 )
 

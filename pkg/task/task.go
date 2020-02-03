@@ -1,8 +1,8 @@
 package task
 
 import (
-	"github.com/trntv/wilson/pkg/builder"
-	"github.com/trntv/wilson/pkg/util"
+	"github.com/taskctl/taskctl/pkg/builder"
+	"github.com/taskctl/taskctl/pkg/util"
 	"io"
 	"sync"
 	"time"

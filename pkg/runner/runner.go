@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 	log "github.com/sirupsen/logrus"
-	taskctx "github.com/trntv/wilson/pkg/context"
-	"github.com/trntv/wilson/pkg/task"
-	"github.com/trntv/wilson/pkg/util"
+	taskctx "github.com/taskctl/taskctl/pkg/context"
+	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/taskctl/taskctl/pkg/util"
 	"os/exec"
 	"time"
 )

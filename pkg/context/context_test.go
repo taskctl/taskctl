@@ -2,13 +2,13 @@ package context
 
 import (
 	"context"
-	"github.com/trntv/wilson/pkg/builder"
-	"github.com/trntv/wilson/pkg/util"
+	"github.com/taskctl/taskctl/pkg/builder"
+	"github.com/taskctl/taskctl/pkg/util"
 	"testing"
 )
 
 func TestContext_BuildContext(t *testing.T) {
-	wcfg := &builder.WilsonConfigDefinition{
+	wcfg := &builder.TaskctlConfigDefinition{
 		Docker: util.Executable{
 			Bin: "/opt/docker",
 		},

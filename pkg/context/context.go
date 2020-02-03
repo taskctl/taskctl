@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 	log "github.com/sirupsen/logrus"
-	"github.com/trntv/wilson/internal/config"
-	"github.com/trntv/wilson/pkg/builder"
-	"github.com/trntv/wilson/pkg/util"
+	"github.com/taskctl/taskctl/internal/config"
+	"github.com/taskctl/taskctl/pkg/builder"
+	"github.com/taskctl/taskctl/pkg/util"
 	"os"
 	"os/exec"
 	"strings"
@@ -54,7 +54,7 @@ type ExecutionContext struct {
 	mu       sync.Mutex
 }
 
-func BuildContext(def *builder.ContextDefinition, wcfg *builder.WilsonConfigDefinition) (*ExecutionContext, error) {
+func BuildContext(def *builder.ContextDefinition, wcfg *builder.TaskctlConfigDefinition) (*ExecutionContext, error) {
 	c := &ExecutionContext{
 		ctxType: def.Type,
 		executable: util.Executable{
@@ -119,7 +119,7 @@ func (c *ExecutionContext) WithEnvs(env []string) (*ExecutionContext, error) {
 		def.Env[kv[0]] = kv[1]
 	}
 
-	return BuildContext(&def, &config.Get().WilsonConfigDefinition)
+	return BuildContext(&def, &config.Get().TaskctlConfigDefinition)
 }
 
 func (c *ExecutionContext) Up() error {

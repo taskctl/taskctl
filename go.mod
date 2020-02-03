@@ -1,4 +1,4 @@
-module github.com/trntv/wilson
+module github.com/taskctl/taskctl
 
 go 1.13
 

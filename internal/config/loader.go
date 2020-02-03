@@ -9,7 +9,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/pelletier/go-toml"
 	log "github.com/sirupsen/logrus"
-	"github.com/trntv/wilson/pkg/util"
+	"github.com/taskctl/taskctl/pkg/util"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"net/http"
@@ -94,7 +94,7 @@ func (cl *ConfigLoader) LoadGlobalConfig() (*Config, error) {
 		return &Config{}, nil
 	}
 
-	file := path.Join(cl.homeDir, ".wilson", "config.yaml")
+	file := path.Join(cl.homeDir, ".taskctl", "config.yaml")
 	if !util.FileExists(file) {
 		return &Config{}, nil
 	}
@@ -279,7 +279,7 @@ func (cl *ConfigLoader) resolveDefaultConfigFile() (file string, err error) {
 			break
 		}
 
-		files = append(files, filepath.Join(dir, "wilson.yaml"), filepath.Join(dir, "tasks.yaml"))
+		files = append(files, filepath.Join(dir, "taskctl.yaml"), filepath.Join(dir, "tasks.yaml"))
 		dir = filepath.Dir(dir)
 	}
 

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/logrusorgru/aurora"
 	log "github.com/sirupsen/logrus"
-	"github.com/trntv/wilson/pkg/task"
+	"github.com/taskctl/taskctl/pkg/task"
 	"io"
 	"io/ioutil"
 	"os"

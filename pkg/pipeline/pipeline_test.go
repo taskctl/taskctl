@@ -1,7 +1,7 @@
 package pipeline
 
 import (
-	"github.com/trntv/wilson/pkg/builder"
+	"github.com/taskctl/taskctl/pkg/builder"
 	"testing"
 )
 

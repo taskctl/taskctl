@@ -3,14 +3,14 @@ package context
 import (
 	"context"
 	"fmt"
-	"github.com/trntv/wilson/internal/config"
-	"github.com/trntv/wilson/pkg/builder"
-	"github.com/trntv/wilson/pkg/util"
+	"github.com/taskctl/taskctl/internal/config"
+	"github.com/taskctl/taskctl/pkg/builder"
+	"github.com/taskctl/taskctl/pkg/util"
 	"os/exec"
 	"strings"
 )
 
-func buildContainerContext(def *builder.ContextDefinition, wcfg *builder.WilsonConfigDefinition, c *ExecutionContext) {
+func buildContainerContext(def *builder.ContextDefinition, wcfg *builder.TaskctlConfigDefinition, c *ExecutionContext) {
 	c.container = container{
 		provider: def.Container.Provider,
 		name:     def.Container.Name,

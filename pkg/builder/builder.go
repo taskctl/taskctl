@@ -1,11 +1,11 @@
 package builder
 
 import (
-	"github.com/trntv/wilson/pkg/util"
+	"github.com/taskctl/taskctl/pkg/util"
 	"time"
 )
 
-type WilsonConfigDefinition struct {
+type TaskctlConfigDefinition struct {
 	Shell         util.Executable
 	Docker        util.Executable
 	DockerCompose util.Executable `mapstructure:"docker-compose"`

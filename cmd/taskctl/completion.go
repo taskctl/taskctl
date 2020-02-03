@@ -15,17 +15,17 @@ func NewAutocompleteCommand(rootCmd *cobra.Command) *cobra.Command {
 		Short:     "Generates completion scripts",
 		Long: `To load completion run
 
-. <(wilson completion)
+. <(taskctl completion)
 
 To configure your bash shell to load completions for each session add to your bashrc
 
 # ~/.bashrc or ~/.profile
-. <(wilson completion bash)
+. <(taskctl completion bash)
 		
 To configure your zsh shell to load completions for each session add to your zshrc
 
 # ~/.zshrc
-. <(wilson completion zsh)
+. <(taskctl completion zsh)
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			log.SetLevel(log.PanicLevel)
@@ -56,9 +56,9 @@ To configure your zsh shell to load completions for each session add to your zsh
 	}
 }
 
-var zshCompletion = `compdef _wilson wilson
-alias wi=wilson
-function _wilson {
+var zshCompletion = `compdef _taskctl taskctl
+alias wi=taskctl
+function _taskctl {
   local -a commands
 
   _arguments -C \
@@ -83,24 +83,24 @@ function _wilson {
 
   case "$words[1]" in
   completion)
-    _wilson_completion
+    _taskctl_completion
     ;;
   help)
-    _wilson_help
+    _taskctl_help
     ;;
   list)
-    _wilson_list
+    _taskctl_list
     ;;
   run)
-    _wilson_run
+    _taskctl_run
     ;;
   watch)
-    _wilson_watch
+    _taskctl_watch
     ;;
   esac
 }
 
-function _wilson_completion {
+function _taskctl_completion {
   _arguments \
     '(-h --help)'{-h,--help}'[help for completion]' \
     '(-c --config)'{-c,--config}'[config file to use]:filename:_files -g "yaml" -g "yml"' \
@@ -109,7 +109,7 @@ function _wilson_completion {
     '1: :("bash" "zsh")'
 }
 
-function _wilson_help {
+function _taskctl_help {
   _arguments \
     '(-c --config)'{-c,--config}'[config file to use]:filename:_files -g "yaml" -g "yml"' \
     '(-d --debug)'{-d,--debug}'[enable debug]' \
@@ -117,7 +117,7 @@ function _wilson_help {
 }
 
 
-function _wilson_list {
+function _taskctl_list {
   local -a commands
 
   _arguments -C \
@@ -140,32 +140,32 @@ function _wilson_list {
 
   case "$words[1]" in
   pipelines)
-    _wilson_list_pipelines
+    _taskctl_list_pipelines
     ;;
   tasks)
-    _wilson_list_tasks
+    _taskctl_list_tasks
     ;;
   watchers)
-    _wilson_list_watchers
+    _taskctl_list_watchers
     ;;
   esac
 }
 
-function _wilson_list_pipelines {
+function _taskctl_list_pipelines {
   _arguments \
     '(-c --config)'{-c,--config}'[config file to use]:filename:_files -g "yaml" -g "yml"' \
     '(-d --debug)'{-d,--debug}'[enable debug]' \
     '(-s --silent)'{-q,--silent}'[silence output]'
 }
 
-function _wilson_list_tasks {
+function _taskctl_list_tasks {
   _arguments \
     '(-c --config)'{-c,--config}'[config file to use]:filename:_files -g "yaml" -g "yml"' \
     '(-d --debug)'{-d,--debug}'[enable debug]' \
     '(-s --silent)'{-s,--silent}'[silence output]'
 }
 
-function _wilson_list_watchers {
+function _taskctl_list_watchers {
   _arguments \
     '(-c --config)'{-c,--config}'[config file to use]:filename:_files -g "yaml" -g "yml"' \
     '(-d --debug)'{-d,--debug}'[enable debug]' \
@@ -173,10 +173,10 @@ function _wilson_list_watchers {
 }
 
 
-function _wilson_run {
+function _taskctl_run {
   local -a commands
-  pipelines=("${(@f)$(wilson list pipelines --silent)}")
-  tasks=("${(@f)$(wilson list tasks --silent)}")
+  pipelines=("${(@f)$(taskctl list pipelines --silent)}")
+  tasks=("${(@f)$(taskctl list tasks --silent)}")
 
   _arguments -C \
     '--quiet[disable tasks output]' \
@@ -199,13 +199,13 @@ function _wilson_run {
 
   case "$words[1]" in
   task)
-    _wilson_run_task
+    _taskctl_run_task
     ;;
   esac
 }
 
-function _wilson_run_task {
-  tasks=$(wilson list tasks --silent | awk '{printf("\"%s\" ",$0)}')
+function _taskctl_run_task {
+  tasks=$(taskctl list tasks --silent | awk '{printf("\"%s\" ",$0)}')
 
   _arguments \
     '(-c --config)'{-c,--config}'[config file to use]:filename:_files -g "yaml" -g "yml"' \
@@ -214,8 +214,8 @@ function _wilson_run_task {
     '1: :('$tasks')'
 }
 
-function _wilson_watch {
-  watchers=$(wilson list watchers --silent | awk '{printf("\"%s\" ",$0)}')
+function _taskctl_watch {
+  watchers=$(taskctl list watchers --silent | awk '{printf("\"%s\" ",$0)}')
 
   _arguments \
     '(-c --config)'{-c,--config}'[config file to use]:filename:_files -g "yaml" -g "yml"' \

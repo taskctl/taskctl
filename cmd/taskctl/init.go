@@ -6,13 +6,13 @@ import (
 	"github.com/logrusorgru/aurora"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
-	"github.com/trntv/wilson/pkg/util"
+	"github.com/taskctl/taskctl/pkg/util"
 	"os"
 	"path/filepath"
 	"text/template"
 )
 
-var configTmpl = `# This is an example of wilson tasks configuration file. Adjust it to fit your needs
+var configTmpl = `# This is an example of taskctl tasks configuration file. Adjust it to fit your needs
 pipelines:
   pipeline1:
     - task: task1
@@ -44,7 +44,7 @@ func NewInitCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			fileSelect := promptui.Select{
 				Label: "Choose file name",
-				Items: []string{"wilson.yaml", "tasks.yaml"},
+				Items: []string{"taskctl.yaml", "tasks.yaml"},
 			}
 
 			_, filename, err := fileSelect.Run()
@@ -88,7 +88,7 @@ func NewInitCommand() *cobra.Command {
 			}
 
 			fmt.Println(aurora.Sprintf(aurora.Magenta("%s was created. Edit it accordingly to your needs"), aurora.Green(filename)))
-			fmt.Println(aurora.Cyan("To run example pipeline - wilson run pipeline1"))
+			fmt.Println(aurora.Cyan("To run example pipeline - taskctl run pipeline1"))
 
 			return nil
 		},

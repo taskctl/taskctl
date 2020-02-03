@@ -3,9 +3,9 @@ package pipeline
 import (
 	"errors"
 	"fmt"
-	"github.com/trntv/wilson/pkg/builder"
-	"github.com/trntv/wilson/pkg/task"
-	"github.com/trntv/wilson/pkg/util"
+	"github.com/taskctl/taskctl/pkg/builder"
+	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/taskctl/taskctl/pkg/util"
 )
 
 type Pipeline struct {

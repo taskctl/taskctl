@@ -3,7 +3,7 @@ package config
 import (
 	"github.com/imdario/mergo"
 	log "github.com/sirupsen/logrus"
-	"github.com/trntv/wilson/pkg/builder"
+	"github.com/taskctl/taskctl/pkg/builder"
 )
 
 const (
@@ -29,7 +29,7 @@ type Config struct {
 	Tasks     map[string]*builder.TaskDefinition
 	Watchers  map[string]*builder.WatcherDefinition
 
-	builder.WilsonConfigDefinition `mapstructure:",squash"`
+	builder.TaskctlConfigDefinition `mapstructure:",squash"`
 
 	configMap map[string]interface{}
 }

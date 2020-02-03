@@ -3,12 +3,12 @@ package context
 import (
 	"context"
 	"fmt"
-	"github.com/trntv/wilson/pkg/builder"
-	"github.com/trntv/wilson/pkg/util"
+	"github.com/taskctl/taskctl/pkg/builder"
+	"github.com/taskctl/taskctl/pkg/util"
 	"os/exec"
 )
 
-func buildRemoteContext(def *builder.ContextDefinition, wcfg *builder.WilsonConfigDefinition, c *ExecutionContext) {
+func buildRemoteContext(def *builder.ContextDefinition, wcfg *builder.TaskctlConfigDefinition, c *ExecutionContext) {
 	c.ssh = ssh{
 		user:    def.SSH.User,
 		host:    def.SSH.Host,

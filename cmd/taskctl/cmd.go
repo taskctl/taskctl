@@ -5,12 +5,12 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/trntv/wilson/internal/config"
-	"github.com/trntv/wilson/internal/watch"
-	"github.com/trntv/wilson/pkg/context"
-	"github.com/trntv/wilson/pkg/pipeline"
-	"github.com/trntv/wilson/pkg/runner"
-	"github.com/trntv/wilson/pkg/task"
+	"github.com/taskctl/taskctl/internal/config"
+	"github.com/taskctl/taskctl/internal/watch"
+	"github.com/taskctl/taskctl/pkg/context"
+	"github.com/taskctl/taskctl/pkg/pipeline"
+	"github.com/taskctl/taskctl/pkg/runner"
+	"github.com/taskctl/taskctl/pkg/task"
 	"io/ioutil"
 	"strings"
 )
@@ -31,8 +31,8 @@ var cl config.ConfigLoader
 
 func NewRootCommand(gcfg *config.Config) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "wilson",
-		Short:   "Wilson the task runner",
+		Use:     "taskctl",
+		Short:   "Taskctl the task runner",
 		Version: "0.4.0",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			if debug {
@@ -56,7 +56,7 @@ func NewRootCommand(gcfg *config.Config) *cobra.Command {
 	}
 
 	cmd.PersistentFlags().BoolVarP(&debug, "debug", "d", gcfg.Debug, "enable debug")
-	cmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "config file to use (wilson.yaml or wi.yaml by default)")
+	cmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "config file to use (taskctl.yaml or wi.yaml by default)")
 	cmd.PersistentFlags().BoolVarP(&silent, "silent", "s", false, "silence output")
 	cmd.PersistentFlags().StringSliceVar(&configValues, "set", make([]string, 0), "override config value")
 
@@ -105,7 +105,7 @@ func loadConfig() (cfg *config.Config, err error) {
 	}
 
 	for name, def := range cfg.Contexts {
-		contexts[name], err = context.BuildContext(def, &config.Get().WilsonConfigDefinition)
+		contexts[name], err = context.BuildContext(def, &config.Get().TaskctlConfigDefinition)
 		if err != nil {
 			return nil, fmt.Errorf("context %s build failed: %v", name, err)
 		}

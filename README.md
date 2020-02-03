@@ -1,22 +1,22 @@
 <p align="center">
-<img width="150" src="https://raw.githubusercontent.com/trntv/wilson/master/docs/logo.png" alt="Wilson logo" title="Wilson" />
+<img width="150" src="https://raw.githubusercontent.com/taskctl/taskctl/master/docs/logo.png" alt="Taskctl logo" title="taskctl" />
 </p>
 
-# Wilson - developer's routine tasks automation toolkit
-![Tests](https://github.com/trntv/wilson/workflows/Test/badge.svg)
-[![Requirements Status](https://requires.io/github/trntv/wilson/requirements.svg?branch=master)](https://requires.io/github/trntv/wilson/requirements/?branch=master)
-![GitHub top language](https://img.shields.io/github/languages/top/trntv/wilson)
-[![Go Report Card](https://goreportcard.com/badge/github.com/trntv/wilson)](https://goreportcard.com/report/github.com/trntv/wilson)
+# taskctl - developer's routine tasks automation toolkit
+![Tests](https://github.com/taskctl/taskctl/workflows/Test/badge.svg)
+[![Requirements Status](https://requires.io/github/taskctl/taskctl/requirements.svg?branch=master)](https://requires.io/github/taskctl/taskctl/requirements/?branch=master)
+![GitHub top language](https://img.shields.io/github/languages/top/taskctl/taskctl)
+[![Go Report Card](https://goreportcard.com/badge/github.com/taskctl/taskctl)](https://goreportcard.com/report/github.com/taskctl/taskctl)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/a99a88d28ad37a79dbf6/test_coverage)](https://codeclimate.com/github/codeclimate/codeclimate/test_coverage)
 [![Maintainability](https://api.codeclimate.com/v1/badges/a99a88d28ad37a79dbf6/maintainability)](https://codeclimate.com/github/codeclimate/codeclimate/maintainability)
 
-![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/trntv/wilson)
-![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/trntv/wilson)
-![GitHub closed issues](https://img.shields.io/github/issues-closed/trntv/wilson)
-![GitHub issues](https://img.shields.io/github/issues/trntv/wilson)
-![Licence](https://img.shields.io/github/license/trntv/wilson)
+![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/taskctl/taskctl)
+![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/taskctl/taskctl)
+![GitHub closed issues](https://img.shields.io/github/issues-closed/taskctl/taskctl)
+![GitHub issues](https://img.shields.io/github/issues/taskctl/taskctl)
+![Licence](https://img.shields.io/github/license/taskctl/taskctl)
 
-Simple modern alternative to GNU Make. Wilson allows you to design you development workflow pipelines in nice and neat way in human-readable format (YAML, JSON or TOML). Each pipeline composed of tasks or other pipelines and allows them to run in parallel or one-by-one. 
+Simple modern alternative to GNU Make. taskctl allows you to design you development workflow pipelines in nice and neat way in human-readable format (YAML, JSON or TOML). Each pipeline composed of tasks or other pipelines and allows them to run in parallel or one-by-one. 
 Beside pipelines, each single task can be performed manually or triggered by built-in filesystem watcher.
 
 ## Features
@@ -38,7 +38,6 @@ Beside pipelines, each single task can be performed manually or triggered by bui
 - [Contexts](#contexts)
 - [Config example](#examples)
 - [FAQ](#faq)
-  - [Why "Wilson"?](#why-wilson)
   - [Where does global config stored?](#where-does-global-config-stored)
   - [How does it differ from go-task/task?](#how-does-it-differ-from-go-tasktask)
 - [Autocomplete](#autocomplete)
@@ -48,56 +47,56 @@ Beside pipelines, each single task can be performed manually or triggered by bui
 ## Install
 ### MacOS
 ```
-brew tap trntv/wilson
-brew install wilson
+brew tap taskctl/taskctl
+brew install taskctl
 ```
 or just
 ```
-brew install trntv/wilson/wilson
+brew install taskctl/taskctl/taskctl
 ```
 or
 ```
-sudo curl -Lo /usr/local/bin/wilson https://github.com/trntv/wilson/releases/latest/download/wilson_darwin_amd64
-sudo chmod +x /usr/local/bin/wilson
+sudo curl -Lo /usr/local/bin/taskctl https://github.com/taskctl/taskctl/releases/latest/download/taskctl_darwin_amd64
+sudo chmod +x /usr/local/bin/taskctl
 ```
 
 ### Linux
 ```
-sudo wget https://github.com/trntv/wilson/releases/latest/download/wilson_linux_amd64 -O /usr/local/bin/wilson
-sudo chmod +x /usr/local/bin/wilson
+sudo wget https://github.com/taskctl/taskctl/releases/latest/download/taskctl_linux_amd64 -O /usr/local/bin/taskctl
+sudo chmod +x /usr/local/bin/taskctl
 ```
 ### From sources
 ```
-go get -u github.com/trntv/wilson/cmd/wilson
+go get -u github.com/taskctl/taskctl/cmd/taskctl
 ```
 
 ## Usage
 ### First run
 ```
-wilson run pipeline1 // single pipeline
-wilson run pipeline1 pipeline2 // multiple pipelines
+taskctl run pipeline1 // single pipeline
+taskctl run pipeline1 pipeline2 // multiple pipelines
 ```
 ### Run task
 ```
-wilson run task1 // single task
-wilson run task1 task2 // multiple tasks
+taskctl run task1 // single task
+taskctl run task1 task2 // multiple tasks
 ```
 ### Run pipeline
 ```
-wilson run pipeline1
+taskctl run pipeline1
 ```
 ### Start filesystem watcher
 ```
-wilson watch watcher1
+taskctl watch watcher1
 ```
 ### Set config file
 ```
-wilson -c tasks.yaml run lint
-wilson -c https://raw.githubusercontent.com/trntv/wilson/master/example/full.yaml run task4
+taskctl -c tasks.yaml run lint
+taskctl -c https://raw.githubusercontent.com/taskctl/taskctl/master/example/full.yaml run task4
 ```
 
 ## Tasks
-Task is a foundation of *wilson*. It describes one or more commands to run, their environment, executors and attributes such as working directory, execution timeout, acceptance of failure, etc.
+Task is a foundation of *taskctl*. It describes one or more commands to run, their environment, executors and attributes such as working directory, execution timeout, acceptance of failure, etc.
 ```yaml
 tasks:
     lint:
@@ -130,7 +129,7 @@ Every task may run one or more variations. It allows to reuse task with differen
 tasks:
   build:
     command:
-      - GOOS=${GOOS} GOARCH=amd64 go build -o bin/wilson_${GOOS} ./cmd/wilson
+      - GOOS=${GOOS} GOARCH=amd64 go build -o bin/taskctl_${GOOS} ./cmd/taskctl
     env:
       GOFLAGS: -ldflags=-s -ldflags=-w
     variations:
@@ -240,32 +239,29 @@ tasks:
 ```
 
 ## FAQ
-### Why "Wilson"?
-In the "Cast Away" film, Wilson the volleyball 🏐 serves as Chuck Noland's (Tom Hanks) personified friend and only companion during the four years that Noland spends alone on a deserted island [wiki](https://en.wikipedia.org/wiki/Cast_Away#Wilson_the_volleyball)
-
 ### Where does global config stored?
-It is stored in ``$HOME/.wilson/config.yaml`` file
+It is stored in ``$HOME/.taskctl/config.yaml`` file
 
 ### How does it differ from go-task/task?
-It's amazing how solving same problems lead to same solutions. wilson and go-task have a lot of concepts in common but also have some differences. 
+It's amazing how solving same problems lead to same solutions. taskctl and go-task have a lot of concepts in common but also have some differences. 
 1. Main is pipelines. Pipelines and stages allows more precise workflow design because same tasks may have different dependencies (or no dependencies) in different scenarios.
 2. Contexts allows you to set up execution environment, shell or binaries which will run your task. Now there is several available context types: local (shell or binary), remote (ssh), container (docker, docker-compose, kubernetes via kubectl)
 
 ## Examples
 ### Full config example
-[full.yaml](https://github.com/trntv/wilson/blob/master/docs/example.yaml)
+[full.yaml](https://github.com/taskctl/taskctl/blob/master/docs/example.yaml)
 
 ## Autocomplete
 ### Bash
 Add to  ~/.bashrc or ~/.profile
 ```
-. <(wilson completion bash)
+. <(taskctl completion bash)
 ```
 
 ### ZSH
 Add to  ~/.zshrc
 ```
-. <(wilson completion zsh)
+. <(taskctl completion zsh)
 ```
 
 ### Similar projects

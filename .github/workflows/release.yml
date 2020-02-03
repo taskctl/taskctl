@@ -25,26 +25,26 @@ jobs:
 
     - name: Build
       run: |
-        GOOS=darwin GOARCH=amd64 go build -o bin/wilson_darwin_amd64 github.com/trntv/wilson/cmd/wilson
-        GOOS=linux GOARCH=amd64 go build -o bin/wilson_linux_amd64 github.com/trntv/wilson/cmd/wilson
-        GOOS=windows GOARCH=amd64 go build -o bin/wilson_windows_amd64 github.com/trntv/wilson/cmd/wilson
+        GOOS=darwin GOARCH=amd64 go build -o bin/taskctl_darwin_amd64 github.com/taskctl/taskctl/cmd/taskctl
+        GOOS=linux GOARCH=amd64 go build -o bin/taskctl_linux_amd64 github.com/taskctl/taskctl/cmd/taskctl
+        GOOS=windows GOARCH=amd64 go build -o bin/taskctl_windows_amd64 github.com/taskctl/taskctl/cmd/taskctl
 
-        GOOS=linux GOARCH=386 go build -o bin/wilson_linux_386 github.com/trntv/wilson/cmd/wilson
-        GOOS=windows GOARCH=386 go build -o bin/wilson_windows_386 github.com/trntv/wilson/cmd/wilson
+        GOOS=linux GOARCH=386 go build -o bin/taskctl_linux_386 github.com/taskctl/taskctl/cmd/taskctl
+        GOOS=windows GOARCH=386 go build -o bin/taskctl_windows_386 github.com/taskctl/taskctl/cmd/taskctl
 
-        tar cvf - bin/wilson_darwin_amd64 | gzip -n > bin/wilson-darwin-amd64.tar.gz
-        tar cvf - bin/wilson_linux_amd64 | gzip -n > bin/wilson-linux-amd64.tar.gz
-        tar cvf - bin/wilson_windows_amd64 | gzip -n > bin/wilson-windows-amd64.tar.gz
+        tar cvf - bin/taskctl_darwin_amd64 | gzip -n > bin/taskctl-darwin-amd64.tar.gz
+        tar cvf - bin/taskctl_linux_amd64 | gzip -n > bin/taskctl-linux-amd64.tar.gz
+        tar cvf - bin/taskctl_windows_amd64 | gzip -n > bin/taskctl-windows-amd64.tar.gz
 
-        tar cvf - bin/wilson_linux_386 | gzip -n > bin/wilson-linux-386.tar.gz
-        tar cvf - bin/wilson_windows_386 | gzip -n > bin/wilson-windows-386.tar.gz
+        tar cvf - bin/taskctl_linux_386 | gzip -n > bin/taskctl-linux-386.tar.gz
+        tar cvf - bin/taskctl_windows_386 | gzip -n > bin/taskctl-windows-386.tar.gz
 
-        sha256sum bin/wilson-linux-amd64.tar.gz >> bin/checksums.txt
-        sha256sum bin/wilson-windows-amd64.tar.gz >> bin/checksums.txt
-        sha256sum bin/wilson-darwin-amd64.tar.gz >> bin/checksums.txt
+        sha256sum bin/taskctl-linux-amd64.tar.gz >> bin/checksums.txt
+        sha256sum bin/taskctl-windows-amd64.tar.gz >> bin/checksums.txt
+        sha256sum bin/taskctl-darwin-amd64.tar.gz >> bin/checksums.txt
 
-        sha256sum bin/wilson-linux-386.tar.gz >> bin/checksums.txt
-        sha256sum bin/wilson-windows-386.tar.gz >> bin/checksums.txt
+        sha256sum bin/taskctl-linux-386.tar.gz >> bin/checksums.txt
+        sha256sum bin/taskctl-windows-386.tar.gz >> bin/checksums.txt
       env:
         GOFLAGS: -ldflags=-s -ldflags=-w
 
@@ -52,10 +52,10 @@ jobs:
       uses: ncipollo/release-action@v1
       with:
         artifacts: |-
-          bin/wilson_linux_amd64, bin/wilson-linux-amd64.tar.gz,
-          bin/wilson_linux_386, bin/wilson-linux-386.tar.gz,
-          bin/wilson_darwin_amd64, bin/wilson-darwin-amd64.tar.gz,
-          bin/wilson_windows_amd64, bin/wilson-windows-amd64.tar.gz,
-          bin/wilson_windows_386, bin/wilson-windows-386.tar.gz,
+          bin/taskctl_linux_amd64, bin/taskctl-linux-amd64.tar.gz,
+          bin/taskctl_linux_386, bin/taskctl-linux-386.tar.gz,
+          bin/taskctl_darwin_amd64, bin/taskctl-darwin-amd64.tar.gz,
+          bin/taskctl_windows_amd64, bin/taskctl-windows-amd64.tar.gz,
+          bin/taskctl_windows_386, bin/taskctl-windows-386.tar.gz,
           bin/checksums.txt
         token: ${{ secrets.GITHUB_TOKEN }}

@@ -84,7 +84,7 @@ tasks:
   task1:
     context: local # optional. "local" is context by default
     command:
-      - echo ${ARGS} # ARGS is populated by arguments passed to task. eg. wilson run task task1 -- arg1 arg2
+      - echo ${ARGS} # ARGS is populated by arguments passed to task. eg. taskctl run task task1 -- arg1 arg2
       - echo "My name is task1"
     env:
       VAR_NAME: VAR_VALUE

@@ -1,7 +1,7 @@
 package pipeline
 
 import (
-	"github.com/trntv/wilson/pkg/task"
+	"github.com/taskctl/taskctl/pkg/task"
 	"sync/atomic"
 	"time"
 )

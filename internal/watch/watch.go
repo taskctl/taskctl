@@ -2,10 +2,10 @@ package watch
 
 import (
 	log "github.com/sirupsen/logrus"
-	"github.com/trntv/wilson/pkg/builder"
-	"github.com/trntv/wilson/pkg/runner"
-	"github.com/trntv/wilson/pkg/task"
-	"github.com/trntv/wilson/pkg/util"
+	"github.com/taskctl/taskctl/pkg/builder"
+	"github.com/taskctl/taskctl/pkg/runner"
+	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/taskctl/taskctl/pkg/util"
 	"sync"
 
 	"github.com/bmatcuk/doublestar"

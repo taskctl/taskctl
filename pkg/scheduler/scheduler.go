@@ -3,9 +3,9 @@ package scheduler
 import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
-	"github.com/trntv/wilson/pkg/context"
-	"github.com/trntv/wilson/pkg/pipeline"
-	"github.com/trntv/wilson/pkg/runner"
+	"github.com/taskctl/taskctl/pkg/context"
+	"github.com/taskctl/taskctl/pkg/pipeline"
+	"github.com/taskctl/taskctl/pkg/runner"
 	"sync"
 	"sync/atomic"
 	"time"
