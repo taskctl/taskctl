@@ -4,14 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	log "github.com/sirupsen/logrus"
-	"github.com/taskctl/taskctl/internal/config"
-	"github.com/taskctl/taskctl/pkg/builder"
-	"github.com/taskctl/taskctl/pkg/util"
 	"os"
 	"os/exec"
 	"strings"
 	"sync"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/taskctl/taskctl/internal/config"
+	"github.com/taskctl/taskctl/pkg/builder"
+	"github.com/taskctl/taskctl/pkg/util"
 )
 
 type container struct {
@@ -54,7 +56,7 @@ type ExecutionContext struct {
 	mu       sync.Mutex
 }
 
-func BuildContext(def *builder.ContextDefinition, wcfg *builder.TaskctlConfigDefinition) (*ExecutionContext, error) {
+func BuildContext(def *builder.ContextDefinition, cfg *config.Config) (*ExecutionContext, error) {
 	c := &ExecutionContext{
 		ctxType: def.Type,
 		executable: util.Executable{
@@ -72,9 +74,9 @@ func BuildContext(def *builder.ContextDefinition, wcfg *builder.TaskctlConfigDef
 
 	switch c.ctxType {
 	case config.ContextTypeContainer:
-		buildContainerContext(def, wcfg, c)
+		buildContainerContext(def, cfg, c)
 	case config.ContextTypeRemote:
-		buildRemoteContext(def, wcfg, c)
+		buildRemoteContext(def, cfg, c)
 	}
 
 	if c.dir == "" {
@@ -119,7 +121,7 @@ func (c *ExecutionContext) WithEnvs(env []string) (*ExecutionContext, error) {
 		def.Env[kv[0]] = kv[1]
 	}
 
-	return BuildContext(&def, &config.Get().TaskctlConfigDefinition)
+	return BuildContext(&def, config.Get())
 }
 
 func (c *ExecutionContext) Up() error {
@@ -130,7 +132,7 @@ func (c *ExecutionContext) Up() error {
 				c.mu.Lock()
 				c.startupError = err
 				c.mu.Unlock()
-				log.Errorf("context startup error: %s", err)
+				logrus.Errorf("context startup error: %s", err)
 			}
 		}
 	})
@@ -143,7 +145,7 @@ func (c *ExecutionContext) Down() {
 		for _, command := range c.down {
 			err := c.runServiceCommand(command)
 			if err != nil {
-				log.Errorf("context cleanup error: %s", err)
+				logrus.Errorf("context cleanup error: %s", err)
 			}
 		}
 	})
@@ -172,7 +174,7 @@ func (c *ExecutionContext) After() error {
 }
 
 func (c *ExecutionContext) runServiceCommand(command string) (err error) {
-	log.Debugf("running service context service command: %s", command)
+	logrus.Debugf("running service context service command: %s", command)
 	ca := strings.Split(command, " ")
 	cmd := exec.Command(ca[0], ca[1:]...)
 	cmd.Env = c.Env()

@@ -1,18 +1,10 @@
 package builder
 
 import (
-	"github.com/taskctl/taskctl/pkg/util"
 	"time"
-)
 
-type TaskctlConfigDefinition struct {
-	Shell         util.Executable
-	Docker        util.Executable
-	DockerCompose util.Executable `mapstructure:"docker-compose"`
-	Kubectl       util.Executable
-	Ssh           util.Executable
-	Debug         bool
-}
+	"github.com/taskctl/taskctl/pkg/util"
+)
 
 type ContextDefinition struct {
 	Type      string

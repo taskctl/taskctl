@@ -1,7 +1,9 @@
 package util
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"reflect"
@@ -61,4 +63,13 @@ func IsUrl(s string) bool {
 	}
 
 	return false
+}
+
+func LastLine(r io.Reader) (l string) {
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		l = scanner.Text()
+	}
+
+	return l
 }

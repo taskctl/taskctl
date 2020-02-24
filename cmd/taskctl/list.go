@@ -2,10 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
-	"github.com/taskctl/taskctl/pkg/util"
 	"os"
+	"sort"
 	"text/template"
+
+	"github.com/spf13/cobra"
+
+	"github.com/taskctl/taskctl/pkg/util"
 )
 
 var listTmpl = `Contexts:{{range $context := .Contexts}}
@@ -40,16 +43,24 @@ func NewListCommand() *cobra.Command {
 
 			t := template.Must(template.New("list").Parse(listTmpl))
 
-			data := struct {
+			contexts := util.ListNames(cfg.Contexts)
+			pipelines := util.ListNames(cfg.Pipelines)
+			tasks := util.ListNames(cfg.Tasks)
+			watchers := util.ListNames(cfg.Watchers)
+
+			sort.Strings(contexts)
+			sort.Strings(pipelines)
+			sort.Strings(tasks)
+			sort.Strings(watchers)
+
+			err = t.Execute(os.Stdout, struct {
 				Contexts, Pipelines, Tasks, Watchers []string
 			}{
-				Contexts:  util.ListNames(cfg.Contexts),
-				Pipelines: util.ListNames(cfg.Pipelines),
-				Tasks:     util.ListNames(cfg.Tasks),
-				Watchers:  util.ListNames(cfg.Watchers),
-			}
-
-			err = t.Execute(os.Stdout, data)
+				Contexts:  contexts,
+				Pipelines: pipelines,
+				Tasks:     tasks,
+				Watchers:  watchers,
+			})
 			return err
 		},
 	}

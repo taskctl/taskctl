@@ -5,18 +5,20 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/imdario/mergo"
-	"github.com/mitchellh/mapstructure"
-	"github.com/pelletier/go-toml"
-	log "github.com/sirupsen/logrus"
-	"github.com/taskctl/taskctl/pkg/util"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/imdario/mergo"
+	"github.com/mitchellh/mapstructure"
+	"github.com/pelletier/go-toml"
+	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
+
+	"github.com/taskctl/taskctl/pkg/util"
 )
 
 var ErrConfigNotFound = errors.New("config file not found")
@@ -31,12 +33,12 @@ type ConfigLoader struct {
 func NewConfigLoader() ConfigLoader {
 	h, err := os.UserHomeDir()
 	if err != nil {
-		log.Warning(err)
+		logrus.Warning(err)
 	}
 
 	dir, err := os.Getwd()
 	if err != nil {
-		log.Warning(err)
+		logrus.Warning(err)
 	}
 
 	return ConfigLoader{
@@ -53,7 +55,7 @@ func (cl *ConfigLoader) Set(key string, value string) {
 
 func (cl *ConfigLoader) Load(file string) (*Config, error) {
 	var err error
-	cfg, err = cl.LoadGlobalConfig()
+	values, err = cl.LoadGlobalConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +63,7 @@ func (cl *ConfigLoader) Load(file string) (*Config, error) {
 	if file == "" {
 		file, err = cl.resolveDefaultConfigFile()
 		if err != nil {
-			return cfg, err
+			return values, err
 		}
 	}
 
@@ -79,32 +81,35 @@ func (cl *ConfigLoader) Load(file string) (*Config, error) {
 		return nil, err
 	}
 
-	err = cfg.merge(lcfg)
+	err = values.merge(lcfg)
 	if err != nil {
 		return nil, err
 	}
-	cfg.init()
+	values.init()
 
-	log.Debugf("config %s loaded", file)
-	return cfg, nil
+	logrus.Debugf("config %s loaded", file)
+	return values, nil
 }
 
 func (cl *ConfigLoader) LoadGlobalConfig() (*Config, error) {
+	values = defaultConfig()
 	if cl.homeDir == "" {
-		return &Config{}, nil
+		return values, nil
 	}
 
 	file := path.Join(cl.homeDir, ".taskctl", "config.yaml")
 	if !util.FileExists(file) {
-		return &Config{}, nil
+		return values, nil
 	}
 
 	cfg, err := cl.load(file)
 	if err != nil {
-		return &Config{}, err
+		return values, err
 	}
 
-	return cl.decode(cfg)
+	values, err = cl.decode(cfg)
+
+	return values, err
 }
 
 func (cl *ConfigLoader) load(file string) (config map[string]interface{}, err error) {
@@ -251,7 +256,7 @@ func (cl *ConfigLoader) decode(cm map[string]interface{}) (*Config, error) {
 		return nil, err
 	}
 
-	c := &Config{}
+	c := defaultConfig()
 	md, _ := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
 			mapstructure.StringToTimeDurationHookFunc(),
@@ -271,22 +276,20 @@ func (cl *ConfigLoader) decode(cm map[string]interface{}) (*Config, error) {
 }
 
 func (cl *ConfigLoader) resolveDefaultConfigFile() (file string, err error) {
-	files := make([]string, 0)
-
 	dir := cl.dir
 	for {
 		if dir == "/" {
 			break
 		}
 
-		files = append(files, filepath.Join(dir, "taskctl.yaml"), filepath.Join(dir, "tasks.yaml"))
-		dir = filepath.Dir(dir)
-	}
-
-	for _, file = range files {
-		if util.FileExists(file) {
-			return file, nil
+		for _, v := range DefaultFileNames {
+			file := filepath.Join(dir, v)
+			if util.FileExists(file) {
+				return file, nil
+			}
 		}
+
+		dir = filepath.Dir(dir)
 	}
 
 	return file, fmt.Errorf("default config resolution failed: %w", ErrConfigNotFound)

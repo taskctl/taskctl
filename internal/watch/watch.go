@@ -1,12 +1,14 @@
 package watch
 
 import (
-	log "github.com/sirupsen/logrus"
+	"sync"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/taskctl/taskctl/pkg/builder"
 	"github.com/taskctl/taskctl/pkg/runner"
 	"github.com/taskctl/taskctl/pkg/task"
 	"github.com/taskctl/taskctl/pkg/util"
-	"sync"
 
 	"github.com/bmatcuk/doublestar"
 	"github.com/fsnotify/fsnotify"
@@ -40,10 +42,9 @@ type Watcher struct {
 	wg sync.WaitGroup
 }
 
-func BuildWatcher(name string, def *builder.WatcherDefinition, t *task.Task, r *runner.TaskRunner) (w *Watcher, err error) {
+func BuildWatcher(name string, def *builder.WatcherDefinition, t *task.Task) (w *Watcher, err error) {
 	w = &Watcher{
 		name:     name,
-		r:        r,
 		paths:    make([]string, 0),
 		finished: make(chan struct{}),
 		task:     t,
@@ -83,16 +84,17 @@ func BuildWatcher(name string, def *builder.WatcherDefinition, t *task.Task, r *
 	return w, nil
 }
 
-func (w *Watcher) Run() (err error) {
+func (w *Watcher) Run(r *runner.TaskRunner) (err error) {
+	w.r = r
 	w.fsw, err = fsnotify.NewWatcher()
 	if err != nil {
 		return err
 	}
 
-	log.Debugf("starting watcher %s", w.name)
+	logrus.Debugf("starting watcher %s", w.name)
 	for _, path := range w.paths {
 		err = w.fsw.Add(path)
-		log.Debugf("watcher %s is waiting for events in %s", w.name, path)
+		logrus.Debugf("watcher %s is waiting for events in %s", w.name, path)
 		if err != nil {
 			return err
 		}
@@ -108,18 +110,18 @@ func (w *Watcher) Run() (err error) {
 				}
 				w.wg.Add(1)
 				go w.handle(event)
-				log.Debugf("watcher %s; event %s; file: %s", w.name, event.Op.String(), event.Name)
+				logrus.Debugf("watcher %s; event %s; file: %s", w.name, event.Op.String(), event.Name)
 				if event.Op == fsnotify.Rename {
 					err = w.fsw.Add(event.Name)
 					if err != nil {
-						log.Error(err)
+						logrus.Error(err)
 					}
 				}
 			case err, ok := <-w.fsw.Errors:
 				if !ok {
 					return
 				}
-				log.Error(err)
+				logrus.Error(err)
 			}
 		}
 	}()
@@ -132,7 +134,7 @@ func (w *Watcher) Run() (err error) {
 func (w *Watcher) Close() {
 	err := w.fsw.Close()
 	if err != nil {
-		log.Error(err)
+		logrus.Error(err)
 		return
 	}
 	<-w.finished
@@ -151,9 +153,9 @@ func (w *Watcher) handle(event fsnotify.Event) {
 		"EVENT_PATH": event.Name,
 	})
 
-	log.Debugf("triggering %s for %s", w.task.Name, w.name)
+	logrus.Debugf("triggering %s for %s", w.task.Name, w.name)
 	err := w.r.RunWithEnv(w.task, env)
 	if err != nil {
-		log.Error(err)
+		logrus.Error(err)
 	}
 }

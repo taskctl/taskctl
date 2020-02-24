@@ -4,35 +4,42 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	log "github.com/sirupsen/logrus"
+	"github.com/taskctl/taskctl/pkg/output"
+	"os/exec"
+	"time"
+
+	"github.com/sirupsen/logrus"
+
 	taskctx "github.com/taskctl/taskctl/pkg/context"
 	"github.com/taskctl/taskctl/pkg/task"
 	"github.com/taskctl/taskctl/pkg/util"
-	"os/exec"
-	"time"
 )
 
 type TaskRunner struct {
 	contexts map[string]*taskctx.ExecutionContext
 	env      []string
 
-	output *taskOutput
-	ctx    context.Context
-	cancel context.CancelFunc
-	dryRun bool
+	ctx        context.Context
+	cancel     context.CancelFunc
+	dryRun     bool
+	taskOutput *output.TaskOutput
 }
 
-func NewTaskRunner(contexts map[string]*taskctx.ExecutionContext, env []string, raw, quiet, dryRun bool) *TaskRunner {
-	tr := &TaskRunner{
+func NewTaskRunner(contexts map[string]*taskctx.ExecutionContext, env []string, outputFlavor string, dryRun bool) (*TaskRunner, error) {
+	r := &TaskRunner{
 		contexts: contexts,
-		output:   NewTaskOutput(raw, quiet),
 		env:      env,
 		dryRun:   dryRun,
 	}
 
-	tr.ctx, tr.cancel = context.WithCancel(context.Background())
+	var err error
+	r.taskOutput, err = output.NewTaskOutput(outputFlavor, true)
+	if err != nil {
+		return nil, err
+	}
+	r.ctx, r.cancel = context.WithCancel(context.Background())
 
-	return tr
+	return r, nil
 }
 
 func (r *TaskRunner) Run(t *task.Task) (err error) {
@@ -40,6 +47,7 @@ func (r *TaskRunner) Run(t *task.Task) (err error) {
 }
 
 func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
+	defer r.taskOutput.Finish(t)
 	c, err := r.contextForTask(t)
 	if err != nil {
 		return errors.New("unknown context")
@@ -69,8 +77,7 @@ func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
 	env = append(env, r.env...)
 	env = append(env, fmt.Sprintf("WI_TASK_NAME=%s", t.Name))
 
-	for i, variant := range variations {
-		log.Infof("Running task %s, variant %d...", t.Name, i+1)
+	for _, variant := range variations {
 
 		for _, command := range t.Command {
 			if t.Timeout != nil {
@@ -91,6 +98,7 @@ func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
 				if errors.As(err, &e) && t.AllowFailure {
 					continue
 				}
+				t.Errored = true
 				t.End = time.Now()
 				return err
 			}
@@ -107,7 +115,7 @@ func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
 			cmd.Env = append(cmd.Env, env...)
 			err = r.runCommand(t, cmd)
 			if err != nil {
-				log.Warn(err)
+				logrus.Warn(err)
 			}
 		}
 	}
@@ -119,8 +127,6 @@ func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
 		return err
 	}
 
-	log.Infof("%s finished. Duration %s", t.Name, t.Duration())
-
 	return nil
 }
 
@@ -129,7 +135,7 @@ func (r *TaskRunner) runCommand(t *task.Task, cmd *exec.Cmd) error {
 	var killed = make(chan struct{})
 	go r.waitForInterruption(*cmd, done, killed)
 
-	log.Debugf("Executing %s", cmd.String())
+	logrus.Debugf("Executing %s", cmd.String())
 	if r.dryRun {
 		return nil
 	}
@@ -151,7 +157,7 @@ func (r *TaskRunner) runCommand(t *task.Task, cmd *exec.Cmd) error {
 	t.SetStderr(stderr)
 
 	var flushed = make(chan struct{})
-	go r.output.Scan(t, flushed)
+	go r.taskOutput.Stream(t, flushed)
 
 	err = cmd.Start()
 	if err != nil {
@@ -182,10 +188,10 @@ func (r *TaskRunner) waitForInterruption(cmd exec.Cmd, done chan struct{}, kille
 			return
 		}
 		if err := cmd.Process.Kill(); err != nil {
-			log.Debug(err)
+			logrus.Debug(err)
 			return
 		}
-		log.Debugf("Killed %s", cmd.String())
+		logrus.Debugf("Killed %s", cmd.String())
 		return
 	case <-done:
 		return
@@ -215,9 +221,14 @@ func (r *TaskRunner) contextForTask(t *task.Task) (c *taskctx.ExecutionContext, 
 }
 
 func (r *TaskRunner) DownContexts() {
+
+}
+
+func (r *TaskRunner) Finish() {
 	for _, c := range r.contexts {
 		if c.ScheduledForCleanup {
 			c.Down()
 		}
 	}
+	r.taskOutput.Close()
 }

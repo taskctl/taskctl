@@ -1,11 +1,12 @@
 package main
 
 import (
-	"github.com/sirupsen/logrus"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/sirupsen/logrus"
 )
 
 func main() {

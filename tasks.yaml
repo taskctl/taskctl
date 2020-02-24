@@ -12,16 +12,28 @@ pipelines:
         BIN_OUT: bin/taskctl_linux_amd64
 
   release:
-    - task: update-cmd-version
+    - task: goimports
     - task: test
-      depends_on: update-cmd-version
-    - task: push-tag
+      depends_on: goimports
+    - task: update-cmd-version
       depends_on: test
+    - task: push-tag
+      depends_on: update-cmd-version
 
   lints:
     - task: golint
     - task: govet
       depends_on: golint
+
+  wait:
+    - task: golint
+#    - task: wait
+#      name: wait1
+#    - task: wait
+#      name: wait2
+#    - task: wait
+#      name: wait3
+#      depends_on: wait2
 
 tasks:
   test:
@@ -51,7 +63,16 @@ tasks:
   golint:
     command:
       - golint $(go list ./... | grep -v /vendor/)
+      - exit 2
 
   govet:
     command:
       - go vet $(go list ./... | grep -v /vendor/)
+
+  goimports:
+    command:
+      - goimports -local github.com/taskctl/taskctl -w -format-only ./pkg ./internal ./cmd
+
+  wait:
+    command:
+      - sleep 10

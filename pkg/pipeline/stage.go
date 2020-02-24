@@ -1,9 +1,10 @@
 package pipeline
 
 import (
-	"github.com/taskctl/taskctl/pkg/task"
 	"sync/atomic"
 	"time"
+
+	"github.com/taskctl/taskctl/pkg/task"
 )
 
 const (

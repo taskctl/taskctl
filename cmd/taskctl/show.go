@@ -2,9 +2,10 @@ package main
 
 import (
 	"errors"
-	"github.com/spf13/cobra"
 	"os"
 	"text/template"
+
+	"github.com/spf13/cobra"
 )
 
 var showTmpl = `

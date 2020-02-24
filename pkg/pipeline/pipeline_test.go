@@ -1,8 +1,9 @@
 package pipeline
 
 import (
-	"github.com/taskctl/taskctl/pkg/builder"
 	"testing"
+
+	"github.com/taskctl/taskctl/pkg/builder"
 )
 
 func TestBuildPipeline_Cyclic(t *testing.T) {

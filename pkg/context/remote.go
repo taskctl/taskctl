@@ -3,12 +3,14 @@ package context
 import (
 	"context"
 	"fmt"
+	"github.com/taskctl/taskctl/internal/config"
+	"os/exec"
+
 	"github.com/taskctl/taskctl/pkg/builder"
 	"github.com/taskctl/taskctl/pkg/util"
-	"os/exec"
 )
 
-func buildRemoteContext(def *builder.ContextDefinition, wcfg *builder.TaskctlConfigDefinition, c *ExecutionContext) {
+func buildRemoteContext(def *builder.ContextDefinition, cfg *config.Config, c *ExecutionContext) {
 	c.ssh = ssh{
 		user:    def.SSH.User,
 		host:    def.SSH.Host,
@@ -19,15 +21,15 @@ func buildRemoteContext(def *builder.ContextDefinition, wcfg *builder.TaskctlCon
 		},
 	}
 	if c.ssh.executable.Bin == "" {
-		if wcfg.Ssh.Bin != "" {
-			c.ssh.executable.Bin = wcfg.Ssh.Bin
+		if cfg.Ssh.Bin != "" {
+			c.ssh.executable.Bin = cfg.Ssh.Bin
 		} else {
 			c.ssh.executable.Bin = "ssh"
 		}
 	}
 
 	if len(c.ssh.executable.Args) == 0 {
-		c.ssh.executable.Args = wcfg.Ssh.Args
+		c.ssh.executable.Args = cfg.Ssh.Args
 	}
 
 	c.ssh.executable.Args = append(c.ssh.executable.Args, "-T")

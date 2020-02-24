@@ -2,7 +2,11 @@ package config
 
 import (
 	"github.com/imdario/mergo"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
+	"github.com/taskctl/taskctl/pkg/output"
+	"github.com/taskctl/taskctl/pkg/util"
+	"io"
+
 	"github.com/taskctl/taskctl/pkg/builder"
 )
 
@@ -16,10 +20,12 @@ const (
 	ContextContainerProviderKubectl       = "kubectl"
 )
 
-var cfg *Config
+var DefaultFileNames = []string{"taskctl.yaml", "tasks.yaml"}
+
+var values *Config
 
 func Get() *Config {
-	return cfg
+	return values
 }
 
 type Config struct {
@@ -29,15 +35,29 @@ type Config struct {
 	Tasks     map[string]*builder.TaskDefinition
 	Watchers  map[string]*builder.WatcherDefinition
 
-	builder.TaskctlConfigDefinition `mapstructure:",squash"`
+	Shell         util.Executable
+	Docker        util.Executable
+	DockerCompose util.Executable `mapstructure:"docker-compose"`
+	Kubectl       util.Executable
+	Ssh           util.Executable
 
 	configMap map[string]interface{}
+	W         io.Writer
+
+	Debug, DryRun bool
+	Output        string
+}
+
+func defaultConfig() *Config {
+	return &Config{
+		Output: output.FlavorFormatted,
+	}
 }
 
 func (c *Config) merge(src *Config) error {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Error(err)
+			logrus.Error(err)
 		}
 	}()
 
@@ -49,6 +69,8 @@ func (c *Config) merge(src *Config) error {
 }
 
 func (c *Config) init() {
+	c.Output = output.FlavorFormatted
+
 	for name, v := range c.Tasks {
 		if v.Name == "" {
 			v.Name = name

@@ -3,13 +3,16 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/logrusorgru/aurora"
-	"github.com/manifoldco/promptui"
-	"github.com/spf13/cobra"
-	"github.com/taskctl/taskctl/pkg/util"
+	"github.com/taskctl/taskctl/internal/config"
 	"os"
 	"path/filepath"
 	"text/template"
+
+	"github.com/logrusorgru/aurora"
+	"github.com/manifoldco/promptui"
+	"github.com/spf13/cobra"
+
+	"github.com/taskctl/taskctl/pkg/util"
 )
 
 var configTmpl = `# This is an example of taskctl tasks configuration file. Adjust it to fit your needs
@@ -44,7 +47,7 @@ func NewInitCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			fileSelect := promptui.Select{
 				Label: "Choose file name",
-				Items: []string{"taskctl.yaml", "tasks.yaml"},
+				Items: config.DefaultFileNames,
 			}
 
 			_, filename, err := fileSelect.Run()

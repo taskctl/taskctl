@@ -1,9 +1,10 @@
 package config
 
 import (
-	"gopkg.in/yaml.v2"
 	"strings"
 	"testing"
+
+	"gopkg.in/yaml.v2"
 )
 
 var testConfig = `
@@ -114,7 +115,7 @@ watchers:
     events: [create, write, remove, rename, chmod]
     task: task1
 
-# Default values for different providers
+# defaultConfig values for different providers
 shell:
   bin: bin
   args: [arg1, arg2]

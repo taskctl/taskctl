@@ -3,21 +3,24 @@ package main
 import (
 	"errors"
 	"fmt"
-	log "github.com/sirupsen/logrus"
+	"github.com/taskctl/taskctl/pkg/output"
+	"io/ioutil"
+	"strings"
+
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+
 	"github.com/taskctl/taskctl/internal/config"
 	"github.com/taskctl/taskctl/internal/watch"
 	"github.com/taskctl/taskctl/pkg/context"
 	"github.com/taskctl/taskctl/pkg/pipeline"
-	"github.com/taskctl/taskctl/pkg/runner"
 	"github.com/taskctl/taskctl/pkg/task"
-	"io/ioutil"
-	"strings"
 )
 
-// todo: remove global variables
-var debug, silent bool
-var configFile string
+var taskctlCmd *cobra.Command
+
+var debug, quiet bool
+var configFile, oflavor string
 var configValues []string
 
 var tasks = make(map[string]*task.Task)
@@ -29,21 +32,29 @@ var cancel = make(chan struct{})
 var done = make(chan bool)
 var cl config.ConfigLoader
 
-func NewRootCommand(gcfg *config.Config) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "taskctl",
-		Short:   "Taskctl the task runner",
-		Version: "0.5.1",
+func NewRootCommand() *cobra.Command {
+	cfg := config.Get()
+	taskctlCmd = &cobra.Command{
+		Use:               "taskctl",
+		Short:             "Taskctl the task runner",
+		Version:           "0.5.1",
+		DisableAutoGenTag: true,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			logrus.SetFormatter(&logrus.TextFormatter{
+				DisableColors:   false,
+				TimestampFormat: "2006-01-02 15:04:05",
+				FullTimestamp:   false,
+			})
+
 			if debug {
-				log.SetLevel(log.DebugLevel)
+				logrus.SetLevel(logrus.DebugLevel)
 			} else {
-				log.SetLevel(log.InfoLevel)
+				logrus.SetLevel(logrus.InfoLevel)
 			}
 
-			if silent {
-				log.SetOutput(ioutil.Discard)
-				quiet = true
+			if quiet {
+				logrus.SetOutput(ioutil.Discard)
+				output.SetStdout(ioutil.Discard)
 			}
 
 			for _, v := range configValues {
@@ -55,35 +66,31 @@ func NewRootCommand(gcfg *config.Config) *cobra.Command {
 		},
 	}
 
-	cmd.PersistentFlags().BoolVarP(&debug, "debug", "d", gcfg.Debug, "enable debug")
-	cmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "config file to use (taskctl.yaml or wi.yaml by default)")
-	cmd.PersistentFlags().BoolVarP(&silent, "silent", "s", false, "silence output")
-	cmd.PersistentFlags().StringSliceVar(&configValues, "set", make([]string, 0), "override config value")
+	taskctlCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", cfg.Debug, "enable debug")
+	taskctlCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "config file to use (tasks.yaml or taskctl.yaml by default)")
+	taskctlCmd.PersistentFlags().StringVarP(&oflavor, "output", "o", cfg.Output, "output flavour")
+	taskctlCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "quite mode")
+	taskctlCmd.PersistentFlags().StringSliceVar(&configValues, "set", make([]string, 0), "override config value")
 
-	err := cmd.MarkPersistentFlagFilename("config", "yaml", "yml")
-	if err != nil {
-		log.Warning(err)
-	}
+	taskctlCmd.AddCommand(NewListCommand())
+	taskctlCmd.AddCommand(NewRunCommand())
+	taskctlCmd.AddCommand(NewWatchCommand())
+	taskctlCmd.AddCommand(NewInitCommand())
+	taskctlCmd.AddCommand(NewShowCommand())
 
-	cmd.AddCommand(NewListCommand())
-	cmd.AddCommand(NewRunCommand())
-	cmd.AddCommand(NewWatchCommand())
-	cmd.AddCommand(NewInitCommand())
-	cmd.AddCommand(NewShowCommand())
+	taskctlCmd.AddCommand(NewAutocompleteCommand(taskctlCmd))
 
-	cmd.AddCommand(NewAutocompleteCommand(cmd))
-
-	return cmd
+	return taskctlCmd
 }
 
 func Execute() error {
 	cl = config.NewConfigLoader()
-	gcfg, err := cl.LoadGlobalConfig()
+	_, err := cl.LoadGlobalConfig()
 	if err != nil {
 		return err
 	}
 
-	cmd := NewRootCommand(gcfg)
+	cmd := NewRootCommand()
 	return cmd.Execute()
 }
 
@@ -105,7 +112,7 @@ func loadConfig() (cfg *config.Config, err error) {
 	}
 
 	for name, def := range cfg.Contexts {
-		contexts[name], err = context.BuildContext(def, &config.Get().TaskctlConfigDefinition)
+		contexts[name], err = context.BuildContext(def, config.Get())
 		if err != nil {
 			return nil, fmt.Errorf("context %s build failed: %v", name, err)
 		}
@@ -118,9 +125,8 @@ func loadConfig() (cfg *config.Config, err error) {
 		}
 	}
 
-	tr := runner.NewTaskRunner(contexts, make([]string, 0), true, false, dryRun)
 	for name, def := range cfg.Watchers {
-		watchers[name], err = watch.BuildWatcher(name, def, tasks[def.Task], tr)
+		watchers[name], err = watch.BuildWatcher(name, def, tasks[def.Task])
 		if err != nil {
 			return nil, fmt.Errorf("watcher %s build failed: %v", name, err)
 		}

@@ -2,13 +2,14 @@ package scheduler
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
-	"github.com/taskctl/taskctl/pkg/context"
-	"github.com/taskctl/taskctl/pkg/pipeline"
-	"github.com/taskctl/taskctl/pkg/runner"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/taskctl/taskctl/pkg/pipeline"
+	"github.com/taskctl/taskctl/pkg/runner"
 )
 
 type PipelineScheduler struct {
@@ -21,13 +22,13 @@ type PipelineScheduler struct {
 	End   time.Time
 }
 
-func NewScheduler(contexts map[string]*context.ExecutionContext, env []string, raw, quiet, dryRun bool) *PipelineScheduler {
-	r := &PipelineScheduler{
+func NewScheduler(r *runner.TaskRunner) *PipelineScheduler {
+	s := &PipelineScheduler{
 		pause:      50 * time.Millisecond,
-		taskRunner: runner.NewTaskRunner(contexts, env, raw, quiet, dryRun),
+		taskRunner: r,
 	}
 
-	return r
+	return s
 }
 
 func (s *PipelineScheduler) Schedule(p *pipeline.Pipeline) error {
@@ -67,7 +68,7 @@ func (s *PipelineScheduler) Schedule(p *pipeline.Pipeline) error {
 					err = s.taskRunner.RunWithEnv(stage.Task, p.Env[stage.Name])
 				}
 				if err != nil {
-					log.Error(err)
+					logrus.Error(err)
 					stage.UpdateStatus(pipeline.StatusError)
 					if !stage.AllowFailure {
 						s.Cancel()
@@ -110,8 +111,8 @@ func (s *PipelineScheduler) isDone(p *pipeline.Pipeline) bool {
 	return true
 }
 
-func (s *PipelineScheduler) DownContexts() {
-	s.taskRunner.DownContexts()
+func (s *PipelineScheduler) Finish() {
+	s.taskRunner.Finish()
 }
 
 func (s *PipelineScheduler) checkStatus(p *pipeline.Pipeline, stage *pipeline.Stage) (ready bool) {
@@ -119,7 +120,7 @@ func (s *PipelineScheduler) checkStatus(p *pipeline.Pipeline, stage *pipeline.St
 	for _, dep := range p.To(stage.Name) {
 		depStage, err := p.Node(dep)
 		if err != nil {
-			log.Fatal(err)
+			logrus.Fatal(err)
 		}
 
 		switch depStage.ReadStatus() {

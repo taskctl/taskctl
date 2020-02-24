@@ -2,10 +2,14 @@ package main
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
-	"github.com/taskctl/taskctl/internal/watch"
+	"github.com/taskctl/taskctl/pkg/output"
+	"github.com/taskctl/taskctl/pkg/runner"
 	"sync"
+
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
+
+	"github.com/taskctl/taskctl/internal/watch"
 )
 
 func NewWatchCommand() *cobra.Command {
@@ -18,6 +22,8 @@ func NewWatchCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			rn, err := runner.NewTaskRunner(contexts, make([]string, 0), output.FlavorFormatted, dryRun)
 
 			var wg sync.WaitGroup
 			for _, name := range args {
@@ -37,9 +43,9 @@ func NewWatchCommand() *cobra.Command {
 				go func(w *watch.Watcher) {
 					defer wg.Done()
 
-					err := w.Run()
+					err = w.Run(rn)
 					if err != nil {
-						log.Error(err)
+						logrus.Error(err)
 					}
 				}(w)
 			}

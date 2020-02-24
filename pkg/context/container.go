@@ -3,14 +3,15 @@ package context
 import (
 	"context"
 	"fmt"
+	"os/exec"
+	"strings"
+
 	"github.com/taskctl/taskctl/internal/config"
 	"github.com/taskctl/taskctl/pkg/builder"
 	"github.com/taskctl/taskctl/pkg/util"
-	"os/exec"
-	"strings"
 )
 
-func buildContainerContext(def *builder.ContextDefinition, wcfg *builder.TaskctlConfigDefinition, c *ExecutionContext) {
+func buildContainerContext(def *builder.ContextDefinition, cfg *config.Config, c *ExecutionContext) {
 	c.container = container{
 		provider: def.Container.Provider,
 		name:     def.Container.Name,
@@ -27,37 +28,37 @@ func buildContainerContext(def *builder.ContextDefinition, wcfg *builder.Taskctl
 	switch c.container.provider {
 	case config.ContextContainerProviderDocker:
 		if c.container.executable.Bin == "" {
-			if wcfg.Docker.Bin != "" {
-				c.container.executable.Bin = wcfg.Docker.Bin
+			if cfg.Docker.Bin != "" {
+				c.container.executable.Bin = cfg.Docker.Bin
 			} else {
 				c.container.executable.Bin = "docker"
 			}
 		}
 		if len(c.container.executable.Args) == 0 {
-			c.container.executable.Args = wcfg.Docker.Args
+			c.container.executable.Args = cfg.Docker.Args
 		}
 	case config.ContextContainerProviderDockerCompose:
 		if c.container.executable.Bin == "" {
-			if wcfg.DockerCompose.Bin != "" {
-				c.container.executable.Bin = wcfg.DockerCompose.Bin
+			if cfg.DockerCompose.Bin != "" {
+				c.container.executable.Bin = cfg.DockerCompose.Bin
 			} else {
 				c.container.executable.Bin = "docker-compose"
 			}
 		}
 		if len(c.container.executable.Args) == 0 {
-			c.container.executable.Args = wcfg.DockerCompose.Args
+			c.container.executable.Args = cfg.DockerCompose.Args
 		}
 	case config.ContextContainerProviderKubectl:
 		if c.container.executable.Bin == "" {
-			if wcfg.Kubectl.Bin != "" {
-				c.container.executable.Bin = wcfg.Kubectl.Bin
+			if cfg.Kubectl.Bin != "" {
+				c.container.executable.Bin = cfg.Kubectl.Bin
 			} else {
 				c.container.executable.Bin = "kubectl"
 			}
 		}
 
 		if len(c.container.executable.Args) == 0 {
-			c.container.executable.Args = wcfg.Kubectl.Args
+			c.container.executable.Args = cfg.Kubectl.Args
 		}
 	}
 }

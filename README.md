@@ -20,12 +20,12 @@ Simple modern alternative to GNU Make. taskctl allows you to design you developm
 Beside pipelines, each single task can be performed manually or triggered by built-in filesystem watcher.
 
 ## Features
-- Parallel tasks execution
-- Highly customizable pipelines configuration
-- stderr/stdout output capturing
-- File watcher integrated with tasks and pipelines
-- Customizable contexts for each task
-- Human-readable configuration format (YAML, JSON or TOML)
+- parallel tasks execution
+- highly customizable pipelines configuration
+- file watcher integrated with tasks and pipelines
+- customizable contexts for each task
+- human-readable configuration format (YAML, JSON or TOML)
+- customizable output
 - and many more...
 
 [![asciicast](https://asciinema.org/a/292379.svg)](https://asciinema.org/a/292379)
@@ -50,10 +50,6 @@ Beside pipelines, each single task can be performed manually or triggered by bui
 brew tap taskctl/taskctl
 brew install taskctl
 ```
-or just
-```
-brew install taskctl/taskctl/taskctl
-```
 or
 ```
 sudo curl -Lo /usr/local/bin/taskctl https://github.com/taskctl/taskctl/releases/latest/download/taskctl_darwin_amd64
@@ -71,7 +67,7 @@ go get -u github.com/taskctl/taskctl/cmd/taskctl
 ```
 
 ## Usage
-### First run
+### Run pipeline
 ```
 taskctl run pipeline1 // single pipeline
 taskctl run pipeline1 pipeline2 // multiple pipelines
@@ -80,10 +76,6 @@ taskctl run pipeline1 pipeline2 // multiple pipelines
 ```
 taskctl run task1 // single task
 taskctl run task1 task2 // multiple tasks
-```
-### Run pipeline
-```
-taskctl run pipeline1
 ```
 ### Start filesystem watcher
 ```
@@ -183,6 +175,11 @@ Stage definition takes following parameters:
 - ``env`` - environment variables (optional). All existing environment variables will be passed automatically
 - ``depends_on`` - name of stage on which this stage depends on (optional). This stage will be started only after referenced stage is completed.
 - ``allow_failure`` - if set to ``true`` failing stage will no interrupt pipeline execution. ``false`` by default
+
+## Output flavors
+- `raw` - raw commands output
+- `formatted` - strips ANSI escape sequences where possible, prefixes command output with task name
+- `cockpit` - shows only pipeline progress spinners
 
 ## Filesystem watchers
 Watcher watches for changes in files selected by provided patterns and triggers a task anytime an event has occurred.

@@ -1,14 +1,18 @@
 package task
 
 import (
+	"io"
+	"sync/atomic"
+	"time"
+
 	"github.com/taskctl/taskctl/pkg/builder"
 	"github.com/taskctl/taskctl/pkg/util"
-	"io"
-	"sync"
-	"time"
 )
 
+var index uint32
+
 type Task struct {
+	Index        uint32
 	Command      []string
 	Context      string
 	Env          []string
@@ -20,20 +24,23 @@ type Task struct {
 
 	Name        string
 	Description string
-	Start       time.Time
-	End         time.Time
+
+	Start time.Time
+	End   time.Time
 
 	Stdout io.ReadCloser
 	Stderr io.ReadCloser
 
-	log struct {
-		sync.Mutex
-		data []byte
+	Errored bool
+	Log     struct {
+		Stderr log
+		Stdout log
 	}
 }
 
 func BuildTask(def *builder.TaskDefinition) *Task {
 	t := &Task{
+		Index:        atomic.AddUint32(&index, 1),
 		Name:         def.Name,
 		Description:  def.Description,
 		Command:      def.Command,
@@ -58,20 +65,18 @@ func (t *Task) Duration() time.Duration {
 	return t.End.Sub(t.Start)
 }
 
-func (t *Task) WriteLog(l []byte) {
-	t.log.Lock()
-	t.log.data = l
-	t.log.Unlock()
-}
-
-func (t *Task) ReadLog() []byte {
-	return t.log.data
-}
-
 func (t *Task) SetStdout(stdout io.ReadCloser) {
 	t.Stdout = stdout
 }
 
 func (t *Task) SetStderr(stderr io.ReadCloser) {
 	t.Stderr = stderr
+}
+
+func (t *Task) Error() string {
+	if t.Log.Stderr.Len() > 0 {
+		return util.LastLine(&t.Log.Stderr)
+	}
+
+	return util.LastLine(&t.Log.Stdout)
 }

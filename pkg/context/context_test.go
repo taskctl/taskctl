@@ -2,9 +2,10 @@ package context
 
 import (
 	"context"
+	"testing"
+
 	"github.com/taskctl/taskctl/pkg/builder"
 	"github.com/taskctl/taskctl/pkg/util"
-	"testing"
 )
 
 func TestContext_BuildContext(t *testing.T) {
