@@ -3,9 +3,10 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/taskctl/taskctl/pkg/output"
 	"io/ioutil"
 	"strings"
+
+	"github.com/taskctl/taskctl/pkg/output"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -37,7 +38,7 @@ func NewRootCommand() *cobra.Command {
 	taskctlCmd = &cobra.Command{
 		Use:               "taskctl",
 		Short:             "Taskctl the task runner",
-		Version:           "0.5.1",
+		Version:           "0.6.0",
 		DisableAutoGenTag: true,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			logrus.SetFormatter(&logrus.TextFormatter{
