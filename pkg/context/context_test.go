@@ -2,6 +2,7 @@ package context
 
 import (
 	"context"
+	"github.com/taskctl/taskctl/internal/config"
 	"testing"
 
 	"github.com/taskctl/taskctl/pkg/builder"
@@ -9,7 +10,7 @@ import (
 )
 
 func TestContext_BuildContext(t *testing.T) {
-	wcfg := &builder.TaskctlConfigDefinition{
+	wcfg := &config.Config{
 		Docker: util.Executable{
 			Bin: "/opt/docker",
 		},
