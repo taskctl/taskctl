@@ -28,7 +28,7 @@ Beside pipelines, each single task can be performed manually or triggered by bui
 - customizable output
 - and many more...
 
-[![asciicast](https://asciinema.org/a/292379.svg)](https://asciinema.org/a/292379)
+[![asciicast](https://asciinema.org/a/304339.svg)](https://asciinema.org/a/304339)
 
 ## Contents  
 - [Getting started](#getting-started)
