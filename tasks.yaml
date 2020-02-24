@@ -25,16 +25,6 @@ pipelines:
     - task: govet
       depends_on: golint
 
-  wait:
-    - task: golint
-#    - task: wait
-#      name: wait1
-#    - task: wait
-#      name: wait2
-#    - task: wait
-#      name: wait3
-#      depends_on: wait2
-
 tasks:
   test:
     command:
@@ -72,7 +62,3 @@ tasks:
   goimports:
     command:
       - goimports -local github.com/taskctl/taskctl -w -format-only ./pkg ./internal ./cmd
-
-  wait:
-    command:
-      - sleep 10

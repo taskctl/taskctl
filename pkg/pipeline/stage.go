@@ -22,6 +22,7 @@ type Stage struct {
 	Pipeline     *Pipeline
 	DependsOn    []string
 	Env          map[string]string
+	Dir          string
 	AllowFailure bool
 	Status       int32
 

@@ -55,7 +55,12 @@ func BuildPipeline(stages []*builder.StageDefinition, pipelines map[string][]*bu
 			Pipeline:     stagePipeline,
 			DependsOn:    def.DependsOn,
 			Env:          def.Env,
+			Dir:          def.Dir,
 			AllowFailure: def.AllowFailure,
+		}
+
+		if stage.Dir != "" {
+			stage.Task.Dir = stage.Dir
 		}
 
 		if stage.Name == "" {

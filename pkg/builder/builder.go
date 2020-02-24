@@ -26,6 +26,7 @@ type StageDefinition struct {
 	DependsOn    []string `mapstructure:"depends_on"`
 	Env          map[string]string
 	AllowFailure bool `mapstructure:"allow_failure"`
+	Dir          string
 }
 
 type TaskDefinition struct {

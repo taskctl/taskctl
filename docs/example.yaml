@@ -1,6 +1,7 @@
 pipelines:
   pipeline1:
     - task: task1
+      dir: /tmp
 
     - name: some-stage-name
       task: task2
@@ -181,3 +182,4 @@ ssh:
   args: [arg1, arg2]
 
 debug: true # debug enabled by default. To disable run with "--debug=false"
+output: cockpit # raw, formatted, cockpit
