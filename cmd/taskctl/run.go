@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/taskctl/taskctl/internal/config"
-	"github.com/taskctl/taskctl/pkg/output"
 	"sort"
 	"strings"
+
+	"github.com/taskctl/taskctl/internal/config"
+	"github.com/taskctl/taskctl/pkg/output"
 
 	"github.com/logrusorgru/aurora"
 	"github.com/sirupsen/logrus"

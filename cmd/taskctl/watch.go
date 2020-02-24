@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
+	"sync"
+
 	"github.com/taskctl/taskctl/pkg/output"
 	"github.com/taskctl/taskctl/pkg/runner"
-	"sync"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"

@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/taskctl/taskctl/pkg/output"
 	"os/exec"
 	"time"
+
+	"github.com/taskctl/taskctl/pkg/output"
 
 	"github.com/sirupsen/logrus"
 

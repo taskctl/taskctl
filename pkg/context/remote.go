@@ -3,8 +3,9 @@ package context
 import (
 	"context"
 	"fmt"
-	"github.com/taskctl/taskctl/internal/config"
 	"os/exec"
+
+	"github.com/taskctl/taskctl/internal/config"
 
 	"github.com/taskctl/taskctl/pkg/builder"
 	"github.com/taskctl/taskctl/pkg/util"

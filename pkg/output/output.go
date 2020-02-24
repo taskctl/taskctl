@@ -3,11 +3,13 @@ package output
 import (
 	"bufio"
 	"errors"
-	"github.com/sirupsen/logrus"
-	"github.com/taskctl/taskctl/pkg/task"
 	"io"
 	"os"
 	"sync"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/taskctl/taskctl/pkg/task"
 )
 
 const (

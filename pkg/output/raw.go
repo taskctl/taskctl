@@ -2,9 +2,10 @@ package output
 
 import (
 	"fmt"
-	"github.com/taskctl/taskctl/pkg/task"
 	"io"
 	"io/ioutil"
+
+	"github.com/taskctl/taskctl/pkg/task"
 )
 
 type RawOutputDecorator struct {

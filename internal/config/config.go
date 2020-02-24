@@ -1,11 +1,13 @@
 package config
 
 import (
+	"io"
+
 	"github.com/imdario/mergo"
 	"github.com/sirupsen/logrus"
+
 	"github.com/taskctl/taskctl/pkg/output"
 	"github.com/taskctl/taskctl/pkg/util"
-	"io"
 
 	"github.com/taskctl/taskctl/pkg/builder"
 )

@@ -2,8 +2,9 @@ package context
 
 import (
 	"context"
-	"github.com/taskctl/taskctl/internal/config"
 	"testing"
+
+	"github.com/taskctl/taskctl/internal/config"
 
 	"github.com/taskctl/taskctl/pkg/builder"
 	"github.com/taskctl/taskctl/pkg/util"

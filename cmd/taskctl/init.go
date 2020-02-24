@@ -3,10 +3,11 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/taskctl/taskctl/internal/config"
 	"os"
 	"path/filepath"
 	"text/template"
+
+	"github.com/taskctl/taskctl/internal/config"
 
 	"github.com/logrusorgru/aurora"
 	"github.com/manifoldco/promptui"

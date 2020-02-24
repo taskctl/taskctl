@@ -2,15 +2,17 @@ package output
 
 import (
 	"fmt"
-	"github.com/briandowns/spinner"
-	"github.com/logrusorgru/aurora"
-	"github.com/taskctl/taskctl/pkg/task"
 	"io"
 	"io/ioutil"
 	"sort"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/briandowns/spinner"
+	"github.com/logrusorgru/aurora"
+
+	"github.com/taskctl/taskctl/pkg/task"
 )
 
 type CockpitOutputDecorator struct {
