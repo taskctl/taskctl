@@ -166,7 +166,7 @@ func printSummary(p *pipeline.Pipeline) {
 	}
 
 	sort.Slice(stages, func(i, j int) bool {
-		return stages[j].Task.Start.Nanosecond() > stages[i].Task.Start.Nanosecond()
+		return stages[j].Start.Nanosecond() > stages[i].Start.Nanosecond()
 	})
 
 	fmt.Fprintln(output.Stdout, aurora.Bold("\r\nSummary:").String())
