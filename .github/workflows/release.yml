@@ -39,12 +39,12 @@ jobs:
         tar cvf - bin/taskctl_linux_386 | gzip -n > bin/taskctl-linux-386.tar.gz
         tar cvf - bin/taskctl_windows_386 | gzip -n > bin/taskctl-windows-386.tar.gz
 
-        sha256sum bin/taskctl-linux-amd64.tar.gz >> bin/checksums.txt
-        sha256sum bin/taskctl-windows-amd64.tar.gz >> bin/checksums.txt
-        sha256sum bin/taskctl-darwin-amd64.tar.gz >> bin/checksums.txt
+        openssl dgst -sha256 -r bin/taskctl-linux-amd64.tar.gz >> bin/checksums.txt
+        openssl dgst -sha256 -r bin/taskctl-windows-amd64.tar.gz >> bin/checksums.txt
+        openssl dgst -sha256 -r bin/taskctl-darwin-amd64.tar.gz >> bin/checksums.txt
 
-        sha256sum bin/taskctl-linux-386.tar.gz >> bin/checksums.txt
-        sha256sum bin/taskctl-windows-386.tar.gz >> bin/checksums.txt
+        openssl dgst -sha256 -r bin/taskctl-linux-386.tar.gz >> bin/checksums.txt
+        openssl dgst -sha256 -r bin/taskctl-windows-386.tar.gz >> bin/checksums.txt
       env:
         GOFLAGS: -ldflags=-s -ldflags=-w
 
