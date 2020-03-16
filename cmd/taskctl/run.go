@@ -170,13 +170,18 @@ func printSummary(p *pipeline.Pipeline) {
 	})
 
 	fmt.Fprintln(output.Stdout, aurora.Bold("\r\nSummary:").String())
+
+	var log string
 	for _, stage := range stages {
 		switch stage.ReadStatus() {
 		case pipeline.StatusDone:
 			fmt.Fprintln(output.Stdout, aurora.Sprintf(aurora.Green("- Stage %s done in %s"), stage.Name, stage.Duration()))
 		case pipeline.StatusError:
+			log = strings.TrimSpace(stage.Task.Error())
 			fmt.Fprintln(output.Stdout, aurora.Sprintf(aurora.Red("- Stage %s failed in %s"), stage.Name, stage.Duration()))
-			fmt.Fprintln(output.Stdout, aurora.Sprintf(aurora.Red("  Log: %s"), stage.Task.Error()))
+			if log != "" {
+				fmt.Fprintln(output.Stdout, aurora.Sprintf(aurora.Red("  > %s"), log))
+			}
 		case pipeline.StatusCanceled:
 			fmt.Fprintln(output.Stdout, aurora.Sprintf(aurora.Gray(12, "- Stage %s is cancelled"), stage.Name))
 		case pipeline.StatusWaiting:

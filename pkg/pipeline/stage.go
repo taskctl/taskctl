@@ -41,3 +41,10 @@ func (s *Stage) ReadStatus() int32 {
 func (s *Stage) Duration() time.Duration {
 	return s.End.Sub(s.Start)
 }
+
+func (s *Stage) SetEnvVariable(name, value string) {
+	if s.Env == nil {
+		s.Env = make(map[string]string)
+	}
+	s.Env[name] = value
+}

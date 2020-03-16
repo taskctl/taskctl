@@ -1,9 +1,15 @@
 package task
 
-import "bytes"
+import (
+	"bytes"
+)
 
 type log struct {
 	buf bytes.Buffer
+}
+
+func (l *log) String() string {
+	return l.buf.String()
 }
 
 func (l *log) Write(p []byte) (int, error) {

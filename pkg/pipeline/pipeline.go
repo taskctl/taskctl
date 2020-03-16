@@ -3,10 +3,10 @@ package pipeline
 import (
 	"errors"
 	"fmt"
-
 	"github.com/taskctl/taskctl/pkg/builder"
 	"github.com/taskctl/taskctl/pkg/task"
-	"github.com/taskctl/taskctl/pkg/util"
+	"regexp"
+	"strings"
 )
 
 type Pipeline struct {
@@ -20,7 +20,6 @@ type Pipeline struct {
 
 func BuildPipeline(stages []*builder.StageDefinition, pipelines map[string][]*builder.StageDefinition, tasks map[string]*builder.TaskDefinition) (p *Pipeline, err error) {
 	p = &Pipeline{
-		Env:   make(map[string][]string),
 		nodes: make(map[string]*Stage),
 		from:  make(map[string][]string),
 		to:    make(map[string][]string),
@@ -89,9 +88,6 @@ func BuildPipeline(stages []*builder.StageDefinition, pipelines map[string][]*bu
 				return nil, err
 			}
 		}
-
-		p.Env[stage.Name] = util.ConvertEnv(stage.Env)
-
 	}
 
 	return p, nil
@@ -151,4 +147,17 @@ func (p *Pipeline) cycleDfs(t string, visited map[string]bool) error {
 
 func (p *Pipeline) Error() error {
 	return p.error
+}
+
+func (p *Pipeline) ProvideOutput(s *Stage) error {
+	for _, dep := range s.DependsOn {
+		n, err := p.Node(dep)
+		if err != nil {
+			return err
+		}
+		vname := regexp.MustCompile("[^a-zA-Z0-9_]").ReplaceAllString(dep, "_")
+		s.SetEnvVariable(fmt.Sprintf("%s_OUTPUT", strings.ToUpper(vname)), n.Task.Log.Stdout.String())
+	}
+
+	return nil
 }

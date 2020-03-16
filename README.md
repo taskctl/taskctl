@@ -26,6 +26,7 @@ Beside pipelines, each single task can be performed manually or triggered by bui
 - customizable contexts for each task
 - human-readable configuration format (YAML, JSON or TOML)
 - customizable output
+- output capturing
 - and many more...
 
 [![asciicast](https://asciinema.org/a/304339.svg)](https://asciinema.org/a/304339)
@@ -38,6 +39,7 @@ Beside pipelines, each single task can be performed manually or triggered by bui
 - [Contexts](#contexts)
 - [Config example](#examples)
 - [FAQ](#faq)
+  - [How to store task output to variable?](#how-to-store-task-output-to-variable)
   - [Where does global config stored?](#where-does-global-config-stored)
   - [How does it differ from go-task/task?](#how-does-it-differ-from-go-tasktask)
 - [Autocomplete](#autocomplete)
@@ -236,6 +238,11 @@ tasks:
 ```
 
 ## FAQ
+### How to store task output to variable?
+Task output is automatically stored to the variable named like this - ``TASK_NAME_OUTPUT``, where `TASK_NAME` is the actual task's name.
+All characters except letters, digits, and the `_` would be replaced by `_`.
+Those variables would be added to the next stage.
+
 ### Where does global config stored?
 It is stored in ``$HOME/.taskctl/config.yaml`` file
 

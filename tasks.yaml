@@ -1,4 +1,9 @@
 pipelines:
+  test1:
+    - task: test1:task
+    - task: test2:task
+      depends_on: [test1:task]
+
   build:
     - name: Build "darwin"
       task: build
@@ -26,6 +31,14 @@ pipelines:
       depends_on: golint
 
 tasks:
+  test1:task:
+    command:
+      - ls /tmp
+
+  test2:task:
+    command:
+      - env
+
   test:
     command:
       - go test ./...

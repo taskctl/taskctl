@@ -1,7 +1,7 @@
 package scheduler
 
 import (
-	"fmt"
+	"github.com/taskctl/taskctl/pkg/util"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -48,7 +48,7 @@ func (s *PipelineScheduler) Schedule(p *pipeline.Pipeline) error {
 				continue
 			}
 
-			if !s.checkStatus(p, stage) {
+			if !checkStatus(p, stage) {
 				continue
 			}
 
@@ -59,23 +59,31 @@ func (s *PipelineScheduler) Schedule(p *pipeline.Pipeline) error {
 					stage.End = time.Now()
 					wg.Done()
 				}()
+
 				stage.Start = time.Now()
-				var err error
+
+				err := p.ProvideOutput(stage)
+				if err != nil {
+					logrus.Error(err)
+				}
+
 				if stage.Pipeline != nil {
 					err = s.Schedule(stage.Pipeline)
-					fmt.Print("test")
 				} else {
-					err = s.taskRunner.RunWithEnv(stage.Task, p.Env[stage.Name])
+					err = s.taskRunner.RunWithEnv(stage.Task, util.ConvertEnv(stage.Env))
 				}
+
 				if err != nil {
 					logrus.Error(err)
 					stage.UpdateStatus(pipeline.StatusError)
 					if !stage.AllowFailure {
 						s.Cancel()
 					}
-				} else {
-					stage.UpdateStatus(pipeline.StatusDone)
+
+					return
 				}
+
+				stage.UpdateStatus(pipeline.StatusDone)
 			}(stage)
 		}
 
@@ -115,7 +123,7 @@ func (s *PipelineScheduler) Finish() {
 	s.taskRunner.Finish()
 }
 
-func (s *PipelineScheduler) checkStatus(p *pipeline.Pipeline, stage *pipeline.Stage) (ready bool) {
+func checkStatus(p *pipeline.Pipeline, stage *pipeline.Stage) (ready bool) {
 	ready = true
 	for _, dep := range p.To(stage.Name) {
 		depStage, err := p.Node(dep)
