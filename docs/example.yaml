@@ -36,6 +36,7 @@ tasks:
     timeout: 10s
     before: mkdir some-dir
     after: rm -rf some-dir
+    exportAs: TASK1_STORED_OUTPUT
 
   task2:
     context: docker-context-name
@@ -48,6 +49,7 @@ tasks:
     context: docker-compose-context-name # local is default context
     command:
       - echo "Hello from container created by docker-compose"
+      - echo ${TASK1_STORED_OUTPUT}
     env:
       VAR_NAME: VAR_VALUE
 

@@ -28,6 +28,8 @@ type Task struct {
 	Start time.Time
 	End   time.Time
 
+	ExportAs string
+
 	Stdout io.ReadCloser
 	Stderr io.ReadCloser
 
@@ -50,6 +52,7 @@ func BuildTask(def *builder.TaskDefinition) *Task {
 		Timeout:      def.Timeout,
 		AllowFailure: def.AllowFailure,
 		After:        def.After,
+		ExportAs:     def.ExportAs,
 	}
 
 	t.Context = def.Context

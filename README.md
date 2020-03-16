@@ -116,6 +116,7 @@ Task definition takes following parameters:
 - ``timeout`` - command execution timeout (optional)
 - ``allow_failure`` - if set to ``true`` failed commands will no interrupt task execution. ``false`` by default
 - ``after`` - command that will be executed after command completes
+- ``exportAs`` - output variable name. ``TASK_NAME_OUTPUT`` by default
 
 ### Task variations
 Every task may run one or more variations. It allows to reuse task with different env variables:
@@ -240,7 +241,8 @@ tasks:
 ## FAQ
 ### How to store task output to variable?
 Task output is automatically stored to the variable named like this - ``TASK_NAME_OUTPUT``, where `TASK_NAME` is the actual task's name.
-All characters except letters, digits, and the `_` would be replaced by `_`.
+Variable name can be changed by `exportAs` parameter.
+All characters except letters, digits and the `_` would be replaced by `_`.
 Those variables would be added to the next stage.
 
 ### Where does global config stored?

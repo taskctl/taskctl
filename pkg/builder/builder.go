@@ -40,6 +40,7 @@ type TaskDefinition struct {
 	Dir          string
 	Timeout      *time.Duration `yaml:",omitempty"`
 	AllowFailure bool           `mapstructure:"allow_failure"`
+	ExportAs     string
 }
 
 type WatcherDefinition struct {
