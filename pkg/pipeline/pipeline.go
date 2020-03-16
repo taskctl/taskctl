@@ -156,13 +156,13 @@ func (p *Pipeline) ProvideOutput(s *Stage) error {
 			return err
 		}
 
-		exportAs := dep
-		if n.Task.ExportAs != "" {
-			exportAs = n.Task.ExportAs
+		exportAs := n.Task.ExportAs
+		if exportAs == "" {
+			exportAs = fmt.Sprintf("%s_OUTPUT", strings.ToUpper(dep))
 		}
 
 		exportAs = regexp.MustCompile("[^a-zA-Z0-9_]").ReplaceAllString(exportAs, "_")
-		s.SetEnvVariable(fmt.Sprintf("%s_OUTPUT", strings.ToUpper(exportAs)), n.Task.Log.Stdout.String())
+		s.SetEnvVariable(exportAs, n.Task.Log.Stdout.String())
 	}
 
 	return nil

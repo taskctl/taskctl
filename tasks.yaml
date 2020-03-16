@@ -34,6 +34,7 @@ tasks:
   test1:task:
     command:
       - ls /tmp
+    exportAs: VAR_BY_1
 
   test2:task:
     command:
