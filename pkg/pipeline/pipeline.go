@@ -156,6 +156,10 @@ func (p *Pipeline) ProvideOutput(s *Stage) error {
 			return err
 		}
 
+		if n.Task == nil {
+			continue
+		}
+
 		exportAs := n.Task.ExportAs
 		if exportAs == "" {
 			exportAs = fmt.Sprintf("%s_OUTPUT", strings.ToUpper(dep))
