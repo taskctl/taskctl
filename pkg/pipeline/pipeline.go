@@ -3,10 +3,11 @@ package pipeline
 import (
 	"errors"
 	"fmt"
-	"github.com/taskctl/taskctl/pkg/builder"
-	"github.com/taskctl/taskctl/pkg/task"
 	"regexp"
 	"strings"
+
+	"github.com/taskctl/taskctl/pkg/builder"
+	"github.com/taskctl/taskctl/pkg/task"
 )
 
 type Pipeline struct {

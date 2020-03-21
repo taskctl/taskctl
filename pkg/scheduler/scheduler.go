@@ -1,10 +1,11 @@
 package scheduler
 
 import (
-	"github.com/taskctl/taskctl/pkg/util"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/taskctl/taskctl/pkg/util"
 
 	"github.com/sirupsen/logrus"
 

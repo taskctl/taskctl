@@ -20,6 +20,14 @@ builds:
 checksum:
   name_template: checksums.txt
 
+snapcrafts:
+  - name: taskctl
+    publish: false
+    summary: Software to create fast and easy drum rolls.
+    description: This is the best drum roll application out there. Install it and awe!
+    confinement: devmode
+    grade: devel
+
 changelog:
   sort: asc
   filters:

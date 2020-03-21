@@ -11,14 +11,11 @@ pipelines:
         GOOS: linux
         BIN_OUT: bin/taskctl_linux_amd64
 
-  release:
-    - task: goimports
+  prepare:
     - task: test
-      depends_on: goimports
-    - task: update-cmd-version
+    - task: goimports
       depends_on: test
-    - task: push-tag
-      depends_on: update-cmd-version
+    - pipeline: lints
 
   lints:
     - task: golint
@@ -38,18 +35,6 @@ tasks:
       - GOOS: darwin
       - GOOS: windows
 
-  update-cmd-version:
-    command:
-      - sed -i '' '/Version:/s/".*"/"'${ARGS}'"/' cmd/taskctl/cmd.go
-      - git add cmd/taskctl/cmd.go
-
-  push-tag:
-    command:
-      - git commit -m "Release ${ARGS}"
-      - git tag ${ARGS}
-      - git push origin master
-      - git push origin ${ARGS}
-
   golint:
     command:
       - golint $(go list ./... | grep -v /vendor/)
@@ -62,3 +47,7 @@ tasks:
   goimports:
     command:
       - goimports -local github.com/taskctl/taskctl -w -format-only ./pkg ./internal ./cmd
+
+  goreleaser:
+    command:
+      - goreleaser --debug --rm-dist
