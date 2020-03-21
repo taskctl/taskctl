@@ -51,3 +51,12 @@ dockers:
       - "docker.io/taskctl/taskctl:latest"
       - "docker.io/taskctl/taskctl:{{ .Tag }}"
     skip_push: auto
+
+scoop:
+  bucket:
+    owner: taskctl
+    name: scoop-taskctl
+  commit_author:
+    name: Yevhen Terentiev
+    email: yevhen.terentiev@gmail.com
+  homepage: https://github.com/taskctl/taskctl
