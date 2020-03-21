@@ -1,14 +1,25 @@
 before:
   hooks:
     - go mod download
+
 builds:
-- env:
+- main: ./cmd/taskctl
+  env:
   - CGO_ENABLED=0
+  goos:
+    - darwin
+    - linux
+    - windows
+  goarch:
+    - 386
+    - amd64
   ignore:
       - goos: darwin
         goarch: 386
+
 checksum:
-  name_template: 'checksums.txt'
+  name_template: checksums.txt
+
 changelog:
   sort: asc
   filters:
@@ -16,14 +27,13 @@ changelog:
     - '^docs:'
     - '^test:'
 
-snapcrafts:
-  - summary: taskctl - developer's routine tasks automation toolkit. Simple modern alternative to GNU Make 🧰
+dist: bin
 
 brews:
   - github:
       owner: taskctl
       name: homebrew-taskctl
-
     commit_author:
       name: Yevhen Terentiev
       email: yevhen.terentiev@gmail.com
+    homepage: https://github.com/taskctl/taskctl
