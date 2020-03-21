@@ -33,12 +33,14 @@ var cancel = make(chan struct{})
 var done = make(chan bool)
 var cl config.ConfigLoader
 
+var version = "dev"
+
 func NewRootCommand() *cobra.Command {
 	cfg := config.Get()
 	taskctlCmd = &cobra.Command{
 		Use:               "taskctl",
 		Short:             "Taskctl the task runner",
-		Version:           "0.6.1",
+		Version:           version,
 		DisableAutoGenTag: true,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			logrus.SetFormatter(&logrus.TextFormatter{
