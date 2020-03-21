@@ -17,8 +17,17 @@ builds:
       - goos: darwin
         goarch: 386
 
+dist: bin
+
 checksum:
   name_template: checksums.txt
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
 
 snapcrafts:
   - name: taskctl
@@ -28,15 +37,6 @@ snapcrafts:
     confinement: devmode
     grade: devel
 
-changelog:
-  sort: asc
-  filters:
-    exclude:
-    - '^docs:'
-    - '^test:'
-
-dist: bin
-
 brews:
   - github:
       owner: taskctl
@@ -45,3 +45,9 @@ brews:
       name: Yevhen Terentiev
       email: yevhen.terentiev@gmail.com
     homepage: https://github.com/taskctl/taskctl
+
+dockers:
+  - image_templates:
+      - "docker.io/taskctl/taskctl:latest"
+      - "docker.io/taskctl/taskctl:{{ .Tag }}"
+    skip_push: auto
