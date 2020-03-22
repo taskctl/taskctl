@@ -71,13 +71,15 @@ go get -u github.com/taskctl/taskctl/cmd/taskctl
 ## Usage
 ### Run pipeline
 ```
-taskctl run pipeline1 // single pipeline
-taskctl run pipeline1 pipeline2 // multiple pipelines
+taskctl pipeline1 // single pipeline
+taskctl pipeline1 pipeline2 // multiple pipelines
+taskctl run pipeline1 // single pipeline, long form
 ```
 ### Run task
 ```
-taskctl run task1 // single task
-taskctl run task1 task2 // multiple tasks
+taskctl task1 // single task
+taskctl task1 task2 // multiple tasks
+taskctl run task task1 // multiple tasks, long form
 ```
 ### Start filesystem watcher
 ```

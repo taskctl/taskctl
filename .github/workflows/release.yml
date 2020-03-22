@@ -18,7 +18,8 @@ jobs:
         with:
           snapcraft_token: ${{ secrets.SNAPCRAFT_TOKEN }}
 
-      - uses: azure/docker-login@v1
+      - name: Docker login
+        uses: azure/docker-login@v1
         with:
           login-server: 'https://index.docker.io/v1/'
           username: ${{ secrets.DOCKER_HUB_USERNAME }}

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/taskctl/taskctl/pkg/output"
@@ -18,7 +19,7 @@ import (
 	"github.com/taskctl/taskctl/pkg/task"
 )
 
-var taskctlCmd *cobra.Command
+var rootCmd *cobra.Command
 
 var debug, quiet bool
 var configFile, oflavor string
@@ -37,7 +38,7 @@ var version = "dev"
 
 func NewRootCommand() *cobra.Command {
 	cfg := config.Get()
-	taskctlCmd = &cobra.Command{
+	rootCmd = &cobra.Command{
 		Use:               "taskctl",
 		Short:             "Taskctl the task runner",
 		Version:           version,
@@ -69,21 +70,21 @@ func NewRootCommand() *cobra.Command {
 		},
 	}
 
-	taskctlCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", cfg.Debug, "enable debug")
-	taskctlCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "config file to use (tasks.yaml or taskctl.yaml by default)")
-	taskctlCmd.PersistentFlags().StringVarP(&oflavor, "output", "o", cfg.Output, "output flavour")
-	taskctlCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "quite mode")
-	taskctlCmd.PersistentFlags().StringSliceVar(&configValues, "set", make([]string, 0), "override config value")
+	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", cfg.Debug, "enable debug")
+	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "config file to use (tasks.yaml or taskctl.yaml by default)")
+	rootCmd.PersistentFlags().StringVarP(&oflavor, "output", "o", cfg.Output, "output flavour")
+	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "quite mode")
+	rootCmd.PersistentFlags().StringSliceVar(&configValues, "set", make([]string, 0), "override config value")
 
-	taskctlCmd.AddCommand(NewListCommand())
-	taskctlCmd.AddCommand(NewRunCommand())
-	taskctlCmd.AddCommand(NewWatchCommand())
-	taskctlCmd.AddCommand(NewInitCommand())
-	taskctlCmd.AddCommand(NewShowCommand())
+	rootCmd.AddCommand(NewListCommand())
+	rootCmd.AddCommand(NewRunCommand())
+	rootCmd.AddCommand(NewWatchCommand())
+	rootCmd.AddCommand(NewInitCommand())
+	rootCmd.AddCommand(NewShowCommand())
 
-	taskctlCmd.AddCommand(NewAutocompleteCommand(taskctlCmd))
+	rootCmd.AddCommand(NewAutocompleteCommand(rootCmd))
 
-	return taskctlCmd
+	return rootCmd
 }
 
 func Execute() error {
@@ -94,6 +95,19 @@ func Execute() error {
 	}
 
 	cmd := NewRootCommand()
+
+	var matchedCmd bool
+	for _, v := range cmd.Commands() {
+		if v.Name() == os.Args[1] {
+			matchedCmd = true
+			break
+		}
+	}
+
+	if !matchedCmd {
+		os.Args = append([]string{os.Args[0], "run"}, os.Args[1:]...)
+	}
+
 	return cmd.Execute()
 }
 

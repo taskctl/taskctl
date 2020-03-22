@@ -27,6 +27,9 @@ func NewRunCommand() *cobra.Command {
 		Use:   "run (PIPELINE1 OR TASK1) [PIPELINE2 OR TASK2]... [flags] [-- TASKS_ARGS]",
 		Short: "Run pipeline or task",
 		Args:  cobra.MinimumNArgs(1),
+		Example: "  taskctl run pipeline1\n" +
+			"  taskctl pipeline1\n" +
+			"  taskctl task1",
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			_, err = loadConfig()
 			if err != nil {
