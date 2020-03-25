@@ -120,6 +120,19 @@ Task definition takes following parameters:
 - ``after`` - command that will be executed after command completes
 - ``exportAs`` - output variable name. ``TASK_NAME_OUTPUT`` by default
 
+### Task variables
+Each task has set of predefined variables these can be used inside task params.
+- ``Root`` - config file directory
+
+Variables can be used inside task definition. For example:
+```
+tasks:
+    lint:
+        dir: "{{ .Root }}/some-dir"
+        command:
+          - "echo {{ .Name }}"
+```
+
 ### Task variations
 Every task may run one or more variations. It allows to reuse task with different env variables:
 ```yaml

@@ -17,8 +17,9 @@ import (
 )
 
 type TaskRunner struct {
-	contexts map[string]*taskctx.ExecutionContext
-	env      []string
+	variables map[string]string
+	contexts  map[string]*taskctx.ExecutionContext
+	env       []string
 
 	ctx        context.Context
 	cancel     context.CancelFunc
@@ -26,11 +27,12 @@ type TaskRunner struct {
 	taskOutput *output.TaskOutput
 }
 
-func NewTaskRunner(contexts map[string]*taskctx.ExecutionContext, env []string, outputFlavor string, dryRun bool) (*TaskRunner, error) {
+func NewTaskRunner(contexts map[string]*taskctx.ExecutionContext, env []string, outputFlavor string, dryRun bool, variables map[string]string) (*TaskRunner, error) {
 	r := &TaskRunner{
-		contexts: contexts,
-		env:      env,
-		dryRun:   dryRun,
+		contexts:  contexts,
+		env:       env,
+		dryRun:    dryRun,
+		variables: variables,
 	}
 
 	var err error
@@ -131,7 +133,7 @@ func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
 	return nil
 }
 
-func (r *TaskRunner) runCommand(t *task.Task, cmd *exec.Cmd) error {
+func (r *TaskRunner) runCommand(t *task.Task, cmd *exec.Cmd) (err error) {
 	var done = make(chan struct{})
 	var killed = make(chan struct{})
 	go r.waitForInterruption(*cmd, done, killed)
@@ -143,6 +145,11 @@ func (r *TaskRunner) runCommand(t *task.Task, cmd *exec.Cmd) error {
 
 	if t.Dir != "" {
 		cmd.Dir = t.Dir
+	}
+
+	cmd.Dir, err = t.Interpolate(cmd.Dir, r.variables)
+	if err != nil {
+		return err
 	}
 
 	stdout, err := cmd.StdoutPipe()

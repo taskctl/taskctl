@@ -21,7 +21,7 @@ import (
 
 var rootCmd *cobra.Command
 
-var debug, quiet bool
+var debug, quiet, raw bool
 var configFile, oflavor string
 var configValues []string
 
@@ -72,9 +72,19 @@ func NewRootCommand() *cobra.Command {
 
 	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", cfg.Debug, "enable debug")
 	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "config file to use (tasks.yaml or taskctl.yaml by default)")
-	rootCmd.PersistentFlags().StringVarP(&oflavor, "output", "o", cfg.Output, "output flavour")
+	rootCmd.PersistentFlags().StringVarP(&oflavor, "output", "o", "", "output flavour")
+	rootCmd.PersistentFlags().BoolVar(&raw, "raw", false, "shortcut for --output=raw")
 	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "quite mode")
 	rootCmd.PersistentFlags().StringSliceVar(&configValues, "set", make([]string, 0), "override config value")
+
+	if oflavor == "" {
+		if raw {
+			oflavor = output.FlavorRaw
+		} else {
+			oflavor = cfg.Output
+		}
+
+	}
 
 	rootCmd.AddCommand(NewListCommand())
 	rootCmd.AddCommand(NewRunCommand())
@@ -96,9 +106,10 @@ func Execute() error {
 
 	cmd := NewRootCommand()
 
+	var reqCmd = readCommandFromArgs()
 	var matchedCmd bool
 	for _, v := range cmd.Commands() {
-		if v.Name() == os.Args[1] {
+		if v.Name() == reqCmd {
 			matchedCmd = true
 			break
 		}
@@ -114,6 +125,16 @@ func Execute() error {
 func Abort() {
 	close(cancel)
 	<-done
+}
+
+func readCommandFromArgs() string {
+	for _, v := range os.Args[1:] {
+		if !strings.HasPrefix(v, "-") {
+			return v
+		}
+	}
+
+	return ""
 }
 
 func loadConfig() (cfg *config.Config, err error) {
@@ -147,10 +168,6 @@ func loadConfig() (cfg *config.Config, err error) {
 		if err != nil {
 			return nil, fmt.Errorf("watcher %s build failed: %v", name, err)
 		}
-	}
-
-	for k, v := range configValues {
-		fmt.Println(k, v)
 	}
 
 	return cfg, nil

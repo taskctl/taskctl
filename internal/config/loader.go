@@ -86,6 +86,7 @@ func (cl *ConfigLoader) Load(file string) (*Config, error) {
 		return nil, err
 	}
 	values.init()
+	values.Variables["Root"] = cl.dir
 
 	logrus.Debugf("config %s loaded", file)
 	return values, nil
@@ -285,6 +286,7 @@ func (cl *ConfigLoader) resolveDefaultConfigFile() (file string, err error) {
 		for _, v := range DefaultFileNames {
 			file := filepath.Join(dir, v)
 			if util.FileExists(file) {
+				cl.dir = dir
 				return file, nil
 			}
 		}

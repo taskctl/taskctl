@@ -2,11 +2,13 @@ package util
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"net/url"
 	"os"
 	"reflect"
+	"text/template"
 )
 
 type Executable struct {
@@ -72,4 +74,16 @@ func LastLine(r io.Reader) (l string) {
 	}
 
 	return l
+}
+
+func RenderString(tmpl string, variables map[string]string) (string, error) {
+	var buf bytes.Buffer
+	t, err := template.New("test").Parse(tmpl)
+	if err != nil {
+		return "", err
+	}
+
+	err = t.Execute(&buf, variables)
+
+	return buf.String(), err
 }

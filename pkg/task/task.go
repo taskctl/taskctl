@@ -83,3 +83,13 @@ func (t *Task) Error() string {
 
 	return util.LastLine(&t.Log.Stdout)
 }
+
+func (t *Task) Interpolate(s string, variables map[string]string) (string, error) {
+	var vars = make(map[string]string)
+	for k, v := range variables {
+		vars[k] = v
+	}
+	vars["Name"] = t.Name
+
+	return util.RenderString(s, vars)
+}

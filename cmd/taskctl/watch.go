@@ -19,12 +19,12 @@ func NewWatchCommand() *cobra.Command {
 		Short: "Start watching for filesystem events",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			_, err = loadConfig()
+			cfg, err := loadConfig()
 			if err != nil {
 				return err
 			}
 
-			rn, err := runner.NewTaskRunner(contexts, make([]string, 0), output.FlavorFormatted, dryRun)
+			rn, err := runner.NewTaskRunner(contexts, make([]string, 0), output.FlavorFormatted, dryRun, cfg.Variables)
 
 			var wg sync.WaitGroup
 			for _, name := range args {

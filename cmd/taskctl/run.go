@@ -5,7 +5,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/taskctl/taskctl/internal/config"
 	"github.com/taskctl/taskctl/pkg/output"
 
 	"github.com/logrusorgru/aurora"
@@ -22,7 +21,6 @@ import (
 var summary, dryRun bool
 
 func NewRunCommand() *cobra.Command {
-	cfg := config.Get()
 	cmd := &cobra.Command{
 		Use:   "run (PIPELINE1 OR TASK1) [PIPELINE2 OR TASK2]... [flags] [-- TASKS_ARGS]",
 		Short: "Run pipeline or task",
@@ -31,7 +29,7 @@ func NewRunCommand() *cobra.Command {
 			"  taskctl pipeline1\n" +
 			"  taskctl task1",
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			_, err = loadConfig()
+			cfg, err := loadConfig()
 			if err != nil {
 				return err
 			}
@@ -54,7 +52,7 @@ func NewRunCommand() *cobra.Command {
 			env := util.ConvertEnv(map[string]string{
 				"ARGS": strings.Join(runArgs, " "),
 			})
-			rn, err := runner.NewTaskRunner(contexts, env, oflavor, dryRun)
+			rn, err := runner.NewTaskRunner(contexts, env, oflavor, dryRun, cfg.Variables)
 			if err != nil {
 				return err
 			}
@@ -80,7 +78,7 @@ func NewRunCommand() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().BoolVar(&dryRun, "dry-run", cfg.DryRun, "dry run")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "dry run")
 	cmd.Flags().BoolVarP(&summary, "summary", "s", true, "show summary")
 	cmd.AddCommand(NewRunTaskCommand())
 
@@ -93,7 +91,7 @@ func NewRunTaskCommand() *cobra.Command {
 		Short: "Run task",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			_, err = loadConfig()
+			cfg, err := loadConfig()
 			if err != nil {
 				return err
 			}
@@ -105,7 +103,7 @@ func NewRunTaskCommand() *cobra.Command {
 			env := util.ConvertEnv(map[string]string{
 				"ARGS": strings.Join(runArgs, " "),
 			})
-			rn, err := runner.NewTaskRunner(contexts, env, oflavor, dryRun)
+			rn, err := runner.NewTaskRunner(contexts, env, oflavor, dryRun, cfg.Variables)
 
 			for _, v := range args {
 				t, ok := tasks[v]

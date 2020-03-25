@@ -48,6 +48,8 @@ type Config struct {
 
 	Debug, DryRun bool
 	Output        string
+
+	Variables map[string]string
 }
 
 func defaultConfig() *Config {
@@ -85,5 +87,9 @@ func (c *Config) init() {
 
 	if _, ok := c.Contexts[ContextTypeLocal]; !ok {
 		c.Contexts[ContextTypeLocal] = &builder.ContextDefinition{Type: ContextTypeLocal}
+	}
+
+	if c.Variables == nil {
+		c.Variables = make(map[string]string)
 	}
 }
