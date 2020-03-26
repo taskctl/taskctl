@@ -31,9 +31,8 @@ changelog:
 
 snapcrafts:
   - name: taskctl
-    publish: false
-    summary: Software to create fast and easy drum rolls.
-    description: This is the best drum roll application out there. Install it and awe!
+    summary: taskctl
+    description: taskctl - developer's routine tasks automation toolkit. Simple modern alternative to GNU Make 🧰
     confinement: devmode
     grade: devel
 
