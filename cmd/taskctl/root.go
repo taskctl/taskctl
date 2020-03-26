@@ -79,7 +79,7 @@ func NewRootCommand() *cobra.Command {
 	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", cfg.Debug, "enable debug")
 	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "config file to use (tasks.yaml or taskctl.yaml by default)")
 	rootCmd.PersistentFlags().StringVarP(&oflavor, "output", "o", "", "output flavour")
-	rootCmd.PersistentFlags().BoolVar(&raw, "raw", false, "shortcut for --output=raw")
+	rootCmd.PersistentFlags().BoolVarP(&raw, "raw", "r", false, "shortcut for --output=raw")
 	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "quite mode")
 	rootCmd.PersistentFlags().StringSliceVar(&configValues, "set", make([]string, 0), "override config value")
 
