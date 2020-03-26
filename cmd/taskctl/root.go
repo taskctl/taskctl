@@ -61,6 +61,12 @@ func NewRootCommand() *cobra.Command {
 				output.SetStdout(ioutil.Discard)
 			}
 
+			if raw {
+				oflavor = output.FlavorRaw
+			} else if oflavor == "" {
+				oflavor = cfg.Output
+			}
+
 			for _, v := range configValues {
 				vv := strings.Split(v, "=")
 				if len(vv) == 2 {
@@ -76,15 +82,6 @@ func NewRootCommand() *cobra.Command {
 	rootCmd.PersistentFlags().BoolVar(&raw, "raw", false, "shortcut for --output=raw")
 	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "quite mode")
 	rootCmd.PersistentFlags().StringSliceVar(&configValues, "set", make([]string, 0), "override config value")
-
-	if oflavor == "" {
-		if raw {
-			oflavor = output.FlavorRaw
-		} else {
-			oflavor = cfg.Output
-		}
-
-	}
 
 	rootCmd.AddCommand(NewListCommand())
 	rootCmd.AddCommand(NewRunCommand())
@@ -106,10 +103,10 @@ func Execute() error {
 
 	cmd := NewRootCommand()
 
-	var reqCmd = readCommandFromArgs()
+	var name = readCommandName()
 	var matchedCmd bool
 	for _, v := range cmd.Commands() {
-		if v.Name() == reqCmd {
+		if v.Name() == name {
 			matchedCmd = true
 			break
 		}
@@ -127,7 +124,7 @@ func Abort() {
 	<-done
 }
 
-func readCommandFromArgs() string {
+func readCommandName() string {
 	for _, v := range os.Args[1:] {
 		if !strings.HasPrefix(v, "-") {
 			return v
