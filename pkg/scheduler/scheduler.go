@@ -14,6 +14,7 @@ import (
 )
 
 type PipelineScheduler struct {
+	variables  map[string]string
 	taskRunner *runner.TaskRunner
 	pause      time.Duration
 
@@ -71,7 +72,7 @@ func (s *PipelineScheduler) Schedule(p *pipeline.Pipeline) error {
 				if stage.Pipeline != nil {
 					err = s.Schedule(stage.Pipeline)
 				} else {
-					err = s.taskRunner.RunWithEnv(stage.Task, util.ConvertEnv(stage.Env))
+					err = s.taskRunner.RunWithVariables(stage.Task, util.ConvertEnv(stage.Env))
 				}
 
 				if err != nil {

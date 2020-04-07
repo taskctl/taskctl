@@ -154,7 +154,7 @@ func (w *Watcher) handle(event fsnotify.Event) {
 	})
 
 	logrus.Debugf("triggering %s for %s", w.task.Name, w.name)
-	err := w.r.RunWithEnv(w.task, env)
+	err := w.r.RunWithVariables(w.task, env)
 	if err != nil {
 		logrus.Error(err)
 	}

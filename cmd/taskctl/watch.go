@@ -10,7 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/taskctl/taskctl/internal/watch"
+	"github.com/taskctl/taskctl/pkg/watch"
 )
 
 func NewWatchCommand() *cobra.Command {
@@ -24,7 +24,15 @@ func NewWatchCommand() *cobra.Command {
 				return err
 			}
 
-			rn, err := runner.NewTaskRunner(contexts, make([]string, 0), output.FlavorFormatted, dryRun, cfg.Variables)
+			variables := runner.NewVariables(cfg.Variables)
+			rn, err := runner.NewTaskRunner(contexts, output.FlavorFormatted, variables)
+			if err != nil {
+				return err
+			}
+
+			if dryRun {
+				rn.DryRun()
+			}
 
 			var wg sync.WaitGroup
 			for _, name := range args {

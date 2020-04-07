@@ -15,7 +15,6 @@ import (
 	"github.com/taskctl/taskctl/pkg/runner"
 	"github.com/taskctl/taskctl/pkg/scheduler"
 	"github.com/taskctl/taskctl/pkg/task"
-	"github.com/taskctl/taskctl/pkg/util"
 )
 
 var summary, dryRun bool
@@ -49,12 +48,17 @@ func NewRunCommand() *cobra.Command {
 			if al := cmd.ArgsLenAtDash(); al > 0 {
 				runArgs = args[cmd.ArgsLenAtDash():]
 			}
-			env := util.ConvertEnv(map[string]string{
-				"ARGS": strings.Join(runArgs, " "),
-			})
-			rn, err := runner.NewTaskRunner(contexts, env, oflavor, dryRun, cfg.Variables)
+
+			variables := runner.NewVariables(cfg.Variables)
+			variables.Set("ARGS", strings.Join(runArgs, " "))
+
+			rn, err := runner.NewTaskRunner(contexts, oflavor, variables)
 			if err != nil {
 				return err
+			}
+
+			if dryRun {
+				rn.DryRun()
 			}
 
 			for _, v := range targets {
@@ -100,10 +104,17 @@ func NewRunTaskCommand() *cobra.Command {
 			if al := cmd.ArgsLenAtDash(); al > 0 {
 				runArgs = args[cmd.ArgsLenAtDash():]
 			}
-			env := util.ConvertEnv(map[string]string{
-				"ARGS": strings.Join(runArgs, " "),
-			})
-			rn, err := runner.NewTaskRunner(contexts, env, oflavor, dryRun, cfg.Variables)
+
+			variables := runner.NewVariables(cfg.Variables)
+			variables.Set("ARGS", strings.Join(runArgs, " "))
+			rn, err := runner.NewTaskRunner(contexts, oflavor, variables)
+			if err != nil {
+				return err
+			}
+
+			if dryRun {
+				rn.DryRun()
+			}
 
 			for _, v := range args {
 				t, ok := tasks[v]
