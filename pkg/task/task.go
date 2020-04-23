@@ -1,7 +1,6 @@
 package task
 
 import (
-	"io"
 	"sync/atomic"
 	"time"
 
@@ -29,9 +28,6 @@ type Task struct {
 	End   time.Time
 
 	ExportAs string
-
-	Stdout io.ReadCloser
-	Stderr io.ReadCloser
 
 	Errored bool
 	Log     struct {
@@ -65,15 +61,11 @@ func BuildTask(def *builder.TaskDefinition) *Task {
 }
 
 func (t *Task) Duration() time.Duration {
+	if t.End.IsZero() {
+		return time.Since(t.Start)
+	}
+
 	return t.End.Sub(t.Start)
-}
-
-func (t *Task) SetStdout(stdout io.ReadCloser) {
-	t.Stdout = stdout
-}
-
-func (t *Task) SetStderr(stderr io.ReadCloser) {
-	t.Stderr = stderr
 }
 
 func (t *Task) Error() string {

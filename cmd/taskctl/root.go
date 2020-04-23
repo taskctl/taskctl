@@ -103,16 +103,7 @@ func Execute() error {
 
 	cmd := NewRootCommand()
 
-	var name = readCommandName()
-	var matchedCmd bool
-	for _, v := range cmd.Commands() {
-		if v.Name() == name {
-			matchedCmd = true
-			break
-		}
-	}
-
-	if !matchedCmd {
+	if !commandMatches(cmd) {
 		os.Args = append([]string{os.Args[0], "run"}, os.Args[1:]...)
 	}
 
@@ -124,14 +115,23 @@ func Abort() {
 	<-done
 }
 
-func readCommandName() string {
+func commandMatches(cmd *cobra.Command) bool {
+	var matched bool
 	for _, v := range os.Args[1:] {
 		if !strings.HasPrefix(v, "-") {
-			return v
+			for _, w := range cmd.Commands() {
+				if v == w.Name() {
+					matched = true
+					break
+				}
+			}
+		}
+		if matched {
+			return true
 		}
 	}
 
-	return ""
+	return false
 }
 
 func loadConfig() (cfg *config.Config, err error) {

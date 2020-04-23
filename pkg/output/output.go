@@ -1,8 +1,6 @@
 package output
 
 import (
-	"bufio"
-	"errors"
 	"io"
 	"os"
 	"sync"
@@ -22,111 +20,95 @@ var Stdout io.Writer = os.Stdout
 var Stderr io.Writer = os.Stderr
 
 type DecoratedOutputWriter interface {
-	WithWriter(w io.Writer)
-	Write(t *task.Task, b []byte) error
+	Write(b []byte) (int, error)
 	WriteHeader(t *task.Task) error
 	WriteFooter(t *task.Task) error
-	Close()
 }
 
 type TaskOutput struct {
-	decorator DecoratedOutputWriter
-	progress  bool
-	spinner   bool
-	lock      sync.Mutex
+	flavor   string
+	progress bool
+	spinner  bool
+	lock     sync.Mutex
+	closeCh  chan bool
 }
 
 func NewTaskOutput(flavor string, progress bool) (*TaskOutput, error) {
-	var decorator DecoratedOutputWriter
-	switch flavor {
-	case FlavorRaw:
-		decorator = NewRawOutputWriter()
-	case FlavorFormatted:
-		decorator = NewFormattedOutputWriter()
-	case FlavorCockpit:
-		decorator = NewCockpitOutputWriter()
-	default:
-		return nil, errors.New("unknown output flavor")
-	}
-
-	decorator.WithWriter(Stdout)
 	o := &TaskOutput{
-		decorator: decorator,
-		progress:  progress,
+		flavor:   flavor,
+		progress: progress,
+		closeCh:  make(chan bool),
 	}
 
 	return o, nil
 }
 
-type wrappedWriter struct {
-	t *task.Task
-	w DecoratedOutputWriter
-}
-
-func (w wrappedWriter) Write(p []byte) (n int, err error) {
-	return len(p), w.w.Write(w.t, p)
-}
-
-func (o *TaskOutput) Stream(t *task.Task, flushed chan struct{}) {
+func (o *TaskOutput) Stream(t *task.Task, cmdStdout, cmdStderr io.ReadCloser, flushed chan struct{}) {
 	o.lock.Lock()
 
-	o.decorator.WriteHeader(t)
+	var decorator DecoratedOutputWriter
+	switch o.flavor {
+	case FlavorRaw:
+		decorator = NewRawOutputWriter(Stdout)
+	case FlavorFormatted:
+		decorator = NewFormattedOutputWriter(Stdout, t)
+	case FlavorCockpit:
+		decorator = NewCockpitOutputWriter(Stdout, o.closeCh)
+	default:
+		logrus.Error("unknown decorator requested")
+	}
+
+	decorator.WriteHeader(t)
 
 	var wg sync.WaitGroup
 	wg.Add(2)
 
 	go func(dst io.Writer) {
 		defer wg.Done()
-		err := o.stream(dst, t.Stdout)
+		err := o.pipe(dst, cmdStdout)
 		if err != nil {
 			logrus.Debug(err)
 		}
-	}(io.MultiWriter(wrappedWriter{
-		t: t,
-		w: o.decorator,
-	}, &t.Log.Stdout))
+	}(io.MultiWriter(decorator, &t.Log.Stdout))
 
 	go func(dst io.Writer) {
 		defer wg.Done()
-		err := o.stream(dst, t.Stderr)
+		err := o.pipe(dst, cmdStderr)
 		if err != nil {
 			logrus.Debug(err)
 		}
-	}(io.MultiWriter(wrappedWriter{
-		t: t,
-		w: o.decorator,
-	}, &t.Log.Stderr))
+	}(io.MultiWriter(decorator, &t.Log.Stderr))
 
 	o.lock.Unlock()
 
 	wg.Wait()
-
+	decorator.WriteFooter(t)
 	close(flushed)
 }
 
-func (o *TaskOutput) Finish(t *task.Task) {
-	o.decorator.WriteFooter(t)
-}
+func (o *TaskOutput) pipe(dst io.Writer, src io.ReadCloser) error {
+	var buf = make([]byte, 1)
+	var err error
+	for {
+		_, err = src.Read(buf)
+		if err != nil {
+			if err != io.EOF {
+				return err
+			}
+			break
+		}
 
-func (o *TaskOutput) stream(dst io.Writer, src io.ReadCloser) error {
-	scanner := bufio.NewScanner(src)
-	for scanner.Scan() {
-		b := scanner.Bytes()
-		_, err := dst.Write(b)
+		_, err = dst.Write(buf)
 		if err != nil {
 			return err
 		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		return err
 	}
 
 	return nil
 }
 
 func (o *TaskOutput) Close() {
-	o.decorator.Close()
+	close(o.closeCh)
 }
 
 func SetStdout(w io.Writer) {

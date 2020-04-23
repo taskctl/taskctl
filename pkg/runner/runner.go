@@ -50,7 +50,6 @@ func (r *TaskRunner) Run(t *task.Task) (err error) {
 }
 
 func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
-	defer r.taskOutput.Finish(t)
 	c, err := r.contextForTask(t)
 	if err != nil {
 		return errors.New("unknown context")
@@ -138,7 +137,6 @@ func (r *TaskRunner) runCommand(t *task.Task, cmd *exec.Cmd) (err error) {
 	var killed = make(chan struct{})
 	go r.waitForInterruption(*cmd, done, killed)
 
-	logrus.Debugf("Executing %s", cmd.String())
 	if r.dryRun {
 		return nil
 	}
@@ -156,17 +154,16 @@ func (r *TaskRunner) runCommand(t *task.Task, cmd *exec.Cmd) (err error) {
 	if err != nil {
 		return err
 	}
-	t.SetStdout(stdout)
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
 		return err
 	}
-	t.SetStderr(stderr)
 
 	var flushed = make(chan struct{})
-	go r.taskOutput.Stream(t, flushed)
+	go r.taskOutput.Stream(t, stdout, stderr, flushed)
 
+	logrus.Debugf("Executing %s", cmd.String())
 	err = cmd.Start()
 	if err != nil {
 		close(done)

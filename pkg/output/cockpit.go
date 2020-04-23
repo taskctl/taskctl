@@ -3,7 +3,6 @@ package output
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"sort"
 	"strings"
 	"sync"
@@ -15,37 +14,46 @@ import (
 	"github.com/taskctl/taskctl/pkg/task"
 )
 
+var cockpitDecorator *CockpitOutputDecorator
+
 type CockpitOutputDecorator struct {
 	w       io.Writer
-	tasks   map[uint32]string
+	tasks   []*task.Task
 	mu      sync.Mutex
 	spinner *spinner.Spinner
 	charSet int
+	closeCh chan bool
 }
 
-func NewCockpitOutputWriter() *CockpitOutputDecorator {
-	return &CockpitOutputDecorator{
-		charSet: 14,
-		w:       ioutil.Discard,
-		tasks:   make(map[uint32]string),
+func NewCockpitOutputWriter(w io.Writer, closeCh chan bool) *CockpitOutputDecorator {
+	if cockpitDecorator == nil {
+		cockpitDecorator = &CockpitOutputDecorator{
+			charSet: 14,
+			w:       w,
+			tasks:   make([]*task.Task, 0),
+			closeCh: closeCh,
+		}
 	}
+
+	return cockpitDecorator
 }
 
-func (d *CockpitOutputDecorator) WithWriter(w io.Writer) {
-	d.w = w
-}
-func (d *CockpitOutputDecorator) Write(t *task.Task, b []byte) error {
-	return nil
+func (d *CockpitOutputDecorator) Write(p []byte) (int, error) {
+	return len(p), nil
 }
 
 func (d *CockpitOutputDecorator) WriteHeader(t *task.Task) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	d.tasks[t.Index] = t.Name
+	d.tasks = append(d.tasks, t)
 
 	if d.spinner == nil {
 		d.spinner = d.startSpinner()
+		go func() {
+			<-d.closeCh
+			d.spinner.Stop()
+		}()
 	}
 
 	return nil
@@ -55,7 +63,11 @@ func (d *CockpitOutputDecorator) WriteFooter(t *task.Task) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	delete(d.tasks, t.Index)
+	for i := 0; i < len(d.tasks); i++ {
+		if d.tasks[i] == t {
+			d.tasks = append(d.tasks[:i], d.tasks[i+1:]...)
+		}
+	}
 
 	var mark = aurora.Green("✔")
 	if t.Errored {
@@ -73,7 +85,7 @@ func (d *CockpitOutputDecorator) startSpinner() *spinner.Spinner {
 	s.PreUpdate = func(s *spinner.Spinner) {
 		tasks := make([]string, 0)
 		for _, v := range d.tasks {
-			tasks = append(tasks, v)
+			tasks = append(tasks, v.Name)
 		}
 		sort.Strings(tasks)
 		s.Suffix = " Running: " + strings.Join(tasks, ", ")
@@ -81,8 +93,4 @@ func (d *CockpitOutputDecorator) startSpinner() *spinner.Spinner {
 	s.Start()
 
 	return s
-}
-
-func (d *CockpitOutputDecorator) Close() {
-	d.spinner.Stop()
 }

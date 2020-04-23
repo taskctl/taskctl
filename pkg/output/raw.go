@@ -2,32 +2,24 @@ package output
 
 import (
 	"fmt"
-	"io"
-	"io/ioutil"
-
 	"github.com/taskctl/taskctl/pkg/task"
+	"io"
 )
 
 type RawOutputDecorator struct {
 	w io.Writer
 }
 
-func NewRawOutputWriter() *RawOutputDecorator {
-	return &RawOutputDecorator{w: ioutil.Discard}
-}
-
-func (d *RawOutputDecorator) WithWriter(w io.Writer) {
-	d.w = w
+func NewRawOutputWriter(w io.Writer) *RawOutputDecorator {
+	return &RawOutputDecorator{w: w}
 }
 
 func (d *RawOutputDecorator) WriteHeader(t *task.Task) error {
 	return nil
 }
 
-func (d *RawOutputDecorator) Write(t *task.Task, b []byte) error {
-	_, err := fmt.Fprintln(d.w, string(b))
-
-	return err
+func (d *RawOutputDecorator) Write(b []byte) (int, error) {
+	return d.w.Write(b)
 }
 
 func (d *RawOutputDecorator) WriteFooter(t *task.Task) error {
