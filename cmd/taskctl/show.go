@@ -2,10 +2,9 @@ package main
 
 import (
 	"errors"
+	"github.com/urfave/cli/v2"
 	"os"
 	"text/template"
-
-	"github.com/spf13/cobra"
 )
 
 var showTmpl = `
@@ -27,18 +26,13 @@ var showTmpl = `
   AllowFailure: {{ .AllowFailure }}
 `
 
-func NewShowCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "show",
-		Short: "Show task",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			_, err = loadConfig()
-			if err != nil {
-				return err
-			}
-
-			t, ok := tasks[args[0]]
+func NewShowCommand() *cli.Command {
+	cmd := &cli.Command{
+		Name:      "show",
+		Usage:     "shows task's details",
+		ArgsUsage: "show (TASK)",
+		Action: func(c *cli.Context) (err error) {
+			t, ok := tasks[c.Args().First()]
 			if !ok {
 				return errors.New("unknown task")
 			}

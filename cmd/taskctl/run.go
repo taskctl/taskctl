@@ -2,15 +2,13 @@ package main
 
 import (
 	"fmt"
+	"github.com/urfave/cli/v2"
 	"sort"
 	"strings"
 
 	"github.com/taskctl/taskctl/pkg/output"
 
 	"github.com/logrusorgru/aurora"
-	"github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
-
 	"github.com/taskctl/taskctl/pkg/pipeline"
 	"github.com/taskctl/taskctl/pkg/runner"
 	"github.com/taskctl/taskctl/pkg/scheduler"
@@ -18,121 +16,136 @@ import (
 	"github.com/taskctl/taskctl/pkg/util"
 )
 
-var summary, dryRun bool
-
-func NewRunCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "run (PIPELINE1 OR TASK1) [PIPELINE2 OR TASK2]... [flags] [-- TASKS_ARGS]",
-		Short: "Run pipeline or task",
-		Args:  cobra.MinimumNArgs(1),
-		Example: "  taskctl run pipeline1\n" +
-			"  taskctl pipeline1\n" +
-			"  taskctl task1",
-		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			cfg, err := loadConfig()
+func NewRunCommand() *cli.Command {
+	var taskRunner *runner.TaskRunner
+	cmd := &cli.Command{
+		Name:      "run",
+		ArgsUsage: "run (PIPELINE1 OR TASK1) [PIPELINE2 OR TASK2]... [flags] [-- TASKS_ARGS]",
+		Usage:     "runs pipeline or task",
+		UsageText: "taskctl run pipeline1\n" +
+			"taskctl pipeline1\n" +
+			"taskctl task1",
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:  "dry-run",
+				Usage: "dry run",
+			},
+			&cli.BoolFlag{
+				Name:    "summary",
+				Usage:   "show summary",
+				Aliases: []string{"s"},
+				Value:   true,
+			},
+		},
+		Before: func(c *cli.Context) (err error) {
+			taskRunner, err = buildTaskRunner(c)
 			if err != nil {
 				return err
 			}
 
-			if !debug {
-				logrus.SetLevel(logrus.FatalLevel)
+			return nil
+		},
+		After: func(c *cli.Context) error {
+			close(done)
+			return nil
+		},
+		Action: func(c *cli.Context) (err error) {
+			if !c.Args().Present() {
+				return fmt.Errorf("no Target specified")
 			}
 
-			targets := make([]string, 0)
-			if cmd.ArgsLenAtDash() > 0 {
-				targets = args[:cmd.ArgsLenAtDash()]
-			} else {
-				targets = args
-			}
-
-			var runArgs []string
-			if al := cmd.ArgsLenAtDash(); al > 0 {
-				runArgs = args[cmd.ArgsLenAtDash():]
-			}
-			env := util.ConvertEnv(map[string]string{
-				"ARGS": strings.Join(runArgs, " "),
-			})
-			rn, err := runner.NewTaskRunner(contexts, env, oflavor, dryRun, cfg.Variables)
-			if err != nil {
-				return err
-			}
-
-			for _, v := range targets {
-				p, ok := pipelines[v]
-				if ok {
-					err = runPipeline(p, cmd, rn)
-				} else {
-					t, ok := tasks[v]
-					if !ok {
-						return fmt.Errorf("unknown task or pipeline %s", v)
-					}
-					err = runTask(t, cmd, rn)
-				}
-				if err != nil {
+			for _, v := range c.Args().Slice() {
+				if v == "--" {
 					break
 				}
-			}
-			close(done)
 
-			return err
+				err = runTarget(v, c, taskRunner)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+		Subcommands: []*cli.Command{
+			&cli.Command{
+				Name:        "task",
+				Usage:       "task (TASK1) [TASK2]... [flags] [-- TASK_ARGS]",
+				Description: "run specified task(s)",
+				Action: func(c *cli.Context) error {
+					for _, v := range c.Args().Slice() {
+						if v == "--" {
+							break
+						}
+
+						t, ok := tasks[v]
+						if !ok {
+							return fmt.Errorf("unknown task or pipeline %s", v)
+						}
+						err := runTask(t, taskRunner)
+						if err != nil {
+							return err
+						}
+					}
+
+					return nil
+				},
+			},
 		},
 	}
-
-	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "dry run")
-	cmd.Flags().BoolVarP(&summary, "summary", "s", true, "show summary")
-	cmd.AddCommand(NewRunTaskCommand())
 
 	return cmd
 }
 
-func NewRunTaskCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:   "task (TASK1) [TASK2]... [flags] [-- TASK_ARGS]",
-		Short: "Run task",
-		Args:  cobra.MinimumNArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			cfg, err := loadConfig()
-			if err != nil {
-				return err
-			}
-
-			var runArgs []string
-			if al := cmd.ArgsLenAtDash(); al > 0 {
-				runArgs = args[cmd.ArgsLenAtDash():]
-			}
-			env := util.ConvertEnv(map[string]string{
-				"ARGS": strings.Join(runArgs, " "),
-			})
-			rn, err := runner.NewTaskRunner(contexts, env, oflavor, dryRun, cfg.Variables)
-
-			for _, v := range args {
-				t, ok := tasks[v]
-				if !ok {
-					return fmt.Errorf("unknown task %s", v)
-				}
-
-				err = runTask(t, cmd, rn)
-				if err != nil {
-					break
-				}
-			}
-			close(done)
-			return err
-		},
+func buildTaskRunner(c *cli.Context) (*runner.TaskRunner, error) {
+	var dash = -1
+	for k, arg := range c.Args().Slice() {
+		if arg == "--" {
+			dash = k
+		}
 	}
+
+	var runArgs []string
+	if dash >= 0 {
+		runArgs = c.Args().Slice()[dash:]
+	}
+
+	env := util.ConvertEnv(map[string]string{
+		"ARGS": strings.Join(runArgs, " "),
+	})
+
+	taskRunner, err := runner.NewTaskRunner(contexts, env, c.String("output"), c.Bool("dry-run"), cfg.Variables)
+	if err != nil {
+		return nil, err
+	}
+
+	return taskRunner, nil
 }
 
-func runPipeline(pipeline *pipeline.Pipeline, cmd *cobra.Command, rn *runner.TaskRunner) error {
-	sd := scheduler.NewScheduler(rn)
-	go func() {
-		select {
-		case <-cancel:
-			sd.Cancel()
-			return
+func runTarget(name string, c *cli.Context, taskRunner *runner.TaskRunner) (err error) {
+	p, ok := pipelines[name]
+	if ok {
+		err = runPipeline(p, taskRunner, c.Bool("summary"))
+		if err != nil {
+			return err
 		}
+		return nil
+	}
+
+	t, ok := tasks[name]
+	if !ok {
+		return fmt.Errorf("unknown task or pipeline %s", name)
+	}
+	err = runTask(t, taskRunner)
+	return err
+}
+
+func runPipeline(pipeline *pipeline.Pipeline, taskRunner *runner.TaskRunner, summary bool) error {
+	sd := scheduler.NewScheduler(taskRunner)
+	go func() {
+		<-cancel
+		sd.Cancel()
 	}()
 
-	cmd.SilenceUsage = true
 	err := sd.Schedule(pipeline)
 	if err != nil {
 		return err
@@ -148,14 +161,12 @@ func runPipeline(pipeline *pipeline.Pipeline, cmd *cobra.Command, rn *runner.Tas
 	return nil
 }
 
-func runTask(t *task.Task, cmd *cobra.Command, rn *runner.TaskRunner) error {
-	cmd.SilenceUsage = true
-
-	err := rn.Run(t)
+func runTask(t *task.Task, taskRunner *runner.TaskRunner) error {
+	err := taskRunner.Run(t)
 	if err != nil {
 		return err
 	}
-	rn.Finish()
+	taskRunner.Finish()
 
 	return nil
 }

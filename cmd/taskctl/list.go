@@ -2,11 +2,10 @@ package main
 
 import (
 	"fmt"
+	"github.com/urfave/cli/v2"
 	"os"
 	"sort"
 	"text/template"
-
-	"github.com/spf13/cobra"
 
 	"github.com/taskctl/taskctl/pkg/util"
 )
@@ -30,23 +29,17 @@ Watchers:
 {{end}}
 `
 
-func NewListCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "List contexts, pipelines, tasks and watchers",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			cfg, err := loadConfig()
-			if err != nil {
-				return err
-			}
-
+func NewListCommand() *cli.Command {
+	cmd := &cli.Command{
+		Name:  "list",
+		Usage: "lists contexts, pipelines, tasks and watchers",
+		Action: func(c *cli.Context) (err error) {
 			t := template.Must(template.New("list").Parse(listTmpl))
 
-			contexts := util.ListNames(cfg.Contexts)
-			pipelines := util.ListNames(cfg.Pipelines)
-			tasks := util.ListNames(cfg.Tasks)
-			watchers := util.ListNames(cfg.Watchers)
+			contexts := util.MapKeys(cfg.Contexts)
+			pipelines := util.MapKeys(cfg.Pipelines)
+			tasks := util.MapKeys(cfg.Tasks)
+			watchers := util.MapKeys(cfg.Watchers)
 
 			sort.Strings(contexts)
 			sort.Strings(pipelines)
@@ -63,71 +56,42 @@ func NewListCommand() *cobra.Command {
 			})
 			return err
 		},
-	}
+		Subcommands: []*cli.Command{
+			&cli.Command{
+				Name:        "tasks",
+				Description: "List tasks",
+				Action: func(c *cli.Context) error {
+					for _, name := range util.MapKeys(cfg.Tasks) {
+						fmt.Println(name)
+					}
 
-	cmd.AddCommand(NewListTasksCommand())
-	cmd.AddCommand(NewListPipelinesCommand())
-	cmd.AddCommand(NewListWatchersCommand())
+					return nil
+				},
+			},
+			&cli.Command{
+				Name:        "pipelines",
+				Description: "List pipelines",
+				Action: func(c *cli.Context) error {
+					for _, name := range util.MapKeys(cfg.Pipelines) {
+						fmt.Println(name)
+					}
+
+					return nil
+				},
+			},
+			&cli.Command{
+				Name:        "watchers",
+				Description: "List watchers",
+				Action: func(c *cli.Context) error {
+					for _, name := range util.MapKeys(cfg.Watchers) {
+						fmt.Println(name)
+					}
+
+					return nil
+				},
+			},
+		},
+	}
 
 	return cmd
-}
-
-func NewListTasksCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:   "tasks",
-		Short: "List tasks",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := loadConfig()
-			if err != nil {
-				return err
-			}
-
-			for _, name := range util.ListNames(cfg.Tasks) {
-				fmt.Println(name)
-			}
-
-			return nil
-		},
-	}
-}
-
-func NewListPipelinesCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:   "pipelines",
-		Short: "List pipelines",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := loadConfig()
-			if err != nil {
-				return err
-			}
-
-			for _, name := range util.ListNames(cfg.Pipelines) {
-				fmt.Println(name)
-			}
-
-			return nil
-		},
-	}
-}
-
-func NewListWatchersCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:   "watchers",
-		Short: "List watchers",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := loadConfig()
-			if err != nil {
-				return err
-			}
-
-			for _, name := range util.ListNames(cfg.Watchers) {
-				fmt.Println(name)
-			}
-
-			return nil
-		},
-	}
 }

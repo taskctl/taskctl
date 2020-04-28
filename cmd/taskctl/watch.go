@@ -2,32 +2,33 @@ package main
 
 import (
 	"fmt"
+	"github.com/urfave/cli/v2"
 	"sync"
 
 	"github.com/taskctl/taskctl/pkg/output"
 	"github.com/taskctl/taskctl/pkg/runner"
 
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
-
 	"github.com/taskctl/taskctl/internal/watch"
 )
 
-func NewWatchCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:   "watch [WATCHERS...]",
-		Short: "Start watching for filesystem events",
-		Args:  cobra.MinimumNArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			cfg, err := loadConfig()
-			if err != nil {
-				return err
+func NewWatchCommand() *cli.Command {
+	return &cli.Command{
+		Name:      "watch",
+		ArgsUsage: "watch [WATCHERS...]",
+		Usage:     "starts watching for filesystem events",
+		Before: func(c *cli.Context) error {
+			if c.NArg() == 0 {
+				return fmt.Errorf("no watcher specified")
 			}
 
-			rn, err := runner.NewTaskRunner(contexts, make([]string, 0), output.FlavorFormatted, dryRun, cfg.Variables)
+			return nil
+		},
+		Action: func(c *cli.Context) (err error) {
+			rn, err := runner.NewTaskRunner(contexts, make([]string, 0), output.FlavorFormatted, c.Bool("dry-run"), cfg.Variables)
 
 			var wg sync.WaitGroup
-			for _, name := range args {
+			for _, name := range c.Args().Slice() {
 				wg.Add(1)
 				w, ok := watchers[name]
 				if !ok {

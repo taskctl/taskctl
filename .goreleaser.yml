@@ -19,6 +19,17 @@ builds:
 
 dist: bin
 
+archive:
+  format: tar.gz
+  format_overrides:
+    - goos: windows
+      format: zip
+  files:
+    - LICENSE
+    - README.md
+    - autocomplete/bash_completion.bash
+    - autocomplete/zsh_autocompletion.zsh
+
 checksum:
   name_template: checksums.txt
 
@@ -44,6 +55,11 @@ brews:
       name: Yevhen Terentiev
       email: yevhen.terentiev@gmail.com
     homepage: https://github.com/taskctl/taskctl
+    install: |
+        bin.install "program"
+        bash_completion.install "autocomplete/bash_completion.bash"
+        zsh_completion.install "autocomplete/zsh_completion.zsh"
+
 
 dockers:
   - image_templates:

@@ -54,6 +54,7 @@ func (cl *ConfigLoader) Set(key string, value string) {
 }
 
 func (cl *ConfigLoader) Load(file string) (*Config, error) {
+	cl.Reset()
 	var err error
 	values, err = cl.LoadGlobalConfig()
 	if err != nil {
@@ -295,4 +296,8 @@ func (cl *ConfigLoader) resolveDefaultConfigFile() (file string, err error) {
 	}
 
 	return file, fmt.Errorf("default config resolution failed: %w", ErrConfigNotFound)
+}
+
+func (cl *ConfigLoader) Reset() {
+	cl.imports = make(map[string]bool)
 }

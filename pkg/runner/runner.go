@@ -77,7 +77,7 @@ func (r *TaskRunner) RunWithEnv(t *task.Task, env []string) (err error) {
 	}
 
 	env = append(env, r.env...)
-	env = append(env, fmt.Sprintf("WI_TASK_NAME=%s", t.Name))
+	env = append(env, fmt.Sprintf("TASKCTL_TASK_NAME=%s", t.Name))
 
 	for _, variant := range variations {
 

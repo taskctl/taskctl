@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"github.com/urfave/cli/v2"
 	"os"
 	"path/filepath"
 	"text/template"
@@ -11,8 +12,6 @@ import (
 
 	"github.com/logrusorgru/aurora"
 	"github.com/manifoldco/promptui"
-	"github.com/spf13/cobra"
-
 	"github.com/taskctl/taskctl/pkg/util"
 )
 
@@ -37,15 +36,11 @@ watchers:
     task: task1
 `
 
-func NewInitCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "init",
-		Short: "Init with sample config",
-		Args:  cobra.NoArgs,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return nil
-		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+func NewInitCommand() *cli.Command {
+	cmd := &cli.Command{
+		Name:  "init",
+		Usage: "creates sample config file",
+		Action: func(c *cli.Context) error {
 			fileSelect := promptui.Select{
 				Label: "Choose file name",
 				Items: config.DefaultFileNames,

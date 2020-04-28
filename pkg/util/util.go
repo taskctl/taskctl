@@ -32,16 +32,16 @@ func FileExists(file string) bool {
 	return !os.IsNotExist(err)
 }
 
-func ListNames(m interface{}) (list []string) {
+func MapKeys(m interface{}) (keys []string) {
 	v := reflect.ValueOf(m)
 	if v.Kind() != reflect.Map {
-		return list
+		return keys
 	}
 
 	for _, k := range v.MapKeys() {
-		list = append(list, k.String())
+		keys = append(keys, k.String())
 	}
-	return list
+	return keys
 }
 
 func InArray(arr []string, val string) bool {
