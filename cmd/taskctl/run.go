@@ -2,18 +2,21 @@ package main
 
 import (
 	"fmt"
-	"github.com/urfave/cli/v2"
 	"sort"
 	"strings"
+
+	"github.com/taskctl/taskctl/pkg/config"
+
+	"github.com/urfave/cli/v2"
 
 	"github.com/taskctl/taskctl/pkg/output"
 
 	"github.com/logrusorgru/aurora"
+
 	"github.com/taskctl/taskctl/pkg/pipeline"
 	"github.com/taskctl/taskctl/pkg/runner"
 	"github.com/taskctl/taskctl/pkg/scheduler"
 	"github.com/taskctl/taskctl/pkg/task"
-	"github.com/taskctl/taskctl/pkg/util"
 )
 
 func NewRunCommand() *cli.Command {
@@ -51,7 +54,7 @@ func NewRunCommand() *cli.Command {
 		},
 		Action: func(c *cli.Context) (err error) {
 			if !c.Args().Present() {
-				return fmt.Errorf("no Target specified")
+				return fmt.Errorf("no target specified")
 			}
 
 			for _, v := range c.Args().Slice() {
@@ -67,10 +70,10 @@ func NewRunCommand() *cli.Command {
 			return nil
 		},
 		Subcommands: []*cli.Command{
-			&cli.Command{
-				Name:        "task",
-				Usage:       "task (TASK1) [TASK2]... [flags] [-- TASK_ARGS]",
-				Description: "run specified task(s)",
+			{
+				Name:      "task",
+				ArgsUsage: "task (TASK1) [TASK2]... [flags] [-- TASK_ARGS]",
+				Usage:     "run specified task(s)",
 				Action: func(c *cli.Context) error {
 					for _, v := range c.Args().Slice() {
 						if v == "--" {
@@ -79,7 +82,7 @@ func NewRunCommand() *cli.Command {
 
 						t, ok := tasks[v]
 						if !ok {
-							return fmt.Errorf("unknown task or pipeline %s", v)
+							return fmt.Errorf("unknown task %s", v)
 						}
 						err := runTask(t, taskRunner)
 						if err != nil {
@@ -97,25 +100,14 @@ func NewRunCommand() *cli.Command {
 }
 
 func buildTaskRunner(c *cli.Context) (*runner.TaskRunner, error) {
-	var dash = -1
-	for k, arg := range c.Args().Slice() {
-		if arg == "--" {
-			dash = k
-		}
-	}
-
-	var runArgs []string
-	if dash >= 0 {
-		runArgs = c.Args().Slice()[dash:]
-	}
-
-	env := util.ConvertEnv(map[string]string{
-		"ARGS": strings.Join(runArgs, " "),
-	})
-
-	taskRunner, err := runner.NewTaskRunner(contexts, env, c.String("output"), c.Bool("dry-run"), cfg.Variables)
+	variables := cfg.Variables.With("args", strings.Join(taskArgs(c), " "))
+	taskRunner, err := runner.NewTaskRunner(contexts, c.String("output"), variables)
 	if err != nil {
 		return nil, err
+	}
+
+	if c.Bool("dry-run") {
+		taskRunner.DryRun()
 	}
 
 	return taskRunner, nil
@@ -162,13 +154,29 @@ func runPipeline(pipeline *pipeline.Pipeline, taskRunner *runner.TaskRunner, sum
 }
 
 func runTask(t *task.Task, taskRunner *runner.TaskRunner) error {
-	err := taskRunner.Run(t)
+	err := taskRunner.Run(t, config.Set{}, config.Set{})
 	if err != nil {
 		return err
 	}
 	taskRunner.Finish()
 
 	return nil
+}
+
+func taskArgs(c *cli.Context) []string {
+	var runArgs []string
+	var dash = -1
+	for k, arg := range c.Args().Slice() {
+		if arg == "--" {
+			dash = k
+		}
+	}
+
+	if dash >= 0 && dash != c.NArg()-1 {
+		runArgs = c.Args().Slice()[dash+1:]
+	}
+
+	return runArgs
 }
 
 func printSummary(p *pipeline.Pipeline) {
@@ -187,17 +195,17 @@ func printSummary(p *pipeline.Pipeline) {
 	for _, stage := range stages {
 		switch stage.ReadStatus() {
 		case pipeline.StatusDone:
-			fmt.Fprintln(output.Stdout, aurora.Sprintf(aurora.Green("- Stage %s done in %s"), stage.Name, stage.Duration()))
+			fmt.Fprintln(output.Stdout, aurora.Sprintf(aurora.Green("- Stage %s was completed in %s"), stage.Name, stage.Duration()))
+		case pipeline.StatusSkipped:
+			fmt.Fprintln(output.Stdout, aurora.Sprintf(aurora.Green("- Stage %s was skipped"), stage.Name))
 		case pipeline.StatusError:
-			log = strings.TrimSpace(stage.Task.Error())
+			log = strings.TrimSpace(stage.Task.ErrorMessage())
 			fmt.Fprintln(output.Stdout, aurora.Sprintf(aurora.Red("- Stage %s failed in %s"), stage.Name, stage.Duration()))
 			if log != "" {
 				fmt.Fprintln(output.Stdout, aurora.Sprintf(aurora.Red("  > %s"), log))
 			}
 		case pipeline.StatusCanceled:
-			fmt.Fprintln(output.Stdout, aurora.Sprintf(aurora.Gray(12, "- Stage %s is cancelled"), stage.Name))
-		case pipeline.StatusWaiting:
-			fmt.Fprintln(output.Stdout, aurora.Sprintf(aurora.Gray(12, "- Stage %s skipped"), stage.Name))
+			fmt.Fprintln(output.Stdout, aurora.Sprintf(aurora.Gray(12, "- Stage %s was cancelled"), stage.Name))
 		default:
 			fmt.Fprintln(output.Stdout, aurora.Sprintf(aurora.Red("- Unexpected status %d for stage %s"), stage.Status, stage.Name))
 		}

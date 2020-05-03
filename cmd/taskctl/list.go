@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/urfave/cli/v2"
 	"os"
 	"sort"
 	"text/template"
+
+	"github.com/urfave/cli/v2"
 
 	"github.com/taskctl/taskctl/pkg/util"
 )

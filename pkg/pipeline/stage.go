@@ -4,13 +4,15 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/taskctl/taskctl/pkg/config"
+
 	"github.com/taskctl/taskctl/pkg/task"
 )
 
 const (
 	StatusWaiting = iota
-	StatusScheduled
 	StatusRunning
+	StatusSkipped
 	StatusDone
 	StatusError
 	StatusCanceled
@@ -18,6 +20,7 @@ const (
 
 type Stage struct {
 	Name         string
+	Condition    string
 	Task         *task.Task
 	Pipeline     *Pipeline
 	DependsOn    []string
@@ -25,6 +28,7 @@ type Stage struct {
 	Dir          string
 	AllowFailure bool
 	Status       int32
+	Variables    config.Set
 
 	Start time.Time
 	End   time.Time

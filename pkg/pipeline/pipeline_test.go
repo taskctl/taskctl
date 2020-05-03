@@ -3,11 +3,11 @@ package pipeline
 import (
 	"testing"
 
-	"github.com/taskctl/taskctl/pkg/builder"
+	"github.com/taskctl/taskctl/pkg/config"
 )
 
 func TestBuildPipeline_Cyclic(t *testing.T) {
-	stages := []*builder.StageDefinition{
+	stages := []*config.StageDefinition{
 		{
 			Name:      "task1",
 			Task:      "task1",
@@ -26,7 +26,7 @@ func TestBuildPipeline_Cyclic(t *testing.T) {
 		},
 	}
 
-	tasks := map[string]*builder.TaskDefinition{
+	tasks := map[string]*config.TaskDefinition{
 		"task1": {
 			Name: "task1",
 		},
@@ -38,7 +38,7 @@ func TestBuildPipeline_Cyclic(t *testing.T) {
 		},
 	}
 
-	_, err := BuildPipeline(stages, make(map[string][]*builder.StageDefinition), tasks)
+	_, err := BuildPipeline(stages, make(map[string][]*config.StageDefinition), tasks)
 	if err == nil || err.Error() != "cycle detected" {
 		t.Errorf("cycles detection failed")
 	}

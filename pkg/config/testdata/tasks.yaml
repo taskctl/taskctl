@@ -1,0 +1,23 @@
+debug: false
+pipelines:
+  pipeline1:
+    - task: test-task
+      name: stage1
+      condition: /usr/bin/false
+    - task: test-task
+      depends_on: [stage1]
+
+tasks:
+  test-task:
+    dir: "{{ .Root }}/bin"
+    condition: /usr/bin/true
+    command:
+      - echo ${ARGS}
+      - echo "Args - {{ .args }}"
+      - sleep {{ .sleep }}
+    env:
+      TEST_VAR: 1
+
+variables:
+  test-variable: test-value
+  sleep: 5

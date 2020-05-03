@@ -4,7 +4,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/taskctl/taskctl/pkg/builder"
+	"github.com/taskctl/taskctl/pkg/config"
+
 	"github.com/taskctl/taskctl/pkg/util"
 )
 
@@ -14,12 +15,15 @@ type Task struct {
 	Index        uint32
 	Command      []string
 	Context      string
-	Env          []string
+	Env          config.Set
 	Variations   []map[string]string
 	Dir          string
 	Timeout      *time.Duration
 	AllowFailure bool
 	After        []string
+
+	Condition string
+	Skipped   bool
 
 	Name        string
 	Description string
@@ -30,29 +34,35 @@ type Task struct {
 	ExportAs string
 
 	Errored bool
+	Error   error
 	Log     struct {
 		Stderr log
 		Stdout log
 	}
 }
 
-func BuildTask(def *builder.TaskDefinition) *Task {
+func BuildTask(def *config.TaskDefinition) *Task {
 	t := &Task{
 		Index:        atomic.AddUint32(&index, 1),
 		Name:         def.Name,
 		Description:  def.Description,
+		Condition:    def.Condition,
 		Command:      def.Command,
-		Env:          make([]string, 0),
+		Env:          def.Env,
 		Variations:   def.Variations,
 		Dir:          def.Dir,
 		Timeout:      def.Timeout,
 		AllowFailure: def.AllowFailure,
 		After:        def.After,
 		ExportAs:     def.ExportAs,
+		Context:      def.Context,
 	}
 
-	t.Context = def.Context
-	t.Env = util.ConvertEnv(def.Env)
+	if len(t.Variations) == 0 {
+		// default variant
+		t.Variations = make([]map[string]string, 1)
+	}
+
 	if t.Context == "" {
 		t.Context = "local"
 	}
@@ -68,7 +78,7 @@ func (t *Task) Duration() time.Duration {
 	return t.End.Sub(t.Start)
 }
 
-func (t *Task) Error() string {
+func (t *Task) ErrorMessage() string {
 	if t.Log.Stderr.Len() > 0 {
 		return util.LastLine(&t.Log.Stderr)
 	}
@@ -76,12 +86,14 @@ func (t *Task) Error() string {
 	return util.LastLine(&t.Log.Stdout)
 }
 
-func (t *Task) Interpolate(s string, variables map[string]string) (string, error) {
-	var vars = make(map[string]string)
-	for k, v := range variables {
-		vars[k] = v
-	}
-	vars["Name"] = t.Name
+func (t *Task) Interpolate(s string, params ...config.Set) (string, error) {
+	data := config.NewSet(map[string]string{
+		"TaskName": t.Name,
+	})
 
-	return util.RenderString(s, vars)
+	for _, variables := range params {
+		data = data.Merge(variables)
+	}
+
+	return util.RenderString(s, data)
 }

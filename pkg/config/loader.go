@@ -129,7 +129,7 @@ func (cl *ConfigLoader) load(file string) (config map[string]interface{}, err er
 		return nil, err
 	}
 
-	var cm = make(map[string]interface{})
+	cm := make(map[string]interface{})
 	importDir := path.Dir(file)
 	if imports, ok := config["import"]; ok {
 		for _, v := range imports.([]interface{}) {
@@ -145,6 +145,9 @@ func (cl *ConfigLoader) load(file string) (config map[string]interface{}, err er
 					cm, err = cl.load(importFile)
 				} else {
 					cm, err = cl.loadDir(importFile)
+				}
+				if err != nil {
+					logrus.Error(err)
 				}
 			}
 			if err != nil {
@@ -170,7 +173,7 @@ func (cl *ConfigLoader) loadDir(dir string) (map[string]interface{}, error) {
 
 	cm := make(map[string]interface{})
 	for _, importFile := range q {
-		if cl.imports[importFile] == true {
+		if cl.imports[importFile] {
 			continue
 		}
 

@@ -3,15 +3,15 @@ package watch
 import (
 	"sync"
 
-	"github.com/sirupsen/logrus"
+	"github.com/taskctl/taskctl/pkg/config"
 
-	"github.com/taskctl/taskctl/pkg/builder"
-	"github.com/taskctl/taskctl/pkg/runner"
-	"github.com/taskctl/taskctl/pkg/task"
-	"github.com/taskctl/taskctl/pkg/util"
+	"github.com/sirupsen/logrus"
 
 	"github.com/bmatcuk/doublestar"
 	"github.com/fsnotify/fsnotify"
+
+	"github.com/taskctl/taskctl/pkg/runner"
+	"github.com/taskctl/taskctl/pkg/task"
 )
 
 const (
@@ -42,7 +42,7 @@ type Watcher struct {
 	wg sync.WaitGroup
 }
 
-func BuildWatcher(name string, def *builder.WatcherDefinition, t *task.Task) (w *Watcher, err error) {
+func BuildWatcher(name string, def *config.WatcherDefinition, t *task.Task) (w *Watcher, err error) {
 	w = &Watcher{
 		name:     name,
 		paths:    make([]string, 0),
@@ -148,13 +148,17 @@ func (w *Watcher) handle(event fsnotify.Event) {
 		return
 	}
 
-	env := util.ConvertEnv(map[string]string{
-		"EVENT_NAME": eventName,
-		"EVENT_PATH": event.Name,
-	})
-
 	logrus.Debugf("triggering %s for %s", w.task.Name, w.name)
-	err := w.r.RunWithVariables(w.task, env)
+	err := w.r.Run(
+		w.task,
+		config.NewSet(map[string]string{
+			"EventName": eventName,
+			"EventPath": event.Name,
+		}),
+		config.NewSet(map[string]string{
+			"EVENT_NAME": eventName,
+			"EVENT_PATH": event.Name,
+		}))
 	if err != nil {
 		logrus.Error(err)
 	}

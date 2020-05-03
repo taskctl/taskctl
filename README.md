@@ -34,7 +34,11 @@ Beside pipelines, each single task can be performed manually or triggered by bui
 ## Contents  
 - [Getting started](#getting-started)
 - [Tasks](#tasks)
+    - [!!!Task`s variables](#task-variables)
+    - [!!!Storing task output](#storing-task-output) 
+    - [!!!Conditional execution](#task-conditional-execution) 
 - [Pipelines](#pipelines)
+    - [!!!Conditional execution](#conditional-execution) 
 - [Filesystem watchers](#filesystem-watchers)
 - [Contexts](#contexts)
 - [Config example](#examples)

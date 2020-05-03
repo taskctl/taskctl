@@ -4,9 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/taskctl/taskctl/internal/config"
-
-	"github.com/taskctl/taskctl/pkg/builder"
+	"github.com/taskctl/taskctl/pkg/config"
 	"github.com/taskctl/taskctl/pkg/util"
 )
 
@@ -16,12 +14,12 @@ func TestContext_BuildContext(t *testing.T) {
 			Bin: "/opt/docker",
 		},
 	}
-	c, _ := BuildContext(&builder.ContextDefinition{
+	c, _ := BuildContext(&config.ContextDefinition{
 		Type: "local",
 		Env:  map[string]string{"TEST_VAR": "TEST_VAL"},
 	}, wcfg)
 
-	cmd, _ := c.CreateCommand(context.Background(), "echo ${TEST_VAR}")
+	cmd, _ := c.BuildCommand(context.Background(), "echo ${TEST_VAR}", nil)
 	if cmd.String() != "/bin/sh -c echo ${TEST_VAR}" {
 		t.Errorf("local build failed %s", cmd.String())
 	}
@@ -30,9 +28,9 @@ func TestContext_BuildContext(t *testing.T) {
 		t.Error("env not found")
 	}
 
-	c, _ = BuildContext(&builder.ContextDefinition{
+	c, _ = BuildContext(&config.ContextDefinition{
 		Type: "container",
-		Container: builder.ContainerDefinition{
+		Container: config.ContainerDefinition{
 			Provider: "docker",
 			Image:    "alpine:latest",
 			Exec:     false,
@@ -40,14 +38,14 @@ func TestContext_BuildContext(t *testing.T) {
 		},
 	}, wcfg)
 
-	cmd, _ = c.CreateCommand(context.Background(), "echo ${TEST_VAR}")
+	cmd, _ = c.BuildCommand(context.Background(), "echo ${TEST_VAR}", nil)
 	if cmd.String() != "/opt/docker run --rm -e TEST_VAR=TEST_VAL alpine:latest /bin/sh -c echo ${TEST_VAR}" {
 		t.Errorf("docker build failed %s", cmd.String())
 	}
 
-	c, _ = BuildContext(&builder.ContextDefinition{
+	c, _ = BuildContext(&config.ContextDefinition{
 		Type: "container",
-		Container: builder.ContainerDefinition{
+		Container: config.ContainerDefinition{
 			Provider: "docker-compose",
 			Name:     "alpine",
 			Exec:     true,
@@ -60,14 +58,14 @@ func TestContext_BuildContext(t *testing.T) {
 		Up: []string{"docker-compose up -d alpine"},
 	}, wcfg)
 
-	cmd, _ = c.CreateCommand(context.Background(), "echo ${TEST_VAR}")
+	cmd, _ = c.BuildCommand(context.Background(), "echo ${TEST_VAR}", nil)
 	if cmd.String() != "/usr/local/bin/docker-compose --file=example/docker-compose.yaml exec -T --user=root -e TEST_VAR=TEST_VAL alpine /bin/sh -c echo ${TEST_VAR}" {
 		t.Errorf("docker-compose build failed %s", cmd.String())
 	}
 
-	c, _ = BuildContext(&builder.ContextDefinition{
+	c, _ = BuildContext(&config.ContextDefinition{
 		Type: "container",
-		Container: builder.ContainerDefinition{
+		Container: config.ContainerDefinition{
 			Provider: "kubectl",
 			Name:     "deployment/geocoder",
 			Options:  nil,
@@ -78,21 +76,21 @@ func TestContext_BuildContext(t *testing.T) {
 		},
 	}, wcfg)
 
-	cmd, _ = c.CreateCommand(context.Background(), "echo ${TEST_VAR}")
+	cmd, _ = c.BuildCommand(context.Background(), "echo ${TEST_VAR}", nil)
 	if cmd.String() != "/usr/bin/kubectl exec deployment/geocoder -- /bin/sh -c TEST_VAR=TEST_VAL echo ${TEST_VAR}" {
 		t.Errorf("kubectl build failed %s", cmd.String())
 	}
 
-	c, _ = BuildContext(&builder.ContextDefinition{
+	c, _ = BuildContext(&config.ContextDefinition{
 		Type: "remote",
-		SSH: builder.SSHConfigDefinition{
+		SSH: config.SSHConfigDefinition{
 			Options: []string{"-6", "-C"},
 			User:    "root",
 			Host:    "host",
 		},
 	}, wcfg)
 
-	cmd, _ = c.CreateCommand(context.Background(), "echo ${TEST_VAR}")
+	cmd, _ = c.BuildCommand(context.Background(), "echo ${TEST_VAR}", nil)
 	if cmd.String() != "/usr/bin/ssh -6 -C -T root@host /bin/sh -c echo ${TEST_VAR}" {
 		t.Errorf("ssh build failed %s", cmd.String())
 	}

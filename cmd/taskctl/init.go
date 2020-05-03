@@ -3,15 +3,17 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/urfave/cli/v2"
 	"os"
 	"path/filepath"
 	"text/template"
 
-	"github.com/taskctl/taskctl/internal/config"
+	"github.com/urfave/cli/v2"
+
+	"github.com/taskctl/taskctl/pkg/config"
 
 	"github.com/logrusorgru/aurora"
 	"github.com/manifoldco/promptui"
+
 	"github.com/taskctl/taskctl/pkg/util"
 )
 

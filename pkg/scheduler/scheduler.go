@@ -1,11 +1,11 @@
 package scheduler
 
 import (
+	"errors"
+	"os/exec"
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"github.com/taskctl/taskctl/pkg/util"
 
 	"github.com/sirupsen/logrus"
 
@@ -44,10 +44,24 @@ func (s *PipelineScheduler) Schedule(p *pipeline.Pipeline) error {
 		}
 
 		for _, stage := range p.Nodes() {
-			switch stage.ReadStatus() {
-			case pipeline.StatusWaiting, pipeline.StatusScheduled:
-			default:
+			status := stage.ReadStatus()
+			if status != pipeline.StatusWaiting {
 				continue
+			}
+
+			if stage.Condition != "" {
+				meets, err := checkStageCondition(stage.Condition)
+				if err != nil {
+					logrus.Error(err)
+					stage.UpdateStatus(pipeline.StatusError)
+					s.Cancel()
+					continue
+				}
+
+				if !meets {
+					stage.UpdateStatus(pipeline.StatusSkipped)
+					continue
+				}
 			}
 
 			if !checkStatus(p, stage) {
@@ -72,7 +86,7 @@ func (s *PipelineScheduler) Schedule(p *pipeline.Pipeline) error {
 				if stage.Pipeline != nil {
 					err = s.Schedule(stage.Pipeline)
 				} else {
-					err = s.taskRunner.RunWithVariables(stage.Task, util.ConvertEnv(stage.Env))
+					err = s.taskRunner.Run(stage.Task, stage.Variables, stage.Env)
 				}
 
 				if err != nil {
@@ -113,7 +127,7 @@ func (s *PipelineScheduler) Cancel() {
 func (s *PipelineScheduler) isDone(p *pipeline.Pipeline) bool {
 	for _, stage := range p.Nodes() {
 		switch stage.ReadStatus() {
-		case pipeline.StatusWaiting, pipeline.StatusScheduled, pipeline.StatusRunning:
+		case pipeline.StatusWaiting, pipeline.StatusRunning:
 			return false
 		}
 	}
@@ -134,7 +148,7 @@ func checkStatus(p *pipeline.Pipeline, stage *pipeline.Stage) (ready bool) {
 		}
 
 		switch depStage.ReadStatus() {
-		case pipeline.StatusDone:
+		case pipeline.StatusDone, pipeline.StatusSkipped:
 			continue
 		case pipeline.StatusError:
 			if !depStage.AllowFailure {
@@ -150,4 +164,19 @@ func checkStatus(p *pipeline.Pipeline, stage *pipeline.Stage) (ready bool) {
 	}
 
 	return ready
+}
+
+func checkStageCondition(condition string) (bool, error) {
+	cmd := exec.Command(condition)
+	err := cmd.Run()
+	if err != nil {
+		var e *exec.ExitError
+		if errors.As(err, &e) {
+			return false, nil
+		}
+
+		return false, err
+	}
+
+	return true, nil
 }

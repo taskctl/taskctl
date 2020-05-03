@@ -79,6 +79,10 @@ func (d *CockpitOutputDecorator) WriteFooter(t *task.Task) error {
 	return nil
 }
 
+func (d *CockpitOutputDecorator) ForTask(t *task.Task) DecoratedOutputWriter {
+	return d
+}
+
 func (d *CockpitOutputDecorator) startSpinner() *spinner.Spinner {
 	s := spinner.New(spinner.CharSets[d.charSet], 100*time.Millisecond, spinner.WithColor("yellow"))
 	s.Writer = d.w
@@ -88,7 +92,7 @@ func (d *CockpitOutputDecorator) startSpinner() *spinner.Spinner {
 			tasks = append(tasks, v.Name)
 		}
 		sort.Strings(tasks)
-		s.Suffix = " Running: " + strings.Join(tasks, ", ")
+		s.Suffix = " Running: " + strings.Join(tasks, ", ") + "\n"
 	}
 	s.Start()
 

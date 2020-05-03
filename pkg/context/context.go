@@ -9,10 +9,11 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/taskctl/taskctl/pkg/task"
+
 	"github.com/sirupsen/logrus"
 
-	"github.com/taskctl/taskctl/internal/config"
-	"github.com/taskctl/taskctl/pkg/builder"
+	"github.com/taskctl/taskctl/pkg/config"
 	"github.com/taskctl/taskctl/pkg/util"
 )
 
@@ -39,7 +40,7 @@ type ExecutionContext struct {
 	ctxType    string
 	executable util.Executable
 	env        []string
-	def        *builder.ContextDefinition
+	def        *config.ContextDefinition
 	dir        string
 
 	container container
@@ -56,7 +57,7 @@ type ExecutionContext struct {
 	mu       sync.Mutex
 }
 
-func BuildContext(def *builder.ContextDefinition, cfg *config.Config) (*ExecutionContext, error) {
+func BuildContext(def *config.ContextDefinition, cfg *config.Config) (*ExecutionContext, error) {
 	c := &ExecutionContext{
 		ctxType: def.Type,
 		executable: util.Executable{
@@ -195,24 +196,33 @@ func (c *ExecutionContext) runServiceCommand(command string) (err error) {
 	return nil
 }
 
-func (c *ExecutionContext) CreateCommand(ctx context.Context, command string) (*exec.Cmd, error) {
+func (c *ExecutionContext) BuildCommand(ctx context.Context, command string, t *task.Task) (*exec.Cmd, error) {
+	var cmd *exec.Cmd
 	switch c.ctxType {
 	case config.ContextTypeLocal:
-		return c.buildLocalCommand(ctx, command), nil
+		cmd = c.buildLocalCommand(ctx, command)
 	case config.ContextTypeContainer:
 		switch c.container.provider {
 		case config.ContextContainerProviderDocker, config.ContextContainerProviderDockerCompose:
-			return c.buildDockerCommand(ctx, command), nil
+			cmd = c.buildDockerCommand(ctx, command)
 		case config.ContextContainerProviderKubectl:
-			return c.buildKubectlCommand(ctx, command), nil
+			cmd = c.buildKubectlCommand(ctx, command)
 		}
 	case config.ContextTypeRemote:
-		return c.buildRemoteCommand(ctx, command), nil
+		cmd = c.buildRemoteCommand(ctx, command)
 	default:
 		return nil, errors.New("unknown context type")
 	}
 
-	return nil, nil
+	if cmd == nil {
+		return nil, errors.New("failed to build command")
+	}
+
+	if t != nil && t.Dir != "" {
+		cmd.Dir = t.Dir
+	}
+
+	return cmd, nil
 }
 
 func (c *ExecutionContext) ScheduleForCleanup() {

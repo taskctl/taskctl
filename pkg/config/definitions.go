@@ -1,4 +1,4 @@
-package builder
+package config
 
 import (
 	"time"
@@ -11,43 +11,49 @@ type ContextDefinition struct {
 	Dir       string
 	Container ContainerDefinition
 	SSH       SSHConfigDefinition
-	Env       map[string]string
 	Up        []string
 	Down      []string
 	Before    []string
 	After     []string
+	Env       Set
+	Variables Set
 	util.Executable
 }
 
 type StageDefinition struct {
 	Name         string
+	Condition    string
 	Task         string
 	Pipeline     string
 	DependsOn    []string `mapstructure:"depends_on"`
-	Env          map[string]string
-	AllowFailure bool `mapstructure:"allow_failure"`
+	AllowFailure bool     `mapstructure:"allow_failure"`
 	Dir          string
+	Env          Set
+	Variables    Set
 }
 
 type TaskDefinition struct {
 	Name         string
 	Description  string
+	Condition    string
 	Command      []string
 	After        []string
 	Context      string
-	Env          map[string]string   `yaml:",omitempty"`
 	Variations   []map[string]string `yaml:",omitempty"`
 	Dir          string
 	Timeout      *time.Duration `yaml:",omitempty"`
 	AllowFailure bool           `mapstructure:"allow_failure"`
 	ExportAs     string
+	Env          Set
+	Variables    Set
 }
 
 type WatcherDefinition struct {
-	Events  []string
-	Watch   []string
-	Exclude []string
-	Task    string
+	Events    []string
+	Watch     []string
+	Exclude   []string
+	Task      string
+	Variables Set
 }
 
 type ContainerDefinition struct {
@@ -56,7 +62,7 @@ type ContainerDefinition struct {
 	Image    string
 	Exec     bool
 	Options  []string
-	Env      map[string]string
+	Env      Set
 	util.Executable
 }
 

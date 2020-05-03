@@ -1,15 +1,10 @@
 package config
 
 import (
-	"io"
-
 	"github.com/imdario/mergo"
 	"github.com/sirupsen/logrus"
 
-	"github.com/taskctl/taskctl/pkg/output"
 	"github.com/taskctl/taskctl/pkg/util"
-
-	"github.com/taskctl/taskctl/pkg/builder"
 )
 
 const (
@@ -20,6 +15,10 @@ const (
 	ContextContainerProviderDocker        = "docker"
 	ContextContainerProviderDockerCompose = "docker-compose"
 	ContextContainerProviderKubectl       = "kubectl"
+
+	FlavorRaw       = "raw"
+	FlavorFormatted = "formatted"
+	FlavorCockpit   = "cockpit"
 )
 
 var DefaultFileNames = []string{"taskctl.yaml", "tasks.yaml"}
@@ -32,10 +31,10 @@ func Get() *Config {
 
 type Config struct {
 	Import    []string
-	Contexts  map[string]*builder.ContextDefinition
-	Pipelines map[string][]*builder.StageDefinition
-	Tasks     map[string]*builder.TaskDefinition
-	Watchers  map[string]*builder.WatcherDefinition
+	Contexts  map[string]*ContextDefinition
+	Pipelines map[string][]*StageDefinition
+	Tasks     map[string]*TaskDefinition
+	Watchers  map[string]*WatcherDefinition
 
 	Shell         util.Executable
 	Docker        util.Executable
@@ -43,18 +42,15 @@ type Config struct {
 	Kubectl       util.Executable
 	Ssh           util.Executable
 
-	configMap map[string]interface{}
-	W         io.Writer
-
 	Debug, DryRun bool
 	Output        string
 
-	Variables map[string]string
+	Variables Set
 }
 
 func defaultConfig() *Config {
 	return &Config{
-		Output: output.FlavorFormatted,
+		Output: FlavorFormatted,
 	}
 }
 
@@ -73,7 +69,7 @@ func (c *Config) merge(src *Config) error {
 }
 
 func (c *Config) init() {
-	c.Output = output.FlavorFormatted
+	c.Output = FlavorFormatted
 
 	for name, v := range c.Tasks {
 		if v.Name == "" {
@@ -82,11 +78,11 @@ func (c *Config) init() {
 	}
 
 	if c.Contexts == nil {
-		c.Contexts = make(map[string]*builder.ContextDefinition)
+		c.Contexts = make(map[string]*ContextDefinition)
 	}
 
 	if _, ok := c.Contexts[ContextTypeLocal]; !ok {
-		c.Contexts[ContextTypeLocal] = &builder.ContextDefinition{Type: ContextTypeLocal}
+		c.Contexts[ContextTypeLocal] = &ContextDefinition{Type: ContextTypeLocal}
 	}
 
 	if c.Variables == nil {

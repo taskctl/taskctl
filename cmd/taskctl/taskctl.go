@@ -3,15 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/logrusorgru/aurora"
-	"github.com/manifoldco/promptui"
-	"github.com/taskctl/taskctl/internal/config"
-	"github.com/taskctl/taskctl/internal/watch"
-	"github.com/taskctl/taskctl/pkg/context"
-	"github.com/taskctl/taskctl/pkg/output"
-	"github.com/taskctl/taskctl/pkg/pipeline"
-	"github.com/taskctl/taskctl/pkg/task"
-	"github.com/taskctl/taskctl/pkg/util"
 	"io/ioutil"
 	"log"
 	"os"
@@ -19,6 +10,17 @@ import (
 	"sort"
 	"strings"
 	"syscall"
+
+	"github.com/logrusorgru/aurora"
+	"github.com/manifoldco/promptui"
+
+	"github.com/taskctl/taskctl/pkg/config"
+	"github.com/taskctl/taskctl/pkg/context"
+	"github.com/taskctl/taskctl/pkg/output"
+	"github.com/taskctl/taskctl/pkg/pipeline"
+	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/taskctl/taskctl/pkg/util"
+	"github.com/taskctl/taskctl/pkg/watch"
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -52,18 +54,11 @@ func main() {
 
 func listenSignals() {
 	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(sigs, syscall.SIGKILL, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		for sig := range sigs {
-			var exit int
-			switch sig {
-			case syscall.SIGINT:
-				exit = 130
-			case syscall.SIGTERM:
-				exit = 143
-			}
 			Abort()
-			os.Exit(exit)
+			os.Exit(int(sig.(syscall.Signal)))
 		}
 	}()
 }
@@ -140,10 +135,8 @@ func Run() error {
 		},
 		Before: func(c *cli.Context) (err error) {
 			cfg, err = cl.Load(c.String("config"))
-			if err != nil {
-				if c.IsSet("config") || !errors.Is(err, config.ErrConfigNotFound) {
-					return err
-				}
+			if err != nil && (c.IsSet("config") && errors.Is(err, config.ErrConfigNotFound) || !errors.Is(err, config.ErrConfigNotFound)) {
+				return err
 			}
 
 			for name, def := range cfg.Tasks {
@@ -171,7 +164,7 @@ func Run() error {
 				}
 			}
 
-			if c.Bool("debug") {
+			if c.Bool("debug") || cfg.Debug {
 				logrus.SetLevel(logrus.DebugLevel)
 			} else {
 				logrus.SetLevel(logrus.InfoLevel)
@@ -252,6 +245,7 @@ func Run() error {
 			NewListCommand(),
 			NewShowCommand(),
 			NewWatchCommand(),
+			NewCompletionCommand(),
 		},
 		Authors: []*cli.Author{
 			{

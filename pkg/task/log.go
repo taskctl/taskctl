@@ -16,7 +16,6 @@ func (l *log) Write(p []byte) (int, error) {
 	ln := len(p)
 	pb := make([]byte, ln)
 	copy(pb, p)
-	pb = append(pb, "\r\n"...)
 	_, err := l.buf.Write(pb)
 
 	return ln, err

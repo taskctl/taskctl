@@ -4,9 +4,10 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/logrusorgru/aurora"
 	"io"
 	"regexp"
+
+	"github.com/logrusorgru/aurora"
 
 	"github.com/sirupsen/logrus"
 
@@ -18,24 +19,26 @@ const ansi = "[\u001B\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)
 var ansiRegexp = regexp.MustCompile(ansi)
 
 type FormattedOutputDecorator struct {
-	w *bufio.Writer
+	w   io.Writer
+	buf *bufio.Writer
 }
 
-func NewFormattedOutputWriter(w io.Writer, t *task.Task) *FormattedOutputDecorator {
+func NewFormattedOutputWriter(w io.Writer) *FormattedOutputDecorator {
 	return &FormattedOutputDecorator{
-		w: bufio.NewWriter(&lineWriter{t: t, out: w}),
+		w:   w,
+		buf: bufio.NewWriter(w),
 	}
 }
 
 func (d *FormattedOutputDecorator) Write(p []byte) (int, error) {
-	if d.w.Available() == 0 || bytes.IndexByte(p, '\n') >= 0 {
-		err := d.w.Flush()
+	if d.buf.Available() == 0 || bytes.IndexByte(p, '\n') >= 0 {
+		err := d.buf.Flush()
 		if err != nil {
 			return 0, err
 		}
 	}
 
-	return d.w.Write(p)
+	return d.buf.Write(p)
 }
 
 func (d *FormattedOutputDecorator) WriteHeader(t *task.Task) error {
@@ -49,6 +52,15 @@ func (d *FormattedOutputDecorator) WriteFooter(t *task.Task) error {
 }
 
 func (d *FormattedOutputDecorator) Close() {
+	err := d.buf.Flush()
+	if err != nil {
+		logrus.Warning(err)
+	}
+}
+
+func (d FormattedOutputDecorator) ForTask(t *task.Task) DecoratedOutputWriter {
+	d.buf = bufio.NewWriter(&lineWriter{t: t, out: d.w})
+	return &d
 }
 
 type lineWriter struct {

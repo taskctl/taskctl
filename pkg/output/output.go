@@ -5,15 +5,17 @@ import (
 	"os"
 	"sync"
 
+	"github.com/taskctl/taskctl/pkg/config"
+
 	"github.com/sirupsen/logrus"
 
 	"github.com/taskctl/taskctl/pkg/task"
 )
 
 const (
-	FlavorRaw       = "raw"
-	FlavorFormatted = "formatted"
-	FlavorCockpit   = "cockpit"
+	FlavorRaw       = config.FlavorRaw
+	FlavorFormatted = config.FlavorFormatted
+	FlavorCockpit   = config.FlavorCockpit
 )
 
 var Stdout io.Writer = os.Stdout
@@ -23,21 +25,29 @@ type DecoratedOutputWriter interface {
 	Write(b []byte) (int, error)
 	WriteHeader(t *task.Task) error
 	WriteFooter(t *task.Task) error
+	ForTask(t *task.Task) DecoratedOutputWriter
 }
 
 type TaskOutput struct {
-	flavor   string
-	progress bool
-	spinner  bool
-	lock     sync.Mutex
-	closeCh  chan bool
+	decorator DecoratedOutputWriter
+	lock      sync.Mutex
+	closeCh   chan bool
 }
 
-func NewTaskOutput(flavor string, progress bool) (*TaskOutput, error) {
+func NewTaskOutput(flavor string) (*TaskOutput, error) {
 	o := &TaskOutput{
-		flavor:   flavor,
-		progress: progress,
-		closeCh:  make(chan bool),
+		closeCh: make(chan bool),
+	}
+
+	switch flavor {
+	case FlavorRaw:
+		o.decorator = NewRawOutputWriter(Stdout)
+	case FlavorFormatted:
+		o.decorator = NewFormattedOutputWriter(Stdout)
+	case FlavorCockpit:
+		o.decorator = NewCockpitOutputWriter(Stdout, o.closeCh)
+	default:
+		logrus.Error("unknown decorator requested")
 	}
 
 	return o, nil
@@ -46,22 +56,10 @@ func NewTaskOutput(flavor string, progress bool) (*TaskOutput, error) {
 func (o *TaskOutput) Stream(t *task.Task, cmdStdout, cmdStderr io.ReadCloser, flushed chan struct{}) {
 	o.lock.Lock()
 
-	var decorator DecoratedOutputWriter
-	switch o.flavor {
-	case FlavorRaw:
-		decorator = NewRawOutputWriter(Stdout)
-	case FlavorFormatted:
-		decorator = NewFormattedOutputWriter(Stdout, t)
-	case FlavorCockpit:
-		decorator = NewCockpitOutputWriter(Stdout, o.closeCh)
-	default:
-		logrus.Error("unknown decorator requested")
-	}
-
-	decorator.WriteHeader(t)
-
 	var wg sync.WaitGroup
 	wg.Add(2)
+
+	decorator := o.decorator.ForTask(t)
 
 	go func(dst io.Writer) {
 		defer wg.Done()
@@ -82,7 +80,6 @@ func (o *TaskOutput) Stream(t *task.Task, cmdStdout, cmdStderr io.ReadCloser, fl
 	o.lock.Unlock()
 
 	wg.Wait()
-	decorator.WriteFooter(t)
 	close(flushed)
 }
 
@@ -105,6 +102,14 @@ func (o *TaskOutput) pipe(dst io.Writer, src io.ReadCloser) error {
 	}
 
 	return nil
+}
+
+func (o *TaskOutput) Start(t *task.Task) error {
+	return o.decorator.WriteHeader(t)
+}
+
+func (o *TaskOutput) Finish(t *task.Task) error {
+	return o.decorator.WriteFooter(t)
 }
 
 func (o *TaskOutput) Close() {

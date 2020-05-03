@@ -2,9 +2,10 @@ package main
 
 import (
 	"errors"
-	"github.com/urfave/cli/v2"
 	"os"
 	"text/template"
+
+	"github.com/urfave/cli/v2"
 )
 
 var showTmpl = `

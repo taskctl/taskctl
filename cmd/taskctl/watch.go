@@ -2,14 +2,16 @@ package main
 
 import (
 	"fmt"
-	"github.com/urfave/cli/v2"
 	"sync"
+
+	"github.com/urfave/cli/v2"
+
+	"github.com/taskctl/taskctl/pkg/watch"
 
 	"github.com/taskctl/taskctl/pkg/output"
 	"github.com/taskctl/taskctl/pkg/runner"
 
 	"github.com/sirupsen/logrus"
-	"github.com/taskctl/taskctl/internal/watch"
 )
 
 func NewWatchCommand() *cli.Command {
@@ -25,7 +27,14 @@ func NewWatchCommand() *cli.Command {
 			return nil
 		},
 		Action: func(c *cli.Context) (err error) {
-			rn, err := runner.NewTaskRunner(contexts, make([]string, 0), output.FlavorFormatted, c.Bool("dry-run"), cfg.Variables)
+			taskRunner, err := runner.NewTaskRunner(contexts, output.FlavorFormatted, cfg.Variables)
+			if err != nil {
+				return err
+			}
+
+			if c.Bool("dry-run") {
+				taskRunner.DryRun()
+			}
 
 			var wg sync.WaitGroup
 			for _, name := range c.Args().Slice() {
@@ -35,17 +44,15 @@ func NewWatchCommand() *cli.Command {
 					return fmt.Errorf("unknown watcher %s", name)
 				}
 				go func(w *watch.Watcher) {
-					select {
-					case <-cancel:
-						w.Close()
-						return
-					}
+					<-cancel
+					w.Close()
+					return
 				}(w)
 
 				go func(w *watch.Watcher) {
 					defer wg.Done()
 
-					err = w.Run(rn)
+					err = w.Run(taskRunner)
 					if err != nil {
 						logrus.Error(err)
 					}

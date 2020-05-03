@@ -5,13 +5,12 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/taskctl/taskctl/internal/config"
+	"github.com/taskctl/taskctl/pkg/config"
 
-	"github.com/taskctl/taskctl/pkg/builder"
 	"github.com/taskctl/taskctl/pkg/util"
 )
 
-func buildRemoteContext(def *builder.ContextDefinition, cfg *config.Config, c *ExecutionContext) {
+func buildRemoteContext(def *config.ContextDefinition, cfg *config.Config, c *ExecutionContext) {
 	c.ssh = ssh{
 		user:    def.SSH.User,
 		host:    def.SSH.Host,

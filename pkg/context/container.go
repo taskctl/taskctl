@@ -6,12 +6,11 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/taskctl/taskctl/internal/config"
-	"github.com/taskctl/taskctl/pkg/builder"
+	"github.com/taskctl/taskctl/pkg/config"
 	"github.com/taskctl/taskctl/pkg/util"
 )
 
-func buildContainerContext(def *builder.ContextDefinition, cfg *config.Config, c *ExecutionContext) {
+func buildContainerContext(def *config.ContextDefinition, cfg *config.Config, c *ExecutionContext) {
 	c.container = container{
 		provider: def.Container.Provider,
 		name:     def.Container.Name,

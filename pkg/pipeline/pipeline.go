@@ -6,7 +6,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/taskctl/taskctl/pkg/builder"
+	"github.com/taskctl/taskctl/pkg/config"
+
 	"github.com/taskctl/taskctl/pkg/task"
 )
 
@@ -19,7 +20,7 @@ type Pipeline struct {
 	error error
 }
 
-func BuildPipeline(stages []*builder.StageDefinition, pipelines map[string][]*builder.StageDefinition, tasks map[string]*builder.TaskDefinition) (p *Pipeline, err error) {
+func BuildPipeline(stages []*config.StageDefinition, pipelines map[string][]*config.StageDefinition, tasks map[string]*config.TaskDefinition) (p *Pipeline, err error) {
 	p = &Pipeline{
 		nodes: make(map[string]*Stage),
 		from:  make(map[string][]string),
@@ -43,7 +44,7 @@ func BuildPipeline(stages []*builder.StageDefinition, pipelines map[string][]*bu
 				return nil, fmt.Errorf("unknown pipeline %s", def.Task)
 			}
 
-			stagePipeline, err = BuildPipeline(stagePipelineDef, pipelines, tasks) // todo: detect cycles
+			stagePipeline, err = BuildPipeline(stagePipelineDef, pipelines, tasks)
 			if err != nil {
 				return nil, err
 			}
@@ -51,12 +52,14 @@ func BuildPipeline(stages []*builder.StageDefinition, pipelines map[string][]*bu
 
 		stage := &Stage{
 			Name:         def.Name,
+			Condition:    def.Condition,
 			Task:         stageTask,
 			Pipeline:     stagePipeline,
 			DependsOn:    def.DependsOn,
 			Env:          def.Env,
 			Dir:          def.Dir,
 			AllowFailure: def.AllowFailure,
+			Variables:    def.Variables,
 		}
 
 		if stage.Dir != "" {
@@ -131,7 +134,7 @@ func (p *Pipeline) To(name string) []string {
 }
 
 func (p *Pipeline) cycleDfs(t string, visited map[string]bool) error {
-	if visited[t] == true {
+	if visited[t] {
 		return errors.New("cycle detected")
 	}
 	visited[t] = true
@@ -161,13 +164,18 @@ func (p *Pipeline) ProvideOutput(s *Stage) error {
 			continue
 		}
 
-		exportAs := n.Task.ExportAs
-		if exportAs == "" {
-			exportAs = fmt.Sprintf("%s_OUTPUT", strings.ToUpper(dep))
+		var varName, envVarName string
+		if n.Task.ExportAs == "" {
+			varName = fmt.Sprintf("Output%s", strings.Title(dep))
+			envVarName = fmt.Sprintf("%s_OUTPUT", strings.ToUpper(dep))
+			envVarName = regexp.MustCompile("[^a-zA-Z0-9_]").ReplaceAllString(envVarName, "_")
+		} else {
+			varName = n.Task.ExportAs
+			envVarName = n.Task.ExportAs
 		}
 
-		exportAs = regexp.MustCompile("[^a-zA-Z0-9_]").ReplaceAllString(exportAs, "_")
-		s.SetEnvVariable(exportAs, n.Task.Log.Stdout.String())
+		s.SetEnvVariable(envVarName, n.Task.Log.Stdout.String())
+		s.Variables.Set(varName, n.Task.Log.Stdout.String())
 	}
 
 	return nil

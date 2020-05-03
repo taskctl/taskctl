@@ -2,8 +2,9 @@ package output
 
 import (
 	"fmt"
-	"github.com/taskctl/taskctl/pkg/task"
 	"io"
+
+	"github.com/taskctl/taskctl/pkg/task"
 )
 
 type RawOutputDecorator struct {
@@ -27,5 +28,6 @@ func (d *RawOutputDecorator) WriteFooter(t *task.Task) error {
 	return err
 }
 
-func (d *RawOutputDecorator) Close() {
+func (d *RawOutputDecorator) ForTask(t *task.Task) DecoratedOutputWriter {
+	return d
 }
