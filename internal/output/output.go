@@ -5,11 +5,11 @@ import (
 	"os"
 	"sync"
 
-	"github.com/taskctl/taskctl/pkg/config"
+	"github.com/taskctl/taskctl/internal/config"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/taskctl/taskctl/internal/task"
 )
 
 const (

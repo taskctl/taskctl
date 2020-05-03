@@ -3,7 +3,7 @@ package config
 import (
 	"time"
 
-	"github.com/taskctl/taskctl/pkg/util"
+	"github.com/taskctl/taskctl/internal/util"
 )
 
 type ContextDefinition struct {

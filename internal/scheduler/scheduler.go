@@ -9,8 +9,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/taskctl/taskctl/pkg/pipeline"
-	"github.com/taskctl/taskctl/pkg/runner"
+	"github.com/taskctl/taskctl/internal/pipeline"
+	"github.com/taskctl/taskctl/internal/runner"
 )
 
 type PipelineScheduler struct {

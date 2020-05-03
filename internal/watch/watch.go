@@ -3,15 +3,15 @@ package watch
 import (
 	"sync"
 
-	"github.com/taskctl/taskctl/pkg/config"
+	"github.com/taskctl/taskctl/internal/config"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/bmatcuk/doublestar"
 	"github.com/fsnotify/fsnotify"
 
-	"github.com/taskctl/taskctl/pkg/runner"
-	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/taskctl/taskctl/internal/runner"
+	"github.com/taskctl/taskctl/internal/task"
 )
 
 const (

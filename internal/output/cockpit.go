@@ -11,7 +11,7 @@ import (
 	"github.com/briandowns/spinner"
 	"github.com/logrusorgru/aurora"
 
-	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/taskctl/taskctl/internal/task"
 )
 
 var cockpitDecorator *CockpitOutputDecorator

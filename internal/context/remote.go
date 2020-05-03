@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/taskctl/taskctl/pkg/config"
+	"github.com/taskctl/taskctl/internal/config"
 
-	"github.com/taskctl/taskctl/pkg/util"
+	"github.com/taskctl/taskctl/internal/util"
 )
 
 func buildRemoteContext(def *config.ContextDefinition, cfg *config.Config, c *ExecutionContext) {

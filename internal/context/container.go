@@ -6,8 +6,8 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/taskctl/taskctl/pkg/config"
-	"github.com/taskctl/taskctl/pkg/util"
+	"github.com/taskctl/taskctl/internal/config"
+	"github.com/taskctl/taskctl/internal/util"
 )
 
 func buildContainerContext(def *config.ContextDefinition, cfg *config.Config, c *ExecutionContext) {

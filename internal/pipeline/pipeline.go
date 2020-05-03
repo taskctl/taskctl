@@ -6,9 +6,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/taskctl/taskctl/pkg/config"
+	"github.com/taskctl/taskctl/internal/config"
 
-	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/taskctl/taskctl/internal/task"
 )
 
 type Pipeline struct {

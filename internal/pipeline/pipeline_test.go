@@ -3,7 +3,7 @@ package pipeline
 import (
 	"testing"
 
-	"github.com/taskctl/taskctl/pkg/config"
+	"github.com/taskctl/taskctl/internal/config"
 )
 
 func TestBuildPipeline_Cyclic(t *testing.T) {

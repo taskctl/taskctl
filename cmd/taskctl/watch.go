@@ -6,10 +6,10 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	"github.com/taskctl/taskctl/pkg/watch"
+	"github.com/taskctl/taskctl/internal/watch"
 
-	"github.com/taskctl/taskctl/pkg/output"
-	"github.com/taskctl/taskctl/pkg/runner"
+	"github.com/taskctl/taskctl/internal/output"
+	"github.com/taskctl/taskctl/internal/runner"
 
 	"github.com/sirupsen/logrus"
 )

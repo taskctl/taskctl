@@ -8,7 +8,7 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	"github.com/taskctl/taskctl/pkg/util"
+	"github.com/taskctl/taskctl/internal/util"
 )
 
 var listTmpl = `Contexts:{{range $context := .Contexts}}

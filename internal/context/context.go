@@ -9,12 +9,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/taskctl/taskctl/internal/task"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/taskctl/taskctl/pkg/config"
-	"github.com/taskctl/taskctl/pkg/util"
+	"github.com/taskctl/taskctl/internal/config"
+	"github.com/taskctl/taskctl/internal/util"
 )
 
 type container struct {

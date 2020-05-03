@@ -6,15 +6,15 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/taskctl/taskctl/pkg/config"
+	"github.com/taskctl/taskctl/internal/config"
 
-	"github.com/taskctl/taskctl/pkg/output"
+	"github.com/taskctl/taskctl/internal/output"
 
 	"github.com/sirupsen/logrus"
 
-	taskctx "github.com/taskctl/taskctl/pkg/context"
-	"github.com/taskctl/taskctl/pkg/task"
-	"github.com/taskctl/taskctl/pkg/util"
+	taskctx "github.com/taskctl/taskctl/internal/context"
+	"github.com/taskctl/taskctl/internal/task"
+	"github.com/taskctl/taskctl/internal/util"
 )
 
 type TaskRunner struct {

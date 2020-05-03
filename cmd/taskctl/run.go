@@ -5,18 +5,18 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/taskctl/taskctl/pkg/config"
+	"github.com/taskctl/taskctl/internal/config"
 
 	"github.com/urfave/cli/v2"
 
-	"github.com/taskctl/taskctl/pkg/output"
+	"github.com/taskctl/taskctl/internal/output"
 
 	"github.com/logrusorgru/aurora"
 
-	"github.com/taskctl/taskctl/pkg/pipeline"
-	"github.com/taskctl/taskctl/pkg/runner"
-	"github.com/taskctl/taskctl/pkg/scheduler"
-	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/taskctl/taskctl/internal/pipeline"
+	"github.com/taskctl/taskctl/internal/runner"
+	"github.com/taskctl/taskctl/internal/scheduler"
+	"github.com/taskctl/taskctl/internal/task"
 )
 
 func NewRunCommand() *cli.Command {

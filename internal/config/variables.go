@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/taskctl/taskctl/pkg/util"
+	"github.com/taskctl/taskctl/internal/util"
 )
 
 type Set map[string]string

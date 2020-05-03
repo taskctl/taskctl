@@ -4,7 +4,7 @@ import (
 	"github.com/imdario/mergo"
 	"github.com/sirupsen/logrus"
 
-	"github.com/taskctl/taskctl/pkg/util"
+	"github.com/taskctl/taskctl/internal/util"
 )
 
 const (
