@@ -33,6 +33,7 @@ Beside pipelines, each single task can be performed manually or triggered by bui
 
 ## Contents  
 - [Getting started](#getting-started)
+  - [Installation](#install)
 - [Tasks](#tasks)
     - [!!!Task`s variables](#task-variables)
     - [!!!Storing task output](#storing-task-output) 
@@ -56,11 +57,6 @@ Beside pipelines, each single task can be performed manually or triggered by bui
 brew tap taskctl/taskctl
 brew install taskctl
 ```
-or
-```
-sudo curl -Lo /usr/local/bin/taskctl https://github.com/taskctl/taskctl/releases/latest/download/taskctl_darwin_amd64
-sudo chmod +x /usr/local/bin/taskctl
-```
 
 ### Linux
 ```
@@ -70,6 +66,11 @@ sudo chmod +x /usr/local/bin/taskctl
 ### From sources
 ```
 go get -u github.com/taskctl/taskctl/cmd/taskctl
+```
+
+### Install script
+```
+curl -sL https://raw.githubusercontent.com/taskctl/taskctl/master/install.sh | sh
 ```
 
 ## Usage

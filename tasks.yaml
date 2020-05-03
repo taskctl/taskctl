@@ -53,7 +53,7 @@ tasks:
 
   goimports:
     command:
-      - goimports -local github.com/taskctl/taskctl -w -format-only $(ls -d pkg/**/*.go | grep -v vendor/)
+      - goimports -local github.com/taskctl/taskctl -w -format-only $(ls -d internal/**/*.go | grep -v vendor/)
       - goimports -local github.com/taskctl/taskctl -w -format-only $(ls -d cmd/**/*.go)
 
   goreleaser:

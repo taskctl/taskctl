@@ -3,9 +3,9 @@ before:
     - go mod download
 
 builds:
-- main: ./cmd/taskctl
+- main: ./cmd/taskctl/taskctl.go
   env:
-  - CGO_ENABLED=0
+    - CGO_ENABLED=0
   goos:
     - darwin
     - linux
@@ -19,16 +19,16 @@ builds:
 
 dist: bin
 
-archive:
-  format: tar.gz
-  format_overrides:
-    - goos: windows
-      format: zip
-  files:
-    - LICENSE
-    - README.md
-    - autocomplete/bash_completion.bash
-    - autocomplete/zsh_autocompletion.zsh
+archives:
+  - format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - LICENSE
+      - README.md
+      - autocomplete/bash_completion.bash
+      - autocomplete/zsh_autocompletion.zsh
 
 checksum:
   name_template: checksums.txt
