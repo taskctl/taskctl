@@ -9,8 +9,6 @@ import (
 type ContextDefinition struct {
 	Type      string
 	Dir       string
-	Container ContainerDefinition
-	SSH       SSHConfigDefinition
 	Up        []string
 	Down      []string
 	Before    []string
@@ -54,21 +52,4 @@ type WatcherDefinition struct {
 	Exclude   []string
 	Task      string
 	Variables Set
-}
-
-type ContainerDefinition struct {
-	Provider string
-	Name     string
-	Image    string
-	Exec     bool
-	Options  []string
-	Env      Set
-	util.Executable
-}
-
-type SSHConfigDefinition struct {
-	Options []string
-	User    string
-	Host    string
-	util.Executable
 }

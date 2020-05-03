@@ -12,10 +12,6 @@ const (
 	ContextTypeContainer = "container"
 	ContextTypeRemote    = "remote"
 
-	ContextContainerProviderDocker        = "docker"
-	ContextContainerProviderDockerCompose = "docker-compose"
-	ContextContainerProviderKubectl       = "kubectl"
-
 	FlavorRaw       = "raw"
 	FlavorFormatted = "formatted"
 	FlavorCockpit   = "cockpit"

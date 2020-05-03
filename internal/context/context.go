@@ -73,13 +73,6 @@ func BuildContext(def *config.ContextDefinition, cfg *config.Config) (*Execution
 		after:  def.After,
 	}
 
-	switch c.ctxType {
-	case config.ContextTypeContainer:
-		buildContainerContext(def, cfg, c)
-	case config.ContextTypeRemote:
-		buildRemoteContext(def, cfg, c)
-	}
-
 	if c.dir == "" {
 		var err error
 		c.dir, err = os.Getwd()
@@ -197,22 +190,10 @@ func (c *ExecutionContext) runServiceCommand(command string) (err error) {
 }
 
 func (c *ExecutionContext) BuildCommand(ctx context.Context, command string, t *task.Task) (*exec.Cmd, error) {
-	var cmd *exec.Cmd
-	switch c.ctxType {
-	case config.ContextTypeLocal:
-		cmd = c.buildLocalCommand(ctx, command)
-	case config.ContextTypeContainer:
-		switch c.container.provider {
-		case config.ContextContainerProviderDocker, config.ContextContainerProviderDockerCompose:
-			cmd = c.buildDockerCommand(ctx, command)
-		case config.ContextContainerProviderKubectl:
-			cmd = c.buildKubectlCommand(ctx, command)
-		}
-	case config.ContextTypeRemote:
-		cmd = c.buildRemoteCommand(ctx, command)
-	default:
-		return nil, errors.New("unknown context type")
-	}
+	cmd := exec.CommandContext(ctx, c.executable.Bin, c.executable.Args...)
+	cmd.Args = append(cmd.Args, command)
+	cmd.Env = c.env
+	cmd.Dir = c.dir
 
 	if cmd == nil {
 		return nil, errors.New("failed to build command")

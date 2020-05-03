@@ -44,7 +44,6 @@ Beside pipelines, each single task can be performed manually or triggered by bui
 - [Contexts](#contexts)
 - [Config example](#examples)
 - [FAQ](#faq)
-  - [How to store task output to variable?](#how-to-store-task-output-to-variable)
   - [Where does global config stored?](#where-does-global-config-stored)
   - [How does it differ from go-task/task?](#how-does-it-differ-from-go-tasktask)
 - [Autocomplete](#autocomplete)
@@ -126,17 +125,31 @@ Task definition takes following parameters:
 - ``exportAs`` - output variable name. ``TASK_NAME_OUTPUT`` by default
 
 ### Task variables
-Each task has set of predefined variables these can be used inside task params.
+Each task has variables to be used to render task's fields  - `command`, `dir`.
+Along with predefined, variables can be set in a task's definition.
+
+Predefined variables are:
 - ``Root`` - config file directory
+- ``TaskName`` - current task's name
+- ``OutputTask1`` - `task1` output
 
 Variables can be used inside task definition. For example:
 ```
 tasks:
-    lint:
+    task1:
         dir: "{{ .Root }}/some-dir"
         command:
-          - "echo {{ .Name }}"
+          - echo "My name is {{ .TaskName }}"
+          - echo "Sleep for {{ .sleep }} seconds"
+          - sleep {{ .sleep }}
+        variables:
+          sleep: 3
 ```
+
+### Storing task's output
+Task output automatically stored to the variable named like this - ``OutputTaskName``, where `TaskName` is the actual task's name.
+Variable's name can be changed by a task's `exportAs` parameter.
+Those variables will be available to dependent stages.
 
 ### Task variations
 Every task may run one or more variations. It allows to reuse task with different env variables:
@@ -217,16 +230,11 @@ watchers:
 
 ## Contexts
 Contexts allows you to set up execution environment, shell or binaries which will run your task, up/down commands etc
-Available context types:
-- local (shell or binary)
-- remote (ssh)
-- container (docker, docker-compose, kubernetes via kubectl)
 
 ### Local context with zsh
 ```yaml
 contexts:
   local:
-    type: local
     executable:
       bin: /bin/zsh
       args:
@@ -239,32 +247,25 @@ contexts:
 
 ### Docker context
 ```yaml
-  mysql:
-    type: container
-    container:
-      provider: docker
-      image: mysql:latest
+  alpine:
     executable:
-        bin: mysql
-        args:
-          - -hdb.example.com
-          - -uroot
-          - -psecure-password
-          - database_name
-          - -e
+      bin: /usr/local/bin/docker
+      args:
+        - run
+        - --rm
+        - alpine:latest
+    env:
+      DOCKER_HOST: "tcp://0.0.0.0:2375"
+    before: echo "SOME COMMAND TO RUN BEFORE TASK"
+    after: echo "SOME COMMAND TO RUN WHEN TASK FINISHED SUCCESSFULLY"
+
 tasks:
   mysql-task:
-    context: mysql
-    command: TRUNCATE TABLE queue
+    context: alpine
+    command: uname -a
 ```
 
 ## FAQ
-### How to store task output to variable?
-Task output is automatically stored to the variable named like this - ``TASK_NAME_OUTPUT``, where `TASK_NAME` is the actual task's name.
-Variable name can be changed by `exportAs` parameter.
-All characters except letters, digits and the `_` would be replaced by `_`.
-Those variables would be added to the next stage.
-
 ### Where does global config stored?
 It is stored in ``$HOME/.taskctl/config.yaml`` file
 

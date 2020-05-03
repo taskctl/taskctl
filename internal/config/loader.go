@@ -129,7 +129,7 @@ func (cl *ConfigLoader) load(file string) (config map[string]interface{}, err er
 		return nil, err
 	}
 
-	cm := make(map[string]interface{})
+	var cm map[string]interface{}
 	importDir := path.Dir(file)
 	if imports, ok := config["import"]; ok {
 		for _, v := range imports.([]interface{}) {

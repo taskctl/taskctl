@@ -104,7 +104,6 @@ watchers:
 
 contexts:
   local: # will be created automatically if not set
-    type: local
     executable:
       bin: /bin/zsh
       args:
@@ -114,53 +113,40 @@ contexts:
     before: echo "SOME COMMAND TO RUN BEFORE EVERY TASK"
     after: echo "SOME COMMAND TO RUN WHEN TASK FINISHED SUCCESSFULLY"
 
-  docker-context-name:
-    type: container
-    container:
-      provider: docker
-      image: alpine:latest
-      options:
-        - -v /folder:/folder
-      exec: false
-      env:
-        VAR_NAME: VAR_VALUE
+  docker-context:
+    executable:
+      bin: /usr/local/bin/docker
+      args:
+        - run
+        - --rm
+        - alpine:latest
     env:
-      VAR_NAME: VAR_VALUE # eg. "DOCKER_HOST"
+      DOCKER_HOST: "tcp://0.0.0.0:2375"
     before: echo "SOME COMMAND TO RUN BEFORE TASK"
     after: echo "SOME COMMAND TO RUN WHEN TASK FINISHED SUCCESSFULLY"
 
-  docker-compose-context-name:
-    type: container
-    container:
-      provider: docker-compose
-      name: api
-      exec: true
-      executable:
-        args:
-          - --file=docker-compose.yaml
-      options:
-        - --user=root
-      env:
-        VAR_NAME: VAR_VALUE
+  docker-compose-context:
+    dir: /app
+    executable:
+      bin: /usr/local/bin/docker-compose
+      args:
+        - run
+        - --rm
+        - api
+    env:
+      COMPOSE_FILE: /app/docker-compose-alternate.yaml
     up: docker-compose up -d --build --force-recreate api # Executes once before first context usage
     down: docker-compose down api # Executes once when all tasks done
-    env:
-      VAR_NAME: VAR_VALUE # eg."COMPOSE_FILE"
-    before: SOME COMMAND TO RUN BEFORE TASK
-    after: SOME COMMAND TO RUN WHEN TASK FINISHED SUCCESSFULLY
 
-  ssh-context-name:
-    type: remote
-    ssh:
-      user: root
-      host: some-server
-      options:
-        - -6
-        - -C
+  kubectl:
+    executable:
+      bin: /usr/local/bin/kubectl
+      args:
+        - exec
+        - -n stage
+        - pod-name
     env:
-      VAR_NAME: VAR_VALUE # eg. "DOCKER_HOST"
-    before: SOME COMMAND TO RUN BEFORE TASK
-    after: SOME COMMAND TO RUN WHEN TASK FINISHED SUCCESSFULLY
+      KUBECONFIG: "$HOME/.kube/alternate-config"
 
 # Default values for different providers
 shell:
