@@ -43,9 +43,10 @@ changelog:
 snapcrafts:
   - name: taskctl
     summary: taskctl
-    description: taskctl - developer's routine tasks automation toolkit. Simple modern alternative to GNU Make 🧰
+    description: taskctl - task runner. Developer's routine tasks automation toolkit.
     confinement: devmode
     grade: devel
+    publish: true
 
 brews:
   - github:
