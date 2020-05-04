@@ -46,7 +46,7 @@ func main() {
 	})
 	listenSignals()
 
-	err := Run()
+	err := run()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -54,16 +54,16 @@ func main() {
 
 func listenSignals() {
 	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGKILL, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		for sig := range sigs {
-			Abort()
+			abort()
 			os.Exit(int(sig.(syscall.Signal)))
 		}
 	}()
 }
 
-func Run() error {
+func run() error {
 	cl := config.NewConfigLoader()
 	globalCfg, err := cl.LoadGlobalConfig()
 	if err != nil {
@@ -120,7 +120,7 @@ func Run() error {
 			},
 			&cli.StringSliceFlag{
 				Name:  "set",
-				Usage: "override config value",
+				Usage: "set global variable value",
 			},
 			&cli.BoolFlag{
 				Name:  "dry-run",
@@ -139,12 +139,19 @@ func Run() error {
 				return err
 			}
 
+			for _, c := range c.StringSlice("set") {
+				arr := strings.Split(c, "=")
+				if len(arr) > 1 {
+					cfg.Variables.Set(arr[0], strings.Join(arr[1:], "="))
+				}
+			}
+
 			for name, def := range cfg.Tasks {
 				tasks[name] = task.BuildTask(def)
 			}
 
 			for name, def := range cfg.Contexts {
-				contexts[name], err = context.BuildContext(def, config.Get())
+				contexts[name], err = context.BuildContext(def)
 				if err != nil {
 					return fmt.Errorf("context %s build failed: %v", name, err)
 				}
@@ -240,12 +247,12 @@ func Run() error {
 			return runPipeline(pipelines[selection.Target], taskRunner, c.Bool("summary"))
 		},
 		Commands: []*cli.Command{
-			NewRunCommand(),
-			NewInitCommand(),
-			NewListCommand(),
-			NewShowCommand(),
-			NewWatchCommand(),
-			NewCompletionCommand(),
+			newRunCommand(),
+			newInitCommand(),
+			newListCommand(),
+			newShowCommand(),
+			newWatchCommand(),
+			newCompletionCommand(),
 		},
 		Authors: []*cli.Author{
 			{
@@ -258,7 +265,7 @@ func Run() error {
 	return app.Run(os.Args)
 }
 
-func Abort() {
+func abort() {
 	close(cancel)
 	<-done
 }

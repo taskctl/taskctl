@@ -14,7 +14,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func NewWatchCommand() *cli.Command {
+func newWatchCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "watch",
 		ArgsUsage: "watch [WATCHERS...]",
@@ -46,7 +46,6 @@ func NewWatchCommand() *cli.Command {
 				go func(w *watch.Watcher) {
 					<-cancel
 					w.Close()
-					return
 				}(w)
 
 				go func(w *watch.Watcher) {

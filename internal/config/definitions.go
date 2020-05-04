@@ -13,8 +13,8 @@ type ContextDefinition struct {
 	Down      []string
 	Before    []string
 	After     []string
-	Env       Set
-	Variables Set
+	Env       Variables
+	Variables Variables
 	util.Executable
 }
 
@@ -26,8 +26,8 @@ type StageDefinition struct {
 	DependsOn    []string `mapstructure:"depends_on"`
 	AllowFailure bool     `mapstructure:"allow_failure"`
 	Dir          string
-	Env          Set
-	Variables    Set
+	Env          Variables
+	Variables    Variables
 }
 
 type TaskDefinition struct {
@@ -42,8 +42,8 @@ type TaskDefinition struct {
 	Timeout      *time.Duration `yaml:",omitempty"`
 	AllowFailure bool           `mapstructure:"allow_failure"`
 	ExportAs     string
-	Env          Set
-	Variables    Set
+	Env          Variables
+	Variables    Variables
 }
 
 type WatcherDefinition struct {
@@ -51,5 +51,5 @@ type WatcherDefinition struct {
 	Watch     []string
 	Exclude   []string
 	Task      string
-	Variables Set
+	Variables Variables
 }

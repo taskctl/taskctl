@@ -8,7 +8,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func NewCompletionCommand() *cli.Command {
+func newCompletionCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "completion",
 		Usage:     "generates completion scripts",

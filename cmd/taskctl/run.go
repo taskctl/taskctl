@@ -19,7 +19,7 @@ import (
 	"github.com/taskctl/taskctl/internal/task"
 )
 
-func NewRunCommand() *cli.Command {
+func newRunCommand() *cli.Command {
 	var taskRunner *runner.TaskRunner
 	cmd := &cli.Command{
 		Name:      "run",
@@ -154,7 +154,7 @@ func runPipeline(pipeline *pipeline.Pipeline, taskRunner *runner.TaskRunner, sum
 }
 
 func runTask(t *task.Task, taskRunner *runner.TaskRunner) error {
-	err := taskRunner.Run(t, config.Set{}, config.Set{})
+	err := taskRunner.Run(t, config.Variables{}, config.Variables{})
 	if err != nil {
 		return err
 	}

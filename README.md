@@ -34,45 +34,50 @@ Beside pipelines, each single task can be performed manually or triggered by bui
 ## Contents  
 - [Getting started](#getting-started)
   - [Installation](#install)
+  - [Usage](#usage)
+- [Configuration](#configuration)
+    - [Global configuration](#global-configuration)
+    - [Example](#example)
 - [Tasks](#tasks)
-    - [!!!Task`s variables](#task-variables)
-    - [!!!Storing task output](#storing-task-output) 
+    - [Task`s variations](#tasks-variations)
+    - [Task`s variables](#tasks-variables)
+    - [Storing task's output](#storing-tasks-output) 
     - [!!!Conditional execution](#task-conditional-execution) 
 - [Pipelines](#pipelines)
     - [!!!Conditional execution](#conditional-execution) 
 - [Filesystem watchers](#filesystem-watchers)
 - [Contexts](#contexts)
-- [Config example](#examples)
 - [FAQ](#faq)
-  - [Where does global config stored?](#where-does-global-config-stored)
   - [How does it differ from go-task/task?](#how-does-it-differ-from-go-tasktask)
 - [Autocomplete](#autocomplete)
 - [Similar projects](#similar-projects)
+- [How to contribute?](#how-to-contribute)
+- [License](#license)
 
-# Getting started
-## Install
-### MacOS
+## Getting started
+### Install
+#### MacOS
 ```
 brew tap taskctl/taskctl
 brew install taskctl
 ```
 
-### Linux
+#### Linux
 ```
 sudo wget https://github.com/taskctl/taskctl/releases/latest/download/taskctl_linux_amd64 -O /usr/local/bin/taskctl
 sudo chmod +x /usr/local/bin/taskctl
 ```
-### From sources
+#### From sources
 ```
 go get -u github.com/taskctl/taskctl/cmd/taskctl
 ```
 
-### Install script
+#### Install script
 ```
 curl -sL https://raw.githubusercontent.com/taskctl/taskctl/master/install.sh | sh
 ```
 
-## Usage
+### Usage
 ### Run pipeline
 ```
 taskctl pipeline1 // single pipeline
@@ -94,6 +99,28 @@ taskctl watch watcher1
 taskctl -c tasks.yaml run lint
 taskctl -c https://raw.githubusercontent.com/taskctl/taskctl/master/example/full.yaml run task4
 ```
+
+## Configuration
+taskctl uses config file (`tasks.yaml` or `taskctl.yaml`) to store tasks and pipelines. Config file includes following sections:
+- tasks
+- pipelines
+- watchers
+- contexts
+- variables
+
+Config file may import other config files, directories or URLs.
+```yaml
+import:
+- .tasks/database.yaml
+- .tasks/lint/
+- https://raw.githubusercontent.com/taskctl/taskctl/master/docs/example.yaml
+```
+
+### Example
+Config file [example](https://github.com/taskctl/taskctl/blob/master/docs/example.yaml)
+
+### Global configuration
+It is stored in ``$HOME/.taskctl/config.yaml`` file. It is handy to store global tasks, reusable contexts, defaults etc 
 
 ## Tasks
 Task is a foundation of *taskctl*. It describes one or more commands to run, their environment, executors and attributes such as working directory, execution timeout, acceptance of failure, etc.
@@ -124,7 +151,7 @@ Task definition takes following parameters:
 - ``after`` - command that will be executed after command completes
 - ``exportAs`` - output variable name. ``TASK_NAME_OUTPUT`` by default
 
-### Task variables
+### Tasks variables
 Each task has variables to be used to render task's fields  - `command`, `dir`.
 Along with predefined, variables can be set in a task's definition.
 
@@ -151,8 +178,8 @@ Task output automatically stored to the variable named like this - ``OutputTaskN
 Variable's name can be changed by a task's `exportAs` parameter.
 Those variables will be available to dependent stages.
 
-### Task variations
-Every task may run one or more variations. It allows to reuse task with different env variables:
+### Tasks variations
+Task may run in one or more variations. Variations allows to reuse task with different env variables:
 ```yaml
 tasks:
   build:
@@ -266,17 +293,10 @@ tasks:
 ```
 
 ## FAQ
-### Where does global config stored?
-It is stored in ``$HOME/.taskctl/config.yaml`` file
-
 ### How does it differ from go-task/task?
 It's amazing how solving same problems lead to same solutions. taskctl and go-task have a lot of concepts in common but also have some differences. 
 1. Main is pipelines. Pipelines and stages allows more precise workflow design because same tasks may have different dependencies (or no dependencies) in different scenarios.
 2. Contexts allows you to set up execution environment, shell or binaries which will run your task. Now there is several available context types: local (shell or binary), remote (ssh), container (docker, docker-compose, kubernetes via kubectl)
-
-## Examples
-### Full config example
-[full.yaml](https://github.com/taskctl/taskctl/blob/master/docs/example.yaml)
 
 ## Autocomplete
 ### Bash
@@ -290,10 +310,21 @@ Add to  ~/.zshrc
 ```
 . <(taskctl completion zsh)
 ```
-
 ### Similar projects
 - [GNU Make](https://github.com/mirror/make)
 - [go-task/task](https://github.com/go-task/task)
 - [mage](https://github.com/magefile/mage)
 - [tusk](https://github.com/rliebz/tusk)
 - [just](https://github.com/casey/just)
+
+## How to contribute?
+Feel free to contribute in any way you want. Share ideas, submit issues, create pull requests. 
+You can start by improving this [README.md](https://github.com/taskctl/taskctl/blob/master/README.md) or suggesting new [features](https://github.com/taskctl/taskctl/issues)
+Thank you! 
+
+## License
+This project is licensed under the GNU GPLv3 - see the [LICENSE.md](LICENSE.md) file for details
+
+## Authors
+ - Yevhen Terentiev - [trntv](https://github.com/trntv)
+See also the list of [contributors](https://github.com/taskctl/taskctl/contributors) who participated in this project.

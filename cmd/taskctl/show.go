@@ -27,7 +27,7 @@ var showTmpl = `
   AllowFailure: {{ .AllowFailure }}
 `
 
-func NewShowCommand() *cli.Command {
+func newShowCommand() *cli.Command {
 	cmd := &cli.Command{
 		Name:      "show",
 		Usage:     "shows task's details",

@@ -17,23 +17,6 @@ import (
 	"github.com/taskctl/taskctl/internal/util"
 )
 
-type container struct {
-	provider   string
-	name       string
-	image      string
-	exec       bool
-	options    []string
-	env        []string
-	executable util.Executable
-}
-
-type ssh struct {
-	user       string
-	host       string
-	options    []string
-	executable util.Executable
-}
-
 type ExecutionContext struct {
 	ScheduledForCleanup bool
 
@@ -42,9 +25,6 @@ type ExecutionContext struct {
 	env        []string
 	def        *config.ContextDefinition
 	dir        string
-
-	container container
-	ssh       ssh
 
 	up           []string
 	down         []string
@@ -57,7 +37,7 @@ type ExecutionContext struct {
 	mu       sync.Mutex
 }
 
-func BuildContext(def *config.ContextDefinition, cfg *config.Config) (*ExecutionContext, error) {
+func BuildContext(def *config.ContextDefinition) (*ExecutionContext, error) {
 	c := &ExecutionContext{
 		ctxType: def.Type,
 		executable: util.Executable{
@@ -115,7 +95,7 @@ func (c *ExecutionContext) WithEnvs(env []string) (*ExecutionContext, error) {
 		def.Env[kv[0]] = kv[1]
 	}
 
-	return BuildContext(&def, config.Get())
+	return BuildContext(&def)
 }
 
 func (c *ExecutionContext) Up() error {
@@ -168,7 +148,7 @@ func (c *ExecutionContext) After() error {
 }
 
 func (c *ExecutionContext) runServiceCommand(command string) (err error) {
-	logrus.Debugf("running service context service command: %s", command)
+	logrus.Debugf("running context service command: %s", command)
 	ca := strings.Split(command, " ")
 	cmd := exec.Command(ca[0], ca[1:]...)
 	cmd.Env = c.Env()

@@ -14,7 +14,6 @@ import (
 )
 
 type PipelineScheduler struct {
-	variables  map[string]string
 	taskRunner *runner.TaskRunner
 	pause      time.Duration
 

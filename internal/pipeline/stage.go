@@ -28,7 +28,7 @@ type Stage struct {
 	Dir          string
 	AllowFailure bool
 	Status       int32
-	Variables    config.Set
+	Variables    config.Variables
 
 	Start time.Time
 	End   time.Time

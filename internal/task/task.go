@@ -15,7 +15,7 @@ type Task struct {
 	Index        uint32
 	Command      []string
 	Context      string
-	Env          config.Set
+	Env          config.Variables
 	Variations   []map[string]string
 	Dir          string
 	Timeout      *time.Duration
@@ -86,7 +86,7 @@ func (t *Task) ErrorMessage() string {
 	return util.LastLine(&t.Log.Stdout)
 }
 
-func (t *Task) Interpolate(s string, params ...config.Set) (string, error) {
+func (t *Task) Interpolate(s string, params ...config.Variables) (string, error) {
 	data := config.NewSet(map[string]string{
 		"TaskName": t.Name,
 	})

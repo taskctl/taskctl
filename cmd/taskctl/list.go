@@ -30,7 +30,7 @@ Watchers:
 {{end}}
 `
 
-func NewListCommand() *cli.Command {
+func newListCommand() *cli.Command {
 	cmd := &cli.Command{
 		Name:  "list",
 		Usage: "lists contexts, pipelines, tasks and watchers",

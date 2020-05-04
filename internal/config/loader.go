@@ -23,6 +23,7 @@ import (
 
 var ErrConfigNotFound = errors.New("config file not found")
 
+// reads config files and loads config
 type ConfigLoader struct {
 	Values  map[string]string
 	imports map[string]bool
@@ -30,6 +31,7 @@ type ConfigLoader struct {
 	homeDir string
 }
 
+// config loader constructor
 func NewConfigLoader() ConfigLoader {
 	h, err := os.UserHomeDir()
 	if err != nil {
@@ -222,21 +224,21 @@ func (cl *ConfigLoader) readFile(filename string) (map[string]interface{}, error
 }
 
 func (cl *ConfigLoader) unmarshallData(data []byte, ext string) (map[string]interface{}, error) {
-	var cm = make(map[string]interface{})
+	var cm map[string]interface{}
 
 	switch strings.ToLower(ext) {
 	case ".yaml", ".yml":
-		err := yaml.NewDecoder(bytes.NewReader(data)).Decode(cm)
+		err := yaml.NewDecoder(bytes.NewReader(data)).Decode(&cm)
 		if err != nil {
 			return nil, err
 		}
 	case ".json":
-		err := json.NewDecoder(bytes.NewReader(data)).Decode(cm)
+		err := json.NewDecoder(bytes.NewReader(data)).Decode(&cm)
 		if err != nil {
 			return nil, err
 		}
 	case ".toml":
-		err := toml.NewDecoder(bytes.NewReader(data)).Decode(cm)
+		err := toml.NewDecoder(bytes.NewReader(data)).Decode(&cm)
 		if err != nil {
 			return nil, err
 		}

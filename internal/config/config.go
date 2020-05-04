@@ -8,9 +8,7 @@ import (
 )
 
 const (
-	ContextTypeLocal     = "local"
-	ContextTypeContainer = "container"
-	ContextTypeRemote    = "remote"
+	LocalContext = "local"
 
 	FlavorRaw       = "raw"
 	FlavorFormatted = "formatted"
@@ -21,10 +19,6 @@ var DefaultFileNames = []string{"taskctl.yaml", "tasks.yaml"}
 
 var values *Config
 
-func Get() *Config {
-	return values
-}
-
 type Config struct {
 	Import    []string
 	Contexts  map[string]*ContextDefinition
@@ -32,16 +26,12 @@ type Config struct {
 	Tasks     map[string]*TaskDefinition
 	Watchers  map[string]*WatcherDefinition
 
-	Shell         util.Executable
-	Docker        util.Executable
-	DockerCompose util.Executable `mapstructure:"docker-compose"`
-	Kubectl       util.Executable
-	Ssh           util.Executable
+	Shell util.Executable
 
 	Debug, DryRun bool
 	Output        string
 
-	Variables Set
+	Variables Variables
 }
 
 func defaultConfig() *Config {
@@ -77,8 +67,8 @@ func (c *Config) init() {
 		c.Contexts = make(map[string]*ContextDefinition)
 	}
 
-	if _, ok := c.Contexts[ContextTypeLocal]; !ok {
-		c.Contexts[ContextTypeLocal] = &ContextDefinition{Type: ContextTypeLocal}
+	if _, ok := c.Contexts[LocalContext]; !ok {
+		c.Contexts[LocalContext] = &ContextDefinition{Type: LocalContext}
 	}
 
 	if c.Variables == nil {

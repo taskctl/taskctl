@@ -19,7 +19,7 @@ import (
 
 type TaskRunner struct {
 	contexts  map[string]*taskctx.ExecutionContext
-	variables config.Set
+	variables config.Variables
 
 	ctx        context.Context
 	cancel     context.CancelFunc
@@ -27,7 +27,7 @@ type TaskRunner struct {
 	taskOutput *output.TaskOutput
 }
 
-func NewTaskRunner(contexts map[string]*taskctx.ExecutionContext, outputFlavor string, variables config.Set) (*TaskRunner, error) {
+func NewTaskRunner(contexts map[string]*taskctx.ExecutionContext, outputFlavor string, variables config.Variables) (*TaskRunner, error) {
 	r := &TaskRunner{
 		contexts:  contexts,
 		variables: variables,
@@ -43,7 +43,7 @@ func NewTaskRunner(contexts map[string]*taskctx.ExecutionContext, outputFlavor s
 	return r, nil
 }
 
-func (r *TaskRunner) Run(t *task.Task, variables config.Set, env config.Set) (err error) {
+func (r *TaskRunner) Run(t *task.Task, variables config.Variables, env config.Variables) (err error) {
 	c, err := r.contextForTask(t)
 	if err != nil {
 		return err
@@ -117,7 +117,7 @@ func (r *TaskRunner) Run(t *task.Task, variables config.Set, env config.Set) (er
 			}
 
 			cmd.Env = append(cmd.Env, util.ConvertEnv(variant)...)
-			cmd.Env = append(cmd.Env, env.Env()...)
+			cmd.Env = append(cmd.Env, util.ConvertEnv(env)...)
 
 			err = r.executeCommand(t, cmd)
 			cancelFn()
@@ -153,7 +153,7 @@ func (r *TaskRunner) Run(t *task.Task, variables config.Set, env config.Set) (er
 				return err
 			}
 
-			cmd.Env = append(cmd.Env, variables.Env()...)
+			cmd.Env = append(cmd.Env, util.ConvertEnv(variables)...)
 			err = r.executeCommand(t, cmd)
 			if err != nil {
 				logrus.Warn(err)

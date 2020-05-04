@@ -38,7 +38,7 @@ watchers:
     task: task1
 `
 
-func NewInitCommand() *cli.Command {
+func newInitCommand() *cli.Command {
 	cmd := &cli.Command{
 		Name:  "init",
 		Usage: "creates sample config file",
