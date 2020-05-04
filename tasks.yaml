@@ -63,3 +63,10 @@ tasks:
   gofmt:
     command:
       - go fmt ./...
+
+  update-completers:
+    dir: "{{.Root}}/cmd/taskctl"
+    command:
+      - rm -rf ../../autocomplete/*
+      - go run . completion bash > ./../../autocomplete/bash_completion.bash
+      - go run . completion zsh > ./../../autocomplete/zsh_completion.zsh

@@ -2,7 +2,7 @@
 <img width="400" src="https://raw.githubusercontent.com/taskctl/taskctl/master/docs/logo.png" alt="taskctl - developer's routine tasks automation toolkit" title="taskctl - developer's routine tasks automation toolkit" />
 </p>
 
-# taskctl - developer's routine tasks automation toolkit
+# taskctl task runner - developer's routine tasks automation toolkit
 ![Tests](https://github.com/taskctl/taskctl/workflows/Test/badge.svg)
 [![Requirements Status](https://requires.io/github/taskctl/taskctl/requirements.svg?branch=master)](https://requires.io/github/taskctl/taskctl/requirements/?branch=master)
 ![GitHub top language](https://img.shields.io/github/languages/top/taskctl/taskctl)

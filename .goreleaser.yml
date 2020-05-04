@@ -28,7 +28,7 @@ archives:
       - LICENSE.md
       - README.md
       - autocomplete/bash_completion.bash
-      - autocomplete/zsh_autocompletion.zsh
+      - autocomplete/zsh_completion.zsh
 
 checksum:
   name_template: checksums.txt
@@ -42,11 +42,12 @@ changelog:
 
 snapcrafts:
   - name: taskctl
-    summary: taskctl
-    description: taskctl - task runner. Developer's routine tasks automation toolkit.
     confinement: devmode
     grade: devel
     publish: true
+    apps:
+      taskctl:
+        completer: autocomplete/bash_completion.bash
 
 brews:
   - github:
@@ -84,4 +85,3 @@ nfpms:
     formats:
       - deb
       - rpm
-
