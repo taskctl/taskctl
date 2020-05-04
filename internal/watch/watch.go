@@ -77,7 +77,12 @@ func BuildWatcher(name string, def *config.WatcherDefinition, t *task.Task) (w *
 		}
 	}
 
-	for _, e := range def.Events {
+	events := def.Events
+	if len(events) == 0 {
+		events = []string{EventCreate, EventWrite, EventRemove, EventRename, EventChmod}
+	}
+
+	for _, e := range events {
 		w.events[e] = true
 	}
 

@@ -22,11 +22,10 @@ Beside pipelines, each single task can be performed manually or triggered by bui
 ## Features
 - parallel tasks execution
 - highly customizable pipelines configuration
-- file watcher integrated with tasks and pipelines
-- customizable contexts for each task
+- integrated file watcher
+- customizable task's contexts
 - human-readable configuration format (YAML, JSON or TOML)
-- customizable output
-- output capturing
+- different output types
 - and many more...
 
 [![asciicast](https://asciinema.org/a/304339.svg)](https://asciinema.org/a/304339)
@@ -42,9 +41,8 @@ Beside pipelines, each single task can be performed manually or triggered by bui
     - [Task`s variations](#tasks-variations)
     - [Task`s variables](#tasks-variables)
     - [Storing task's output](#storing-tasks-output) 
-    - [!!!Conditional execution](#task-conditional-execution) 
+    - [Conditional execution](#task-conditional-execution) 
 - [Pipelines](#pipelines)
-    - [!!!Conditional execution](#conditional-execution) 
 - [Filesystem watchers](#filesystem-watchers)
 - [Contexts](#contexts)
 - [FAQ](#faq)
@@ -67,41 +65,24 @@ brew install taskctl
 sudo wget https://github.com/taskctl/taskctl/releases/latest/download/taskctl_linux_amd64 -O /usr/local/bin/taskctl
 sudo chmod +x /usr/local/bin/taskctl
 ```
+#### Installation script
+```
+curl -sL https://raw.githubusercontent.com/taskctl/taskctl/master/install.sh | sh
+```
 #### From sources
 ```
 go get -u github.com/taskctl/taskctl/cmd/taskctl
 ```
 
-#### Install script
-```
-curl -sL https://raw.githubusercontent.com/taskctl/taskctl/master/install.sh | sh
-```
-
 ### Usage
-### Run pipeline
-```
-taskctl pipeline1 // single pipeline
-taskctl pipeline1 pipeline2 // multiple pipelines
-taskctl run pipeline1 // single pipeline, long form
-```
-### Run task
-```
-taskctl task1 // single task
-taskctl task1 task2 // multiple tasks
-taskctl run task task1 // multiple tasks, long form
-```
-### Start filesystem watcher
-```
-taskctl watch watcher1
-```
-### Set config file
-```
-taskctl -c tasks.yaml run lint
-taskctl -c https://raw.githubusercontent.com/taskctl/taskctl/master/example/full.yaml run task4
-```
+- `taskctl` - run interactive task prompt
+- `taskctl pipeline1` - run single pipeline
+- `taskctl task1` - run single task
+- `taskctl pipeline1 task1` - run one or more pipelines and/or tasks
+- `taskctl watch watcher1 watcher2` - start one or more watchers
 
 ## Configuration
-taskctl uses config file (`tasks.yaml` or `taskctl.yaml`) to store tasks and pipelines. Config file includes following sections:
+*taskctl* uses config file (`tasks.yaml` or `taskctl.yaml`) to store tasks and pipelines. Config file includes following sections:
 - tasks
 - pipelines
 - watchers
@@ -120,7 +101,7 @@ import:
 Config file [example](https://github.com/taskctl/taskctl/blob/master/docs/example.yaml)
 
 ### Global configuration
-It is stored in ``$HOME/.taskctl/config.yaml`` file. It is handy to store global tasks, reusable contexts, defaults etc 
+*taskctl* has global configuration stored in ``$HOME/.taskctl/config.yaml`` file. It is handy to store system-wide tasks, reusable contexts, defaults etc. 
 
 ## Tasks
 Task is a foundation of *taskctl*. It describes one or more commands to run, their environment, executors and attributes such as working directory, execution timeout, acceptance of failure, etc.
@@ -149,7 +130,9 @@ Task definition takes following parameters:
 - ``timeout`` - command execution timeout (optional)
 - ``allow_failure`` - if set to ``true`` failed commands will no interrupt task execution. ``false`` by default
 - ``after`` - command that will be executed after command completes
+- ``before`` - command that will be executed before task starts
 - ``exportAs`` - output variable name. ``TASK_NAME_OUTPUT`` by default
+- ``condition`` - condition to check before running task
 
 ### Tasks variables
 Each task has variables to be used to render task's fields  - `command`, `dir`.
@@ -193,6 +176,15 @@ tasks:
       - GOOS: windows
 ```
 this config will run build 3 times with different build GOOS
+### Task conditional execution
+The following task will run only when there are any changes that are staged but not committed:
+```
+tasks:
+  build:
+    command:
+      - ...build...
+    condition: git diff --exit-code
+```
 
 ## Pipelines
 Pipeline is a set of stages (tasks or other pipelines) to be executed in a certain order. Stages may be executed in parallel or one-by-one. Stage may override task environment. 
@@ -238,6 +230,7 @@ Stage definition takes following parameters:
 - ``env`` - environment variables (optional). All existing environment variables will be passed automatically
 - ``depends_on`` - name of stage on which this stage depends on (optional). This stage will be started only after referenced stage is completed.
 - ``allow_failure`` - if set to ``true`` failing stage will no interrupt pipeline execution. ``false`` by default
+- ``condition`` - condition to check before running stage
 
 ## Output flavors
 - `raw` - raw commands output
@@ -256,7 +249,20 @@ watchers:
 ```
 
 ## Contexts
-Contexts allows you to set up execution environment, shell or binaries which will run your task, up/down commands etc
+Contexts allow you to set up execution environment, shell or binaries which will run your task, up/down commands etc
+
+Context has hooks which may be triggered once before first context usage or every time before task with this context will be run.
+```yaml
+docker-compose:
+  executable:
+    bin: docker-compose
+    args: ["exec", "api"]
+  up: docker-compose up -d api
+  down: docker-compose down api
+
+local:
+  after: rm -rf var/*
+```
 
 ### Local context with zsh
 ```yaml
@@ -296,7 +302,7 @@ tasks:
 ### How does it differ from go-task/task?
 It's amazing how solving same problems lead to same solutions. taskctl and go-task have a lot of concepts in common but also have some differences. 
 1. Main is pipelines. Pipelines and stages allows more precise workflow design because same tasks may have different dependencies (or no dependencies) in different scenarios.
-2. Contexts allows you to set up execution environment, shell or binaries which will run your task. Now there is several available context types: local (shell or binary), remote (ssh), container (docker, docker-compose, kubernetes via kubectl)
+2. Contexts allow you to set up execution environment, shell or binaries which will run your task.
 
 ## Autocomplete
 ### Bash

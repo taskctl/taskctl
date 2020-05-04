@@ -96,7 +96,6 @@ func (r *TaskRunner) Run(t *task.Task, variables config.Variables, env config.Va
 		logrus.Warning(err)
 	}
 
-	ctx := context.Background()
 	t.Start = time.Now()
 	for _, variant := range t.Variations {
 		for _, command := range t.Command {
@@ -105,7 +104,7 @@ func (r *TaskRunner) Run(t *task.Task, variables config.Variables, env config.Va
 				return err
 			}
 
-			ctx, cancelFn := context.WithCancel(ctx)
+			ctx, cancelFn := context.WithCancel(r.ctx)
 			if t.Timeout != nil {
 				ctx, cancelFn = context.WithTimeout(ctx, *t.Timeout)
 			}
