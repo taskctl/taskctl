@@ -3,7 +3,7 @@ before:
     - go mod download
 
 builds:
-- main: ./cmd/taskctl/taskctl.go
+- dir: cmd/taskctl
   env:
     - CGO_ENABLED=0
   goos:
@@ -25,7 +25,7 @@ archives:
       - goos: windows
         format: zip
     files:
-      - LICENSE
+      - LICENSE.md
       - README.md
       - autocomplete/bash_completion.bash
       - autocomplete/zsh_autocompletion.zsh
@@ -59,7 +59,6 @@ brews:
         bin.install "program"
         bash_completion.install "autocomplete/bash_completion.bash"
         zsh_completion.install "autocomplete/zsh_completion.zsh"
-
 
 dockers:
   - image_templates:
