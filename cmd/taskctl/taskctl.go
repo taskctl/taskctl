@@ -104,14 +104,18 @@ func run() error {
 			&cli.StringFlag{
 				Name:    "output",
 				Aliases: []string{"o"},
-				Usage:   "output type",
-				EnvVars: []string{"TASKCTL_OUTPUT_TYPE"},
+				Usage:   "output format (raw, prefixed or cockpit)",
+				EnvVars: []string{"TASKCTL_OUTPUT_FORMAT"},
 				Value:   globalCfg.Output,
 			},
 			&cli.BoolFlag{
 				Name:    "raw",
 				Aliases: []string{"r"},
 				Usage:   "shortcut for --output=raw",
+			},
+			&cli.BoolFlag{
+				Name:  "cockpit",
+				Usage: "shortcut for --output=cockpit",
 			},
 			&cli.BoolFlag{
 				Name:    "quiet",
@@ -185,7 +189,9 @@ func run() error {
 			if c.IsSet("output") {
 				cfg.Output = c.String("output")
 			} else if c.Bool("raw") {
-				cfg.Output = output.FlavorRaw
+				cfg.Output = config.OutputFormatRaw
+			} else if c.Bool("cockpit") {
+				cfg.Output = config.OutputFormatCockpit
 			}
 
 			return nil

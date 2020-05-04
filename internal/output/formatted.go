@@ -23,7 +23,7 @@ type FormattedOutputDecorator struct {
 	buf *bufio.Writer
 }
 
-func NewFormattedOutputWriter(w io.Writer) *FormattedOutputDecorator {
+func NewPrefixedOutputWriter(w io.Writer) *FormattedOutputDecorator {
 	return &FormattedOutputDecorator{
 		w:   w,
 		buf: bufio.NewWriter(w),

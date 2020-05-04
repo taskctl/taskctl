@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
+	"github.com/taskctl/taskctl/internal/config"
 	"sync"
 
 	"github.com/urfave/cli/v2"
 
 	"github.com/taskctl/taskctl/internal/watch"
 
-	"github.com/taskctl/taskctl/internal/output"
 	"github.com/taskctl/taskctl/internal/runner"
 
 	"github.com/sirupsen/logrus"
@@ -27,7 +27,7 @@ func newWatchCommand() *cli.Command {
 			return nil
 		},
 		Action: func(c *cli.Context) (err error) {
-			taskRunner, err := runner.NewTaskRunner(contexts, output.FlavorFormatted, cfg.Variables)
+			taskRunner, err := runner.NewTaskRunner(contexts, config.OutputFormatPrefixed, cfg.Variables)
 			if err != nil {
 				return err
 			}

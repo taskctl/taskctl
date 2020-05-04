@@ -16,7 +16,8 @@
 ![GitHub issues](https://img.shields.io/github/issues/taskctl/taskctl)
 ![Licence](https://img.shields.io/github/license/taskctl/taskctl)
 
-Simple modern alternative to GNU Make. taskctl allows you to design you development workflow pipelines in nice and neat way in human-readable format (YAML, JSON or TOML). Each pipeline composed of tasks or other pipelines and allows them to run in parallel or one-by-one. 
+Simple modern alternative to GNU Make. *taskctl* task runner allows you to design you routine tasks and development pipelines in nice and neat way in human-readable format (YAML, JSON or TOML). 
+Each pipeline composed of tasks or other pipelines and allows them to run in parallel or one-by-one. 
 Beside pipelines, each single task can be performed manually or triggered by built-in filesystem watcher.
 
 ## Features
@@ -26,9 +27,11 @@ Beside pipelines, each single task can be performed manually or triggered by bui
 - customizable task's contexts
 - human-readable configuration format (YAML, JSON or TOML)
 - different output types
+- interactive prompt
+- handy autocomplete
 - and many more...
 
-[![asciicast](https://asciinema.org/a/304339.svg)](https://asciinema.org/a/304339)
+[![asciicast](https://asciinema.org/a/326726.svg)](https://asciinema.org/a/326726)
 
 ## Contents  
 - [Getting started](#getting-started)

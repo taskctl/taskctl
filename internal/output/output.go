@@ -1,6 +1,7 @@
 package output
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"sync"
@@ -10,12 +11,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/taskctl/taskctl/internal/task"
-)
-
-const (
-	FlavorRaw       = config.FlavorRaw
-	FlavorFormatted = config.FlavorFormatted
-	FlavorCockpit   = config.FlavorCockpit
 )
 
 var Stdout io.Writer = os.Stdout
@@ -34,20 +29,20 @@ type TaskOutput struct {
 	closeCh   chan bool
 }
 
-func NewTaskOutput(flavor string) (*TaskOutput, error) {
+func NewTaskOutput(format string) (*TaskOutput, error) {
 	o := &TaskOutput{
 		closeCh: make(chan bool),
 	}
 
-	switch flavor {
-	case FlavorRaw:
+	switch format {
+	case config.OutputFormatRaw:
 		o.decorator = NewRawOutputWriter(Stdout)
-	case FlavorFormatted:
-		o.decorator = NewFormattedOutputWriter(Stdout)
-	case FlavorCockpit:
+	case config.OutputFormatPrefixed:
+		o.decorator = NewPrefixedOutputWriter(Stdout)
+	case config.OutputFormatCockpit:
 		o.decorator = NewCockpitOutputWriter(Stdout, o.closeCh)
 	default:
-		logrus.Error("unknown decorator requested")
+		return nil, fmt.Errorf("unknown decorator \"%s\" requested", format)
 	}
 
 	return o, nil

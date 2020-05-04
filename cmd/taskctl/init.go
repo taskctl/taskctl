@@ -26,9 +26,11 @@ pipelines:
 
 tasks:
   task1:
+    description: "Example task 1"
     command: echo "I'm task1"
   
   task2:
+    description: "Example task 2"
     command: echo "I'm task2. Your date is $(date)"
 
 watchers:

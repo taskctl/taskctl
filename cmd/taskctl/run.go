@@ -101,7 +101,7 @@ func newRunCommand() *cli.Command {
 
 func buildTaskRunner(c *cli.Context) (*runner.TaskRunner, error) {
 	variables := cfg.Variables.With("args", strings.Join(taskArgs(c), " "))
-	taskRunner, err := runner.NewTaskRunner(contexts, c.String("output"), variables)
+	taskRunner, err := runner.NewTaskRunner(contexts, cfg.Output, variables)
 	if err != nil {
 		return nil, err
 	}

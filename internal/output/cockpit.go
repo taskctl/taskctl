@@ -73,6 +73,7 @@ func (d *CockpitOutputDecorator) WriteFooter(t *task.Task) error {
 	if t.Errored {
 		mark = aurora.Red("✗")
 	}
+
 	d.spinner.FinalMSG = fmt.Sprintf("%s Finished %s in %s\r\n", mark, aurora.Bold(t.Name), t.Duration())
 	d.spinner.Restart()
 	d.spinner.FinalMSG = ""
@@ -92,7 +93,7 @@ func (d *CockpitOutputDecorator) startSpinner() *spinner.Spinner {
 			tasks = append(tasks, v.Name)
 		}
 		sort.Strings(tasks)
-		s.Suffix = " Running: " + strings.Join(tasks, ", ") + "\n"
+		s.Suffix = " Running: " + strings.Join(tasks, ", ")
 	}
 	s.Start()
 

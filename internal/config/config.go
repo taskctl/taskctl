@@ -10,9 +10,9 @@ import (
 const (
 	LocalContext = "local"
 
-	FlavorRaw       = "raw"
-	FlavorFormatted = "formatted"
-	FlavorCockpit   = "cockpit"
+	OutputFormatRaw      = "raw"
+	OutputFormatPrefixed = "prefixed"
+	OutputFormatCockpit  = "cockpit"
 )
 
 var DefaultFileNames = []string{"taskctl.yaml", "tasks.yaml"}
@@ -36,7 +36,7 @@ type Config struct {
 
 func defaultConfig() *Config {
 	return &Config{
-		Output: FlavorFormatted,
+		Output: OutputFormatPrefixed,
 	}
 }
 
@@ -55,7 +55,7 @@ func (c *Config) merge(src *Config) error {
 }
 
 func (c *Config) init() {
-	c.Output = FlavorFormatted
+	c.Output = OutputFormatPrefixed
 
 	for name, v := range c.Tasks {
 		if v.Name == "" {
