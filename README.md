@@ -69,12 +69,14 @@ pipelines:
     - [Global configuration](#global-configuration)
     - [Example](#example)
 - [Tasks](#tasks)
+    - [Pass CLI arguments to task](#pass-cli-arguments-to-task)
     - [Task`s variations](#tasks-variations)
     - [Task`s variables](#tasks-variables)
     - [Storing task's output](#storing-tasks-output) 
     - [Conditional execution](#task-conditional-execution) 
 - [Pipelines](#pipelines)
 - [Filesystem watchers](#filesystem-watchers)
+    - [Patterns](#patterns)
 - [Contexts](#contexts)
 - [Output formats](#taskctl-output-formats)
 - [FAQ](#faq)
@@ -166,6 +168,21 @@ Task definition takes following parameters:
 - ``exportAs`` - output variable name. ``TASK_NAME_OUTPUT`` by default
 - ``condition`` - condition to check before running task
 - ``variables`` - task variables
+
+### Pass CLI arguments to task
+Any command line arguments succeeding `--` are passed to each task via `.Args` variable or `ARGS` environment variable.
+
+Given this definition:
+```
+lint:
+  command: go lint {{.Args}}
+```
+the resulting command is:
+```
+$ taskctl lint -- package.go
+# go lint package.go
+```
+
 
 ### Tasks variables
 Each task has variables to be used to render task's fields  - `command`, `dir`.
@@ -281,6 +298,18 @@ watchers:
     events: [create, write, remove, rename, chmod] # Filesystem events to listen to
     task: task1 # Task to run when event occurs
 ```
+### Patterns
+Thanks to [doublestar](https://github.com/bmatcuk/doublestar) *taskctl* supports the following special terms within include and exclude patterns:
+
+Special Terms | Meaning
+------------- | -------
+`*`           | matches any sequence of non-path-separators
+`**`          | matches any sequence of characters, including path separators
+`?`           | matches any single non-path-separator character
+`[class]`     | matches any single non-path-separator character against a class of characters ([details](https://github.com/bmatcuk/doublestar/blob/master/README.md#character-classes))
+`{alt1,...}`  | matches a sequence of characters if one of the comma-separated alternatives matches
+
+Any character with a special meaning can be escaped with a backslash (`\`).
 
 ## Contexts
 Contexts allow you to set up execution environment, shell or binaries which will run your task, up/down commands etc
