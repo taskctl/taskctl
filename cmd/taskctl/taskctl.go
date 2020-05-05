@@ -30,7 +30,7 @@ var version = "dev"
 
 var tasks = make(map[string]*task.Task)
 var contexts = make(map[string]*context.ExecutionContext)
-var pipelines = make(map[string]*pipeline.Pipeline)
+var pipelines = make(map[string]*pipeline.ExecutionGraph)
 var watchers = make(map[string]*watch.Watcher)
 
 var cancel = make(chan struct{})
@@ -260,6 +260,7 @@ func run() error {
 			newShowCommand(),
 			newWatchCommand(),
 			newCompletionCommand(),
+			newGraphCommand(),
 		},
 		Authors: []*cli.Author{
 			{

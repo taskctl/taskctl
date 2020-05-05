@@ -31,7 +31,7 @@ func NewScheduler(r *runner.TaskRunner) *PipelineScheduler {
 	return s
 }
 
-func (s *PipelineScheduler) Schedule(p *Pipeline) error {
+func (s *PipelineScheduler) Schedule(p *ExecutionGraph) error {
 	s.startTimer()
 	defer s.stopTimer()
 	var wg = sync.WaitGroup{}
@@ -76,7 +76,7 @@ func (s *PipelineScheduler) Schedule(p *Pipeline) error {
 
 				stage.Start = time.Now()
 
-				err := p.ProvideOutput(stage)
+				err := p.provideOutput(stage)
 				if err != nil {
 					logrus.Error(err)
 				}
@@ -122,7 +122,7 @@ func (s *PipelineScheduler) Cancel() {
 	s.taskRunner.Cancel()
 }
 
-func (s *PipelineScheduler) isDone(p *Pipeline) bool {
+func (s *PipelineScheduler) isDone(p *ExecutionGraph) bool {
 	for _, stage := range p.Nodes() {
 		switch stage.ReadStatus() {
 		case StatusWaiting, StatusRunning:
@@ -137,7 +137,7 @@ func (s *PipelineScheduler) Finish() {
 	s.taskRunner.Finish()
 }
 
-func checkStatus(p *Pipeline, stage *Stage) (ready bool) {
+func checkStatus(p *ExecutionGraph, stage *Stage) (ready bool) {
 	ready = true
 	for _, dep := range p.To(stage.Name) {
 		depStage, err := p.Node(dep)

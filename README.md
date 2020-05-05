@@ -58,6 +58,8 @@ pipelines:
     - task: build
       depends_on: [lint, test]
 ```
+According to this plan `lint` and `test` will run concurrently, `build` will start only when both `lint` and `test` finished.
+
 
 [![asciicast](https://asciinema.org/a/326726.svg)](https://asciinema.org/a/326726)
 
@@ -239,7 +241,7 @@ tasks:
 ## Pipelines
 Pipeline is a set of stages (tasks or other pipelines) to be executed in a certain order. Stages may be executed in parallel or one-by-one. Stage may override task environment. 
 
-This configuration:
+This pipeline:
 ```yaml
 pipelines:
     pipeline1:
@@ -255,19 +257,9 @@ pipelines:
         - task: task E
           depends_on: ["task A", "task B", "task D"]
         - task: finish
-          depends_on: ["task A", "task B", "finish"]
-          
-tasks:
-    start task: ...
-    task A: ...
-    task B: ...
-    task C: ...
-    task D: ...
-    task E: ...
-    finish: ...
-    
+          depends_on: ["task E"]    
 ```
-will create a pipeline like that:
+will result in an execution plan like this:
 ```
                |‾‾‾ task A ‾‾‾‾‾‾‾‾‾‾‾‾‾‾|
 start task --- |--- task B --------------|--- task E --- finish

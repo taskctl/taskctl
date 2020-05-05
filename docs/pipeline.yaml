@@ -1,0 +1,31 @@
+pipelines:
+  pipeline1:
+    - task: start task
+    - task: task A
+      depends_on: "start task"
+    - task: task B
+      depends_on: "start task"
+    - task: task C
+      depends_on: "start task"
+    - task: task D
+      depends_on: "task C"
+    - task: task E
+      depends_on: ["task A", "task B", "task D"]
+    - task: finish
+      depends_on: ["task E"]
+
+tasks:
+  start task:
+    command: sleep 1
+  task A:
+    command: sleep 1
+  task B:
+    command: sleep 1
+  task C:
+    command: sleep 1
+  task D:
+    command: sleep 1
+  task E:
+    command: sleep 1
+  finish:
+    command: sleep 1

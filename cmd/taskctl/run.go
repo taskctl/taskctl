@@ -130,7 +130,7 @@ func runTarget(name string, c *cli.Context, taskRunner *runner.TaskRunner) (err 
 	return err
 }
 
-func runPipeline(p *pipeline.Pipeline, taskRunner *runner.TaskRunner, summary bool) error {
+func runPipeline(p *pipeline.ExecutionGraph, taskRunner *runner.TaskRunner, summary bool) error {
 	sd := pipeline.NewScheduler(taskRunner)
 	go func() {
 		<-cancel
@@ -178,7 +178,7 @@ func taskArgs(c *cli.Context) []string {
 	return runArgs
 }
 
-func printSummary(p *pipeline.Pipeline) {
+func printSummary(p *pipeline.ExecutionGraph) {
 	var stages = make([]*pipeline.Stage, 0)
 	for _, stage := range p.Nodes() {
 		stages = append(stages, stage)

@@ -5,6 +5,18 @@ pipelines:
       name: stage1
       condition: /usr/bin/false
     - task: test-task
+      name: stage2
+    - task: test-task
+      name: stage3
+      depends_on: [stage2]
+    - task: test-task
+      name: final-stage
+      depends_on: [stage1, stage3]
+
+  pipeline2:
+    - pipeline: pipeline1
+      name: stage1
+    - task: test-task
       depends_on: [stage1]
 
 tasks:

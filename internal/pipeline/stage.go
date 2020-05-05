@@ -22,7 +22,7 @@ type Stage struct {
 	Name         string
 	Condition    string
 	Task         *task.Task
-	Pipeline     *Pipeline
+	Pipeline     *ExecutionGraph
 	DependsOn    []string
 	Env          map[string]string
 	Dir          string

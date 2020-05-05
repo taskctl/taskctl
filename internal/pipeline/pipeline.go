@@ -11,7 +11,7 @@ import (
 	"github.com/taskctl/taskctl/internal/task"
 )
 
-type Pipeline struct {
+type ExecutionGraph struct {
 	Env map[string][]string
 
 	nodes map[string]*Stage
@@ -20,8 +20,8 @@ type Pipeline struct {
 	error error
 }
 
-func BuildPipeline(stages []*config.StageDefinition, pipelines map[string][]*config.StageDefinition, tasks map[string]*config.TaskDefinition) (p *Pipeline, err error) {
-	p = &Pipeline{
+func BuildPipeline(stages []*config.StageDefinition, pipelines map[string][]*config.StageDefinition, tasks map[string]*config.TaskDefinition) (g *ExecutionGraph, err error) {
+	g = &ExecutionGraph{
 		nodes: make(map[string]*Stage),
 		from:  make(map[string][]string),
 		to:    make(map[string][]string),
@@ -29,7 +29,7 @@ func BuildPipeline(stages []*config.StageDefinition, pipelines map[string][]*con
 
 	for _, def := range stages {
 		var stageTask *task.Task
-		var stagePipeline *Pipeline
+		var stagePipeline *ExecutionGraph
 
 		if def.Task != "" {
 			stageTaskDef, ok := tasks[def.Task]
@@ -80,44 +80,44 @@ func BuildPipeline(stages []*config.StageDefinition, pipelines map[string][]*con
 			}
 		}
 
-		if _, ok := p.nodes[stage.Name]; ok {
+		if _, ok := g.nodes[stage.Name]; ok {
 			return nil, fmt.Errorf("stage with same name %s already exists", stage.Name)
 		}
 
-		p.addNode(stage.Name, stage)
+		g.addNode(stage.Name, stage)
 
 		for _, dep := range stage.DependsOn {
-			err := p.addEdge(dep, stage.Name)
+			err := g.addEdge(dep, stage.Name)
 			if err != nil {
 				return nil, err
 			}
 		}
 	}
 
-	return p, nil
+	return g, nil
 }
 
-func (p *Pipeline) addNode(name string, stage *Stage) {
-	p.nodes[name] = stage
+func (g *ExecutionGraph) addNode(name string, stage *Stage) {
+	g.nodes[name] = stage
 }
 
-func (p *Pipeline) addEdge(from string, to string) error {
-	p.from[from] = append(p.from[from], to)
-	p.to[to] = append(p.to[to], from)
+func (g *ExecutionGraph) addEdge(from string, to string) error {
+	g.from[from] = append(g.from[from], to)
+	g.to[to] = append(g.to[to], from)
 
-	if err := p.cycleDfs(to, make(map[string]bool)); err != nil {
+	if err := g.cycleDfs(to, make(map[string]bool)); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (p *Pipeline) Nodes() map[string]*Stage {
-	return p.nodes
+func (g *ExecutionGraph) Nodes() map[string]*Stage {
+	return g.nodes
 }
 
-func (p *Pipeline) Node(name string) (*Stage, error) {
-	t, ok := p.nodes[name]
+func (g *ExecutionGraph) Node(name string) (*Stage, error) {
+	t, ok := g.nodes[name]
 	if !ok {
 		return nil, fmt.Errorf("unknown task %s", name)
 	}
@@ -125,22 +125,22 @@ func (p *Pipeline) Node(name string) (*Stage, error) {
 	return t, nil
 }
 
-func (p *Pipeline) From(name string) []string {
-	return p.from[name]
+func (g *ExecutionGraph) From(name string) []string {
+	return g.from[name]
 }
 
-func (p *Pipeline) To(name string) []string {
-	return p.to[name]
+func (g *ExecutionGraph) To(name string) []string {
+	return g.to[name]
 }
 
-func (p *Pipeline) cycleDfs(t string, visited map[string]bool) error {
+func (g *ExecutionGraph) cycleDfs(t string, visited map[string]bool) error {
 	if visited[t] {
 		return errors.New("cycle detected")
 	}
 	visited[t] = true
 
-	for _, next := range p.from[t] {
-		err := p.cycleDfs(next, visited)
+	for _, next := range g.from[t] {
+		err := g.cycleDfs(next, visited)
 		if err != nil {
 			return err
 		}
@@ -149,13 +149,13 @@ func (p *Pipeline) cycleDfs(t string, visited map[string]bool) error {
 	return nil
 }
 
-func (p *Pipeline) Error() error {
-	return p.error
+func (g *ExecutionGraph) Error() error {
+	return g.error
 }
 
-func (p *Pipeline) ProvideOutput(s *Stage) error {
+func (g *ExecutionGraph) provideOutput(s *Stage) error {
 	for _, dep := range s.DependsOn {
-		n, err := p.Node(dep)
+		n, err := g.Node(dep)
 		if err != nil {
 			return err
 		}
