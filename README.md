@@ -48,6 +48,7 @@ Beside pipelines, each single task can be performed manually or triggered by bui
 - [Pipelines](#pipelines)
 - [Filesystem watchers](#filesystem-watchers)
 - [Contexts](#contexts)
+- [Output formats](#taskctl-output-formats)
 - [FAQ](#faq)
   - [How does it differ from go-task/task?](#how-does-it-differ-from-go-tasktask)
 - [Autocomplete](#autocomplete)
@@ -136,6 +137,7 @@ Task definition takes following parameters:
 - ``before`` - command that will be executed before task starts
 - ``exportAs`` - output variable name. ``TASK_NAME_OUTPUT`` by default
 - ``condition`` - condition to check before running task
+- ``variables`` - task variables
 
 ### Tasks variables
 Each task has variables to be used to render task's fields  - `command`, `dir`.
@@ -181,7 +183,7 @@ tasks:
 this config will run build 3 times with different build GOOS
 ### Task conditional execution
 The following task will run only when there are any changes that are staged but not committed:
-```
+```yaml
 tasks:
   build:
     command:
@@ -220,7 +222,7 @@ tasks:
     finish: ...
     
 ```
-will create this pipeline:
+will create a pipeline like that:
 ```
                |‾‾‾ task A ‾‾‾‾‾‾‾‾‾‾‾‾‾‾|
 start task --- |--- task B --------------|--- task E --- finish
@@ -234,25 +236,40 @@ Stage definition takes following parameters:
 - ``depends_on`` - name of stage on which this stage depends on (optional). This stage will be started only after referenced stage is completed.
 - ``allow_failure`` - if set to ``true`` failing stage will no interrupt pipeline execution. ``false`` by default
 - ``condition`` - condition to check before running stage
+- ``variables`` - stage variables
 
-## Output flavors
+## Taskctl output formats
 - `raw` - raw commands output
-- `formatted` - strips ANSI escape sequences where possible, prefixes command output with task name
-- `cockpit` - shows only pipeline progress spinners
+- `prefixed` - strips ANSI escape sequences where possible, prefixes command output with task's name
+- `cockpit` - tasks dashboard
 
 ## Filesystem watchers
 Watcher watches for changes in files selected by provided patterns and triggers a task anytime an event has occurred.
 ```yaml
 watchers:
   watcher1:
-    watch: ["README.*", "pkg/**/*.go"]
-    exclude: ["pkg/excluded.go", "pkg/excluded-dir/*"]
-    events: [create, write, remove, rename, chmod]
-    task: task1
+    watch: ["README.*", "pkg/**/*.go"] # Files to watch
+    exclude: ["pkg/excluded.go", "pkg/excluded-dir/*"] # Exclude patterns
+    events: [create, write, remove, rename, chmod] # Filesystem events to listen to
+    task: task1 # Task to run when event occurs
 ```
 
 ## Contexts
 Contexts allow you to set up execution environment, shell or binaries which will run your task, up/down commands etc
+```yaml
+contexts:
+  local:
+    executable:
+      bin: /bin/zsh
+      args:
+        - -c
+    env:
+      VAR_NAME: VAR_VALUE
+    variables:
+      sleep: 10
+    before: echo "I'm local context!"
+    after: echo "Have a nice day!"
+```
 
 Context has hooks which may be triggered once before first context usage or every time before task with this context will be run.
 ```yaml
@@ -265,20 +282,6 @@ docker-compose:
 
 local:
   after: rm -rf var/*
-```
-
-### Local context with zsh
-```yaml
-contexts:
-  local:
-    executable:
-      bin: /bin/zsh
-      args:
-        - -c
-    env:
-      VAR_NAME: VAR_VALUE
-    before: echo "I'm local context!"
-    after: echo "Have a nice day!"
 ```
 
 ### Docker context

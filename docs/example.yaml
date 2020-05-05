@@ -1,21 +1,3 @@
-pipelines:
-  pipeline1:
-    - task: task1
-      dir: /tmp
-
-    - name: some-stage-name
-      task: task2
-      depends_on: task1
-      allow_failure: true
-
-    - task: task3
-      depends_on: task1 # task2 and task3 will run in parallel when task1 finished
-
-    - task: task4
-      depends_on: [task1, some-stage-name]
-      env:
-        VAR_NAME: VAR_VALUE # overrides task env
-
 tasks:
   task1:
     context: local # optional. "local" is context by default
@@ -24,6 +6,7 @@ tasks:
       - echo ${ARGS} # ARGS is populated by arguments passed to task. eg. taskctl run task task1 -- arg1 arg2
       - echo "My name is task1"
       - echo ${VAR_NAME_1} - ${VAR_NAME_2}
+      - echo {{ .TaskName }}
       - pwd
     env:
       VAR_NAME: VAR_VALUE
@@ -32,18 +15,22 @@ tasks:
         VAR_NAME_2: VARIATION_1
       - VAR_NAME_1: VARIATION_2
         VAR_NAME_2: VARIATION_2
-    dir: /task/working/dir # current directory by default
+    dir: {{ .Root }}/task/working/dir # current directory by default
     timeout: 10s
     before: mkdir some-dir
     after: rm -rf some-dir
     exportAs: TASK1_STORED_OUTPUT
+    conditions: git diff --exit-code
 
   task2:
     context: docker-context-name
     command:
       - echo "Hello from container"
+      - sleep {{ .sleep }}
     env:
       VAR_NAME: VAR_VALUE
+    variables:
+      sleep: 10
 
   task3:
     context: docker-compose-context-name # local is default context
@@ -79,6 +66,27 @@ tasks:
   test-watch-task-2:
     command:
       - echo TASK1 $EVENT_NAME $EVENT_PATH
+
+pipelines:
+  pipeline1:
+    - task: task1
+      dir: /tmp
+      condition: git diff --exit-code
+
+    - name: some-stage-name
+      task: task2
+      depends_on: task1
+      allow_failure: true
+
+    - task: task3
+      depends_on: task1 # task2 and task3 will run in parallel when task1 finished
+      variables:
+        sleep: 30
+
+    - task: task4
+      depends_on: [task1, some-stage-name]
+      env:
+        VAR_NAME: VAR_VALUE # overrides task env
 
 watchers:
   watcher1:
@@ -153,21 +161,5 @@ shell:
   bin: bin
   args: [arg1, arg2]
 
-docker:
-  bin: bin
-  args: [arg1, arg2]
-
-docker-compose:
-  bin: bin
-  args: [arg1, arg2]
-
-kubectl:
-  bin: bin
-  args: [arg1, arg2]
-
-ssh:
-  bin: bin
-  args: [arg1, arg2]
-
 debug: true # debug enabled by default. To disable run with "--debug=false"
-output: cockpit # raw, formatted, cockpit
+output: prefixed # raw, prefixed, cockpit
