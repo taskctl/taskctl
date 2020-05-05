@@ -231,6 +231,7 @@ func run() error {
 				Templates: &promptui.SelectTemplates{
 					Active:   fmt.Sprintf("%s {{ .DisplayName | underline }}", promptui.IconSelect),
 					Inactive: "  {{ .DisplayName }}",
+					Selected: fmt.Sprintf(`{{ "%s" | green }} {{ .DisplayName | faint }}`, promptui.IconGood),
 				},
 				Keys: nil,
 				Searcher: func(input string, index int) bool {
@@ -291,10 +292,14 @@ func buildSuggestions(cfg *config.Config) []suggestion {
 		})
 	}
 
-	for _, v := range util.MapKeys(cfg.Tasks) {
+	for k, v := range cfg.Tasks {
+		desc := "task"
+		if v.Description != "" {
+			desc = v.Description
+		}
 		suggestions = append(suggestions, suggestion{
-			Target:      v,
-			DisplayName: fmt.Sprintf("%s - %s", v, aurora.Gray(12, "task").String()),
+			Target:      k,
+			DisplayName: fmt.Sprintf("%s - %s", k, aurora.Gray(12, desc).String()),
 			IsTask:      true,
 		})
 	}

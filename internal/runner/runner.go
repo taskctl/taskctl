@@ -27,14 +27,14 @@ type TaskRunner struct {
 	taskOutput *output.TaskOutput
 }
 
-func NewTaskRunner(contexts map[string]*taskctx.ExecutionContext, outputFlavor string, variables config.Variables) (*TaskRunner, error) {
+func NewTaskRunner(contexts map[string]*taskctx.ExecutionContext, outputFormat string, variables config.Variables) (*TaskRunner, error) {
 	r := &TaskRunner{
 		contexts:  contexts,
 		variables: variables,
 	}
 
 	var err error
-	r.taskOutput, err = output.NewTaskOutput(outputFlavor)
+	r.taskOutput, err = output.NewTaskOutput(outputFormat)
 	if err != nil {
 		return nil, err
 	}

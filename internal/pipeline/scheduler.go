@@ -1,4 +1,4 @@
-package scheduler
+package pipeline
 
 import (
 	"errors"
@@ -9,7 +9,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/taskctl/taskctl/internal/pipeline"
 	"github.com/taskctl/taskctl/internal/runner"
 )
 
@@ -32,7 +31,7 @@ func NewScheduler(r *runner.TaskRunner) *PipelineScheduler {
 	return s
 }
 
-func (s *PipelineScheduler) Schedule(p *pipeline.Pipeline) error {
+func (s *PipelineScheduler) Schedule(p *Pipeline) error {
 	s.startTimer()
 	defer s.stopTimer()
 	var wg = sync.WaitGroup{}
@@ -44,7 +43,7 @@ func (s *PipelineScheduler) Schedule(p *pipeline.Pipeline) error {
 
 		for _, stage := range p.Nodes() {
 			status := stage.ReadStatus()
-			if status != pipeline.StatusWaiting {
+			if status != StatusWaiting {
 				continue
 			}
 
@@ -52,13 +51,13 @@ func (s *PipelineScheduler) Schedule(p *pipeline.Pipeline) error {
 				meets, err := checkStageCondition(stage.Condition)
 				if err != nil {
 					logrus.Error(err)
-					stage.UpdateStatus(pipeline.StatusError)
+					stage.UpdateStatus(StatusError)
 					s.Cancel()
 					continue
 				}
 
 				if !meets {
-					stage.UpdateStatus(pipeline.StatusSkipped)
+					stage.UpdateStatus(StatusSkipped)
 					continue
 				}
 			}
@@ -68,8 +67,8 @@ func (s *PipelineScheduler) Schedule(p *pipeline.Pipeline) error {
 			}
 
 			wg.Add(1)
-			stage.UpdateStatus(pipeline.StatusRunning)
-			go func(stage *pipeline.Stage) {
+			stage.UpdateStatus(StatusRunning)
+			go func(stage *Stage) {
 				defer func() {
 					stage.End = time.Now()
 					wg.Done()
@@ -90,7 +89,7 @@ func (s *PipelineScheduler) Schedule(p *pipeline.Pipeline) error {
 
 				if err != nil {
 					logrus.Error(err)
-					stage.UpdateStatus(pipeline.StatusError)
+					stage.UpdateStatus(StatusError)
 					if !stage.AllowFailure {
 						s.Cancel()
 					}
@@ -98,7 +97,7 @@ func (s *PipelineScheduler) Schedule(p *pipeline.Pipeline) error {
 					return
 				}
 
-				stage.UpdateStatus(pipeline.StatusDone)
+				stage.UpdateStatus(StatusDone)
 			}(stage)
 		}
 
@@ -123,10 +122,10 @@ func (s *PipelineScheduler) Cancel() {
 	s.taskRunner.Cancel()
 }
 
-func (s *PipelineScheduler) isDone(p *pipeline.Pipeline) bool {
+func (s *PipelineScheduler) isDone(p *Pipeline) bool {
 	for _, stage := range p.Nodes() {
 		switch stage.ReadStatus() {
-		case pipeline.StatusWaiting, pipeline.StatusRunning:
+		case StatusWaiting, StatusRunning:
 			return false
 		}
 	}
@@ -138,7 +137,7 @@ func (s *PipelineScheduler) Finish() {
 	s.taskRunner.Finish()
 }
 
-func checkStatus(p *pipeline.Pipeline, stage *pipeline.Stage) (ready bool) {
+func checkStatus(p *Pipeline, stage *Stage) (ready bool) {
 	ready = true
 	for _, dep := range p.To(stage.Name) {
 		depStage, err := p.Node(dep)
@@ -147,16 +146,16 @@ func checkStatus(p *pipeline.Pipeline, stage *pipeline.Stage) (ready bool) {
 		}
 
 		switch depStage.ReadStatus() {
-		case pipeline.StatusDone, pipeline.StatusSkipped:
+		case StatusDone, StatusSkipped:
 			continue
-		case pipeline.StatusError:
+		case StatusError:
 			if !depStage.AllowFailure {
 				ready = false
-				stage.UpdateStatus(pipeline.StatusCanceled)
+				stage.UpdateStatus(StatusCanceled)
 			}
-		case pipeline.StatusCanceled:
+		case StatusCanceled:
 			ready = false
-			stage.UpdateStatus(pipeline.StatusCanceled)
+			stage.UpdateStatus(StatusCanceled)
 		default:
 			ready = false
 		}

@@ -17,19 +17,47 @@
 ![Licence](https://img.shields.io/github/license/taskctl/taskctl)
 
 Simple modern alternative to GNU Make. *taskctl* task runner allows you to design you routine tasks and development pipelines in nice and neat way in human-readable format (YAML, JSON or TOML). 
-Each pipeline composed of tasks or other pipelines and allows them to run in parallel or one-by-one. 
+Given a pipeline (composed of tasks or other pipelines) it builds a graph that outlines the execution plan. Each task my run concurrently or cascade.
 Beside pipelines, each single task can be performed manually or triggered by built-in filesystem watcher.
 
 ## Features
-- parallel tasks execution
-- highly customizable pipelines configuration
-- integrated file watcher
-- customizable task's contexts
+- concurrent tasks execution
+- execution graph
+- highly customizable configuration
+- import remote configuration
+- integrated file watcher (live reload)
+- customizable contexts
 - human-readable configuration format (YAML, JSON or TOML)
 - different output types
 - interactive prompt
 - handy autocomplete
 - and many more...
+
+```yaml
+tasks:
+  lint:
+    command:
+      - golint $(go list ./... | grep -v /vendor/)
+      - go vet $(go list ./... | grep -v /vendor/)
+  
+  test:
+    allow_failure: true
+    command: go test ./....
+        
+  build:
+    command: go build -o bin/app ./...
+    env: 
+      GOOS: linux
+      GOARCH: amd64
+    before: rm -rf bin/*
+
+pipelines:
+  release:
+    - task: lint
+    - task: test
+    - task: build
+      depends_on: [lint, test]
+```
 
 [![asciicast](https://asciinema.org/a/326726.svg)](https://asciinema.org/a/326726)
 
@@ -308,7 +336,7 @@ tasks:
 ### How does it differ from go-task/task?
 It's amazing how solving same problems lead to same solutions. taskctl and go-task have a lot of concepts in common but also have some differences. 
 1. Main is pipelines. Pipelines and stages allows more precise workflow design because same tasks may have different dependencies (or no dependencies) in different scenarios.
-2. Contexts allow you to set up execution environment, shell or binaries which will run your task.
+2. Contexts allow you to set up execution environment, shell or binary which will run your task.
 
 ## Autocomplete
 ### Bash
@@ -328,6 +356,7 @@ Add to  ~/.zshrc
 - [mage](https://github.com/magefile/mage)
 - [tusk](https://github.com/rliebz/tusk)
 - [just](https://github.com/casey/just)
+- [cr](https://github.com/cirocosta/cr)
 
 ## How to contribute?
 Feel free to contribute in any way you want. Share ideas, submit issues, create pull requests. 

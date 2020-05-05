@@ -15,7 +15,6 @@ import (
 
 	"github.com/taskctl/taskctl/internal/pipeline"
 	"github.com/taskctl/taskctl/internal/runner"
-	"github.com/taskctl/taskctl/internal/scheduler"
 	"github.com/taskctl/taskctl/internal/task"
 )
 
@@ -131,21 +130,21 @@ func runTarget(name string, c *cli.Context, taskRunner *runner.TaskRunner) (err 
 	return err
 }
 
-func runPipeline(pipeline *pipeline.Pipeline, taskRunner *runner.TaskRunner, summary bool) error {
-	sd := scheduler.NewScheduler(taskRunner)
+func runPipeline(p *pipeline.Pipeline, taskRunner *runner.TaskRunner, summary bool) error {
+	sd := pipeline.NewScheduler(taskRunner)
 	go func() {
 		<-cancel
 		sd.Cancel()
 	}()
 
-	err := sd.Schedule(pipeline)
+	err := sd.Schedule(p)
 	if err != nil {
 		return err
 	}
 	sd.Finish()
 
 	if summary {
-		printSummary(pipeline)
+		printSummary(p)
 	}
 
 	fmt.Fprintln(output.Stdout, aurora.Sprintf("\r\n%s: %s", aurora.Bold("Total duration"), aurora.Green(sd.End.Sub(sd.Start))))
