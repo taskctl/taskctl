@@ -260,11 +260,8 @@ pipelines:
           depends_on: ["task E"]    
 ```
 will result in an execution plan like this:
-```
-               |‾‾‾ task A ‾‾‾‾‾‾‾‾‾‾‾‾‾‾|
-start task --- |--- task B --------------|--- task E --- finish
-               |___ task C ___ task D ___|
-```
+![execution plan](https://raw.githubusercontent.com/taskctl/taskctl/master/docs/pipeline.svg)
+
 Stage definition takes following parameters:
 - ``name`` - stage name (optional). If not set - referenced task or pipeline name will be used.
 - ``task`` - task to execute on this stage (optional)
