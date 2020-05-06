@@ -1,3 +1,5 @@
+dist: bin
+
 before:
   hooks:
     - go mod download
@@ -13,11 +15,13 @@ builds:
   goarch:
     - 386
     - amd64
+    - arm
+  goarm:
+    - 6
+    - 7
   ignore:
       - goos: darwin
         goarch: 386
-
-dist: bin
 
 archives:
   - format: tar.gz
@@ -29,6 +33,11 @@ archives:
       - README.md
       - autocomplete/bash_completion.bash
       - autocomplete/zsh_completion.zsh
+      -
+release:
+  prerelease: auto
+
+
 
 checksum:
   name_template: checksums.txt
@@ -45,8 +54,13 @@ snapcrafts:
     confinement: devmode
     grade: devel
     publish: true
+    name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    replacements:
+      amd64: x86_64
+      386: i386
     apps:
       taskctl:
+        plugs: ["home", "network", "removable-media"]
         completer: autocomplete/bash_completion.bash
 
 brews:

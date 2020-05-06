@@ -95,11 +95,20 @@ According to this plan `lint` and `test` will run concurrently, `build` will sta
 brew tap taskctl/taskctl
 brew install taskctl
 ```
-
 #### Linux
 ```
 sudo wget https://github.com/taskctl/taskctl/releases/latest/download/taskctl_linux_amd64 -O /usr/local/bin/taskctl
 sudo chmod +x /usr/local/bin/taskctl
+```
+#### Ubuntu Linux
+```
+snap install taskctl
+```
+
+#### Windows
+```
+scoop bucket add taskctl https://github.com/taskctl/scoop-taskctl.git
+scoop install app
 ```
 #### Installation script
 ```
