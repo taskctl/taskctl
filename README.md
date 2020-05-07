@@ -181,7 +181,7 @@ Task definition takes following parameters:
 - ``variables`` - task variables
 
 ### Pass CLI arguments to task
-Any command line arguments succeeding `--` are passed to each task via `.Args` variable or `ARGS` environment variable.
+Any command line arguments succeeding `--` are passed to each task via `.args` variable or `ARGS` environment variable.
 
 Given this definition:
 ```
