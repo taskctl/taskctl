@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/emicklei/dot"
-	"github.com/taskctl/taskctl/internal/pipeline"
 	"github.com/urfave/cli/v2"
+
+	"github.com/taskctl/taskctl/internal/pipeline"
 )
 
 func newGraphCommand() *cli.Command {

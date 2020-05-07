@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/taskctl/taskctl/internal/config"
 	"sync"
+
+	"github.com/taskctl/taskctl/internal/config"
 
 	"github.com/urfave/cli/v2"
 
