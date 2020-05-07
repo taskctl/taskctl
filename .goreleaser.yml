@@ -51,16 +51,12 @@ changelog:
 
 snapcrafts:
   - name: taskctl
-    confinement: devmode
+    confinement: classic
     grade: devel
     publish: true
     name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
-    replacements:
-      amd64: x86_64
-      386: i386
     apps:
       taskctl:
-        plugs: ["home", "network", "removable-media"]
         completer: autocomplete/bash_completion.bash
 
 brews:

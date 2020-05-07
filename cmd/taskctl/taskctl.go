@@ -211,6 +211,10 @@ func run() error {
 			targets := c.Args().Slice()
 			if len(targets) > 0 {
 				for _, target := range targets {
+					if target == "--" {
+						break
+					}
+
 					err = runTarget(target, c, taskRunner)
 					if err != nil {
 						return err
