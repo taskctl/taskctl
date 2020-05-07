@@ -25,6 +25,13 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}
 
+      - uses: actions/cache@v1
+        with:
+          path: vendor
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v1
         with:

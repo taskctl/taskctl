@@ -2,7 +2,7 @@ dist: bin
 
 before:
   hooks:
-    - go mod download
+    - go mod vendor
 
 builds:
 - dir: cmd/taskctl
@@ -33,11 +33,9 @@ archives:
       - README.md
       - autocomplete/bash_completion.bash
       - autocomplete/zsh_completion.zsh
-      -
+
 release:
   prerelease: auto
-
-
 
 checksum:
   name_template: checksums.txt
