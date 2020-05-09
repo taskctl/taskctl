@@ -3,10 +3,11 @@ package runner
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os/exec"
+	"regexp"
+	"strings"
 	"time"
-
-	"github.com/taskctl/taskctl/internal/config"
 
 	"github.com/taskctl/taskctl/internal/output"
 
@@ -19,7 +20,8 @@ import (
 
 type TaskRunner struct {
 	contexts  map[string]*taskctx.ExecutionContext
-	variables config.Variables
+	variables *util.Variables
+	env       *util.Variables
 
 	ctx        context.Context
 	cancel     context.CancelFunc
@@ -27,10 +29,11 @@ type TaskRunner struct {
 	taskOutput *output.TaskOutput
 }
 
-func NewTaskRunner(contexts map[string]*taskctx.ExecutionContext, outputFormat string, variables config.Variables) (*TaskRunner, error) {
+func NewTaskRunner(contexts map[string]*taskctx.ExecutionContext, outputFormat string, variables *util.Variables) (*TaskRunner, error) {
 	r := &TaskRunner{
 		contexts:  contexts,
 		variables: variables,
+		env:       &util.Variables{},
 	}
 
 	var err error
@@ -43,7 +46,7 @@ func NewTaskRunner(contexts map[string]*taskctx.ExecutionContext, outputFormat s
 	return r, nil
 }
 
-func (r *TaskRunner) Run(t *task.Task, variables config.Variables, env config.Variables) (err error) {
+func (r *TaskRunner) Run(t *task.Task, variables *util.Variables, env *util.Variables) (err error) {
 	c, err := r.contextForTask(t)
 	if err != nil {
 		return err
@@ -66,9 +69,11 @@ func (r *TaskRunner) Run(t *task.Task, variables config.Variables, env config.Va
 		}
 	}()
 
+	env = env.Merge(r.env)
 	env = env.With("TASK_NAME", t.Name)
 	env = env.With("ARGS", variables.Get("Args"))
 	env = env.Merge(t.Env)
+
 	variables = r.variables.Merge(variables)
 
 	if t.Dir != "" {
@@ -85,7 +90,7 @@ func (r *TaskRunner) Run(t *task.Task, variables config.Variables, env config.Va
 		}
 
 		if !meets {
-			logrus.Infof("checkTaskCondition %s was skipped", t.Name)
+			logrus.Infof("task %s was skipped", t.Name)
 			t.Skipped = true
 			return nil
 		}
@@ -98,7 +103,10 @@ func (r *TaskRunner) Run(t *task.Task, variables config.Variables, env config.Va
 
 	t.Start = time.Now()
 	for _, variant := range t.Variations {
+		var cmdOutput string
 		for _, command := range t.Command {
+			variables = variables.With("Output", cmdOutput)
+
 			command, err = t.Interpolate(command, variables)
 			if err != nil {
 				return err
@@ -116,9 +124,9 @@ func (r *TaskRunner) Run(t *task.Task, variables config.Variables, env config.Va
 			}
 
 			cmd.Env = append(cmd.Env, util.ConvertEnv(variant)...)
-			cmd.Env = append(cmd.Env, util.ConvertEnv(env)...)
+			cmd.Env = append(cmd.Env, util.ConvertEnv(env.Map())...)
 
-			err = r.executeCommand(t, cmd)
+			cmdOutput, err = r.executeCommand(t, cmd)
 			cancelFn()
 
 			if err != nil {
@@ -141,19 +149,21 @@ func (r *TaskRunner) Run(t *task.Task, variables config.Variables, env config.Va
 		logrus.Warning(err)
 	}
 
+	r.storeOutput(t)
+
 	if t.Errored {
 		return t.Error
 	}
 
 	if len(t.After) > 0 {
 		for _, command := range t.After {
-			cmd, err := c.BuildCommand(context.Background(), command, t)
+			cmd, err := c.BuildCommand(r.ctx, command, t)
 			if err != nil {
 				return err
 			}
 
-			cmd.Env = append(cmd.Env, util.ConvertEnv(variables)...)
-			err = r.executeCommand(t, cmd)
+			cmd.Env = append(cmd.Env, util.ConvertEnv(env.Map())...)
+			_, err = r.executeCommand(t, cmd)
 			if err != nil {
 				logrus.Warn(err)
 			}
@@ -180,47 +190,47 @@ func (r *TaskRunner) DryRun() {
 	r.dryRun = true
 }
 
-func (r *TaskRunner) executeCommand(t *task.Task, cmd *exec.Cmd) (err error) {
+func (r *TaskRunner) executeCommand(t *task.Task, cmd *exec.Cmd) (output string, err error) {
 	var done = make(chan struct{})
 	var killed = make(chan struct{})
 	go r.waitForInterruption(*cmd, done, killed)
 
 	logrus.Debugf("Executing %s", cmd.String())
 	if r.dryRun {
-		return nil
+		return output, nil
 	}
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return err
+		return output, err
 	}
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		return err
+		return output, err
 	}
 
-	var flushed = make(chan struct{})
+	var flushed = make(chan []byte)
 	go r.taskOutput.Stream(t, stdout, stderr, flushed)
 
 	err = cmd.Start()
 	if err != nil {
 		close(done)
 		<-flushed
-		return err
+		return output, err
 	}
 
-	<-flushed
+	buf := <-flushed
 	err = cmd.Wait()
 	if err != nil {
 		close(done)
-		return err
+		return output, err
 	}
 
 	close(done)
 	<-killed
 
-	return nil
+	return string(buf), nil
 }
 
 func (r *TaskRunner) contextForTask(t *task.Task) (c *taskctx.ExecutionContext, err error) {
@@ -264,7 +274,7 @@ func (r *TaskRunner) checkTaskCondition(t *task.Task) (bool, error) {
 		return false, err
 	}
 
-	err = r.executeCommand(t, cmd)
+	_, err = r.executeCommand(t, cmd)
 	if err != nil {
 		var e *exec.ExitError
 		if errors.As(err, &e) {
@@ -275,4 +285,19 @@ func (r *TaskRunner) checkTaskCondition(t *task.Task) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func (r *TaskRunner) storeOutput(t *task.Task) {
+	var envVarName string
+	varName := fmt.Sprintf("Tasks.%s.Output", strings.Title(t.Name))
+
+	if t.ExportAs == "" {
+		envVarName = fmt.Sprintf("%s_OUTPUT", strings.ToUpper(t.Name))
+		envVarName = regexp.MustCompile("[^a-zA-Z0-9_]").ReplaceAllString(envVarName, "_")
+	} else {
+		envVarName = t.ExportAs
+	}
+
+	r.env.Set(envVarName, t.Log.Stdout.String())
+	r.variables.Set(varName, t.Log.Stdout.String())
 }

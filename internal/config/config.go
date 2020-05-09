@@ -1,43 +1,53 @@
 package config
 
 import (
+	"fmt"
+
 	"github.com/imdario/mergo"
 	"github.com/sirupsen/logrus"
+
+	"github.com/taskctl/taskctl/internal/context"
+	"github.com/taskctl/taskctl/internal/output"
+	"github.com/taskctl/taskctl/internal/pipeline"
+	"github.com/taskctl/taskctl/internal/task"
+	"github.com/taskctl/taskctl/internal/watch"
 
 	"github.com/taskctl/taskctl/internal/util"
 )
 
-const (
-	LocalContext = "local"
-
-	OutputFormatRaw      = "raw"
-	OutputFormatPrefixed = "prefixed"
-	OutputFormatCockpit  = "cockpit"
-)
-
 var DefaultFileNames = []string{"taskctl.yaml", "tasks.yaml"}
 
-var values *Config
+func NewConfig() *Config {
+	cfg := &Config{
+		Output:    output.OutputFormatPrefixed,
+		Contexts:  make(map[string]*context.ExecutionContext),
+		Pipelines: make(map[string]*pipeline.ExecutionGraph),
+		Tasks:     make(map[string]*task.Task),
+		Watchers:  make(map[string]*watch.Watcher),
+	}
+
+	return cfg
+}
 
 type Config struct {
 	Import    []string
-	Contexts  map[string]*ContextDefinition
-	Pipelines map[string][]*StageDefinition
-	Tasks     map[string]*TaskDefinition
-	Watchers  map[string]*WatcherDefinition
-
-	Shell util.Executable
+	Contexts  map[string]*context.ExecutionContext
+	Pipelines map[string]*pipeline.ExecutionGraph
+	Tasks     map[string]*task.Task
+	Watchers  map[string]*watch.Watcher
 
 	Debug, DryRun bool
 	Output        string
 
-	Variables Variables
+	Variables *util.Variables
 }
 
-func defaultConfig() *Config {
-	return &Config{
-		Output: OutputFormatPrefixed,
-	}
+func (cfg *Config) Task(name string) *task.Task {
+	return cfg.Tasks[name]
+}
+
+func (cfg *Config) Pipeline(name string) *pipeline.ExecutionGraph {
+	return cfg.Pipelines[name]
 }
 
 func (c *Config) merge(src *Config) error {
@@ -54,24 +64,53 @@ func (c *Config) merge(src *Config) error {
 	return nil
 }
 
-func (c *Config) init() {
-	c.Output = OutputFormatPrefixed
+func buildFromDefinition(def *configDefinition) (cfg *Config, err error) {
+	cfg = NewConfig()
 
-	for name, v := range c.Tasks {
-		if v.Name == "" {
-			v.Name = name
+	for k, v := range def.Contexts {
+		cfg.Contexts[k], err = buildContext(v, def.Shell)
+		if err != nil {
+			return nil, err
 		}
 	}
 
-	if c.Contexts == nil {
-		c.Contexts = make(map[string]*ContextDefinition)
+	for k, v := range def.Tasks {
+		cfg.Tasks[k], err = buildTask(v)
+		if cfg.Tasks[k].Name == "" {
+			cfg.Tasks[k].Name = k
+		}
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	if _, ok := c.Contexts[LocalContext]; !ok {
-		c.Contexts[LocalContext] = &ContextDefinition{Type: LocalContext}
+	for k, v := range def.Watchers {
+		t := cfg.Tasks[v.Task]
+		if t == nil {
+			return nil, fmt.Errorf("no such task")
+		}
+		cfg.Watchers[k], err = buildWatcher(k, v, cfg)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	if c.Variables == nil {
-		c.Variables = make(map[string]string)
+	// to allow pipeline-to-pipeline links
+	for k := range def.Pipelines {
+		cfg.Pipelines[k] = &pipeline.ExecutionGraph{}
 	}
+
+	for k, v := range def.Pipelines {
+		cfg.Pipelines[k], err = buildPipeline(v, cfg)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	cfg.Import = def.Import
+	cfg.Debug = def.Debug
+	cfg.Output = def.Output
+	cfg.Variables = util.NewVariables(def.Variables)
+
+	return cfg, nil
 }

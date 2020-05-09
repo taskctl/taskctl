@@ -14,24 +14,15 @@ import (
 	"github.com/logrusorgru/aurora"
 	"github.com/manifoldco/promptui"
 
-	"github.com/taskctl/taskctl/internal/config"
-	"github.com/taskctl/taskctl/internal/context"
-	"github.com/taskctl/taskctl/internal/output"
-	"github.com/taskctl/taskctl/internal/pipeline"
-	"github.com/taskctl/taskctl/internal/task"
-	"github.com/taskctl/taskctl/internal/util"
-	"github.com/taskctl/taskctl/internal/watch"
-
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
+
+	"github.com/taskctl/taskctl/internal/config"
+	"github.com/taskctl/taskctl/internal/output"
+	"github.com/taskctl/taskctl/internal/util"
 )
 
 var version = "dev"
-
-var tasks = make(map[string]*task.Task)
-var contexts = make(map[string]*context.ExecutionContext)
-var pipelines = make(map[string]*pipeline.ExecutionGraph)
-var watchers = make(map[string]*watch.Watcher)
 
 var cancel = make(chan struct{})
 var done = make(chan bool)
@@ -65,10 +56,6 @@ func listenSignals() {
 
 func run() error {
 	cl := config.NewConfigLoader()
-	globalCfg, err := cl.LoadGlobalConfig()
-	if err != nil {
-		return err
-	}
 
 	app := &cli.App{
 		Name:                 "taskctl",
@@ -92,7 +79,6 @@ func run() error {
 				Aliases: []string{"d"},
 				Usage:   "enable debug",
 				EnvVars: []string{"TASKCTL_DEBUG"},
-				Value:   globalCfg.Debug,
 			},
 			&cli.PathFlag{
 				Name:        "config",
@@ -106,7 +92,6 @@ func run() error {
 				Aliases: []string{"o"},
 				Usage:   "output format (raw, prefixed or cockpit)",
 				EnvVars: []string{"TASKCTL_OUTPUT_FORMAT"},
-				Value:   globalCfg.Output,
 			},
 			&cli.BoolFlag{
 				Name:    "raw",
@@ -150,31 +135,6 @@ func run() error {
 				}
 			}
 
-			for name, def := range cfg.Tasks {
-				tasks[name] = task.BuildTask(def)
-			}
-
-			for name, def := range cfg.Contexts {
-				contexts[name], err = context.BuildContext(def)
-				if err != nil {
-					return fmt.Errorf("context %s build failed: %v", name, err)
-				}
-			}
-
-			for name, stages := range cfg.Pipelines {
-				pipelines[name], err = pipeline.BuildPipeline(stages, cfg.Pipelines, cfg.Tasks)
-				if err != nil {
-					return fmt.Errorf("pipeline %s build failed: %w", name, err)
-				}
-			}
-
-			for name, def := range cfg.Watchers {
-				watchers[name], err = watch.BuildWatcher(name, def, tasks[def.Task])
-				if err != nil {
-					return fmt.Errorf("watcher %s build failed: %v", name, err)
-				}
-			}
-
 			if c.Bool("debug") || cfg.Debug {
 				logrus.SetLevel(logrus.DebugLevel)
 			} else {
@@ -189,9 +149,9 @@ func run() error {
 			if c.IsSet("output") {
 				cfg.Output = c.String("output")
 			} else if c.Bool("raw") {
-				cfg.Output = config.OutputFormatRaw
+				cfg.Output = output.OutputFormatRaw
 			} else if c.Bool("cockpit") {
-				cfg.Output = config.OutputFormatCockpit
+				cfg.Output = output.OutputFormatCockpit
 			}
 
 			return nil
@@ -252,10 +212,10 @@ func run() error {
 
 			selection := suggestions[index]
 			if selection.IsTask {
-				return runTask(tasks[selection.Target], taskRunner)
+				return runTask(cfg.Tasks[selection.Target], taskRunner)
 			}
 
-			return runPipeline(pipelines[selection.Target], taskRunner, c.Bool("summary"))
+			return runPipeline(cfg.Pipelines[selection.Target], taskRunner, c.Bool("summary"))
 		},
 		Commands: []*cli.Command{
 			newRunCommand(),

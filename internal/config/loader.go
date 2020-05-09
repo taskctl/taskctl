@@ -24,15 +24,14 @@ import (
 var ErrConfigNotFound = errors.New("config file not found")
 
 // reads config files and loads config
-type ConfigLoader struct {
-	Values  map[string]string
+type Loader struct {
 	imports map[string]bool
 	dir     string
 	homeDir string
 }
 
 // config loader constructor
-func NewConfigLoader() ConfigLoader {
+func NewConfigLoader() Loader {
 	h, err := os.UserHomeDir()
 	if err != nil {
 		logrus.Warning(err)
@@ -43,22 +42,16 @@ func NewConfigLoader() ConfigLoader {
 		logrus.Warning(err)
 	}
 
-	return ConfigLoader{
-		Values:  make(map[string]string),
+	return Loader{
 		imports: make(map[string]bool),
 		homeDir: h,
 		dir:     dir,
 	}
 }
 
-func (cl *ConfigLoader) Set(key string, value string) {
-	cl.Values[key] = value
-}
-
-func (cl *ConfigLoader) Load(file string) (*Config, error) {
-	cl.Reset()
-	var err error
-	values, err = cl.LoadGlobalConfig()
+func (cl *Loader) Load(file string) (*Config, error) {
+	cl.reset()
+	globalCfg, err := cl.LoadGlobalConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +59,7 @@ func (cl *ConfigLoader) Load(file string) (*Config, error) {
 	if file == "" {
 		file, err = cl.resolveDefaultConfigFile()
 		if err != nil {
-			return values, err
+			return globalCfg, err
 		}
 	}
 
@@ -74,49 +67,64 @@ func (cl *ConfigLoader) Load(file string) (*Config, error) {
 		file = path.Join(cl.dir, file)
 	}
 
-	localCfg, err := cl.load(file)
+	raw, err := cl.load(file)
 	if err != nil {
 		return nil, err
 	}
 
-	lcfg, err := cl.decode(localCfg)
+	def, err := cl.decode(raw)
 	if err != nil {
 		return nil, err
 	}
 
-	err = values.merge(lcfg)
+	localCfg, err := buildFromDefinition(def)
 	if err != nil {
 		return nil, err
 	}
-	values.init()
-	values.Variables["Root"] = cl.dir
+
+	err = globalCfg.merge(localCfg)
+	if err != nil {
+		return nil, err
+	}
+	globalCfg.Variables.Set("Root", cl.dir)
 
 	logrus.Debugf("config %s loaded", file)
-	return values, nil
+	return globalCfg, nil
 }
 
-func (cl *ConfigLoader) LoadGlobalConfig() (*Config, error) {
-	values = defaultConfig()
+func (cl *Loader) LoadGlobalConfig() (*Config, error) {
 	if cl.homeDir == "" {
-		return values, nil
+		return nil, nil
 	}
 
 	file := path.Join(cl.homeDir, ".taskctl", "config.yaml")
 	if !util.FileExists(file) {
-		return values, nil
+		return &Config{}, nil
 	}
 
-	cfg, err := cl.load(file)
+	raw, err := cl.load(file)
 	if err != nil {
-		return values, err
+		return nil, err
 	}
 
-	values, err = cl.decode(cfg)
+	def, err := cl.decode(raw)
+	if err != nil {
+		return nil, err
+	}
 
-	return values, err
+	cfg, err := buildFromDefinition(def)
+	if err != nil {
+		return nil, err
+	}
+
+	return cfg, err
 }
 
-func (cl *ConfigLoader) load(file string) (config map[string]interface{}, err error) {
+func (cl *Loader) reset() {
+	cl.imports = make(map[string]bool)
+}
+
+func (cl *Loader) load(file string) (config map[string]interface{}, err error) {
 	cl.imports[file] = true
 
 	if util.IsUrl(file) {
@@ -131,12 +139,12 @@ func (cl *ConfigLoader) load(file string) (config map[string]interface{}, err er
 		return nil, err
 	}
 
-	var cm map[string]interface{}
+	var raw map[string]interface{}
 	importDir := path.Dir(file)
 	if imports, ok := config["import"]; ok {
 		for _, v := range imports.([]interface{}) {
 			if util.IsUrl(v.(string)) {
-				cm, err = cl.load(v.(string))
+				raw, err = cl.load(v.(string))
 			} else {
 				importFile := path.Join(importDir, v.(string))
 				fi, err := os.Stat(importFile)
@@ -144,9 +152,9 @@ func (cl *ConfigLoader) load(file string) (config map[string]interface{}, err er
 					return nil, fmt.Errorf("%s: %v", importFile, err)
 				}
 				if !fi.IsDir() {
-					cm, err = cl.load(importFile)
+					raw, err = cl.load(importFile)
 				} else {
-					cm, err = cl.loadDir(importFile)
+					raw, err = cl.loadDir(importFile)
 				}
 				if err != nil {
 					logrus.Error(err)
@@ -156,7 +164,7 @@ func (cl *ConfigLoader) load(file string) (config map[string]interface{}, err er
 				return nil, fmt.Errorf("load import error: %v", err)
 			}
 
-			err = mergo.Merge(&config, cm, mergo.WithOverride, mergo.WithAppendSlice, mergo.WithTypeCheck)
+			err = mergo.Merge(&config, raw, mergo.WithOverride, mergo.WithAppendSlice, mergo.WithTypeCheck)
 			if err != nil {
 				return nil, err
 			}
@@ -166,7 +174,7 @@ func (cl *ConfigLoader) load(file string) (config map[string]interface{}, err er
 	return config, nil
 }
 
-func (cl *ConfigLoader) loadDir(dir string) (map[string]interface{}, error) {
+func (cl *Loader) loadDir(dir string) (map[string]interface{}, error) {
 	pattern := filepath.Join(dir, "*.yaml")
 	q, err := filepath.Glob(pattern)
 	if err != nil {
@@ -193,7 +201,7 @@ func (cl *ConfigLoader) loadDir(dir string) (map[string]interface{}, error) {
 	return cm, nil
 }
 
-func (cl *ConfigLoader) readUrl(u string) (map[string]interface{}, error) {
+func (cl *Loader) readUrl(u string) (map[string]interface{}, error) {
 	resp, err := http.Get(u)
 	if err != nil {
 		return nil, err
@@ -209,10 +217,10 @@ func (cl *ConfigLoader) readUrl(u string) (map[string]interface{}, error) {
 	}
 
 	ext := filepath.Ext(u)
-	return cl.unmarshallData(data, ext)
+	return cl.unmarshalData(data, ext)
 }
 
-func (cl *ConfigLoader) readFile(filename string) (map[string]interface{}, error) {
+func (cl *Loader) readFile(filename string) (map[string]interface{}, error) {
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %v", filename, err)
@@ -220,10 +228,10 @@ func (cl *ConfigLoader) readFile(filename string) (map[string]interface{}, error
 
 	ext := filepath.Ext(filename)
 
-	return cl.unmarshallData(data, ext)
+	return cl.unmarshalData(data, ext)
 }
 
-func (cl *ConfigLoader) unmarshallData(data []byte, ext string) (map[string]interface{}, error) {
+func (cl *Loader) unmarshalData(data []byte, ext string) (map[string]interface{}, error) {
 	var cm map[string]interface{}
 
 	switch strings.ToLower(ext) {
@@ -249,21 +257,8 @@ func (cl *ConfigLoader) unmarshallData(data []byte, ext string) (map[string]inte
 	return cm, nil
 }
 
-func (cl *ConfigLoader) applyValues(cm map[string]interface{}) (err error) {
-	for k, v := range cl.Values {
-		err = util.SetByPath(cm, k, v)
-	}
-
-	return err
-}
-
-func (cl *ConfigLoader) decode(cm map[string]interface{}) (*Config, error) {
-	err := cl.applyValues(cm)
-	if err != nil {
-		return nil, err
-	}
-
-	c := defaultConfig()
+func (cl *Loader) decode(cm map[string]interface{}) (*configDefinition, error) {
+	c := &configDefinition{}
 	md, _ := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
 			mapstructure.StringToTimeDurationHookFunc(),
@@ -274,7 +269,7 @@ func (cl *ConfigLoader) decode(cm map[string]interface{}) (*Config, error) {
 		TagName:          "",
 	})
 
-	err = md.Decode(cm)
+	err := md.Decode(cm)
 	if err != nil {
 		return nil, err
 	}
@@ -282,7 +277,7 @@ func (cl *ConfigLoader) decode(cm map[string]interface{}) (*Config, error) {
 	return c, nil
 }
 
-func (cl *ConfigLoader) resolveDefaultConfigFile() (file string, err error) {
+func (cl *Loader) resolveDefaultConfigFile() (file string, err error) {
 	dir := cl.dir
 	for {
 		if dir == "/" {
@@ -301,8 +296,4 @@ func (cl *ConfigLoader) resolveDefaultConfigFile() (file string, err error) {
 	}
 
 	return file, fmt.Errorf("default config resolution failed: %w", ErrConfigNotFound)
-}
-
-func (cl *ConfigLoader) Reset() {
-	cl.imports = make(map[string]bool)
 }

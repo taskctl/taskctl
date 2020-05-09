@@ -34,6 +34,9 @@ archives:
       - autocomplete/bash_completion.bash
       - autocomplete/zsh_completion.zsh
 
+source:
+  enabled: true
+
 release:
   prerelease: auto
 
@@ -53,6 +56,7 @@ snapcrafts:
     grade: devel
     publish: true
     name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    summary: taskctl task runner - developer's routine tasks automation toolkit. Simple modern alternative to GNU Make 🧰
     apps:
       taskctl:
         completer: autocomplete/bash_completion.bash
@@ -89,7 +93,7 @@ nfpms:
   -
     homepage: https://github.com/taskctl/taskctl
     maintainer: Yevhen Terentiev <yevhen.terentiev@gmail.com>
-    description: taskctl - developer's routine tasks automation toolkit. Simple modern alternative to GNU Make 🧰
+    description: taskctl task runner - developer's routine tasks automation toolkit. Simple modern alternative to GNU Make 🧰
     formats:
       - deb
       - rpm

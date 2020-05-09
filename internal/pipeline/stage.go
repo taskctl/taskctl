@@ -4,7 +4,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/taskctl/taskctl/internal/config"
+	"github.com/taskctl/taskctl/internal/util"
 
 	"github.com/taskctl/taskctl/internal/task"
 )
@@ -24,11 +24,11 @@ type Stage struct {
 	Task         *task.Task
 	Pipeline     *ExecutionGraph
 	DependsOn    []string
-	Env          map[string]string
 	Dir          string
 	AllowFailure bool
 	Status       int32
-	Variables    config.Variables
+	Env          *util.Variables
+	Variables    *util.Variables
 
 	Start time.Time
 	End   time.Time
@@ -44,11 +44,4 @@ func (s *Stage) ReadStatus() int32 {
 
 func (s *Stage) Duration() time.Duration {
 	return s.End.Sub(s.Start)
-}
-
-func (s *Stage) SetEnvVariable(name, value string) {
-	if s.Env == nil {
-		s.Env = make(map[string]string)
-	}
-	s.Env[name] = value
 }

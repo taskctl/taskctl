@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/taskctl/taskctl/internal/config"
+	"github.com/taskctl/taskctl/internal/output"
 
 	"github.com/urfave/cli/v2"
 
@@ -28,7 +28,7 @@ func newWatchCommand() *cli.Command {
 			return nil
 		},
 		Action: func(c *cli.Context) (err error) {
-			taskRunner, err := runner.NewTaskRunner(contexts, config.OutputFormatPrefixed, cfg.Variables)
+			taskRunner, err := runner.NewTaskRunner(cfg.Contexts, output.OutputFormatPrefixed, cfg.Variables)
 			if err != nil {
 				return err
 			}
@@ -40,7 +40,7 @@ func newWatchCommand() *cli.Command {
 			var wg sync.WaitGroup
 			for _, name := range c.Args().Slice() {
 				wg.Add(1)
-				w, ok := watchers[name]
+				w, ok := cfg.Watchers[name]
 				if !ok {
 					return fmt.Errorf("unknown watcher %s", name)
 				}

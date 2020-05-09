@@ -25,8 +25,8 @@ func newGraphCommand() *cli.Command {
 		},
 		Action: func(c *cli.Context) error {
 			name := c.Args().First()
-			p, ok := pipelines[name]
-			if !ok {
+			p := cfg.Pipelines[name]
+			if p == nil {
 				return fmt.Errorf("no such pipeline %s", name)
 			}
 

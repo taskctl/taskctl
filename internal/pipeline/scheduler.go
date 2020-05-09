@@ -76,11 +76,7 @@ func (s *PipelineScheduler) Schedule(p *ExecutionGraph) error {
 
 				stage.Start = time.Now()
 
-				err := p.provideOutput(stage)
-				if err != nil {
-					logrus.Error(err)
-				}
-
+				var err error
 				if stage.Pipeline != nil {
 					err = s.Schedule(stage.Pipeline)
 				} else {

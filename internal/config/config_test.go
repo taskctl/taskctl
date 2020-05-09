@@ -30,4 +30,12 @@ func TestConfig_decode(t *testing.T) {
 	if _, ok := cfg.Tasks["test-task"]; !ok {
 		t.Fatal("tasks parsing error")
 	}
+
+	if _, ok := cfg.Pipelines["pipeline2"]; !ok {
+		t.Fatal("pipelines parsing error")
+	}
+
+	if len(cfg.Pipelines["pipeline2"]) != 2 {
+		t.Fatal("pipelines parsing failed")
+	}
 }

@@ -1,21 +1,17 @@
 package task
 
 import (
-	"sync/atomic"
 	"time"
-
-	"github.com/taskctl/taskctl/internal/config"
 
 	"github.com/taskctl/taskctl/internal/util"
 )
-
-var index uint32
 
 type Task struct {
 	Index        uint32
 	Command      []string
 	Context      string
-	Env          config.Variables
+	Env          *util.Variables
+	Variables    *util.Variables
 	Variations   []map[string]string
 	Dir          string
 	Timeout      *time.Duration
@@ -41,35 +37,6 @@ type Task struct {
 	}
 }
 
-func BuildTask(def *config.TaskDefinition) *Task {
-	t := &Task{
-		Index:        atomic.AddUint32(&index, 1),
-		Name:         def.Name,
-		Description:  def.Description,
-		Condition:    def.Condition,
-		Command:      def.Command,
-		Env:          def.Env,
-		Variations:   def.Variations,
-		Dir:          def.Dir,
-		Timeout:      def.Timeout,
-		AllowFailure: def.AllowFailure,
-		After:        def.After,
-		ExportAs:     def.ExportAs,
-		Context:      def.Context,
-	}
-
-	if len(t.Variations) == 0 {
-		// default variant
-		t.Variations = make([]map[string]string, 1)
-	}
-
-	if t.Context == "" {
-		t.Context = "local"
-	}
-
-	return t
-}
-
 func (t *Task) Duration() time.Duration {
 	if t.End.IsZero() {
 		return time.Since(t.Start)
@@ -86,14 +53,12 @@ func (t *Task) ErrorMessage() string {
 	return util.LastLine(&t.Log.Stdout)
 }
 
-func (t *Task) Interpolate(s string, params ...config.Variables) (string, error) {
-	data := config.NewSet(map[string]string{
-		"TaskName": t.Name,
-	})
+func (t *Task) Interpolate(s string, params ...*util.Variables) (string, error) {
+	data := t.Variables
 
 	for _, variables := range params {
 		data = data.Merge(variables)
 	}
 
-	return util.RenderString(s, data)
+	return util.RenderString(s, data.Map())
 }

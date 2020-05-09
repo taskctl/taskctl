@@ -72,8 +72,8 @@ According to this plan `lint` and `test` will run concurrently, `build` will sta
     - [Example](#example)
 - [Tasks](#tasks)
     - [Pass CLI arguments to task](#pass-cli-arguments-to-task)
-    - [Task`s variations](#tasks-variations)
-    - [Task`s variables](#tasks-variables)
+    - [Task's variations](#tasks-variations)
+    - [Task's variables](#tasks-variables)
     - [Storing task's output](#storing-tasks-output) 
     - [Conditional execution](#task-conditional-execution) 
 - [Pipelines](#pipelines)
@@ -166,22 +166,22 @@ tasks:
         after: rm -rf tmp/*
 ```
 Task definition takes following parameters:
-- ``name`` - task name (optional)
-- ``command`` - one or more commands to run
-- ``variations`` - list of variations to apply to command
-- ``context`` - name of the context to run commands in (optional). ``local`` by default
-- ``env`` - environment variables (optional). All existing environment variables will be passed automatically
-- ``dir`` - working directory. If not set, current working directory will be used
-- ``timeout`` - command execution timeout (optional)
-- ``allow_failure`` - if set to ``true`` failed commands will no interrupt task execution. ``false`` by default
-- ``after`` - command that will be executed after command completes
-- ``before`` - command that will be executed before task starts
-- ``exportAs`` - output variable name. ``TASK_NAME_OUTPUT`` by default
-- ``condition`` - condition to check before running task
-- ``variables`` - task variables
+- `name` - task name (optional)
+- `command` - one or more commands to run
+- `variations` - list of variations to apply to command
+- `context` - name of the context to run commands in (optional). `local` by default
+- `env` - environment variables (optional). All existing environment variables will be passed automatically
+- `dir` - working directory. If not set, current working directory will be used
+- `timeout` - command execution timeout (optional)
+- `allow_failure` - if set to `true` failed commands will no interrupt task execution. `false` by default
+- `after` - command that will be executed after command completes
+- `before` - command that will be executed before task starts
+- `exportAs` - output env variable name (default: `TASK_NAME_OUTPUT`, where `TASK_NAME` is actual task's name)
+- `condition` - condition to check before running task
+- `variables` - task variables
 
 ### Pass CLI arguments to task
-Any command line arguments succeeding `--` are passed to each task via `.args` variable or `ARGS` environment variable.
+Any command line arguments succeeding `--` are passed to each task via `.Args` variable or `ARGS` environment variable.
 
 Given this definition:
 ```
@@ -194,23 +194,27 @@ $ taskctl lint -- package.go
 # go lint package.go
 ```
 
-
 ### Tasks variables
 Each task has variables to be used to render task's fields  - `command`, `dir`.
 Along with predefined, variables can be set in a task's definition.
+You can use those variables according to `text/template` [documentation](https://golang.org/pkg/text/template/)
 
 Predefined variables are:
-- ``Root`` - config file directory
-- ``TaskName`` - current task's name
-- ``OutputTask1`` - `task1` output
+- `.Root` - config file directory
+- `.Args` - provided arguments
+- `.Task.Name` - current task's name
+- `.Stage.Name` - current stage's name
+- `.Output` - previous command's (inside the same task) output
+- `.Tasks.Task1.Output` - `task1` latest command output
 
 Variables can be used inside task definition. For example:
-```
+```yaml
 tasks:
     task1:
         dir: "{{ .Root }}/some-dir"
         command:
-          - echo "My name is {{ .TaskName }}"
+          - echo "My name is {{ .Task.Name }}"
+          - echo {{ .Output }} # My name is task1
           - echo "Sleep for {{ .sleep }} seconds"
           - sleep {{ .sleep }}
         variables:
@@ -272,14 +276,14 @@ will result in an execution plan like this:
 ![execution plan](https://raw.githubusercontent.com/taskctl/taskctl/master/docs/pipeline.svg)
 
 Stage definition takes following parameters:
-- ``name`` - stage name (optional). If not set - referenced task or pipeline name will be used.
-- ``task`` - task to execute on this stage (optional)
-- ``pipeline`` - pipeline to execute on this stage (optional)
-- ``env`` - environment variables (optional). All existing environment variables will be passed automatically
-- ``depends_on`` - name of stage on which this stage depends on (optional). This stage will be started only after referenced stage is completed.
-- ``allow_failure`` - if set to ``true`` failing stage will no interrupt pipeline execution. ``false`` by default
-- ``condition`` - condition to check before running stage
-- ``variables`` - stage variables
+- `name` - stage name (optional). If not set - referenced task or pipeline name will be used.
+- `task` - task to execute on this stage (optional)
+- `pipeline` - pipeline to execute on this stage (optional)
+- `env` - environment variables (optional). All existing environment variables will be passed automatically
+- `depends_on` - name of stage on which this stage depends on (optional). This stage will be started only after referenced stage is completed.
+- `allow_failure` - if set to `true` failing stage will no interrupt pipeline execution. ``false`` by default
+- `condition` - condition to check before running stage
+- `variables` - stage variables
 
 ## Taskctl output formats
 - `raw` - raw commands output

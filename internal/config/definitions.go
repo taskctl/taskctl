@@ -6,16 +6,19 @@ import (
 	"github.com/taskctl/taskctl/internal/util"
 )
 
-type ContextDefinition struct {
-	Type      string
-	Dir       string
-	Up        []string
-	Down      []string
-	Before    []string
-	After     []string
-	Env       Variables
-	Variables Variables
-	util.Executable
+type configDefinition struct {
+	Import    []string
+	Contexts  map[string]*contextDefinition
+	Pipelines map[string][]*StageDefinition
+	Tasks     map[string]*TaskDefinition
+	Watchers  map[string]*WatcherDefinition
+
+	Shell util.Executable
+
+	Debug, DryRun bool
+	Output        string
+
+	Variables map[string]string
 }
 
 type StageDefinition struct {
@@ -26,8 +29,8 @@ type StageDefinition struct {
 	DependsOn    []string `mapstructure:"depends_on"`
 	AllowFailure bool     `mapstructure:"allow_failure"`
 	Dir          string
-	Env          Variables
-	Variables    Variables
+	Env          map[string]string
+	Variables    map[string]string
 }
 
 type TaskDefinition struct {
@@ -42,8 +45,8 @@ type TaskDefinition struct {
 	Timeout      *time.Duration `yaml:",omitempty"`
 	AllowFailure bool           `mapstructure:"allow_failure"`
 	ExportAs     string
-	Env          Variables
-	Variables    Variables
+	Env          map[string]string
+	Variables    map[string]string
 }
 
 type WatcherDefinition struct {
@@ -51,5 +54,5 @@ type WatcherDefinition struct {
 	Watch     []string
 	Exclude   []string
 	Task      string
-	Variables Variables
+	Variables map[string]string
 }

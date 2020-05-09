@@ -1,13 +1,13 @@
-package pipeline
+package config
 
 import (
 	"testing"
-
-	"github.com/taskctl/taskctl/internal/config"
 )
 
 func TestBuildPipeline_Cyclic(t *testing.T) {
-	stages := []*config.StageDefinition{
+	cfg := NewConfig()
+
+	stages := []*StageDefinition{
 		{
 			Name:      "task1",
 			Task:      "task1",
@@ -26,7 +26,7 @@ func TestBuildPipeline_Cyclic(t *testing.T) {
 		},
 	}
 
-	tasks := map[string]*config.TaskDefinition{
+	tasks := map[string]*TaskDefinition{
 		"task1": {
 			Name: "task1",
 		},
@@ -38,7 +38,15 @@ func TestBuildPipeline_Cyclic(t *testing.T) {
 		},
 	}
 
-	_, err := BuildPipeline(stages, make(map[string][]*config.StageDefinition), tasks)
+	var err error
+	for k, v := range tasks {
+		cfg.Tasks[k], err = buildTask(v)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	_, err = buildPipeline(stages, cfg)
 	if err == nil || err.Error() != "cycle detected" {
 		t.Errorf("cycles detection failed")
 	}

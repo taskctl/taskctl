@@ -3,7 +3,7 @@ package watch
 import (
 	"sync"
 
-	"github.com/taskctl/taskctl/internal/config"
+	"github.com/taskctl/taskctl/internal/util"
 
 	"github.com/sirupsen/logrus"
 
@@ -42,7 +42,7 @@ type Watcher struct {
 	wg sync.WaitGroup
 }
 
-func BuildWatcher(name string, def *config.WatcherDefinition, t *task.Task) (w *Watcher, err error) {
+func NewWatcher(name string, events, watch, exclude []string, t *task.Task) (w *Watcher, err error) {
 	w = &Watcher{
 		name:     name,
 		paths:    make([]string, 0),
@@ -51,7 +51,7 @@ func BuildWatcher(name string, def *config.WatcherDefinition, t *task.Task) (w *
 		events:   make(map[string]bool),
 	}
 
-	for _, p := range def.Watch {
+	for _, p := range watch {
 		matches, err := doublestar.Glob(p)
 		if err != nil {
 			return nil, err
@@ -59,7 +59,7 @@ func BuildWatcher(name string, def *config.WatcherDefinition, t *task.Task) (w *
 
 		for _, path := range matches {
 			var excluded bool
-			for _, exclude := range def.Exclude {
+			for _, exclude := range exclude {
 				matched, err := doublestar.PathMatch(exclude, path)
 				if err != nil {
 					return nil, err
@@ -77,7 +77,6 @@ func BuildWatcher(name string, def *config.WatcherDefinition, t *task.Task) (w *
 		}
 	}
 
-	events := def.Events
 	if len(events) == 0 {
 		events = []string{EventCreate, EventWrite, EventRemove, EventRename, EventChmod}
 	}
@@ -156,11 +155,11 @@ func (w *Watcher) handle(event fsnotify.Event) {
 	logrus.Debugf("triggering %s for %s", w.task.Name, w.name)
 	err := w.r.Run(
 		w.task,
-		config.NewSet(map[string]string{
+		util.NewVariables(map[string]string{
 			"EventName": eventName,
 			"EventPath": event.Name,
 		}),
-		config.NewSet(map[string]string{
+		util.NewVariables(map[string]string{
 			"EVENT_NAME": eventName,
 			"EVENT_PATH": event.Name,
 		}))

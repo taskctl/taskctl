@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/taskctl/taskctl/internal/config"
+	"github.com/taskctl/taskctl/internal/util"
 
 	"github.com/urfave/cli/v2"
 
@@ -79,8 +79,8 @@ func newRunCommand() *cli.Command {
 							break
 						}
 
-						t, ok := tasks[v]
-						if !ok {
+						t := cfg.Tasks[v]
+						if t == nil {
 							return fmt.Errorf("unknown task %s", v)
 						}
 						err := runTask(t, taskRunner)
@@ -100,7 +100,7 @@ func newRunCommand() *cli.Command {
 
 func buildTaskRunner(c *cli.Context) (*runner.TaskRunner, error) {
 	variables := cfg.Variables.With("args", strings.Join(taskArgs(c), " "))
-	taskRunner, err := runner.NewTaskRunner(contexts, cfg.Output, variables)
+	taskRunner, err := runner.NewTaskRunner(cfg.Contexts, cfg.Output, variables)
 	if err != nil {
 		return nil, err
 	}
@@ -113,8 +113,8 @@ func buildTaskRunner(c *cli.Context) (*runner.TaskRunner, error) {
 }
 
 func runTarget(name string, c *cli.Context, taskRunner *runner.TaskRunner) (err error) {
-	p, ok := pipelines[name]
-	if ok {
+	p := cfg.Pipelines[name]
+	if p != nil {
 		err = runPipeline(p, taskRunner, c.Bool("summary"))
 		if err != nil {
 			return err
@@ -122,8 +122,8 @@ func runTarget(name string, c *cli.Context, taskRunner *runner.TaskRunner) (err 
 		return nil
 	}
 
-	t, ok := tasks[name]
-	if !ok {
+	t := cfg.Tasks[name]
+	if t == nil {
 		return fmt.Errorf("unknown task or pipeline %s", name)
 	}
 	err = runTask(t, taskRunner)
@@ -153,7 +153,7 @@ func runPipeline(p *pipeline.ExecutionGraph, taskRunner *runner.TaskRunner, summ
 }
 
 func runTask(t *task.Task, taskRunner *runner.TaskRunner) error {
-	err := taskRunner.Run(t, config.Variables{}, config.Variables{})
+	err := taskRunner.Run(t, &util.Variables{}, &util.Variables{})
 	if err != nil {
 		return err
 	}

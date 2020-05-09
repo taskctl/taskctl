@@ -18,8 +18,8 @@ var showTmpl = `
 {{- range .Command }}
     - {{ . -}}
 {{ end -}}
-{{ if .Dir }}
-  Dir: {{ .Dir }}
+{{ if .dir }}
+  dir: {{ .dir }}
 {{- end }}
 {{ if .Timeout }}
   Timeout: {{ .Timeout }}
@@ -33,8 +33,8 @@ func newShowCommand() *cli.Command {
 		Usage:     "shows task's details",
 		ArgsUsage: "show (TASK)",
 		Action: func(c *cli.Context) (err error) {
-			t, ok := tasks[c.Args().First()]
-			if !ok {
+			t := cfg.Tasks[c.Args().First()]
+			if t == nil {
 				return errors.New("unknown task")
 			}
 

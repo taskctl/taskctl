@@ -13,23 +13,20 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/taskctl/taskctl/internal/config"
 	"github.com/taskctl/taskctl/internal/util"
 )
 
 type ExecutionContext struct {
 	ScheduledForCleanup bool
 
-	ctxType    string
 	executable util.Executable
 	env        []string
-	def        *config.ContextDefinition
 	dir        string
+	up         []string
+	down       []string
+	before     []string
+	after      []string
 
-	up           []string
-	down         []string
-	before       []string
-	after        []string
 	startupError error
 
 	onceUp   sync.Once
@@ -37,40 +34,18 @@ type ExecutionContext struct {
 	mu       sync.Mutex
 }
 
-func BuildContext(def *config.ContextDefinition) (*ExecutionContext, error) {
+func NewExecutionContext(executable util.Executable, dir string, env, up, down, before, after []string) *ExecutionContext {
 	c := &ExecutionContext{
-		ctxType: def.Type,
-		executable: util.Executable{
-			Bin:  def.Executable.Bin,
-			Args: def.Executable.Args,
-		},
-		dir:    def.Dir,
-		env:    append(os.Environ(), util.ConvertEnv(def.Env)...),
-		def:    def,
-		up:     def.Up,
-		down:   def.Down,
-		before: def.Before,
-		after:  def.After,
+		executable: executable,
+		env:        env,
+		dir:        dir,
+		up:         up,
+		down:       down,
+		before:     before,
+		after:      after,
 	}
 
-	if c.dir == "" {
-		var err error
-		c.dir, err = os.Getwd()
-		if err != nil {
-			return c, nil
-		}
-	}
-
-	if c.executable.Bin == "" {
-		setDefaultShell(&c.executable)
-	}
-
-	return c, nil
-}
-
-func setDefaultShell(e *util.Executable) {
-	e.Bin = "/bin/sh"
-	e.Args = []string{"-c"}
+	return c
 }
 
 func (c *ExecutionContext) Bin() string {
@@ -83,19 +58,6 @@ func (c *ExecutionContext) Args() []string {
 
 func (c *ExecutionContext) Env() []string {
 	return c.env
-}
-
-func (c *ExecutionContext) WithEnvs(env []string) (*ExecutionContext, error) {
-	def := *c.def
-	for _, v := range env {
-		kv := strings.Split(v, "=")
-		if len(def.Env) == 0 {
-			def.Env = make(map[string]string)
-		}
-		def.Env[kv[0]] = kv[1]
-	}
-
-	return BuildContext(&def)
 }
 
 func (c *ExecutionContext) Up() error {

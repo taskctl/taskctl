@@ -1,16 +1,21 @@
 package output
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
 	"sync"
 
-	"github.com/taskctl/taskctl/internal/config"
-
 	"github.com/sirupsen/logrus"
 
 	"github.com/taskctl/taskctl/internal/task"
+)
+
+const (
+	OutputFormatRaw      = "raw"
+	OutputFormatPrefixed = "prefixed"
+	OutputFormatCockpit  = "cockpit"
 )
 
 var Stdout io.Writer = os.Stdout
@@ -35,11 +40,11 @@ func NewTaskOutput(format string) (*TaskOutput, error) {
 	}
 
 	switch format {
-	case config.OutputFormatRaw:
+	case OutputFormatRaw:
 		o.decorator = NewRawOutputWriter(Stdout)
-	case config.OutputFormatPrefixed:
+	case OutputFormatPrefixed:
 		o.decorator = NewPrefixedOutputWriter(Stdout)
-	case config.OutputFormatCockpit:
+	case OutputFormatCockpit:
 		o.decorator = NewCockpitOutputWriter(Stdout, o.closeCh)
 	default:
 		return nil, fmt.Errorf("unknown decorator \"%s\" requested", format)
@@ -48,7 +53,7 @@ func NewTaskOutput(format string) (*TaskOutput, error) {
 	return o, nil
 }
 
-func (o *TaskOutput) Stream(t *task.Task, cmdStdout, cmdStderr io.ReadCloser, flushed chan struct{}) {
+func (o *TaskOutput) Stream(t *task.Task, cmdStdout, cmdStderr io.ReadCloser, out chan []byte) {
 	o.lock.Lock()
 
 	var wg sync.WaitGroup
@@ -56,13 +61,14 @@ func (o *TaskOutput) Stream(t *task.Task, cmdStdout, cmdStderr io.ReadCloser, fl
 
 	decorator := o.decorator.ForTask(t)
 
+	buf := bytes.Buffer{}
 	go func(dst io.Writer) {
 		defer wg.Done()
 		err := o.pipe(dst, cmdStdout)
 		if err != nil {
 			logrus.Debug(err)
 		}
-	}(io.MultiWriter(decorator, &t.Log.Stdout))
+	}(io.MultiWriter(&buf, decorator, &t.Log.Stdout))
 
 	go func(dst io.Writer) {
 		defer wg.Done()
@@ -70,12 +76,13 @@ func (o *TaskOutput) Stream(t *task.Task, cmdStdout, cmdStderr io.ReadCloser, fl
 		if err != nil {
 			logrus.Debug(err)
 		}
-	}(io.MultiWriter(decorator, &t.Log.Stderr))
+	}(io.MultiWriter(&buf, decorator, &t.Log.Stderr))
 
 	o.lock.Unlock()
 
 	wg.Wait()
-	close(flushed)
+	out <- buf.Bytes()
+	close(out)
 }
 
 func (o *TaskOutput) pipe(dst io.Writer, src io.ReadCloser) error {
