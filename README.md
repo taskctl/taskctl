@@ -2,7 +2,7 @@
 <img width="400" src="https://raw.githubusercontent.com/taskctl/taskctl/master/docs/logo.png" alt="taskctl - developer's routine tasks automation toolkit" title="taskctl - developer's routine tasks automation toolkit" />
 </p>
 
-# taskctl task runner - developer's routine tasks automation toolkit
+# taskctl - concurrent task runner, developer's routine tasks automation toolkit
 ![Tests](https://github.com/taskctl/taskctl/workflows/Test/badge.svg)
 [![Requirements Status](https://requires.io/github/taskctl/taskctl/requirements.svg?branch=master)](https://requires.io/github/taskctl/taskctl/requirements/?branch=master)
 ![GitHub top language](https://img.shields.io/github/languages/top/taskctl/taskctl)
@@ -16,7 +16,7 @@
 ![GitHub issues](https://img.shields.io/github/issues/taskctl/taskctl)
 ![Licence](https://img.shields.io/github/license/taskctl/taskctl)
 
-Simple modern alternative to GNU Make. *taskctl* task runner allows you to design you routine tasks and development pipelines in nice and neat way in human-readable format (YAML, JSON or TOML). 
+Simple modern alternative to GNU Make. *taskctl* is concurrent task runner that allows you to design you routine tasks and development pipelines in nice and neat way in human-readable format (YAML, JSON or TOML). 
 Given a pipeline (composed of tasks or other pipelines) it builds a graph that outlines the execution plan. Each task my run concurrently or cascade.
 Beside pipelines, each single task can be performed manually or triggered by built-in filesystem watcher.
 

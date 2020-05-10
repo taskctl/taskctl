@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/taskctl/taskctl/internal/output"
@@ -27,13 +28,17 @@ type TaskRunner struct {
 	cancel     context.CancelFunc
 	dryRun     bool
 	taskOutput *output.TaskOutput
+
+	cleanupMutex sync.Mutex
+	cleanupList  []*taskctx.ExecutionContext
 }
 
 func NewTaskRunner(contexts map[string]*taskctx.ExecutionContext, outputFormat string, variables *util.Variables) (*TaskRunner, error) {
 	r := &TaskRunner{
-		contexts:  contexts,
-		variables: variables,
-		env:       &util.Variables{},
+		contexts:    contexts,
+		variables:   variables,
+		env:         &util.Variables{},
+		cleanupList: make([]*taskctx.ExecutionContext, 0),
 	}
 
 	var err error
@@ -117,7 +122,7 @@ func (r *TaskRunner) Run(t *task.Task, variables *util.Variables, env *util.Vari
 				ctx, cancelFn = context.WithTimeout(ctx, *t.Timeout)
 			}
 
-			cmd, err := c.BuildCommand(ctx, command, t)
+			cmd, err := r.BuildCommand(c, ctx, command, t)
 			if err != nil {
 				cancelFn()
 				return err
@@ -157,7 +162,7 @@ func (r *TaskRunner) Run(t *task.Task, variables *util.Variables, env *util.Vari
 
 	if len(t.After) > 0 {
 		for _, command := range t.After {
-			cmd, err := c.BuildCommand(r.ctx, command, t)
+			cmd, err := r.BuildCommand(c, r.ctx, command, t)
 			if err != nil {
 				return err
 			}
@@ -178,10 +183,8 @@ func (r *TaskRunner) Cancel() {
 }
 
 func (r *TaskRunner) Finish() {
-	for _, c := range r.contexts {
-		if c.ScheduledForCleanup {
-			c.Down()
-		}
+	for _, c := range r.cleanupList {
+		c.Down()
 	}
 	r.taskOutput.Close()
 }
@@ -233,13 +236,30 @@ func (r *TaskRunner) executeCommand(t *task.Task, cmd *exec.Cmd) (output string,
 	return string(buf), nil
 }
 
+func (r *TaskRunner) BuildCommand(c *taskctx.ExecutionContext, ctx context.Context, command string, t *task.Task) (*exec.Cmd, error) {
+	cmd := exec.CommandContext(ctx, c.Executable.Bin, c.Executable.Args...)
+	cmd.Args = append(cmd.Args, command)
+	cmd.Env = c.Env
+	cmd.Dir = c.Dir
+
+	if cmd == nil {
+		return nil, errors.New("failed to build command")
+	}
+
+	if t != nil && t.Dir != "" {
+		cmd.Dir = t.Dir
+	}
+
+	return cmd, nil
+}
+
 func (r *TaskRunner) contextForTask(t *task.Task) (c *taskctx.ExecutionContext, err error) {
 	c, ok := r.contexts[t.Context]
 	if !ok {
 		return nil, errors.New("no such context")
 	}
 
-	c.ScheduleForCleanup()
+	r.cleanupList = append(r.cleanupList, c)
 
 	return c, nil
 }
@@ -269,7 +289,7 @@ func (r *TaskRunner) checkTaskCondition(t *task.Task) (bool, error) {
 		return false, err
 	}
 
-	cmd, err := c.BuildCommand(r.ctx, t.Condition, t)
+	cmd, err := r.BuildCommand(c, r.ctx, t.Condition, t)
 	if err != nil {
 		return false, err
 	}
@@ -300,4 +320,11 @@ func (r *TaskRunner) storeOutput(t *task.Task) {
 
 	r.env.Set(envVarName, t.Log.Stdout.String())
 	r.variables.Set(varName, t.Log.Stdout.String())
+}
+
+func (r *TaskRunner) ScheduleForCleanup(c *taskctx.ExecutionContext) {
+	r.cleanupMutex.Lock()
+	defer r.cleanupMutex.Unlock()
+
+	r.cleanupList = append(r.cleanupList, c)
 }
