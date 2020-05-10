@@ -56,7 +56,7 @@ snapcrafts:
     grade: devel
     publish: true
     name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
-    summary: taskctl - concurrent, task runner developer's routine tasks automation toolkit. Simple modern alternative to GNU Make 🧰
+    summary: taskctl - concurrent, task runner developer's routine tasks automation toolkit. Simple modern alternative to GNU Make
     description: |
       Simple modern alternative to GNU Make. *taskctl* is concurrent task runner that allows you to design you routine tasks and development pipelines in nice and neat way in human-readable format (YAML, JSON or TOML).
       Each pipeline composed of tasks or other pipelines and allows them to run in parallel or one-by-one.
