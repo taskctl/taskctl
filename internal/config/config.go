@@ -15,8 +15,10 @@ import (
 	"github.com/taskctl/taskctl/internal/utils"
 )
 
+// Default names for tasks' files
 var DefaultFileNames = []string{"taskctl.yaml", "tasks.yaml"}
 
+// Creates new config instance
 func NewConfig() *Config {
 	cfg := &Config{
 		Output:    output.OutputFormatPrefixed,

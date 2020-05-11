@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -48,6 +49,23 @@ func NewTaskRunner(contexts map[string]*taskctx.ExecutionContext, outputFormat s
 	r.ctx, r.cancelFunc = context.WithCancel(context.Background())
 
 	return r, nil
+}
+
+func (r *TaskRunner) Command(c *taskctx.ExecutionContext, ctx context.Context, command string, t *task.Task) (*exec.Cmd, error) {
+	cmd := exec.CommandContext(ctx, c.Executable.Bin, c.Executable.Args...)
+	cmd.Args = append(cmd.Args, command)
+	cmd.Env = c.Env
+	cmd.Dir = c.Dir
+
+	if cmd == nil {
+		return nil, errors.New("failed to build command")
+	}
+
+	if t != nil && t.Dir != "" {
+		cmd.Dir = t.Dir
+	}
+
+	return cmd, nil
 }
 
 func (r *TaskRunner) Run(t *task.Task, variables *utils.Variables, env *utils.Variables) error {
@@ -100,9 +118,14 @@ func (r *TaskRunner) Run(t *task.Task, variables *utils.Variables, env *utils.Va
 		}
 	}
 
-	taskOutput, err := output.NewTaskOutput(t, r.outputFormat)
+	outputFormat := r.outputFormat
+	if t.Interactive {
+		outputFormat = output.OutputFormatRaw
+	}
+
+	taskOutput, err := output.NewTaskOutput(t, outputFormat)
 	if err != nil {
-		logrus.Warning(err)
+		return err
 	}
 
 	err = taskOutput.Start()
@@ -121,25 +144,34 @@ func (r *TaskRunner) Run(t *task.Task, variables *utils.Variables, env *utils.Va
 				return err
 			}
 
-			ctx, cancelFunc := r.ctx, r.cancelFunc
+			ctx := r.ctx
+			var cancelFunc context.CancelFunc
 			if t.Timeout != nil {
 				ctx, cancelFunc = context.WithTimeout(r.ctx, *t.Timeout)
 			}
 
-			cmd, err := r.BuildCommand(c, ctx, command, t)
+			cmd, err := r.Command(c, ctx, command, t)
 			if err != nil {
-				cancelFunc()
+				if cancelFunc != nil {
+					cancelFunc()
+				}
 				return err
 			}
 
 			cmd.Stdout = taskOutput.Stdout()
 			cmd.Stderr = taskOutput.Stderr()
 
+			if t.Interactive {
+				cmd.Stdin = os.Stdin
+			}
+
 			cmd.Env = append(cmd.Env, utils.ConvertEnv(variant)...)
 			cmd.Env = append(cmd.Env, utils.ConvertEnv(env.Map())...)
 
 			cmdOutput, err = r.executeCommand(t, cmd)
-			cancelFunc()
+			if cancelFunc != nil {
+				cancelFunc()
+			}
 
 			if err != nil {
 				if utils.IsExitError(err) && t.AllowFailure {
@@ -169,9 +201,9 @@ func (r *TaskRunner) Run(t *task.Task, variables *utils.Variables, env *utils.Va
 
 	if len(t.After) > 0 {
 		for _, command := range t.After {
-			cmd, err := r.BuildCommand(c, r.ctx, command, t)
+			cmd, err := r.Command(c, r.ctx, command, t)
 			if err != nil {
-				return err
+				return fmt.Errorf("\"after\" command failed: %w", err)
 			}
 
 			cmd.Env = append(cmd.Env, utils.ConvertEnv(env.Map())...)
@@ -209,25 +241,9 @@ func (r *TaskRunner) executeCommand(t *task.Task, cmd *exec.Cmd) (string, error)
 
 	b, err := r.executor.Execute(cmd)
 	t.ExitCode = cmd.ProcessState.ExitCode()
+	logrus.Debugf("Executed %s", cmd.String())
 
 	return string(b), err
-}
-
-func (r *TaskRunner) BuildCommand(c *taskctx.ExecutionContext, ctx context.Context, command string, t *task.Task) (*exec.Cmd, error) {
-	cmd := exec.CommandContext(ctx, c.Executable.Bin, c.Executable.Args...)
-	cmd.Args = append(cmd.Args, command)
-	cmd.Env = c.Env
-	cmd.Dir = c.Dir
-
-	if cmd == nil {
-		return nil, errors.New("failed to build command")
-	}
-
-	if t != nil && t.Dir != "" {
-		cmd.Dir = t.Dir
-	}
-
-	return cmd, nil
 }
 
 func (r *TaskRunner) contextForTask(t *task.Task) (c *taskctx.ExecutionContext, err error) {
@@ -247,7 +263,7 @@ func (r *TaskRunner) checkTaskCondition(t *task.Task) (bool, error) {
 		return false, err
 	}
 
-	cmd, err := r.BuildCommand(c, r.ctx, t.Condition, t)
+	cmd, err := r.Command(c, r.ctx, t.Condition, t)
 	if err != nil {
 		return false, err
 	}

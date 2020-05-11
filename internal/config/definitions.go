@@ -44,6 +44,7 @@ type TaskDefinition struct {
 	Dir          string
 	Timeout      *time.Duration `yaml:",omitempty"`
 	AllowFailure bool           `mapstructure:"allow_failure"`
+	Interactive  bool
 	ExportAs     string
 	Env          map[string]string
 	Variables    map[string]string

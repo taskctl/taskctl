@@ -11,7 +11,7 @@ type CommandExecutor interface {
 }
 
 type DefaultCommandExecutor struct {
-	executed int64
+	executed int
 }
 
 func NewDefaultCommandExecutor() *DefaultCommandExecutor {
@@ -28,15 +28,12 @@ func (d *DefaultCommandExecutor) Execute(cmd *exec.Cmd) ([]byte, error) {
 
 	err := cmd.Start()
 	if err != nil {
-		return buf.Bytes(), err
+		return nil, err
 	}
 
 	err = cmd.Wait()
-	if err != nil {
-		return buf.Bytes(), err
-	}
 
-	return buf.Bytes(), nil
+	return buf.Bytes(), err
 }
 
 func (d *DefaultCommandExecutor) inc() {

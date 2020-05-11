@@ -169,16 +169,17 @@ Task definition takes following parameters:
 - `name` - task name (optional)
 - `command` - one or more commands to run
 - `variations` - list of variations to apply to command
-- `context` - name of the context to run commands in (optional). `local` by default
+- `context` - name of the context to run commands in (default: `local`)
 - `env` - environment variables (optional). All existing environment variables will be passed automatically
 - `dir` - working directory. If not set, current working directory will be used
 - `timeout` - command execution timeout (optional)
-- `allow_failure` - if set to `true` failed commands will no interrupt task execution. `false` by default
+- `allow_failure` - if set to `true` failed commands will not interrupt task execution (default: `false`)
 - `after` - command that will be executed after command completes
 - `before` - command that will be executed before task starts
 - `exportAs` - output env variable name (default: `TASK_NAME_OUTPUT`, where `TASK_NAME` is actual task's name)
 - `condition` - condition to check before running task
 - `variables` - task variables
+- `interactive` - if `true` provides STDIN to commands (default: `false`)
 
 ### Pass CLI arguments to task
 Any command line arguments succeeding `--` are passed to each task via `.Args` variable or `ARGS` environment variable.

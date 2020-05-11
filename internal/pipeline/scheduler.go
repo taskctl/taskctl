@@ -79,7 +79,7 @@ func (s *PipelineScheduler) Schedule(p *ExecutionGraph) error {
 
 				err := s.run(stage)
 				if err != nil {
-					logrus.Error(err)
+					logrus.Errorf("stage %s failed: %v", stage.Name, err)
 					stage.UpdateStatus(StatusError)
 					return
 				}

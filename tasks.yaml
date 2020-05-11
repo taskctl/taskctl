@@ -44,8 +44,7 @@ tasks:
 
   golint:
     command:
-      - golint $(go list ./... | grep -v /vendor/)
-      - exit 2
+      - golint  $(go list ./... | grep -v /vendor/)
 
   govet:
     command:

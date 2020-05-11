@@ -30,6 +30,7 @@ func NewPrefixedOutputWriter(t *task.Task, w io.Writer) *FormattedOutputDecorato
 }
 
 func (d *FormattedOutputDecorator) Write(p []byte) (int, error) {
+	n := len(p)
 	for {
 		advance, line, err := bufio.ScanLines(p, true)
 		if err != nil {
@@ -53,7 +54,12 @@ func (d *FormattedOutputDecorator) Write(p []byte) (int, error) {
 		p = p[advance:]
 	}
 
-	return d.buf.Write(p)
+	_, err := d.buf.Write(p)
+	if err != nil {
+		return 0, err
+	}
+
+	return n, nil
 }
 
 func (d *FormattedOutputDecorator) WriteHeader() error {

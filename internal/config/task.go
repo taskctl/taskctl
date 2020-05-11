@@ -25,6 +25,7 @@ func buildTask(def *TaskDefinition) (*task.Task, error) {
 		After:        def.After,
 		ExportAs:     def.ExportAs,
 		Context:      def.Context,
+		Interactive:  def.Interactive,
 	}
 
 	if len(def.Variations) == 0 {
