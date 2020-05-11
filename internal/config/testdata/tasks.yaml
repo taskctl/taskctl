@@ -30,6 +30,18 @@ tasks:
     env:
       TEST_VAR: 1
 
+  long-running:
+    command:
+      - sleep 3600
+
+  verbose:
+    command: tr -dc A-Za-z0-9_\!\@\#\$\%\^\&\*\(\)-+= < /dev/urandom
+    env:
+      LC_CTYPE: C
+
+  env:
+    command: env
+
 variables:
   test-variable: test-value
   sleep: 5

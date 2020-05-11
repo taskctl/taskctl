@@ -19,7 +19,7 @@ import (
 
 	"github.com/taskctl/taskctl/internal/config"
 	"github.com/taskctl/taskctl/internal/output"
-	"github.com/taskctl/taskctl/internal/util"
+	"github.com/taskctl/taskctl/internal/utils"
 )
 
 var version = "dev"
@@ -144,6 +144,7 @@ func run() error {
 			if c.Bool("quiet") {
 				logrus.SetOutput(ioutil.Discard)
 				output.SetStdout(ioutil.Discard)
+				output.SetStderr(ioutil.Discard)
 			}
 
 			if c.IsSet("output") {
@@ -250,7 +251,7 @@ type suggestion struct {
 func buildSuggestions(cfg *config.Config) []suggestion {
 	suggestions := make([]suggestion, 0)
 
-	for _, v := range util.MapKeys(cfg.Pipelines) {
+	for _, v := range utils.MapKeys(cfg.Pipelines) {
 		suggestions = append(suggestions, suggestion{
 			Target:      v,
 			DisplayName: fmt.Sprintf("%s - %s", v, aurora.Gray(12, "pipeline").String()),

@@ -3,7 +3,7 @@ package watch
 import (
 	"sync"
 
-	"github.com/taskctl/taskctl/internal/util"
+	"github.com/taskctl/taskctl/internal/utils"
 
 	"github.com/sirupsen/logrus"
 
@@ -155,11 +155,11 @@ func (w *Watcher) handle(event fsnotify.Event) {
 	logrus.Debugf("triggering %s for %s", w.task.Name, w.name)
 	err := w.r.Run(
 		w.task,
-		util.NewVariables(map[string]string{
+		utils.NewVariables(map[string]string{
 			"EventName": eventName,
 			"EventPath": event.Name,
 		}),
-		util.NewVariables(map[string]string{
+		utils.NewVariables(map[string]string{
 			"EVENT_NAME": eventName,
 			"EVENT_PATH": event.Name,
 		}))

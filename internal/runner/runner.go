@@ -16,42 +16,41 @@ import (
 
 	taskctx "github.com/taskctl/taskctl/internal/context"
 	"github.com/taskctl/taskctl/internal/task"
-	"github.com/taskctl/taskctl/internal/util"
+	"github.com/taskctl/taskctl/internal/utils"
 )
 
 type TaskRunner struct {
 	contexts  map[string]*taskctx.ExecutionContext
-	variables *util.Variables
-	env       *util.Variables
+	variables *utils.Variables
+	env       *utils.Variables
+	dryRun    bool
 
 	ctx        context.Context
-	cancel     context.CancelFunc
-	dryRun     bool
-	taskOutput *output.TaskOutput
+	cancelFunc context.CancelFunc
+
+	executor     CommandExecutor
+	outputFormat string
 
 	cleanupMutex sync.Mutex
 	cleanupList  []*taskctx.ExecutionContext
 }
 
-func NewTaskRunner(contexts map[string]*taskctx.ExecutionContext, outputFormat string, variables *util.Variables) (*TaskRunner, error) {
+func NewTaskRunner(contexts map[string]*taskctx.ExecutionContext, outputFormat string, variables *utils.Variables) (*TaskRunner, error) {
 	r := &TaskRunner{
 		contexts:    contexts,
 		variables:   variables,
-		env:         &util.Variables{},
+		env:         &utils.Variables{},
 		cleanupList: make([]*taskctx.ExecutionContext, 0),
+		executor:    NewDefaultCommandExecutor(),
 	}
 
-	var err error
-	r.taskOutput, err = output.NewTaskOutput(outputFormat)
-	if err != nil {
-		return nil, err
-	}
-	r.ctx, r.cancel = context.WithCancel(context.Background())
+	r.outputFormat = outputFormat
+	r.ctx, r.cancelFunc = context.WithCancel(context.Background())
 
 	return r, nil
 }
 
-func (r *TaskRunner) Run(t *task.Task, variables *util.Variables, env *util.Variables) (err error) {
+func (r *TaskRunner) Run(t *task.Task, variables *utils.Variables, env *utils.Variables) error {
 	c, err := r.contextForTask(t)
 	if err != nil {
 		return err
@@ -68,7 +67,7 @@ func (r *TaskRunner) Run(t *task.Task, variables *util.Variables, env *util.Vari
 	}
 
 	defer func() {
-		err = c.After()
+		err := c.After()
 		if err != nil {
 			logrus.Error(err)
 		}
@@ -101,9 +100,14 @@ func (r *TaskRunner) Run(t *task.Task, variables *util.Variables, env *util.Vari
 		}
 	}
 
-	err = r.taskOutput.Start(t)
+	taskOutput, err := output.NewTaskOutput(t, r.outputFormat)
 	if err != nil {
 		logrus.Warning(err)
+	}
+
+	err = taskOutput.Start()
+	if err != nil {
+		return err
 	}
 
 	t.Start = time.Now()
@@ -117,26 +121,28 @@ func (r *TaskRunner) Run(t *task.Task, variables *util.Variables, env *util.Vari
 				return err
 			}
 
-			ctx, cancelFn := context.WithCancel(r.ctx)
+			ctx, cancelFunc := r.ctx, r.cancelFunc
 			if t.Timeout != nil {
-				ctx, cancelFn = context.WithTimeout(ctx, *t.Timeout)
+				ctx, cancelFunc = context.WithTimeout(r.ctx, *t.Timeout)
 			}
 
 			cmd, err := r.BuildCommand(c, ctx, command, t)
 			if err != nil {
-				cancelFn()
+				cancelFunc()
 				return err
 			}
 
-			cmd.Env = append(cmd.Env, util.ConvertEnv(variant)...)
-			cmd.Env = append(cmd.Env, util.ConvertEnv(env.Map())...)
+			cmd.Stdout = taskOutput.Stdout()
+			cmd.Stderr = taskOutput.Stderr()
+
+			cmd.Env = append(cmd.Env, utils.ConvertEnv(variant)...)
+			cmd.Env = append(cmd.Env, utils.ConvertEnv(env.Map())...)
 
 			cmdOutput, err = r.executeCommand(t, cmd)
-			cancelFn()
+			cancelFunc()
 
 			if err != nil {
-				var e *exec.ExitError
-				if errors.As(err, &e) && t.AllowFailure {
+				if utils.IsExitError(err) && t.AllowFailure {
 					continue
 				}
 				t.Errored = true
@@ -149,7 +155,8 @@ func (r *TaskRunner) Run(t *task.Task, variables *util.Variables, env *util.Vari
 		}
 	}
 	t.End = time.Now()
-	err = r.taskOutput.Finish(t)
+
+	err = taskOutput.Finish()
 	if err != nil {
 		logrus.Warning(err)
 	}
@@ -167,7 +174,7 @@ func (r *TaskRunner) Run(t *task.Task, variables *util.Variables, env *util.Vari
 				return err
 			}
 
-			cmd.Env = append(cmd.Env, util.ConvertEnv(env.Map())...)
+			cmd.Env = append(cmd.Env, utils.ConvertEnv(env.Map())...)
 			_, err = r.executeCommand(t, cmd)
 			if err != nil {
 				logrus.Warn(err)
@@ -179,61 +186,31 @@ func (r *TaskRunner) Run(t *task.Task, variables *util.Variables, env *util.Vari
 }
 
 func (r *TaskRunner) Cancel() {
-	r.cancel()
+	logrus.Debug("Runner has been cancelled")
+	r.cancelFunc()
 }
 
 func (r *TaskRunner) Finish() {
 	for _, c := range r.cleanupList {
 		c.Down()
 	}
-	r.taskOutput.Close()
+	output.Close()
 }
 
 func (r *TaskRunner) DryRun() {
 	r.dryRun = true
 }
 
-func (r *TaskRunner) executeCommand(t *task.Task, cmd *exec.Cmd) (output string, err error) {
-	var done = make(chan struct{})
-	var killed = make(chan struct{})
-	go r.waitForInterruption(*cmd, done, killed)
-
+func (r *TaskRunner) executeCommand(t *task.Task, cmd *exec.Cmd) (string, error) {
 	logrus.Debugf("Executing %s", cmd.String())
 	if r.dryRun {
-		return output, nil
+		return "", nil
 	}
 
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return output, err
-	}
+	b, err := r.executor.Execute(cmd)
+	t.ExitCode = cmd.ProcessState.ExitCode()
 
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		return output, err
-	}
-
-	var flushed = make(chan []byte)
-	go r.taskOutput.Stream(t, stdout, stderr, flushed)
-
-	err = cmd.Start()
-	if err != nil {
-		close(done)
-		<-flushed
-		return output, err
-	}
-
-	buf := <-flushed
-	err = cmd.Wait()
-	if err != nil {
-		close(done)
-		return output, err
-	}
-
-	close(done)
-	<-killed
-
-	return string(buf), nil
+	return string(b), err
 }
 
 func (r *TaskRunner) BuildCommand(c *taskctx.ExecutionContext, ctx context.Context, command string, t *task.Task) (*exec.Cmd, error) {
@@ -264,25 +241,6 @@ func (r *TaskRunner) contextForTask(t *task.Task) (c *taskctx.ExecutionContext, 
 	return c, nil
 }
 
-func (r *TaskRunner) waitForInterruption(cmd exec.Cmd, done chan struct{}, killed chan struct{}) {
-	defer close(killed)
-
-	select {
-	case <-r.ctx.Done():
-		if cmd.ProcessState == nil || cmd.ProcessState.Exited() {
-			return
-		}
-		if err := cmd.Process.Kill(); err != nil {
-			logrus.Debug(err)
-			return
-		}
-		logrus.Debugf("Killed %s", cmd.String())
-		return
-	case <-done:
-		return
-	}
-}
-
 func (r *TaskRunner) checkTaskCondition(t *task.Task) (bool, error) {
 	c, err := r.contextForTask(t)
 	if err != nil {
@@ -296,8 +254,7 @@ func (r *TaskRunner) checkTaskCondition(t *task.Task) (bool, error) {
 
 	_, err = r.executeCommand(t, cmd)
 	if err != nil {
-		var e *exec.ExitError
-		if errors.As(err, &e) {
+		if utils.IsExitError(err) {
 			return false, nil
 		}
 

@@ -1,11 +1,12 @@
 package pipeline
 
 import (
-	"errors"
 	"os/exec"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/taskctl/taskctl/internal/utils"
 
 	"github.com/sirupsen/logrus"
 
@@ -76,20 +77,10 @@ func (s *PipelineScheduler) Schedule(p *ExecutionGraph) error {
 
 				stage.Start = time.Now()
 
-				var err error
-				if stage.Pipeline != nil {
-					err = s.Schedule(stage.Pipeline)
-				} else {
-					err = s.taskRunner.Run(stage.Task, stage.Variables, stage.Env)
-				}
-
+				err := s.run(stage)
 				if err != nil {
 					logrus.Error(err)
 					stage.UpdateStatus(StatusError)
-					if !stage.AllowFailure {
-						s.Cancel()
-					}
-
 					return
 				}
 
@@ -133,6 +124,14 @@ func (s *PipelineScheduler) Finish() {
 	s.taskRunner.Finish()
 }
 
+func (s *PipelineScheduler) run(stage *Stage) error {
+	if stage.Pipeline != nil {
+		return s.Schedule(stage.Pipeline)
+	}
+
+	return s.taskRunner.Run(stage.Task, stage.Variables, stage.Env)
+}
+
 func checkStatus(p *ExecutionGraph, stage *Stage) (ready bool) {
 	ready = true
 	for _, dep := range p.To(stage.Name) {
@@ -164,8 +163,7 @@ func checkStageCondition(condition string) (bool, error) {
 	cmd := exec.Command(condition)
 	err := cmd.Run()
 	if err != nil {
-		var e *exec.ExitError
-		if errors.As(err, &e) {
+		if utils.IsExitError(err) {
 			return false, nil
 		}
 

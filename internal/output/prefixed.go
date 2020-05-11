@@ -2,7 +2,6 @@ package output
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io"
 	"regexp"
@@ -19,60 +18,68 @@ const ansi = "[\u001B\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)
 var ansiRegexp = regexp.MustCompile(ansi)
 
 type FormattedOutputDecorator struct {
-	w   io.Writer
+	t   *task.Task
 	buf *bufio.Writer
 }
 
-func NewPrefixedOutputWriter(w io.Writer) *FormattedOutputDecorator {
+func NewPrefixedOutputWriter(t *task.Task, w io.Writer) *FormattedOutputDecorator {
 	return &FormattedOutputDecorator{
-		w:   w,
-		buf: bufio.NewWriter(w),
+		t:   t,
+		buf: bufio.NewWriter(&lineWriter{t: t, dst: w}),
 	}
 }
 
 func (d *FormattedOutputDecorator) Write(p []byte) (int, error) {
-	if d.buf.Available() == 0 || bytes.IndexByte(p, '\n') >= 0 {
-		err := d.buf.Flush()
+	for {
+		advance, line, err := bufio.ScanLines(p, true)
 		if err != nil {
 			return 0, err
 		}
+
+		if advance == 0 {
+			break
+		}
+
+		_, err = d.buf.Write(line)
+		if err != nil {
+			return 0, err
+		}
+
+		err = d.buf.Flush()
+		if err != nil {
+			return 0, err
+		}
+
+		p = p[advance:]
 	}
 
 	return d.buf.Write(p)
 }
 
-func (d *FormattedOutputDecorator) WriteHeader(t *task.Task) error {
-	logrus.Infof("Running task %s...", t.Name)
+func (d *FormattedOutputDecorator) WriteHeader() error {
+	logrus.Infof("Running task %s...", d.t.Name)
 	return nil
 }
 
-func (d *FormattedOutputDecorator) WriteFooter(t *task.Task) error {
-	logrus.Infof("%s finished. Duration %s", t.Name, t.Duration())
-	return nil
-}
-
-func (d *FormattedOutputDecorator) Close() {
+func (d *FormattedOutputDecorator) WriteFooter() error {
 	err := d.buf.Flush()
 	if err != nil {
 		logrus.Warning(err)
 	}
-}
 
-func (d FormattedOutputDecorator) ForTask(t *task.Task) DecoratedOutputWriter {
-	d.buf = bufio.NewWriter(&lineWriter{t: t, out: d.w})
-	return &d
+	logrus.Infof("%s finished. Duration %s", d.t.Name, d.t.Duration())
+	return nil
 }
 
 type lineWriter struct {
 	t   *task.Task
-	out io.Writer
+	dst io.Writer
 }
 
 func (l lineWriter) Write(p []byte) (n int, err error) {
 	n = len(p)
 	p = ansiRegexp.ReplaceAllLiteral(p, []byte{})
-	p = bytes.Trim(p, "\r\n")
-	_, err = fmt.Fprintf(l.out, "%s: %s\r\n", aurora.Cyan(l.t.Name), p)
+	_, err = fmt.Fprintf(l.dst, "%s: %s\r\n", aurora.Cyan(l.t.Name), p)
 
 	return n, err
 }

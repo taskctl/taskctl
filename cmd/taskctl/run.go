@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/taskctl/taskctl/internal/util"
+	"github.com/taskctl/taskctl/internal/utils"
 
 	"github.com/urfave/cli/v2"
 
@@ -109,6 +109,11 @@ func buildTaskRunner(c *cli.Context) (*runner.TaskRunner, error) {
 		taskRunner.DryRun()
 	}
 
+	go func() {
+		<-cancel
+		taskRunner.Cancel()
+	}()
+
 	return taskRunner, nil
 }
 
@@ -153,10 +158,11 @@ func runPipeline(p *pipeline.ExecutionGraph, taskRunner *runner.TaskRunner, summ
 }
 
 func runTask(t *task.Task, taskRunner *runner.TaskRunner) error {
-	err := taskRunner.Run(t, &util.Variables{}, &util.Variables{})
+	err := taskRunner.Run(t, &utils.Variables{}, &utils.Variables{})
 	if err != nil {
 		return err
 	}
+
 	taskRunner.Finish()
 
 	return nil

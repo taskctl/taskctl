@@ -12,7 +12,7 @@ import (
 	"github.com/taskctl/taskctl/internal/task"
 	"github.com/taskctl/taskctl/internal/watch"
 
-	"github.com/taskctl/taskctl/internal/util"
+	"github.com/taskctl/taskctl/internal/utils"
 )
 
 var DefaultFileNames = []string{"taskctl.yaml", "tasks.yaml"}
@@ -39,7 +39,7 @@ type Config struct {
 	Debug, DryRun bool
 	Output        string
 
-	Variables *util.Variables
+	Variables *utils.Variables
 }
 
 func (cfg *Config) Task(name string) *task.Task {
@@ -110,7 +110,7 @@ func buildFromDefinition(def *configDefinition) (cfg *Config, err error) {
 	cfg.Import = def.Import
 	cfg.Debug = def.Debug
 	cfg.Output = def.Output
-	cfg.Variables = util.NewVariables(def.Variables)
+	cfg.Variables = utils.NewVariables(def.Variables)
 
 	return cfg, nil
 }

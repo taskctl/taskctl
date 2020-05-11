@@ -1,12 +1,14 @@
-package util
+package utils
 
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
 	"os"
+	"os/exec"
 	"reflect"
 	"text/template"
 )
@@ -86,4 +88,9 @@ func RenderString(tmpl string, variables map[string]string) (string, error) {
 	err = t.Execute(&buf, variables)
 
 	return buf.String(), err
+}
+
+func IsExitError(err error) bool {
+	var e *exec.ExitError
+	return errors.As(err, &e)
 }

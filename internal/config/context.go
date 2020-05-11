@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"github.com/taskctl/taskctl/internal/context"
-	"github.com/taskctl/taskctl/internal/util"
+	"github.com/taskctl/taskctl/internal/utils"
 )
 
 type contextDefinition struct {
@@ -15,10 +15,10 @@ type contextDefinition struct {
 	After     []string
 	Env       map[string]string
 	Variables map[string]string
-	util.Executable
+	utils.Executable
 }
 
-func buildContext(def *contextDefinition, shell util.Executable) (*context.ExecutionContext, error) {
+func buildContext(def *contextDefinition, shell utils.Executable) (*context.ExecutionContext, error) {
 	dir := def.Dir
 	if dir == "" {
 		var err error
@@ -28,7 +28,7 @@ func buildContext(def *contextDefinition, shell util.Executable) (*context.Execu
 		}
 	}
 
-	executable := util.Executable{
+	executable := utils.Executable{
 		Bin:  def.Executable.Bin,
 		Args: def.Executable.Args,
 	}
@@ -44,7 +44,7 @@ func buildContext(def *contextDefinition, shell util.Executable) (*context.Execu
 	c := context.NewExecutionContext(
 		executable,
 		dir,
-		append(os.Environ(), util.ConvertEnv(def.Env)...),
+		append(os.Environ(), utils.ConvertEnv(def.Env)...),
 		def.Up,
 		def.Down,
 		def.Before,
@@ -54,8 +54,8 @@ func buildContext(def *contextDefinition, shell util.Executable) (*context.Execu
 	return c, nil
 }
 
-func defaultShell() util.Executable {
-	return util.Executable{
+func defaultShell() utils.Executable {
+	return utils.Executable{
 		Bin:  "/bin/sh",
 		Args: []string{"-c"},
 	}

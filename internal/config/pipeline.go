@@ -5,7 +5,7 @@ import (
 
 	"github.com/taskctl/taskctl/internal/pipeline"
 	"github.com/taskctl/taskctl/internal/task"
-	"github.com/taskctl/taskctl/internal/util"
+	"github.com/taskctl/taskctl/internal/utils"
 )
 
 func buildPipeline(stages []*StageDefinition, cfg *Config) (g *pipeline.ExecutionGraph, err error) {
@@ -35,8 +35,8 @@ func buildPipeline(stages []*StageDefinition, cfg *Config) (g *pipeline.Executio
 			DependsOn:    def.DependsOn,
 			Dir:          def.Dir,
 			AllowFailure: def.AllowFailure,
-			Env:          util.NewVariables(def.Env),
-			Variables:    util.NewVariables(def.Variables),
+			Env:          utils.NewVariables(def.Env),
+			Variables:    utils.NewVariables(def.Variables),
 		}
 
 		if stage.Dir != "" {

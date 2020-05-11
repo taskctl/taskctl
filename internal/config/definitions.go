@@ -3,7 +3,7 @@ package config
 import (
 	"time"
 
-	"github.com/taskctl/taskctl/internal/util"
+	"github.com/taskctl/taskctl/internal/utils"
 )
 
 type configDefinition struct {
@@ -13,7 +13,7 @@ type configDefinition struct {
 	Tasks     map[string]*TaskDefinition
 	Watchers  map[string]*WatcherDefinition
 
-	Shell util.Executable
+	Shell utils.Executable
 
 	Debug, DryRun bool
 	Output        string

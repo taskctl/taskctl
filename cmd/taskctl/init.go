@@ -14,7 +14,7 @@ import (
 	"github.com/logrusorgru/aurora"
 	"github.com/manifoldco/promptui"
 
-	"github.com/taskctl/taskctl/internal/util"
+	"github.com/taskctl/taskctl/internal/utils"
 )
 
 var configTmpl = `# This is an example of taskctl tasks configuration file. Adjust it to fit your needs
@@ -63,7 +63,7 @@ func newInitCommand() *cli.Command {
 
 			file := filepath.Join(cwd, filename)
 
-			if util.FileExists(file) {
+			if utils.FileExists(file) {
 				replaceConfirmation := promptui.Prompt{
 					Label:     "File already exists. Overwrite",
 					IsConfirm: true,

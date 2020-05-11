@@ -62,7 +62,7 @@ tasks:
 
   gofmt:
     command:
-      - go fmt ./...
+      - go fmt -x ./...
 
   update-completers:
     dir: "{{.Root}}/cmd/taskctl"

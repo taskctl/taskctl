@@ -4,7 +4,7 @@ import (
 	"sync/atomic"
 
 	"github.com/taskctl/taskctl/internal/task"
-	"github.com/taskctl/taskctl/internal/util"
+	"github.com/taskctl/taskctl/internal/utils"
 )
 
 var taskIndex uint32
@@ -16,8 +16,8 @@ func buildTask(def *TaskDefinition) (*task.Task, error) {
 		Description:  def.Description,
 		Condition:    def.Condition,
 		Command:      def.Command,
-		Env:          util.NewVariables(def.Env),
-		Variables:    util.NewVariables(def.Variables),
+		Env:          utils.NewVariables(def.Env),
+		Variables:    utils.NewVariables(def.Variables),
 		Variations:   def.Variations,
 		Dir:          def.Dir,
 		Timeout:      def.Timeout,

@@ -1,17 +1,18 @@
 package task
 
 import (
+	"bytes"
 	"time"
 
-	"github.com/taskctl/taskctl/internal/util"
+	"github.com/taskctl/taskctl/internal/utils"
 )
 
 type Task struct {
 	Index        uint32
 	Command      []string
 	Context      string
-	Env          *util.Variables
-	Variables    *util.Variables
+	Env          *utils.Variables
+	Variables    *utils.Variables
 	Variations   []map[string]string
 	Dir          string
 	Timeout      *time.Duration
@@ -29,11 +30,19 @@ type Task struct {
 
 	ExportAs string
 
-	Errored bool
-	Error   error
-	Log     struct {
-		Stderr log
-		Stdout log
+	ExitCode int
+	Errored  bool
+	Error    error
+	Log      struct {
+		Stderr bytes.Buffer
+		Stdout bytes.Buffer
+	}
+}
+
+func NewTask() *Task {
+	return &Task{
+		Env:       utils.NewVariables(nil),
+		Variables: utils.NewVariables(nil),
 	}
 }
 
@@ -47,18 +56,18 @@ func (t *Task) Duration() time.Duration {
 
 func (t *Task) ErrorMessage() string {
 	if t.Log.Stderr.Len() > 0 {
-		return util.LastLine(&t.Log.Stderr)
+		return utils.LastLine(&t.Log.Stderr)
 	}
 
-	return util.LastLine(&t.Log.Stdout)
+	return utils.LastLine(&t.Log.Stdout)
 }
 
-func (t *Task) Interpolate(s string, params ...*util.Variables) (string, error) {
+func (t *Task) Interpolate(s string, params ...*utils.Variables) (string, error) {
 	data := t.Variables
 
 	for _, variables := range params {
 		data = data.Merge(variables)
 	}
 
-	return util.RenderString(s, data.Map())
+	return utils.RenderString(s, data.Map())
 }

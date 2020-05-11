@@ -1,7 +1,6 @@
 package output
 
 import (
-	"fmt"
 	"io"
 	"sort"
 	"strings"
@@ -9,14 +8,13 @@ import (
 	"time"
 
 	"github.com/briandowns/spinner"
-	"github.com/logrusorgru/aurora"
 
 	"github.com/taskctl/taskctl/internal/task"
 )
 
-var cockpitDecorator *CockpitOutputDecorator
+var base *baseCockpit
 
-type CockpitOutputDecorator struct {
+type baseCockpit struct {
 	w       io.Writer
 	tasks   []*task.Task
 	mu      sync.Mutex
@@ -25,9 +23,14 @@ type CockpitOutputDecorator struct {
 	closeCh chan bool
 }
 
-func NewCockpitOutputWriter(w io.Writer, closeCh chan bool) *CockpitOutputDecorator {
-	if cockpitDecorator == nil {
-		cockpitDecorator = &CockpitOutputDecorator{
+type CockpitOutputDecorator struct {
+	b *baseCockpit
+	t *task.Task
+}
+
+func NewCockpitOutputWriter(t *task.Task, w io.Writer) *CockpitOutputDecorator {
+	if base == nil {
+		base = &baseCockpit{
 			charSet: 14,
 			w:       w,
 			tasks:   make([]*task.Task, 0),
@@ -35,61 +38,36 @@ func NewCockpitOutputWriter(w io.Writer, closeCh chan bool) *CockpitOutputDecora
 		}
 	}
 
-	return cockpitDecorator
+	return &CockpitOutputDecorator{
+		t: t,
+		b: base,
+	}
 }
 
 func (d *CockpitOutputDecorator) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func (d *CockpitOutputDecorator) WriteHeader(t *task.Task) error {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	d.tasks = append(d.tasks, t)
-
-	if d.spinner == nil {
-		d.spinner = d.startSpinner()
-		go func() {
-			<-d.closeCh
-			d.spinner.Stop()
-		}()
-	}
-
+func (d *CockpitOutputDecorator) WriteHeader() error {
+	d.b.Add(d.t)
 	return nil
 }
 
-func (d *CockpitOutputDecorator) WriteFooter(t *task.Task) error {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	for i := 0; i < len(d.tasks); i++ {
-		if d.tasks[i] == t {
-			d.tasks = append(d.tasks[:i], d.tasks[i+1:]...)
-		}
-	}
-
-	var mark = aurora.Green("✔")
-	if t.Errored {
-		mark = aurora.Red("✗")
-	}
-
-	d.spinner.FinalMSG = fmt.Sprintf("%s Finished %s in %s\r\n", mark, aurora.Bold(t.Name), t.Duration())
-	d.spinner.Restart()
-	d.spinner.FinalMSG = ""
+func (d *CockpitOutputDecorator) WriteFooter() error {
+	d.b.Remove(d.t)
 	return nil
 }
 
-func (d *CockpitOutputDecorator) ForTask(t *task.Task) DecoratedOutputWriter {
-	return d
-}
+func (b *baseCockpit) start() *spinner.Spinner {
+	if b.spinner != nil {
+		return b.spinner
+	}
 
-func (d *CockpitOutputDecorator) startSpinner() *spinner.Spinner {
-	s := spinner.New(spinner.CharSets[d.charSet], 100*time.Millisecond, spinner.WithColor("yellow"))
-	s.Writer = d.w
+	s := spinner.New(spinner.CharSets[b.charSet], 100*time.Millisecond, spinner.WithColor("yellow"))
+	s.Writer = b.w
 	s.PreUpdate = func(s *spinner.Spinner) {
 		tasks := make([]string, 0)
-		for _, v := range d.tasks {
+		for _, v := range b.tasks {
 			tasks = append(tasks, v.Name)
 		}
 		sort.Strings(tasks)
@@ -98,4 +76,34 @@ func (d *CockpitOutputDecorator) startSpinner() *spinner.Spinner {
 	s.Start()
 
 	return s
+}
+
+func (b *baseCockpit) Add(t *task.Task) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	b.tasks = append(b.tasks, t)
+
+	if b.spinner == nil {
+		b.spinner = b.start()
+		go func() {
+			<-b.closeCh
+			b.spinner.Stop()
+		}()
+	}
+}
+
+func (b *baseCockpit) Remove(t *task.Task) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	b.tasks = append(b.tasks, t)
+
+	if b.spinner == nil {
+		b.spinner = b.start()
+		go func() {
+			<-b.closeCh
+			b.spinner.Stop()
+		}()
+	}
 }

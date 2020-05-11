@@ -7,13 +7,13 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/sirupsen/logrus"
+	"github.com/taskctl/taskctl/internal/utils"
 
-	"github.com/taskctl/taskctl/internal/util"
+	"github.com/sirupsen/logrus"
 )
 
 type ExecutionContext struct {
-	Executable util.Executable
+	Executable utils.Executable
 	Env        []string
 	Dir        string
 
@@ -29,7 +29,7 @@ type ExecutionContext struct {
 	mu       sync.Mutex
 }
 
-func NewExecutionContext(executable util.Executable, dir string, env, up, down, before, after []string) *ExecutionContext {
+func NewExecutionContext(executable utils.Executable, dir string, env, up, down, before, after []string) *ExecutionContext {
 	c := &ExecutionContext{
 		Executable: executable,
 		Env:        env,
@@ -41,14 +41,6 @@ func NewExecutionContext(executable util.Executable, dir string, env, up, down, 
 	}
 
 	return c
-}
-
-func (c *ExecutionContext) Bin() string {
-	return c.Executable.Bin
-}
-
-func (c *ExecutionContext) Args() []string {
-	return c.Executable.Args
 }
 
 func (c *ExecutionContext) Up() error {
@@ -105,9 +97,13 @@ func (c *ExecutionContext) runServiceCommand(command string) (err error) {
 	ca := strings.Split(command, " ")
 	cmd := exec.Command(ca[0], ca[1:]...)
 	cmd.Env = c.Env
-	cmd.Dir, err = os.Getwd()
-	if err != nil {
-		return err
+	if c.Dir != "" {
+		cmd.Dir = c.Dir
+	} else {
+		cmd.Dir, err = os.Getwd()
+		if err != nil {
+			return err
+		}
 	}
 
 	out, err := cmd.Output()
