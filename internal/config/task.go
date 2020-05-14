@@ -3,8 +3,9 @@ package config
 import (
 	"sync/atomic"
 
+	"github.com/taskctl/taskctl/internal/variables"
+
 	"github.com/taskctl/taskctl/internal/task"
-	"github.com/taskctl/taskctl/internal/utils"
 )
 
 var taskIndex uint32
@@ -16,8 +17,8 @@ func buildTask(def *TaskDefinition) (*task.Task, error) {
 		Description:  def.Description,
 		Condition:    def.Condition,
 		Command:      def.Command,
-		Env:          utils.NewVariables(def.Env),
-		Variables:    utils.NewVariables(def.Variables),
+		Env:          variables.NewVariables(def.Env),
+		Variables:    variables.NewVariables(def.Variables),
 		Variations:   def.Variations,
 		Dir:          def.Dir,
 		Timeout:      def.Timeout,
@@ -33,10 +34,7 @@ func buildTask(def *TaskDefinition) (*task.Task, error) {
 		t.Variations = make([]map[string]string, 1)
 	}
 
-	if t.Context == "" {
-		t.Context = "local"
-	}
-
+	t.Variables.Set("Context.Name", t.Context)
 	t.Variables.Set("Task.Name", t.Name)
 
 	return t, nil

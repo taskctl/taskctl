@@ -22,6 +22,18 @@ func NewExecutionGraph() *ExecutionGraph {
 	}
 }
 
+func (g *ExecutionGraph) AddStage(stage *Stage) error {
+	g.AddNode(stage.Name, stage)
+	for _, dep := range stage.DependsOn {
+		err := g.AddEdge(dep, stage.Name)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (g *ExecutionGraph) AddNode(name string, stage *Stage) {
 	g.nodes[name] = stage
 }

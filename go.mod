@@ -19,4 +19,5 @@ require (
 	github.com/urfave/cli/v2 v2.2.0
 	golang.org/x/sys v0.0.0-20191120155948-bd437916bb0e // indirect
 	gopkg.in/yaml.v2 v2.2.4
+	mvdan.cc/sh v2.6.4+incompatible
 )

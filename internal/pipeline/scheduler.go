@@ -13,8 +13,8 @@ import (
 	"github.com/taskctl/taskctl/internal/runner"
 )
 
-type PipelineScheduler struct {
-	taskRunner *runner.TaskRunner
+type Scheduler struct {
+	taskRunner runner.Runner
 	pause      time.Duration
 
 	cancelled int32
@@ -23,8 +23,8 @@ type PipelineScheduler struct {
 	End   time.Time
 }
 
-func NewScheduler(r *runner.TaskRunner) *PipelineScheduler {
-	s := &PipelineScheduler{
+func NewScheduler(r runner.Runner) *Scheduler {
+	s := &Scheduler{
 		pause:      50 * time.Millisecond,
 		taskRunner: r,
 	}
@@ -32,7 +32,7 @@ func NewScheduler(r *runner.TaskRunner) *PipelineScheduler {
 	return s
 }
 
-func (s *PipelineScheduler) Schedule(p *ExecutionGraph) error {
+func (s *Scheduler) Schedule(p *ExecutionGraph) error {
 	s.startTimer()
 	defer s.stopTimer()
 	var wg = sync.WaitGroup{}
@@ -77,9 +77,8 @@ func (s *PipelineScheduler) Schedule(p *ExecutionGraph) error {
 
 				stage.Start = time.Now()
 
-				err := s.run(stage)
+				err := s.runStage(stage)
 				if err != nil {
-					logrus.Errorf("stage %s failed: %v", stage.Name, err)
 					stage.UpdateStatus(StatusError)
 					return
 				}
@@ -96,20 +95,20 @@ func (s *PipelineScheduler) Schedule(p *ExecutionGraph) error {
 	return p.Error()
 }
 
-func (s *PipelineScheduler) startTimer() {
+func (s *Scheduler) startTimer() {
 	s.Start = time.Now()
 }
 
-func (s *PipelineScheduler) stopTimer() {
+func (s *Scheduler) stopTimer() {
 	s.End = time.Now()
 }
 
-func (s *PipelineScheduler) Cancel() {
+func (s *Scheduler) Cancel() {
 	atomic.StoreInt32(&s.cancelled, 1)
 	s.taskRunner.Cancel()
 }
 
-func (s *PipelineScheduler) isDone(p *ExecutionGraph) bool {
+func (s *Scheduler) isDone(p *ExecutionGraph) bool {
 	for _, stage := range p.Nodes() {
 		switch stage.ReadStatus() {
 		case StatusWaiting, StatusRunning:
@@ -120,16 +119,33 @@ func (s *PipelineScheduler) isDone(p *ExecutionGraph) bool {
 	return true
 }
 
-func (s *PipelineScheduler) Finish() {
+func (s *Scheduler) Finish() {
 	s.taskRunner.Finish()
 }
 
-func (s *PipelineScheduler) run(stage *Stage) error {
+func (s *Scheduler) runStage(stage *Stage) error {
 	if stage.Pipeline != nil {
 		return s.Schedule(stage.Pipeline)
 	}
 
-	return s.taskRunner.Run(stage.Task, stage.Variables, stage.Env)
+	t := stage.Task
+	if stage.Env != nil {
+		if t.Env == nil {
+			t.Env = stage.Env
+		} else {
+			t.Env = t.Env.Merge(stage.Env)
+		}
+	}
+
+	if stage.Variables != nil {
+		if t.Variables == nil {
+			t.Variables = stage.Variables
+		} else {
+			t.Variables = t.Env.Merge(stage.Variables)
+		}
+	}
+
+	return s.taskRunner.Run(stage.Task)
 }
 
 func checkStatus(p *ExecutionGraph, stage *Stage) (ready bool) {

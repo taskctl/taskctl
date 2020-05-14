@@ -2,14 +2,11 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 
-	"github.com/taskctl/taskctl/internal/utils"
-
 	"github.com/urfave/cli/v2"
-
-	"github.com/taskctl/taskctl/internal/output"
 
 	"github.com/logrusorgru/aurora"
 
@@ -41,11 +38,7 @@ func newRunCommand() *cli.Command {
 		},
 		Before: func(c *cli.Context) (err error) {
 			taskRunner, err = buildTaskRunner(c)
-			if err != nil {
-				return err
-			}
-
-			return nil
+			return err
 		},
 		After: func(c *cli.Context) error {
 			close(done)
@@ -98,25 +91,6 @@ func newRunCommand() *cli.Command {
 	return cmd
 }
 
-func buildTaskRunner(c *cli.Context) (*runner.TaskRunner, error) {
-	variables := cfg.Variables.With("args", strings.Join(taskArgs(c), " "))
-	taskRunner, err := runner.NewTaskRunner(cfg.Contexts, cfg.Output, variables)
-	if err != nil {
-		return nil, err
-	}
-
-	if c.Bool("dry-run") {
-		taskRunner.DryRun()
-	}
-
-	go func() {
-		<-cancel
-		taskRunner.Cancel()
-	}()
-
-	return taskRunner, nil
-}
-
 func runTarget(name string, c *cli.Context, taskRunner *runner.TaskRunner) (err error) {
 	p := cfg.Pipelines[name]
 	if p != nil {
@@ -152,13 +126,13 @@ func runPipeline(p *pipeline.ExecutionGraph, taskRunner *runner.TaskRunner, summ
 		printSummary(p)
 	}
 
-	fmt.Fprintln(output.Stdout, aurora.Sprintf("\r\n%s: %s", aurora.Bold("Total duration"), aurora.Green(sd.End.Sub(sd.Start))))
+	fmt.Fprintln(os.Stdout, aurora.Sprintf("\r\n%s: %s", aurora.Bold("Total duration"), aurora.Green(sd.End.Sub(sd.Start))))
 
 	return nil
 }
 
 func runTask(t *task.Task, taskRunner *runner.TaskRunner) error {
-	err := taskRunner.Run(t, &utils.Variables{}, &utils.Variables{})
+	err := taskRunner.Run(t)
 	if err != nil {
 		return err
 	}
@@ -194,25 +168,25 @@ func printSummary(p *pipeline.ExecutionGraph) {
 		return stages[j].Start.Nanosecond() > stages[i].Start.Nanosecond()
 	})
 
-	fmt.Fprintln(output.Stdout, aurora.Bold("\r\nSummary:").String())
+	fmt.Fprintln(os.Stdout, aurora.Bold("\r\nSummary:").String())
 
 	var log string
 	for _, stage := range stages {
 		switch stage.ReadStatus() {
 		case pipeline.StatusDone:
-			fmt.Fprintln(output.Stdout, aurora.Sprintf(aurora.Green("- Stage %s was completed in %s"), stage.Name, stage.Duration()))
+			fmt.Fprintln(os.Stdout, aurora.Sprintf(aurora.Green("- Stage %s was completed in %s"), stage.Name, stage.Duration()))
 		case pipeline.StatusSkipped:
-			fmt.Fprintln(output.Stdout, aurora.Sprintf(aurora.Green("- Stage %s was skipped"), stage.Name))
+			fmt.Fprintln(os.Stdout, aurora.Sprintf(aurora.Green("- Stage %s was skipped"), stage.Name))
 		case pipeline.StatusError:
 			log = strings.TrimSpace(stage.Task.ErrorMessage())
-			fmt.Fprintln(output.Stdout, aurora.Sprintf(aurora.Red("- Stage %s failed in %s"), stage.Name, stage.Duration()))
+			fmt.Fprintln(os.Stdout, aurora.Sprintf(aurora.Red("- Stage %s failed in %s"), stage.Name, stage.Duration()))
 			if log != "" {
-				fmt.Fprintln(output.Stdout, aurora.Sprintf(aurora.Red("  > %s"), log))
+				fmt.Fprintln(os.Stdout, aurora.Sprintf(aurora.Red("  > %s"), log))
 			}
 		case pipeline.StatusCanceled:
-			fmt.Fprintln(output.Stdout, aurora.Sprintf(aurora.Gray(12, "- Stage %s was cancelled"), stage.Name))
+			fmt.Fprintln(os.Stdout, aurora.Sprintf(aurora.Gray(12, "- Stage %s was cancelled"), stage.Name))
 		default:
-			fmt.Fprintln(output.Stdout, aurora.Sprintf(aurora.Red("- Unexpected status %d for stage %s"), stage.Status, stage.Name))
+			fmt.Fprintln(os.Stdout, aurora.Sprintf(aurora.Red("- Unexpected status %d for stage %s"), stage.Status, stage.Name))
 		}
 	}
 }

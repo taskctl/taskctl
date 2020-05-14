@@ -7,15 +7,18 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/taskctl/taskctl/internal/variables"
+
 	"github.com/taskctl/taskctl/internal/utils"
 
 	"github.com/sirupsen/logrus"
 )
 
 type ExecutionContext struct {
-	Executable utils.Executable
-	Env        []string
+	Executable *utils.Binary
 	Dir        string
+	Env        variables.Container
+	Variables  variables.Container
 
 	up     []string
 	down   []string
@@ -29,10 +32,10 @@ type ExecutionContext struct {
 	mu       sync.Mutex
 }
 
-func NewExecutionContext(executable utils.Executable, dir string, env, up, down, before, after []string) *ExecutionContext {
+func NewExecutionContext(executable *utils.Binary, dir string, env, up, down, before, after []string) *ExecutionContext {
 	c := &ExecutionContext{
 		Executable: executable,
-		Env:        env,
+		Env:        variables.NewVariablesFromEnv(env),
 		Dir:        dir,
 		up:         up,
 		down:       down,
@@ -96,7 +99,8 @@ func (c *ExecutionContext) runServiceCommand(command string) (err error) {
 	logrus.Debugf("running context service command: %s", command)
 	ca := strings.Split(command, " ")
 	cmd := exec.Command(ca[0], ca[1:]...)
-	cmd.Env = c.Env
+	cmd.Env = utils.ConvertEnv(c.Env.Map())
+
 	if c.Dir != "" {
 		cmd.Dir = c.Dir
 	} else {
@@ -116,4 +120,10 @@ func (c *ExecutionContext) runServiceCommand(command string) (err error) {
 	}
 
 	return nil
+}
+
+func DefaultContext() *ExecutionContext {
+	return &ExecutionContext{
+		Env: variables.NewVariables(nil),
+	}
 }

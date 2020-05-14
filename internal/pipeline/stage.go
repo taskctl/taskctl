@@ -4,7 +4,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/taskctl/taskctl/internal/utils"
+	"github.com/taskctl/taskctl/internal/variables"
 
 	"github.com/taskctl/taskctl/internal/task"
 )
@@ -27,8 +27,8 @@ type Stage struct {
 	Dir          string
 	AllowFailure bool
 	Status       int32
-	Env          *utils.Variables
-	Variables    *utils.Variables
+	Env          variables.Container
+	Variables    variables.Container
 
 	Start time.Time
 	End   time.Time

@@ -3,6 +3,8 @@ package config
 import (
 	"fmt"
 
+	"github.com/taskctl/taskctl/internal/variables"
+
 	"github.com/imdario/mergo"
 	"github.com/sirupsen/logrus"
 
@@ -11,8 +13,6 @@ import (
 	"github.com/taskctl/taskctl/internal/pipeline"
 	"github.com/taskctl/taskctl/internal/task"
 	"github.com/taskctl/taskctl/internal/watch"
-
-	"github.com/taskctl/taskctl/internal/utils"
 )
 
 // Default names for tasks' files
@@ -41,7 +41,7 @@ type Config struct {
 	Debug, DryRun bool
 	Output        string
 
-	Variables *utils.Variables
+	Variables *variables.Variables
 }
 
 func (cfg *Config) Task(name string) *task.Task {
@@ -70,7 +70,7 @@ func buildFromDefinition(def *configDefinition) (cfg *Config, err error) {
 	cfg = NewConfig()
 
 	for k, v := range def.Contexts {
-		cfg.Contexts[k], err = buildContext(v, def.Shell)
+		cfg.Contexts[k], err = buildContext(v, &def.Shell)
 		if err != nil {
 			return nil, err
 		}
@@ -112,7 +112,7 @@ func buildFromDefinition(def *configDefinition) (cfg *Config, err error) {
 	cfg.Import = def.Import
 	cfg.Debug = def.Debug
 	cfg.Output = def.Output
-	cfg.Variables = utils.NewVariables(def.Variables)
+	cfg.Variables = variables.NewVariables(def.Variables)
 
 	return cfg, nil
 }

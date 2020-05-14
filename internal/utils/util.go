@@ -10,10 +10,11 @@ import (
 	"os"
 	"os/exec"
 	"reflect"
+	"strings"
 	"text/template"
 )
 
-type Executable struct {
+type Binary struct {
 	Bin  string
 	Args []string
 }
@@ -27,6 +28,15 @@ func ConvertEnv(env map[string]string) []string {
 	}
 
 	return enva
+}
+
+func ParseEnv(env []string) map[string]string {
+	m := make(map[string]string)
+	for _, v := range env {
+		arr := strings.Split(v, "=")
+		m[arr[0]] = strings.Join(arr[1:], "=")
+	}
+	return m
 }
 
 func FileExists(file string) bool {

@@ -10,8 +10,6 @@ import (
 
 	"github.com/taskctl/taskctl/internal/watch"
 
-	"github.com/taskctl/taskctl/internal/runner"
-
 	"github.com/sirupsen/logrus"
 )
 
@@ -28,14 +26,12 @@ func newWatchCommand() *cli.Command {
 			return nil
 		},
 		Action: func(c *cli.Context) (err error) {
-			taskRunner, err := runner.NewTaskRunner(cfg.Contexts, output.OutputFormatPrefixed, cfg.Variables)
+			taskRunner, err := buildTaskRunner(c)
 			if err != nil {
 				return err
 			}
 
-			if c.Bool("dry-run") {
-				taskRunner.DryRun()
-			}
+			taskRunner.OutputFormat = output.OutputFormatRaw
 
 			var wg sync.WaitGroup
 			for _, name := range c.Args().Slice() {

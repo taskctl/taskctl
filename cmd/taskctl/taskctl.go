@@ -11,6 +11,8 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/taskctl/taskctl/internal/runner"
+
 	"github.com/logrusorgru/aurora"
 	"github.com/manifoldco/promptui"
 
@@ -143,8 +145,6 @@ func run() error {
 
 			if c.Bool("quiet") {
 				logrus.SetOutput(ioutil.Discard)
-				output.SetStdout(ioutil.Discard)
-				output.SetStderr(ioutil.Discard)
 			}
 
 			if c.IsSet("output") {
@@ -226,6 +226,7 @@ func run() error {
 			newWatchCommand(),
 			newCompletionCommand(),
 			newGraphCommand(),
+			newValidateCommand(),
 		},
 		Authors: []*cli.Author{
 			{
@@ -241,6 +242,32 @@ func run() error {
 func abort() {
 	close(cancel)
 	<-done
+}
+
+func buildTaskRunner(c *cli.Context) (*runner.TaskRunner, error) {
+	variables := cfg.Variables.With("args", strings.Join(taskArgs(c), " "))
+	taskRunner, err := runner.NewTaskRunner(cfg.Contexts, variables)
+	if err != nil {
+		return nil, err
+	}
+
+	taskRunner.OutputFormat = cfg.Output
+
+	if c.Bool("quiet") {
+		taskRunner.Stdout = ioutil.Discard
+		taskRunner.Stderr = ioutil.Discard
+	}
+
+	if c.Bool("dry-run") {
+		taskRunner.DryRun()
+	}
+
+	go func() {
+		<-cancel
+		taskRunner.Cancel()
+	}()
+
+	return taskRunner, nil
 }
 
 type suggestion struct {

@@ -8,17 +8,17 @@ import (
 )
 
 type contextDefinition struct {
-	Dir       string
-	Up        []string
-	Down      []string
-	Before    []string
-	After     []string
-	Env       map[string]string
-	Variables map[string]string
-	utils.Executable
+	Dir        string
+	Up         []string
+	Down       []string
+	Before     []string
+	After      []string
+	Env        map[string]string
+	Variables  map[string]string
+	Executable utils.Binary
 }
 
-func buildContext(def *contextDefinition, shell utils.Executable) (*context.ExecutionContext, error) {
+func buildContext(def *contextDefinition, shell *utils.Binary) (*context.ExecutionContext, error) {
 	dir := def.Dir
 	if dir == "" {
 		var err error
@@ -28,17 +28,10 @@ func buildContext(def *contextDefinition, shell utils.Executable) (*context.Exec
 		}
 	}
 
-	executable := utils.Executable{
-		Bin:  def.Executable.Bin,
-		Args: def.Executable.Args,
-	}
+	executable := &def.Executable
 
-	if executable.Bin == "" {
-		if shell.Bin != "" {
-			executable = shell
-		} else {
-			executable = defaultShell()
-		}
+	if executable.Bin == "" && shell.Bin != "" {
+		executable = shell
 	}
 
 	c := context.NewExecutionContext(
@@ -52,11 +45,4 @@ func buildContext(def *contextDefinition, shell utils.Executable) (*context.Exec
 	)
 
 	return c, nil
-}
-
-func defaultShell() utils.Executable {
-	return utils.Executable{
-		Bin:  "/bin/sh",
-		Args: []string{"-c"},
-	}
 }

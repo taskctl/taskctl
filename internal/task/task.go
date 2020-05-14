@@ -4,15 +4,21 @@ import (
 	"bytes"
 	"time"
 
+	"github.com/taskctl/taskctl/internal/variables"
+
 	"github.com/taskctl/taskctl/internal/utils"
 )
+
+type Executable interface {
+	NextCommand() interface{}
+}
 
 type Task struct {
 	Index        uint32
 	Command      []string
 	Context      string
-	Env          *utils.Variables
-	Variables    *utils.Variables
+	Env          variables.Container
+	Variables    variables.Container
 	Variations   []map[string]string
 	Dir          string
 	Timeout      *time.Duration
@@ -38,13 +44,23 @@ type Task struct {
 		Stderr bytes.Buffer
 		Stdout bytes.Buffer
 	}
+
+	cidx int
 }
 
 func NewTask() *Task {
 	return &Task{
-		Env:       utils.NewVariables(nil),
-		Variables: utils.NewVariables(nil),
+		Env:       variables.NewVariables(nil),
+		Variables: variables.NewVariables(nil),
+		ExitCode:  -1,
 	}
+}
+
+func FromCommand(command string) *Task {
+	t := NewTask()
+	t.Command = []string{command}
+
+	return t
 }
 
 func (t *Task) Duration() time.Duration {
@@ -63,12 +79,17 @@ func (t *Task) ErrorMessage() string {
 	return utils.LastLine(&t.Log.Stdout)
 }
 
-func (t *Task) Interpolate(s string, params ...*utils.Variables) (string, error) {
-	data := t.Variables
-
-	for _, variables := range params {
-		data = data.Merge(variables)
+func (t *Task) NextCommand() interface{} {
+	if t.Errored {
+		return nil
 	}
 
-	return utils.RenderString(s, data.Map())
+	if t.cidx == len(t.Command) {
+		return nil
+	}
+
+	c := t.Command[t.cidx]
+	t.cidx++
+
+	return c
 }

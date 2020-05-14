@@ -3,7 +3,6 @@ package output
 import (
 	"fmt"
 	"io"
-	"os"
 
 	"github.com/taskctl/taskctl/internal/task"
 )
@@ -14,8 +13,6 @@ const (
 	OutputFormatCockpit  = "cockpit"
 )
 
-var Stdout io.Writer = os.Stdout
-var Stderr io.Writer = os.Stderr
 var closeCh = make(chan bool)
 
 type DecoratedOutputWriter interface {
@@ -29,18 +26,18 @@ type TaskOutput struct {
 	decorator DecoratedOutputWriter
 }
 
-func NewTaskOutput(t *task.Task, format string) (*TaskOutput, error) {
+func NewTaskOutput(t *task.Task, format string, stdout, stderr io.Writer) (*TaskOutput, error) {
 	o := &TaskOutput{
 		t: t,
 	}
 
 	switch format {
 	case OutputFormatRaw:
-		o.decorator = NewRawOutputWriter(Stdout)
+		o.decorator = NewRawOutputWriter(stdout)
 	case OutputFormatPrefixed:
-		o.decorator = NewPrefixedOutputWriter(t, Stdout)
+		o.decorator = NewPrefixedOutputWriter(t, stdout)
 	case OutputFormatCockpit:
-		o.decorator = NewCockpitOutputWriter(t, Stdout)
+		o.decorator = NewCockpitOutputWriter(t, stdout)
 	default:
 		return nil, fmt.Errorf("unknown decorator \"%s\" requested", format)
 	}
@@ -66,12 +63,4 @@ func (o TaskOutput) Finish() error {
 
 func Close() {
 	close(closeCh)
-}
-
-func SetStdout(w io.Writer) {
-	Stdout = w
-}
-
-func SetStderr(w io.Writer) {
-	Stderr = w
 }

@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/taskctl/taskctl/internal/config"
+
 	"github.com/urfave/cli/v2"
+
+	"github.com/taskctl/taskctl/internal/config"
 )
 
 func newValidateCommand() *cli.Command {

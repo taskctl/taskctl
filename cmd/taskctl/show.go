@@ -15,7 +15,7 @@ var showTmpl = `
 {{- end }}
   Context: {{ .Context }}
   Commands: 
-{{- range .Command }}
+{{- range .CommandWithContext }}
     - {{ . -}}
 {{ end -}}
 {{ if .dir }}

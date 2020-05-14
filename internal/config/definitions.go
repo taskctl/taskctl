@@ -13,7 +13,7 @@ type configDefinition struct {
 	Tasks     map[string]*TaskDefinition
 	Watchers  map[string]*WatcherDefinition
 
-	Shell utils.Executable
+	Shell utils.Binary
 
 	Debug, DryRun bool
 	Output        string

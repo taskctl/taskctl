@@ -169,7 +169,7 @@ Task definition takes following parameters:
 - `name` - task name (optional)
 - `command` - one or more commands to run
 - `variations` - list of variations to apply to command
-- `context` - name of the context to run commands in (default: `local`)
+- `context` - execution context
 - `env` - environment variables (optional). All existing environment variables will be passed automatically
 - `dir` - working directory. If not set, current working directory will be used
 - `timeout` - command execution timeout (optional)
@@ -204,6 +204,7 @@ Predefined variables are:
 - `.Root` - config file directory
 - `.Args` - provided arguments
 - `.Task.Name` - current task's name
+- `.Context.Name` - current task's execution context's name
 - `.Stage.Name` - current stage's name
 - `.Output` - previous command's (inside the same task) output
 - `.Tasks.Task1.Output` - `task1` latest command output
@@ -389,6 +390,7 @@ Add to  ~/.zshrc
 - [tusk](https://github.com/rliebz/tusk)
 - [just](https://github.com/casey/just)
 - [cr](https://github.com/cirocosta/cr)
+- [realize](https://github.com/oxequa/realize)
 
 ## How to contribute?
 Feel free to contribute in any way you want. Share ideas, submit issues, create pull requests. 
