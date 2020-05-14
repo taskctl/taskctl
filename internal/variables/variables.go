@@ -32,15 +32,6 @@ func NewVariablesFromEnv(env []string) *Variables {
 	return NewVariables(m)
 }
 
-//func NewMergedVariables(params ...*Variables) *Variables {
-//	vars := &Variables{}
-//	for _, v := range params {
-//		vars = vars.Merge(v).(*Variables)
-//	}
-//
-//	return vars
-//}
-
 func (vars *Variables) Set(name, value string) {
 	vars.m.Store(name, value)
 }

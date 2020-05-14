@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/taskctl/taskctl/internal/variables"
 	"os"
 
 	"github.com/taskctl/taskctl/internal/context"
@@ -37,7 +38,7 @@ func buildContext(def *contextDefinition, shell *utils.Binary) (*context.Executi
 	c := context.NewExecutionContext(
 		executable,
 		dir,
-		append(os.Environ(), utils.ConvertEnv(def.Env)...),
+		variables.NewVariables(def.Env),
 		def.Up,
 		def.Down,
 		def.Before,

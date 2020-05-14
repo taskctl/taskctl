@@ -15,7 +15,7 @@ type Executable interface {
 
 type Task struct {
 	Index        uint32
-	Command      []string
+	Commands     []string
 	Context      string
 	Env          variables.Container
 	Variables    variables.Container
@@ -58,7 +58,7 @@ func NewTask() *Task {
 
 func FromCommand(command string) *Task {
 	t := NewTask()
-	t.Command = []string{command}
+	t.Commands = []string{command}
 
 	return t
 }
@@ -84,11 +84,11 @@ func (t *Task) NextCommand() interface{} {
 		return nil
 	}
 
-	if t.cidx == len(t.Command) {
+	if t.cidx == len(t.Commands) {
 		return nil
 	}
 
-	c := t.Command[t.cidx]
+	c := t.Commands[t.cidx]
 	t.cidx++
 
 	return c

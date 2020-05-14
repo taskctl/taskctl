@@ -9,7 +9,7 @@ import (
 func TestTaskRunner_Run(t *testing.T) {
 	task := taskpkg.NewTask()
 
-	task.Command = []string{"/bin/true"}
+	task.Commands = []string{"/bin/true"}
 	task.Name = "some test task"
 	task.Dir = "{{.Root}}"
 
@@ -18,7 +18,7 @@ func TestTaskRunner_Run(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	runner.DryRun()
+	runner.DryRun = true
 
 	err = runner.Run(task)
 	if err != nil {

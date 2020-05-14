@@ -1,11 +1,11 @@
 package context
 
 import (
+	"context"
 	"fmt"
-	"os"
-	"os/exec"
-	"strings"
 	"sync"
+
+	"github.com/taskctl/taskctl/internal/executor"
 
 	"github.com/taskctl/taskctl/internal/variables"
 
@@ -32,10 +32,10 @@ type ExecutionContext struct {
 	mu       sync.Mutex
 }
 
-func NewExecutionContext(executable *utils.Binary, dir string, env, up, down, before, after []string) *ExecutionContext {
+func NewExecutionContext(executable *utils.Binary, dir string, env variables.Container, up, down, before, after []string) *ExecutionContext {
 	c := &ExecutionContext{
 		Executable: executable,
-		Env:        variables.NewVariablesFromEnv(env),
+		Env:        env,
 		Dir:        dir,
 		up:         up,
 		down:       down,
@@ -97,23 +97,19 @@ func (c *ExecutionContext) After() error {
 
 func (c *ExecutionContext) runServiceCommand(command string) (err error) {
 	logrus.Debugf("running context service command: %s", command)
-	ca := strings.Split(command, " ")
-	cmd := exec.Command(ca[0], ca[1:]...)
-	cmd.Env = utils.ConvertEnv(c.Env.Map())
-
-	if c.Dir != "" {
-		cmd.Dir = c.Dir
-	} else {
-		cmd.Dir, err = os.Getwd()
-		if err != nil {
-			return err
-		}
+	ex, err := executor.NewDefaultExecutor()
+	if err != nil {
+		return err
 	}
 
-	out, err := cmd.Output()
+	out, err := ex.Execute(context.Background(), &executor.Job{
+		Command: command,
+		Dir:     c.Dir,
+		Env:     c.Env,
+	})
 	if err != nil {
-		if exerr, ok := err.(*exec.ExitError); ok {
-			return fmt.Errorf("%v\n%s\n%s\n", err, out, exerr.Stderr)
+		if executor.IsExitStatus(err) {
+			return fmt.Errorf("%v\n%s\n%s\n", err, out, err.Error())
 		} else {
 			return err
 		}

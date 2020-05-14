@@ -16,7 +16,7 @@ func buildTask(def *TaskDefinition) (*task.Task, error) {
 		Name:         def.Name,
 		Description:  def.Description,
 		Condition:    def.Condition,
-		Command:      def.Command,
+		Commands:     def.Command,
 		Env:          variables.NewVariables(def.Env),
 		Variables:    variables.NewVariables(def.Variables),
 		Variations:   def.Variations,

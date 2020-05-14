@@ -259,7 +259,7 @@ func buildTaskRunner(c *cli.Context) (*runner.TaskRunner, error) {
 	}
 
 	if c.Bool("dry-run") {
-		taskRunner.DryRun()
+		taskRunner.DryRun = true
 	}
 
 	go func() {
