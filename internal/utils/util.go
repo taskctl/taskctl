@@ -90,7 +90,7 @@ func LastLine(r io.Reader) (l string) {
 
 func RenderString(tmpl string, variables map[string]string) (string, error) {
 	var buf bytes.Buffer
-	t, err := template.New("interpolate").Option("missingkey=zero").Parse(tmpl)
+	t, err := template.New("interpolate").Option("missingkey=error").Parse(tmpl)
 	if err != nil {
 		return "", err
 	}

@@ -41,7 +41,7 @@ type Config struct {
 	Debug, DryRun bool
 	Output        string
 
-	Variables *variables.Variables
+	Variables variables.Container
 }
 
 func (cfg *Config) Task(name string) *task.Task {

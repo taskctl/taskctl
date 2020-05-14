@@ -65,7 +65,7 @@ func run() error {
 		Version:              version,
 		EnableBashCompletion: true,
 		BashComplete: func(c *cli.Context) {
-			cfg, _ = cl.Load(c.String("config"))
+			cfg, _ := cl.Load(c.String("config"))
 			suggestions := buildSuggestions(cfg)
 
 			for _, v := range suggestions {
@@ -158,12 +158,6 @@ func run() error {
 			return nil
 		},
 		Action: func(c *cli.Context) (err error) {
-			runCommand := c.App.Command("run")
-			err = runCommand.Before(c)
-			if err != nil {
-				return err
-			}
-
 			taskRunner, err := buildTaskRunner(c)
 			if err != nil {
 				return err

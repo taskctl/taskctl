@@ -77,11 +77,14 @@ func (e *DefaultExecutor) Execute(ctx context.Context, job *Job) ([]byte, error)
 	}
 
 	buf := bytes.NewBuffer(make([]byte, 4096))
-	runner, _ := interp.New(
+	r, err := interp.New(
 		interp.Dir(job.Dir),
 		interp.Env(expand.ListEnviron(env...)),
 		interp.StdIO(job.Stdin, io.MultiWriter(buf, job.Stdout), job.Stderr),
 	)
+	if err != nil {
+		return nil, err
+	}
 
 	var cancelFn context.CancelFunc
 	if job.Timeout != nil {
@@ -93,7 +96,7 @@ func (e *DefaultExecutor) Execute(ctx context.Context, job *Job) ([]byte, error)
 		}
 	}()
 
-	err = runner.Run(ctx, cmd)
+	err = r.Run(ctx, cmd)
 	if err != nil {
 		logrus.Debug(err.Error())
 		return buf.Bytes(), err

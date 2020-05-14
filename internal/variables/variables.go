@@ -2,8 +2,6 @@ package variables
 
 import (
 	"sync"
-
-	"github.com/taskctl/taskctl/internal/utils"
 )
 
 type Container interface {
@@ -18,18 +16,13 @@ type Variables struct {
 	m sync.Map
 }
 
-func NewVariables(values map[string]string) *Variables {
+func NewVariables(values map[string]string) Container {
 	vars := &Variables{}
 	for k, v := range values {
 		vars.m.Store(k, v)
 	}
 
 	return vars
-}
-
-func NewVariablesFromEnv(env []string) *Variables {
-	m := utils.ParseEnv(env)
-	return NewVariables(m)
 }
 
 func (vars *Variables) Set(name, value string) {

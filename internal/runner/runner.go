@@ -249,7 +249,7 @@ func (r *TaskRunner) Compile(command string, t *task.Task, executionCtx *taskctx
 	j.Command = strings.Join(c, " ")
 
 	var err error
-	j.Dir, err = resolveDir(t, executionCtx)
+	j.Dir, err = r.resolveDir(t, executionCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -310,9 +310,9 @@ func (r *TaskRunner) storeTaskOutput(t *task.Task) {
 	r.variables.Set(varName, t.Log.Stdout.String())
 }
 
-func resolveDir(t *task.Task, executionCtx *taskctx.ExecutionContext) (string, error) {
+func (r *TaskRunner) resolveDir(t *task.Task, executionCtx *taskctx.ExecutionContext) (string, error) {
 	if t.Dir != "" {
-		return utils.RenderString(t.Dir, t.Variables.Map())
+		return utils.RenderString(t.Dir, r.variables.Merge(t.Variables).Map())
 	} else if executionCtx.Dir != "" {
 		return executionCtx.Dir, nil
 	}
