@@ -105,7 +105,6 @@ func (e *DefaultExecutor) Execute(ctx context.Context, job *Job) ([]byte, error)
 	return buf.Bytes(), nil
 }
 
-func IsExitStatus(err error) bool {
-	_, ok := interp.IsExitStatus(err)
-	return ok
+func IsExitStatus(err error) (uint8, bool) {
+	return interp.IsExitStatus(err)
 }

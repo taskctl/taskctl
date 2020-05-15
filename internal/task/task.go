@@ -37,7 +37,7 @@ type Task struct {
 
 	ExportAs string
 
-	ExitCode int
+	ExitCode int16
 	Errored  bool
 	Error    error
 	Log      struct {

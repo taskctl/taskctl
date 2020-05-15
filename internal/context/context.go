@@ -108,7 +108,7 @@ func (c *ExecutionContext) runServiceCommand(command string) (err error) {
 		Env:     c.Env,
 	})
 	if err != nil {
-		if executor.IsExitStatus(err) {
+		if _, ok := executor.IsExitStatus(err); ok {
 			return fmt.Errorf("%v\n%s\n%s\n", err, out, err.Error())
 		} else {
 			return err

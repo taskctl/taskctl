@@ -1,6 +1,7 @@
 package pipeline
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/taskctl/taskctl/internal/task"
@@ -10,6 +11,12 @@ type TestTaskRunner struct {
 }
 
 func (t2 TestTaskRunner) Run(t *task.Task) error {
+	if t.Commands[0] == "/usr/bin/false" {
+		t.ExitCode = 1
+		t.Errored = true
+		return errors.New("task failed")
+	}
+
 	return nil
 }
 

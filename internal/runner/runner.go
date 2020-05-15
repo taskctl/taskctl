@@ -52,6 +52,10 @@ func NewTaskRunner(contexts map[string]*taskctx.ExecutionContext, vars variables
 		return nil, err
 	}
 
+	if vars == nil {
+		vars = variables.NewVariables(nil)
+	}
+
 	r := &TaskRunner{
 		Executor:     exec,
 		OutputFormat: output.OutputFormatRaw,
@@ -175,15 +179,14 @@ func (r *TaskRunner) Run(t *task.Task) error {
 		prevOutput, err = r.Executor.Execute(r.ctx, nextJob)
 		if err != nil {
 			logrus.Debug(err.Error())
-			if utils.IsExitError(err) && t.AllowFailure {
-				continue
+			if status, ok := executor.IsExitStatus(err); ok {
+				t.ExitCode = int16(status)
+				if t.AllowFailure {
+					continue
+				}
 			}
 			t.Errored = true
 			t.Error = err
-			break
-		}
-
-		if t.Errored {
 			break
 		}
 	}
@@ -196,6 +199,8 @@ func (r *TaskRunner) Run(t *task.Task) error {
 
 	if t.Errored {
 		return t.Error
+	} else {
+		t.ExitCode = 0
 	}
 
 	r.storeTaskOutput(t)
@@ -285,7 +290,7 @@ func (r *TaskRunner) checkTaskCondition(t *task.Task) (bool, error) {
 
 	_, err = r.Executor.Execute(r.ctx, j)
 	if err != nil {
-		if executor.IsExitStatus(err) {
+		if _, ok := executor.IsExitStatus(err); ok {
 			return false, nil
 		}
 

@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"github.com/taskctl/taskctl/internal/variables"
 	"testing"
 
 	taskpkg "github.com/taskctl/taskctl/internal/task"
@@ -9,11 +10,11 @@ import (
 func TestTaskRunner_Run(t *testing.T) {
 	task := taskpkg.NewTask()
 
-	task.Commands = []string{"/bin/true"}
+	task.Commands = []string{"/usr/bin/true"}
 	task.Name = "some test task"
 	task.Dir = "{{.Root}}"
 
-	runner, err := NewTaskRunner(nil, nil)
+	runner, err := NewTaskRunner(nil, variables.NewVariables(map[string]string{"Root": "/tmp"}))
 	if err != nil {
 		t.Fatal(err)
 	}
