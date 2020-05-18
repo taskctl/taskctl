@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"strings"
-	"time"
 
 	"mvdan.cc/sh/v3/expand"
 
@@ -16,26 +15,11 @@ import (
 	"mvdan.cc/sh/v3/syntax"
 
 	"github.com/taskctl/taskctl/pkg/utils"
-	"github.com/taskctl/taskctl/pkg/variables"
 )
 
 // Executes given job
 type Executor interface {
 	Execute(context.Context, *Job) ([]byte, error)
-}
-
-// Linked list of jobs to Execute
-type Job struct {
-	Command string
-	Dir     string
-	Env     variables.Container
-	Vars    variables.Container
-	Timeout *time.Duration
-
-	Stdout, Stderr io.Writer
-	Stdin          io.Reader
-
-	Next *Job
 }
 
 // Default executor.
