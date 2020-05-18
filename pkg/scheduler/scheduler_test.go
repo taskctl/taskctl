@@ -75,17 +75,17 @@ func TestExecutionGraph_Scheduler(t *testing.T) {
 func TestExecutionGraph_Scheduler_AllowFailure(t *testing.T) {
 	stage1 := &Stage{
 		Name: "stage1",
-		Task: task.FromCommands("/usr/bin/true"),
+		Task: task.FromCommands("true"),
 	}
 	stage2 := &Stage{
 		Name:         "stage2",
-		Task:         task.FromCommands("/usr/bin/false"),
+		Task:         task.FromCommands("false"),
 		AllowFailure: true,
 		DependsOn:    []string{"stage1"},
 	}
 	stage3 := &Stage{
 		Name:      "stage3",
-		Task:      task.FromCommands("/usr/bin/true"),
+		Task:      task.FromCommands("true"),
 		DependsOn: []string{"stage2"},
 	}
 
