@@ -1,15 +1,18 @@
 package output
 
 import (
+	"fmt"
 	"io"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/logrusorgru/aurora"
+
 	"github.com/briandowns/spinner"
 
-	"github.com/taskctl/taskctl/internal/task"
+	"github.com/taskctl/taskctl/pkg/task"
 )
 
 var base *baseCockpit
@@ -97,13 +100,17 @@ func (b *baseCockpit) Remove(t *task.Task) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	b.tasks = append(b.tasks, t)
-
-	if b.spinner == nil {
-		b.spinner = b.start()
-		go func() {
-			<-b.closeCh
-			b.spinner.Stop()
-		}()
+	for k, v := range b.tasks {
+		if v == t {
+			b.tasks = append(b.tasks[:k], b.tasks[k+1:]...)
+		}
 	}
+
+	var mark = aurora.Green("✔")
+	if t.Errored {
+		mark = aurora.Red("✗")
+	}
+	b.spinner.FinalMSG = fmt.Sprintf("%s Finished %s in %s\r\n", mark, aurora.Bold(t.Name), t.Duration())
+	b.spinner.Restart()
+	b.spinner.FinalMSG = ""
 }

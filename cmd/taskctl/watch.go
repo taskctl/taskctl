@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/taskctl/taskctl/internal/output"
+	"github.com/taskctl/taskctl/pkg/output"
 
 	"github.com/urfave/cli/v2"
 

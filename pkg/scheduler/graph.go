@@ -1,4 +1,4 @@
-package pipeline
+package scheduler
 
 import (
 	"errors"
@@ -14,12 +14,22 @@ type ExecutionGraph struct {
 	error error
 }
 
-func NewExecutionGraph() *ExecutionGraph {
-	return &ExecutionGraph{
+func NewExecutionGraph(stages ...*Stage) (*ExecutionGraph, error) {
+	graph := &ExecutionGraph{
 		nodes: make(map[string]*Stage),
 		from:  make(map[string][]string),
 		to:    make(map[string][]string),
 	}
+
+	var err error
+	for _, stage := range stages {
+		err = graph.AddStage(stage)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return graph, nil
 }
 
 func (g *ExecutionGraph) AddStage(stage *Stage) error {

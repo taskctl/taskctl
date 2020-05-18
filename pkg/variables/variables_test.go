@@ -5,8 +5,8 @@ import (
 )
 
 func TestNewVariables(t *testing.T) {
-	vars1 := NewVariables(map[string]string{"a": "1", "b": "2"})
-	vars2 := NewVariables(map[string]string{"c": "3", "d": "4"})
+	vars1 := FromMap(map[string]string{"a": "1", "b": "2"})
+	vars2 := FromMap(map[string]string{"c": "3", "d": "4"})
 
 	if vars1.Get("a") != "1" {
 		t.Fatal("get test failed")

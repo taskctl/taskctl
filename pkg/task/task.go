@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"time"
 
-	"github.com/taskctl/taskctl/internal/variables"
+	"github.com/taskctl/taskctl/pkg/variables"
 
-	"github.com/taskctl/taskctl/internal/utils"
+	"github.com/taskctl/taskctl/pkg/utils"
 )
 
 type Executable interface {
@@ -14,8 +14,7 @@ type Executable interface {
 }
 
 type Task struct {
-	Index        uint32
-	Commands     []string
+	Commands     []string // Commands to run
 	Context      string
 	Env          variables.Container
 	Variables    variables.Container
@@ -44,21 +43,19 @@ type Task struct {
 		Stderr bytes.Buffer
 		Stdout bytes.Buffer
 	}
-
-	cidx int
 }
 
 func NewTask() *Task {
 	return &Task{
-		Env:       variables.NewVariables(nil),
-		Variables: variables.NewVariables(nil),
+		Env:       variables.NewVariables(),
+		Variables: variables.NewVariables(),
 		ExitCode:  -1,
 	}
 }
 
-func FromCommand(command string) *Task {
+func FromCommands(commands ...string) *Task {
 	t := NewTask()
-	t.Commands = []string{command}
+	t.Commands = commands
 
 	return t
 }
@@ -79,17 +76,21 @@ func (t *Task) ErrorMessage() string {
 	return utils.LastLine(&t.Log.Stdout)
 }
 
-func (t *Task) NextCommand() interface{} {
-	if t.Errored {
-		return nil
+func (t *Task) WithEnv(key, value string) *Task {
+	t.Env = t.Env.With(key, value)
+
+	return t
+}
+
+func (t *Task) GetVariations() []map[string]string {
+	variations := make([]map[string]string, 1)
+	if t.Variations != nil {
+		variations = t.Variations
 	}
 
-	if t.cidx == len(t.Commands) {
-		return nil
-	}
+	return variations
+}
 
-	c := t.Commands[t.cidx]
-	t.cidx++
-
-	return c
+func (t *Task) Output() string {
+	return t.Log.Stdout.String()
 }

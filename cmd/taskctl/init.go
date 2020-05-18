@@ -14,7 +14,7 @@ import (
 	"github.com/logrusorgru/aurora"
 	"github.com/manifoldco/promptui"
 
-	"github.com/taskctl/taskctl/internal/utils"
+	"github.com/taskctl/taskctl/pkg/utils"
 )
 
 var configTmpl = `# This is an example of taskctl tasks configuration file. Adjust it to fit your needs

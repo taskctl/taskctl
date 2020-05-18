@@ -18,7 +18,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 
-	"github.com/taskctl/taskctl/internal/utils"
+	"github.com/taskctl/taskctl/pkg/utils"
 )
 
 var ErrConfigNotFound = errors.New("config file not found")
@@ -63,7 +63,7 @@ func (cl *Loader) Load(file string) (*Config, error) {
 		}
 	}
 
-	if !utils.IsUrl(file) && !filepath.IsAbs(file) {
+	if !utils.IsURL(file) && !filepath.IsAbs(file) {
 		file = path.Join(cl.dir, file)
 	}
 
@@ -127,7 +127,7 @@ func (cl *Loader) reset() {
 func (cl *Loader) load(file string) (config map[string]interface{}, err error) {
 	cl.imports[file] = true
 
-	if utils.IsUrl(file) {
+	if utils.IsURL(file) {
 		config, err = cl.readUrl(file)
 	} else {
 		if !utils.FileExists(file) {
@@ -143,7 +143,7 @@ func (cl *Loader) load(file string) (config map[string]interface{}, err error) {
 	importDir := path.Dir(file)
 	if imports, ok := config["import"]; ok {
 		for _, v := range imports.([]interface{}) {
-			if utils.IsUrl(v.(string)) {
+			if utils.IsURL(v.(string)) {
 				raw, err = cl.load(v.(string))
 			} else {
 				importFile := path.Join(importDir, v.(string))

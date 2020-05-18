@@ -1,12 +1,12 @@
-package pipeline
+package scheduler
 
 import (
 	"sync/atomic"
 	"time"
 
-	"github.com/taskctl/taskctl/internal/variables"
+	"github.com/taskctl/taskctl/pkg/variables"
 
-	"github.com/taskctl/taskctl/internal/task"
+	"github.com/taskctl/taskctl/pkg/task"
 )
 
 const (

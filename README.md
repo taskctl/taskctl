@@ -81,6 +81,9 @@ According to this plan `lint` and `test` will run concurrently, `build` will sta
     - [Patterns](#patterns)
 - [Contexts](#contexts)
 - [Output formats](#taskctl-output-formats)
+- [Embedded task runner](#embedded-task-runner)
+    - [Runner](#runner)
+    - [Scheduler](#scheduler)
 - [FAQ](#faq)
   - [How does it differ from go-task/task?](#how-does-it-differ-from-go-tasktask)
 - [Autocomplete](#autocomplete)
@@ -365,9 +368,35 @@ tasks:
     command: uname -a
 ```
 
+## Embedded
+*taskctl* may be embedded into any go program.
+### Runner
+```go
+t := task.FromCommands("go fmt ./...", "go build ./..")
+r := runner.NewTaskRunner()
+r.Run(r)
+fmt.Println(t.ExitCode, t.ErrorMesssage(), t.Output())
+```
+
+### Scheduler
+```go
+format := task.FromCommands("go fmt ./...")
+build := task.FromCommands("go build ./..")
+r := runner.NewTaskRunner()
+s := scheduler.NewScheduler(r)
+
+graph := scheduler.NewExecutionGraph(
+    &Stage{Name: "format", Task: format}, 
+    &Stage{Name: "build", Task: build, DependsOn: []string{"format"}},
+) 
+
+s.Schedule(graph)
+fmt.Println(t.ExitCode, t.ErrorMesssage(), t.Output())
+```
+
 ## FAQ
 ### How does it differ from go-task/task?
-It's amazing how solving same problems lead to same solutions. taskctl and go-task have a lot of concepts in common but also have some differences. 
+It's amazing how solving same problems lead to same solutions. *taskctl* and go-task have a lot of concepts in common but also have some differences. 
 1. Main is pipelines. Pipelines and stages allows more precise workflow design because same tasks may have different dependencies (or no dependencies) in different scenarios.
 2. Contexts allow you to set up execution environment, shell or binary which will run your task.
 

@@ -3,27 +3,27 @@ package config
 import (
 	"fmt"
 
-	"github.com/taskctl/taskctl/internal/variables"
+	"github.com/taskctl/taskctl/pkg/variables"
 
 	"github.com/imdario/mergo"
 	"github.com/sirupsen/logrus"
 
-	"github.com/taskctl/taskctl/internal/context"
-	"github.com/taskctl/taskctl/internal/output"
-	"github.com/taskctl/taskctl/internal/pipeline"
-	"github.com/taskctl/taskctl/internal/task"
 	"github.com/taskctl/taskctl/internal/watch"
+	"github.com/taskctl/taskctl/pkg/output"
+	"github.com/taskctl/taskctl/pkg/runner"
+	"github.com/taskctl/taskctl/pkg/scheduler"
+	"github.com/taskctl/taskctl/pkg/task"
 )
 
-// Default names for tasks' files
+// DefaultFileNames is default names for tasks' files
 var DefaultFileNames = []string{"taskctl.yaml", "tasks.yaml"}
 
-// Creates new config instance
+// NewConfig creates new config instance
 func NewConfig() *Config {
 	cfg := &Config{
 		Output:    output.OutputFormatPrefixed,
-		Contexts:  make(map[string]*context.ExecutionContext),
-		Pipelines: make(map[string]*pipeline.ExecutionGraph),
+		Contexts:  make(map[string]*runner.ExecutionContext),
+		Pipelines: make(map[string]*scheduler.ExecutionGraph),
 		Tasks:     make(map[string]*task.Task),
 		Watchers:  make(map[string]*watch.Watcher),
 	}
@@ -31,10 +31,11 @@ func NewConfig() *Config {
 	return cfg
 }
 
+// Config is a taskctl internal config structure
 type Config struct {
 	Import    []string
-	Contexts  map[string]*context.ExecutionContext
-	Pipelines map[string]*pipeline.ExecutionGraph
+	Contexts  map[string]*runner.ExecutionContext
+	Pipelines map[string]*scheduler.ExecutionGraph
 	Tasks     map[string]*task.Task
 	Watchers  map[string]*watch.Watcher
 
@@ -44,22 +45,14 @@ type Config struct {
 	Variables variables.Container
 }
 
-func (cfg *Config) Task(name string) *task.Task {
-	return cfg.Tasks[name]
-}
-
-func (cfg *Config) Pipeline(name string) *pipeline.ExecutionGraph {
-	return cfg.Pipelines[name]
-}
-
-func (c *Config) merge(src *Config) error {
+func (cfg *Config) merge(src *Config) error {
 	defer func() {
 		if err := recover(); err != nil {
 			logrus.Error(err)
 		}
 	}()
 
-	if err := mergo.Merge(c, src); err != nil {
+	if err := mergo.Merge(cfg, src); err != nil {
 		return err
 	}
 
@@ -99,7 +92,7 @@ func buildFromDefinition(def *configDefinition) (cfg *Config, err error) {
 
 	// to allow pipeline-to-pipeline links
 	for k := range def.Pipelines {
-		cfg.Pipelines[k] = &pipeline.ExecutionGraph{}
+		cfg.Pipelines[k] = &scheduler.ExecutionGraph{}
 	}
 
 	for k, v := range def.Pipelines {
@@ -112,7 +105,7 @@ func buildFromDefinition(def *configDefinition) (cfg *Config, err error) {
 	cfg.Import = def.Import
 	cfg.Debug = def.Debug
 	cfg.Output = def.Output
-	cfg.Variables = variables.NewVariables(def.Variables)
+	cfg.Variables = variables.FromMap(def.Variables)
 
 	return cfg, nil
 }

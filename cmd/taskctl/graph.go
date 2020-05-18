@@ -6,7 +6,7 @@ import (
 	"github.com/emicklei/dot"
 	"github.com/urfave/cli/v2"
 
-	"github.com/taskctl/taskctl/internal/pipeline"
+	"github.com/taskctl/taskctl/pkg/scheduler"
 )
 
 func newGraphCommand() *cli.Command {
@@ -45,7 +45,7 @@ func newGraphCommand() *cli.Command {
 	}
 }
 
-func draw(g *dot.Graph, p *pipeline.ExecutionGraph) {
+func draw(g *dot.Graph, p *scheduler.ExecutionGraph) {
 	for k, v := range p.Nodes() {
 		if v.Pipeline != nil {
 			cluster := g.Subgraph(k, dot.ClusterOption{})

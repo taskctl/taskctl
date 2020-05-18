@@ -3,15 +3,15 @@ package watch
 import (
 	"sync"
 
-	"github.com/taskctl/taskctl/internal/variables"
+	"github.com/taskctl/taskctl/pkg/variables"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/bmatcuk/doublestar"
 	"github.com/fsnotify/fsnotify"
 
-	"github.com/taskctl/taskctl/internal/runner"
-	"github.com/taskctl/taskctl/internal/task"
+	"github.com/taskctl/taskctl/pkg/runner"
+	"github.com/taskctl/taskctl/pkg/task"
 )
 
 const (
@@ -155,12 +155,12 @@ func (w *Watcher) handle(event fsnotify.Event) {
 	logrus.Debugf("triggering %s for %s", w.task.Name, w.name)
 
 	t := *w.task
-	t.Env = t.Env.Merge(variables.NewVariables(map[string]string{
+	t.Env = t.Env.Merge(variables.FromMap(map[string]string{
 		"EventName": eventName,
 		"EventPath": event.Name,
 	}))
 
-	t.Variables = t.Variables.Merge(variables.NewVariables(map[string]string{
+	t.Variables = t.Variables.Merge(variables.FromMap(map[string]string{
 		"EVENT_NAME": eventName,
 		"EVENT_PATH": event.Name,
 	}))

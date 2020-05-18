@@ -1,10 +1,9 @@
 package runner
 
 import (
-	"github.com/taskctl/taskctl/internal/variables"
 	"testing"
 
-	taskpkg "github.com/taskctl/taskctl/internal/task"
+	taskpkg "github.com/taskctl/taskctl/pkg/task"
 )
 
 func TestTaskRunner_Run(t *testing.T) {
@@ -14,10 +13,12 @@ func TestTaskRunner_Run(t *testing.T) {
 	task.Name = "some test task"
 	task.Dir = "{{.Root}}"
 
-	runner, err := NewTaskRunner(nil, variables.NewVariables(map[string]string{"Root": "/tmp"}))
+	runner, err := NewTaskRunner()
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	runner.WithVariable("Root", "/tmp")
 
 	runner.DryRun = true
 

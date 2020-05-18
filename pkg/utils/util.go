@@ -10,9 +10,22 @@ import (
 	"os"
 	"os/exec"
 	"reflect"
-	"strings"
 	"text/template"
 )
+
+// IsURL checks if given string is a valid URL
+func IsURL(s string) bool {
+	u, err := url.Parse(s)
+	if err != nil {
+		return false
+	}
+
+	if u.Scheme != "" {
+		return true
+	}
+
+	return false
+}
 
 type Binary struct {
 	Bin  string
@@ -30,15 +43,6 @@ func ConvertEnv(env map[string]string) []string {
 	return enva
 }
 
-func ParseEnv(env []string) map[string]string {
-	m := make(map[string]string)
-	for _, v := range env {
-		arr := strings.Split(v, "=")
-		m[arr[0]] = strings.Join(arr[1:], "=")
-	}
-	return m
-}
-
 func FileExists(file string) bool {
 	_, err := os.Stat(file)
 	return !os.IsNotExist(err)
@@ -54,29 +58,6 @@ func MapKeys(m interface{}) (keys []string) {
 		keys = append(keys, k.String())
 	}
 	return keys
-}
-
-func InArray(arr []string, val string) bool {
-	for _, v := range arr {
-		if v == val {
-			return true
-		}
-	}
-
-	return false
-}
-
-func IsUrl(s string) bool {
-	u, err := url.Parse(s)
-	if err != nil {
-		return false
-	}
-
-	if u.Scheme != "" {
-		return true
-	}
-
-	return false
 }
 
 func LastLine(r io.Reader) (l string) {

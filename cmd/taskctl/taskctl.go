@@ -11,7 +11,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/taskctl/taskctl/internal/runner"
+	"github.com/taskctl/taskctl/pkg/runner"
 
 	"github.com/logrusorgru/aurora"
 	"github.com/manifoldco/promptui"
@@ -20,8 +20,8 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/taskctl/taskctl/internal/config"
-	"github.com/taskctl/taskctl/internal/output"
-	"github.com/taskctl/taskctl/internal/utils"
+	"github.com/taskctl/taskctl/pkg/output"
+	"github.com/taskctl/taskctl/pkg/utils"
 )
 
 var version = "dev"
@@ -240,7 +240,7 @@ func abort() {
 
 func buildTaskRunner(c *cli.Context) (*runner.TaskRunner, error) {
 	variables := cfg.Variables.With("args", strings.Join(taskArgs(c), " "))
-	taskRunner, err := runner.NewTaskRunner(cfg.Contexts, variables)
+	taskRunner, err := runner.NewTaskRunner(runner.WithContexts(cfg.Contexts), runner.WithVariables(variables))
 	if err != nil {
 		return nil, err
 	}

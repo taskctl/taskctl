@@ -10,17 +10,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/taskctl/taskctl/internal/executor"
+	"github.com/taskctl/taskctl/pkg/executor"
 
-	"github.com/taskctl/taskctl/internal/variables"
+	"github.com/taskctl/taskctl/pkg/variables"
 
-	"github.com/taskctl/taskctl/internal/output"
+	"github.com/taskctl/taskctl/pkg/output"
 
 	"github.com/sirupsen/logrus"
 
-	taskctx "github.com/taskctl/taskctl/internal/context"
-	"github.com/taskctl/taskctl/internal/task"
-	"github.com/taskctl/taskctl/internal/utils"
+	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/taskctl/taskctl/pkg/utils"
 )
 
 type Runner interface {
@@ -32,7 +31,7 @@ type Runner interface {
 type TaskRunner struct {
 	Executor  executor.Executor
 	DryRun    bool
-	contexts  map[string]*taskctx.ExecutionContext
+	contexts  map[string]*ExecutionContext
 	variables variables.Container
 	env       variables.Container
 
@@ -46,14 +45,11 @@ type TaskRunner struct {
 	cleanupList sync.Map
 }
 
-func NewTaskRunner(contexts map[string]*taskctx.ExecutionContext, vars variables.Container) (*TaskRunner, error) {
+// Creates new task runner.
+func NewTaskRunner(opts ...Opts) (*TaskRunner, error) {
 	exec, err := executor.NewDefaultExecutor()
 	if err != nil {
 		return nil, err
-	}
-
-	if vars == nil {
-		vars = variables.NewVariables(nil)
 	}
 
 	r := &TaskRunner{
@@ -62,17 +58,36 @@ func NewTaskRunner(contexts map[string]*taskctx.ExecutionContext, vars variables
 		Stdin:        os.Stdin,
 		Stdout:       os.Stdout,
 		Stderr:       os.Stderr,
-		contexts:     contexts,
-		variables:    vars,
+		variables:    variables.NewVariables(),
+		env:          variables.NewVariables(),
 	}
 
-	r.env = variables.NewVariables(map[string]string{"ARGS": vars.Get("Args")})
-
 	r.ctx, r.cancelFunc = context.WithCancel(context.Background())
+
+	for _, o := range opts {
+		o(r)
+	}
+
+	r.env = variables.FromMap(map[string]string{"ARGS": r.variables.Get("Args")})
 
 	return r, nil
 }
 
+// SetContexts sets task runner's contexts
+func (r *TaskRunner) SetContexts(contexts map[string]*ExecutionContext) *TaskRunner {
+	r.contexts = contexts
+
+	return r
+}
+
+// SetVariables sets task runner's variables
+func (r *TaskRunner) SetVariables(contexts map[string]*ExecutionContext) *TaskRunner {
+	r.contexts = contexts
+
+	return r
+}
+
+// Run run provided task
 func (r *TaskRunner) Run(t *task.Task) error {
 	execContext, err := r.contextForTask(t)
 	if err != nil {
@@ -125,18 +140,13 @@ func (r *TaskRunner) Run(t *task.Task) error {
 		return err
 	}
 
-	variations := make([]map[string]string, 1)
-	if t.Variations != nil {
-		variations = t.Variations
-	}
-
 	var stdin io.Reader
 	if t.Interactive {
 		stdin = r.Stdin
 	}
 
 	var job, prev *executor.Job
-	for _, variant := range variations {
+	for _, variant := range t.GetVariations() {
 		for _, command := range t.Commands {
 			j, err := r.Compile(
 				command,
@@ -145,7 +155,7 @@ func (r *TaskRunner) Run(t *task.Task) error {
 				stdin,
 				taskOutput.Stdout(),
 				taskOutput.Stderr(),
-				env.Merge(variables.NewVariables(variant)),
+				env.Merge(variables.FromMap(variant)),
 				t.Variables.Merge(vars),
 			)
 			if err != nil {
@@ -199,9 +209,9 @@ func (r *TaskRunner) Run(t *task.Task) error {
 
 	if t.Errored {
 		return t.Error
-	} else {
-		t.ExitCode = 0
 	}
+
+	t.ExitCode = 0
 
 	r.storeTaskOutput(t)
 
@@ -222,20 +232,23 @@ func (r *TaskRunner) Run(t *task.Task) error {
 	return nil
 }
 
+// Cancel cancels execution
 func (r *TaskRunner) Cancel() {
 	logrus.Debug("Runner has been cancelled")
 	r.cancelFunc()
 }
 
+// Finish makes cleanup tasks over contexts
 func (r *TaskRunner) Finish() {
 	r.cleanupList.Range(func(key, value interface{}) bool {
-		value.(*taskctx.ExecutionContext).Down()
+		value.(*ExecutionContext).Down()
 		return true
 	})
 	output.Close()
 }
 
-func (r *TaskRunner) Compile(command string, t *task.Task, executionCtx *taskctx.ExecutionContext, stdin io.Reader, stdout, stderr io.Writer, env, vars variables.Container) (*executor.Job, error) {
+// Compile compiles task into Job executed by Executor
+func (r *TaskRunner) Compile(command string, t *task.Task, executionCtx *ExecutionContext, stdin io.Reader, stdout, stderr io.Writer, env, vars variables.Container) (*executor.Job, error) {
 	j := &executor.Job{
 		Timeout: t.Timeout,
 		Env:     env,
@@ -262,9 +275,17 @@ func (r *TaskRunner) Compile(command string, t *task.Task, executionCtx *taskctx
 	return j, nil
 }
 
-func (r *TaskRunner) contextForTask(t *task.Task) (c *taskctx.ExecutionContext, err error) {
+// WithVariable adds variable to task runner's variables list.
+// It creates new instance of variables container.
+func (r *TaskRunner) WithVariable(key, value string) *TaskRunner {
+	r.variables = r.variables.With(key, value)
+
+	return r
+}
+
+func (r *TaskRunner) contextForTask(t *task.Task) (c *ExecutionContext, err error) {
 	if t.Context == "" {
-		return taskctx.DefaultContext(), nil
+		return DefaultContext(), nil
 	}
 
 	c, ok := r.contexts[t.Context]
@@ -315,7 +336,7 @@ func (r *TaskRunner) storeTaskOutput(t *task.Task) {
 	r.variables.Set(varName, t.Log.Stdout.String())
 }
 
-func (r *TaskRunner) resolveDir(t *task.Task, executionCtx *taskctx.ExecutionContext) (string, error) {
+func (r *TaskRunner) resolveDir(t *task.Task, executionCtx *ExecutionContext) (string, error) {
 	if t.Dir != "" {
 		return utils.RenderString(t.Dir, r.variables.Merge(t.Variables).Map())
 	} else if executionCtx.Dir != "" {
@@ -323,4 +344,21 @@ func (r *TaskRunner) resolveDir(t *task.Task, executionCtx *taskctx.ExecutionCon
 	}
 
 	return "", nil
+}
+
+// Opts is a task runner configuration function.
+type Opts func(*TaskRunner)
+
+// WithContexts adds provided contexts to task runner
+func WithContexts(contexts map[string]*ExecutionContext) Opts {
+	return func(runner *TaskRunner) {
+		runner.contexts = contexts
+	}
+}
+
+// WithContexts adds provided variables to task runner
+func WithVariables(variables variables.Container) Opts {
+	return func(runner *TaskRunner) {
+		runner.variables = variables
+	}
 }

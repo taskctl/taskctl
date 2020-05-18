@@ -15,15 +15,16 @@ import (
 	"mvdan.cc/sh/v3/interp"
 	"mvdan.cc/sh/v3/syntax"
 
-	"github.com/taskctl/taskctl/internal/utils"
-	"github.com/taskctl/taskctl/internal/variables"
+	"github.com/taskctl/taskctl/pkg/utils"
+	"github.com/taskctl/taskctl/pkg/variables"
 )
 
+// Executes given job
 type Executor interface {
 	Execute(context.Context, *Job) ([]byte, error)
 }
 
-// linked list of jobs to Execute
+// Linked list of jobs to Execute
 type Job struct {
 	Command string
 	Dir     string
@@ -37,11 +38,14 @@ type Job struct {
 	Next *Job
 }
 
+// Default executor.
+// Uses `mvdan.cc/sh/v3/interp` under the hood
 type DefaultExecutor struct {
 	dir string
 	env []string
 }
 
+// Creates new default executor
 func NewDefaultExecutor() (*DefaultExecutor, error) {
 	var err error
 	e := &DefaultExecutor{
@@ -56,6 +60,8 @@ func NewDefaultExecutor() (*DefaultExecutor, error) {
 	return e, nil
 }
 
+// Executes given job with provided context
+// Returns job output
 func (e *DefaultExecutor) Execute(ctx context.Context, job *Job) ([]byte, error) {
 	logrus.Debugf("Executing \"%s\"", job.Command)
 
@@ -105,6 +111,7 @@ func (e *DefaultExecutor) Execute(ctx context.Context, job *Job) ([]byte, error)
 	return buf.Bytes(), nil
 }
 
+// Checks if given `err` is an exit status
 func IsExitStatus(err error) (uint8, bool) {
 	return interp.IsExitStatus(err)
 }

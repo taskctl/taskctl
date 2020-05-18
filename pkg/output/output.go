@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/taskctl/taskctl/internal/task"
+	"github.com/taskctl/taskctl/pkg/task"
 )
 
 const (

@@ -1,11 +1,12 @@
 package config
 
 import (
-	"github.com/taskctl/taskctl/internal/variables"
 	"os"
 
-	"github.com/taskctl/taskctl/internal/context"
-	"github.com/taskctl/taskctl/internal/utils"
+	"github.com/taskctl/taskctl/pkg/runner"
+	"github.com/taskctl/taskctl/pkg/variables"
+
+	"github.com/taskctl/taskctl/pkg/utils"
 )
 
 type contextDefinition struct {
@@ -19,7 +20,7 @@ type contextDefinition struct {
 	Executable utils.Binary
 }
 
-func buildContext(def *contextDefinition, shell *utils.Binary) (*context.ExecutionContext, error) {
+func buildContext(def *contextDefinition, shell *utils.Binary) (*runner.ExecutionContext, error) {
 	dir := def.Dir
 	if dir == "" {
 		var err error
@@ -35,10 +36,10 @@ func buildContext(def *contextDefinition, shell *utils.Binary) (*context.Executi
 		executable = shell
 	}
 
-	c := context.NewExecutionContext(
+	c := runner.NewExecutionContext(
 		executable,
 		dir,
-		variables.NewVariables(def.Env),
+		variables.FromMap(def.Env),
 		def.Up,
 		def.Down,
 		def.Before,

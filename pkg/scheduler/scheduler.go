@@ -1,4 +1,4 @@
-package pipeline
+package scheduler
 
 import (
 	"os/exec"
@@ -6,11 +6,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/taskctl/taskctl/internal/utils"
+	"github.com/taskctl/taskctl/pkg/utils"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/taskctl/taskctl/internal/runner"
+	"github.com/taskctl/taskctl/pkg/runner"
 )
 
 type Scheduler struct {
@@ -32,17 +32,17 @@ func NewScheduler(r runner.Runner) *Scheduler {
 	return s
 }
 
-func (s *Scheduler) Schedule(p *ExecutionGraph) error {
+func (s *Scheduler) Schedule(g *ExecutionGraph) error {
 	s.startTimer()
 	defer s.stopTimer()
 	var wg = sync.WaitGroup{}
 
-	for !s.isDone(p) {
+	for !s.isDone(g) {
 		if atomic.LoadInt32(&s.cancelled) == 1 {
 			break
 		}
 
-		for _, stage := range p.Nodes() {
+		for _, stage := range g.Nodes() {
 			status := stage.ReadStatus()
 			if status != StatusWaiting {
 				continue
@@ -63,7 +63,7 @@ func (s *Scheduler) Schedule(p *ExecutionGraph) error {
 				}
 			}
 
-			if !checkStatus(p, stage) {
+			if !checkStatus(g, stage) {
 				continue
 			}
 
@@ -80,7 +80,11 @@ func (s *Scheduler) Schedule(p *ExecutionGraph) error {
 				err := s.runStage(stage)
 				if err != nil {
 					stage.UpdateStatus(StatusError)
-					return
+
+					if !stage.AllowFailure {
+						g.error = err
+						return
+					}
 				}
 
 				stage.UpdateStatus(StatusDone)
@@ -92,7 +96,7 @@ func (s *Scheduler) Schedule(p *ExecutionGraph) error {
 
 	wg.Wait()
 
-	return p.Error()
+	return g.Error()
 }
 
 func (s *Scheduler) startTimer() {

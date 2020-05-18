@@ -17,12 +17,15 @@ pipelines:
       depends_on: goimports
 
   prepare:
+    - task: tidy
     - task: test
     - task: goimports
       depends_on: test
     - task: gofmt
       depends_on: goimports
     - pipeline: lints
+    - task: update-completers
+      depends_on: test
 
   lints:
     - task: golint
@@ -52,8 +55,9 @@ tasks:
 
   goimports:
     command:
-      - goimports -local github.com/taskctl/taskctl -w -format-only $(ls -d internal/**/*.go | grep -v vendor/)
-      - goimports -local github.com/taskctl/taskctl -w -format-only $(ls -d cmd/**/*.go)
+      - goimports -v -local github.com/taskctl/taskctl -w -format-only $(ls -d internal/**/*.go)
+      - goimports -v -local github.com/taskctl/taskctl -w -format-only $(ls -d pkg/**/*.go)
+      - goimports -v -local github.com/taskctl/taskctl -w -format-only $(ls -d cmd/**/*.go)
 
   goreleaser:
     command:
@@ -62,6 +66,10 @@ tasks:
   gofmt:
     command:
       - go fmt -x ./...
+
+  tidy:
+    command:
+      - go mod tidy
 
   update-completers:
     dir: "{{.Root}}/cmd/taskctl"

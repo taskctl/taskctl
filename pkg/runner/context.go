@@ -1,15 +1,15 @@
-package context
+package runner
 
 import (
 	"context"
 	"fmt"
 	"sync"
 
-	"github.com/taskctl/taskctl/internal/executor"
+	"github.com/taskctl/taskctl/pkg/executor"
 
-	"github.com/taskctl/taskctl/internal/variables"
+	"github.com/taskctl/taskctl/pkg/variables"
 
-	"github.com/taskctl/taskctl/internal/utils"
+	"github.com/taskctl/taskctl/pkg/utils"
 
 	"github.com/sirupsen/logrus"
 )
@@ -110,9 +110,8 @@ func (c *ExecutionContext) runServiceCommand(command string) (err error) {
 	if err != nil {
 		if _, ok := executor.IsExitStatus(err); ok {
 			return fmt.Errorf("%v\n%s\n%s\n", err, out, err.Error())
-		} else {
-			return err
 		}
+		return err
 	}
 
 	return nil
@@ -120,6 +119,6 @@ func (c *ExecutionContext) runServiceCommand(command string) (err error) {
 
 func DefaultContext() *ExecutionContext {
 	return &ExecutionContext{
-		Env: variables.NewVariables(nil),
+		Env: variables.NewVariables(),
 	}
 }

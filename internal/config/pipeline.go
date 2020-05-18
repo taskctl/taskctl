@@ -3,18 +3,18 @@ package config
 import (
 	"fmt"
 
-	"github.com/taskctl/taskctl/internal/variables"
+	"github.com/taskctl/taskctl/pkg/variables"
 
-	"github.com/taskctl/taskctl/internal/pipeline"
-	"github.com/taskctl/taskctl/internal/task"
+	"github.com/taskctl/taskctl/pkg/scheduler"
+	"github.com/taskctl/taskctl/pkg/task"
 )
 
-func buildPipeline(stages []*StageDefinition, cfg *Config) (g *pipeline.ExecutionGraph, err error) {
-	g = pipeline.NewExecutionGraph()
+func buildPipeline(stages []*StageDefinition, cfg *Config) (g *scheduler.ExecutionGraph, err error) {
+	g, _ = scheduler.NewExecutionGraph()
 
 	for _, def := range stages {
 		var stageTask *task.Task
-		var stagePipeline *pipeline.ExecutionGraph
+		var stagePipeline *scheduler.ExecutionGraph
 
 		if def.Task != "" {
 			stageTask = cfg.Tasks[def.Task]
@@ -28,7 +28,7 @@ func buildPipeline(stages []*StageDefinition, cfg *Config) (g *pipeline.Executio
 			}
 		}
 
-		stage := &pipeline.Stage{
+		stage := &scheduler.Stage{
 			Name:         def.Name,
 			Condition:    def.Condition,
 			Task:         stageTask,
@@ -36,8 +36,8 @@ func buildPipeline(stages []*StageDefinition, cfg *Config) (g *pipeline.Executio
 			DependsOn:    def.DependsOn,
 			Dir:          def.Dir,
 			AllowFailure: def.AllowFailure,
-			Env:          variables.NewVariables(def.Env),
-			Variables:    variables.NewVariables(def.Variables),
+			Env:          variables.FromMap(def.Env),
+			Variables:    variables.FromMap(def.Variables),
 		}
 
 		if stage.Dir != "" {

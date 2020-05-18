@@ -10,9 +10,9 @@ import (
 
 	"github.com/logrusorgru/aurora"
 
-	"github.com/taskctl/taskctl/internal/pipeline"
-	"github.com/taskctl/taskctl/internal/runner"
-	"github.com/taskctl/taskctl/internal/task"
+	"github.com/taskctl/taskctl/pkg/runner"
+	"github.com/taskctl/taskctl/pkg/scheduler"
+	"github.com/taskctl/taskctl/pkg/task"
 )
 
 func newRunCommand() *cli.Command {
@@ -109,8 +109,8 @@ func runTarget(name string, c *cli.Context, taskRunner *runner.TaskRunner) (err 
 	return err
 }
 
-func runPipeline(p *pipeline.ExecutionGraph, taskRunner *runner.TaskRunner, summary bool) error {
-	sd := pipeline.NewScheduler(taskRunner)
+func runPipeline(p *scheduler.ExecutionGraph, taskRunner *runner.TaskRunner, summary bool) error {
+	sd := scheduler.NewScheduler(taskRunner)
 	go func() {
 		<-cancel
 		sd.Cancel()
@@ -158,8 +158,8 @@ func taskArgs(c *cli.Context) []string {
 	return runArgs
 }
 
-func printSummary(p *pipeline.ExecutionGraph) {
-	var stages = make([]*pipeline.Stage, 0)
+func printSummary(p *scheduler.ExecutionGraph) {
+	var stages = make([]*scheduler.Stage, 0)
 	for _, stage := range p.Nodes() {
 		stages = append(stages, stage)
 	}
@@ -173,17 +173,17 @@ func printSummary(p *pipeline.ExecutionGraph) {
 	var log string
 	for _, stage := range stages {
 		switch stage.ReadStatus() {
-		case pipeline.StatusDone:
+		case scheduler.StatusDone:
 			fmt.Fprintln(os.Stdout, aurora.Sprintf(aurora.Green("- Stage %s was completed in %s"), stage.Name, stage.Duration()))
-		case pipeline.StatusSkipped:
+		case scheduler.StatusSkipped:
 			fmt.Fprintln(os.Stdout, aurora.Sprintf(aurora.Green("- Stage %s was skipped"), stage.Name))
-		case pipeline.StatusError:
+		case scheduler.StatusError:
 			log = strings.TrimSpace(stage.Task.ErrorMessage())
 			fmt.Fprintln(os.Stdout, aurora.Sprintf(aurora.Red("- Stage %s failed in %s"), stage.Name, stage.Duration()))
 			if log != "" {
 				fmt.Fprintln(os.Stdout, aurora.Sprintf(aurora.Red("  > %s"), log))
 			}
-		case pipeline.StatusCanceled:
+		case scheduler.StatusCanceled:
 			fmt.Fprintln(os.Stdout, aurora.Sprintf(aurora.Gray(12, "- Stage %s was cancelled"), stage.Name))
 		default:
 			fmt.Fprintln(os.Stdout, aurora.Sprintf(aurora.Red("- Unexpected status %d for stage %s"), stage.Status, stage.Name))
