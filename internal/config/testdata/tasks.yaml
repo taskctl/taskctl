@@ -25,7 +25,7 @@ tasks:
     condition: /usr/bin/true
     command:
       - echo ${ARGS}
-      - echo "Args - {{ .args }}"
+      - echo "Args - {{ .Args }}"
       - sleep {{ .sleep }}
     env:
       TEST_VAR: 1

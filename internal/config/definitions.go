@@ -2,8 +2,6 @@ package config
 
 import (
 	"time"
-
-	"github.com/taskctl/taskctl/pkg/utils"
 )
 
 type configDefinition struct {
@@ -12,8 +10,6 @@ type configDefinition struct {
 	Pipelines map[string][]*StageDefinition
 	Tasks     map[string]*TaskDefinition
 	Watchers  map[string]*WatcherDefinition
-
-	Shell utils.Binary
 
 	Debug, DryRun bool
 	Output        string

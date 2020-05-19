@@ -20,7 +20,7 @@ type contextDefinition struct {
 	Executable utils.Binary
 }
 
-func buildContext(def *contextDefinition, shell *utils.Binary) (*runner.ExecutionContext, error) {
+func buildContext(def *contextDefinition) (*runner.ExecutionContext, error) {
 	dir := def.Dir
 	if dir == "" {
 		var err error
@@ -30,14 +30,8 @@ func buildContext(def *contextDefinition, shell *utils.Binary) (*runner.Executio
 		}
 	}
 
-	executable := &def.Executable
-
-	if executable.Bin == "" && shell.Bin != "" {
-		executable = shell
-	}
-
 	c := runner.NewExecutionContext(
-		executable,
+		&def.Executable,
 		dir,
 		variables.FromMap(def.Env),
 		def.Up,

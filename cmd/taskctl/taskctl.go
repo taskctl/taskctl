@@ -239,7 +239,7 @@ func abort() {
 }
 
 func buildTaskRunner(c *cli.Context) (*runner.TaskRunner, error) {
-	variables := cfg.Variables.With("args", strings.Join(taskArgs(c), " "))
+	variables := cfg.Variables.With("Args", strings.Join(taskArgs(c), " "))
 	taskRunner, err := runner.NewTaskRunner(runner.WithContexts(cfg.Contexts), runner.WithVariables(variables))
 	if err != nil {
 		return nil, err

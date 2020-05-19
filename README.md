@@ -18,7 +18,7 @@
 
 Simple modern alternative to GNU Make. *taskctl* is concurrent task runner that allows you to design you routine tasks and development pipelines in nice and neat way in human-readable format (YAML, JSON or TOML). 
 Given a pipeline (composed of tasks or other pipelines) it builds a graph that outlines the execution plan. Each task my run concurrently or cascade.
-Beside pipelines, each single task can be performed manually or triggered by built-in filesystem watcher.
+Beside pipelines, each single task can be started manually or triggered by built-in filesystem watcher.
 
 ## Features
 - human-readable configuration format (YAML, JSON or TOML)
@@ -110,12 +110,13 @@ sudo snap install --classic taskctl
 ```
 
 #### deb/rpm:
-Download the .deb or .rpm from the [releases](https://github.com/taskctl/taskctl/releases) page and install with dpkg -i and rpm -i respectively.
+Download the .deb or .rpm from the [releases](https://github.com/taskctl/taskctl/releases) page and install with `dpkg -i` 
+and `rpm -i` respectively.
 
 #### Windows
 ```
 scoop bucket add taskctl https://github.com/taskctl/scoop-taskctl.git
-scoop install app
+scoop install taskctl
 ```
 #### Installation script
 ```
@@ -123,7 +124,9 @@ curl -sL https://raw.githubusercontent.com/taskctl/taskctl/master/install.sh | s
 ```
 #### From sources
 ```
-go get -u github.com/taskctl/taskctl/cmd/taskctl
+git clone https://github.com/taskctl/taskctl
+cd taskctl
+go build -o taskctl .
 ```
 #### Docker images
 Docker images available on [Docker hub](https://hub.docker.com/repository/docker/taskctl/taskctl)
@@ -136,7 +139,8 @@ Docker images available on [Docker hub](https://hub.docker.com/repository/docker
 - `taskctl watch watcher1 watcher2` - start one or more watchers
 
 ## Configuration
-*taskctl* uses config file (`tasks.yaml` or `taskctl.yaml`) to store tasks and pipelines. Config file includes following sections:
+*taskctl* uses config file (`tasks.yaml` or `taskctl.yaml`) where your tasks and pipelines stored. 
+Config file includes following sections:
 - tasks
 - pipelines
 - watchers
@@ -173,41 +177,30 @@ tasks:
           GOOS: linux
           GOARCH: amd64
         after: rm -rf tmp/*
+        variations:
+          - GOARCH: amd64
+          - GOARCH: arm
+            GOARM: 7
 ```
 Task definition takes following parameters:
-- `name` - task name (optional)
 - `command` - one or more commands to run
-- `variations` - list of variations to apply to command
-- `context` - execution context
-- `env` - environment variables (optional). All existing environment variables will be passed automatically
-- `dir` - working directory. If not set, current working directory will be used
-- `timeout` - command execution timeout (optional)
-- `allow_failure` - if set to `true` failed commands will not interrupt task execution (default: `false`)
+- `variations` - list of variations (env variables) to apply to command
+- `context` - execution context's name
+- `env` - environment variables. All existing environment variables will be passed automatically
+- `dir` - working directory. Current working directory by default
+- `timeout` - command execution timeout (default: none)
+- `allow_failure` - if set to `true` failed commands will not interrupt execution (default: `false`)
 - `after` - command that will be executed after command completes
 - `before` - command that will be executed before task starts
-- `exportAs` - output env variable name (default: `TASK_NAME_OUTPUT`, where `TASK_NAME` is actual task's name)
+- `exportAs` - env variable name to store task's output (default: `TASK_NAME_OUTPUT`, where `TASK_NAME` is actual task's name)
 - `condition` - condition to check before running task
-- `variables` - task variables
+- `variables` - task's variables
 - `interactive` - if `true` provides STDIN to commands (default: `false`)
 
-### Pass CLI arguments to task
-Any command line arguments succeeding `--` are passed to each task via `.Args` variable or `ARGS` environment variable.
-
-Given this definition:
-```
-lint:
-  command: go lint {{.Args}}
-```
-the resulting command is:
-```
-$ taskctl lint -- package.go
-# go lint package.go
-```
-
 ### Tasks variables
-Each task has variables to be used to render task's fields  - `command`, `dir`.
-Along with predefined, variables can be set in a task's definition.
-You can use those variables according to `text/template` [documentation](https://golang.org/pkg/text/template/)
+Each task, stage and context has variables to be used to render task's fields  - `command`, `dir`.
+Along with globally predefined, variables can be set in a task's definition.
+You can use those variables according to `text/template` [documentation](https://golang.org/pkg/text/template/).
 
 Predefined variables are:
 - `.Root` - config file directory
@@ -215,8 +208,8 @@ Predefined variables are:
 - `.Task.Name` - current task's name
 - `.Context.Name` - current task's execution context's name
 - `.Stage.Name` - current stage's name
-- `.Output` - previous command's (inside the same task) output
-- `.Tasks.Task1.Output` - `task1` latest command output
+- `.Output` - previous command's output
+- `.Tasks.Task1.Output` - `task1` last command output
 
 Variables can be used inside task definition. For example:
 ```yaml
@@ -232,10 +225,24 @@ tasks:
           sleep: 3
 ```
 
+### Pass CLI arguments to task
+Any command line arguments succeeding `--` are passed to each task via `.Args` variable or `ARGS` environment variable.
+
+Given this definition:
+```yaml
+lint:
+  command: go lint {{.Args}}
+```
+the resulting command is:
+```
+$ taskctl lint -- package.go
+# go lint package.go
+```
+
 ### Storing task's output
-Task output automatically stored to the variable named like this - ``OutputTaskName``, where `TaskName` is the actual task's name.
-Variable's name can be changed by a task's `exportAs` parameter.
-Those variables will be available to dependent stages.
+Task output automatically stored to the variable named like this - ``.Tasks.TaskName.Output``, where `TaskName` is the actual task's name.
+It is also stored to `TASK_NAME_OUTPUT` environment variable. It's name can be changed by a task's `exportAs` parameter.
+Those variables will be available to all dependent stages.
 
 ### Tasks variations
 Task may run in one or more variations. Variations allows to reuse task with different env variables:
@@ -251,7 +258,8 @@ tasks:
       - GOOS: darwin
       - GOOS: windows
 ```
-this config will run build 3 times with different build GOOS
+this config will run build 3 times with different GOOS
+
 ### Task conditional execution
 The following task will run only when there are any changes that are staged but not committed:
 ```yaml
@@ -263,7 +271,8 @@ tasks:
 ```
 
 ## Pipelines
-Pipeline is a set of stages (tasks or other pipelines) to be executed in a certain order. Stages may be executed in parallel or one-by-one. Stage may override task environment. 
+Pipeline is a set of stages (tasks or other pipelines) to be executed in a certain order. Stages may be executed in parallel or one-by-one. 
+Stage may override task's environment, variables etc. 
 
 This pipeline:
 ```yaml
@@ -287,22 +296,23 @@ will result in an execution plan like this:
 ![execution plan](https://raw.githubusercontent.com/taskctl/taskctl/master/docs/pipeline.svg)
 
 Stage definition takes following parameters:
-- `name` - stage name (optional). If not set - referenced task or pipeline name will be used.
-- `task` - task to execute on this stage (optional)
-- `pipeline` - pipeline to execute on this stage (optional)
-- `env` - environment variables (optional). All existing environment variables will be passed automatically
-- `depends_on` - name of stage on which this stage depends on (optional). This stage will be started only after referenced stage is completed.
-- `allow_failure` - if set to `true` failing stage will no interrupt pipeline execution. ``false`` by default
+- `name` - stage name. If not set - referenced task or pipeline name will be used.
+- `task` - task to execute on this stage
+- `pipeline` - pipeline to execute on this stage
+- `env` - environment variables. All existing environment variables will be passed automatically
+- `depends_on` - name of stage on which this stage depends on. This stage will be started only after referenced stage is completed.
+- `allow_failure` - if `true` failing stage will not interrupt pipeline execution. ``false`` by default
 - `condition` - condition to check before running stage
-- `variables` - stage variables
+- `variables` - stage's variables
 
 ## Taskctl output formats
-- `raw` - raw commands output
+Taskctl has several output formats:
+- `raw` - prints raw commands output
 - `prefixed` - strips ANSI escape sequences where possible, prefixes command output with task's name
 - `cockpit` - tasks dashboard
 
 ## Filesystem watchers
-Watcher watches for changes in files selected by provided patterns and triggers a task anytime an event has occurred.
+Watcher watches for changes in files selected by provided patterns and triggers task anytime an event has occurred.
 ```yaml
 watchers:
   watcher1:
@@ -325,7 +335,7 @@ Special Terms | Meaning
 Any character with a special meaning can be escaped with a backslash (`\`).
 
 ## Contexts
-Contexts allow you to set up execution environment, shell or binaries which will run your task, up/down commands etc
+Contexts allow you to set up execution environment, variables, binary which will run your task, up/down commands etc.
 ```yaml
 contexts:
   local:
@@ -341,17 +351,18 @@ contexts:
     after: echo "Have a nice day!"
 ```
 
-Context has hooks which may be triggered once before first context usage or every time before task with this context will be run.
+Context has hooks which may be triggered once before first context usage or every time before task with this context will run.
 ```yaml
-docker-compose:
-  executable:
-    bin: docker-compose
-    args: ["exec", "api"]
-  up: docker-compose up -d api
-  down: docker-compose down api
+context:
+    docker-compose:
+      executable:
+        bin: docker-compose
+        args: ["exec", "api"]
+      up: docker-compose up -d api
+      down: docker-compose down api
 
-local:
-  after: rm -rf var/*
+    local:
+      after: rm -rf var/*
 ```
 
 ### Docker context
@@ -417,7 +428,7 @@ if err != nil {
 ### How does it differ from go-task/task?
 It's amazing how solving same problems lead to same solutions. *taskctl* and go-task have a lot of concepts in common but also have some differences. 
 1. Main is pipelines. Pipelines and stages allows more precise workflow design because same tasks may have different dependencies (or no dependencies) in different scenarios.
-2. Contexts allow you to set up execution environment, shell or binary which will run your task.
+2. Contexts allow you to set up execution environment and binary which will run your task.
 
 ## Autocomplete
 ### Bash

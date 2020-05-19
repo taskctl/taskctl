@@ -44,16 +44,12 @@ checksum:
   name_template: checksums.txt
 
 changelog:
-  sort: asc
-  filters:
-    exclude:
-      - '^docs:'
-      - '^test:'
+  skip: true
 
 snapcrafts:
   - name: taskctl
     confinement: classic
-    grade: devel
+    grade: stable
     publish: true
     summary: taskctl - concurrent, task runner developer's routine tasks automation toolkit. Simple modern alternative to GNU Make
     description: |

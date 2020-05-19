@@ -63,7 +63,7 @@ func buildFromDefinition(def *configDefinition) (cfg *Config, err error) {
 	cfg = NewConfig()
 
 	for k, v := range def.Contexts {
-		cfg.Contexts[k], err = buildContext(v, &def.Shell)
+		cfg.Contexts[k], err = buildContext(v)
 		if err != nil {
 			return nil, err
 		}
