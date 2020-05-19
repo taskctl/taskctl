@@ -373,25 +373,36 @@ tasks:
 ### Runner
 ```go
 t := task.FromCommands("go fmt ./...", "go build ./..")
-r := runner.NewTaskRunner()
-r.Run(r)
-fmt.Println(t.ExitCode, t.ErrorMesssage(), t.Output())
+r, err := NewTaskRunner()
+if err != nil {
+    return
+}
+err  = r.Run(t)
+if err != nil {
+    fmt.Println(err, t.ExitCode, t.ErrorMessage())
+}
+fmt.Println(t.Output())
 ```
 
 ### Scheduler
 ```go
 format := task.FromCommands("go fmt ./...")
 build := task.FromCommands("go build ./..")
-r := runner.NewTaskRunner()
-s := scheduler.NewScheduler(r)
+r, _ := runner.NewTaskRunner()
+s := NewScheduler(r)
 
-graph := scheduler.NewExecutionGraph(
-    &Stage{Name: "format", Task: format}, 
+graph, err := NewExecutionGraph(
+    &Stage{Name: "format", Task: format},
     &Stage{Name: "build", Task: build, DependsOn: []string{"format"}},
-) 
+)
+if err != nil {
+    return
+}
 
-s.Schedule(graph)
-fmt.Println(t.ExitCode, t.ErrorMesssage(), t.Output())
+err = s.Schedule(graph)
+if err != nil {
+    fmt.Println(err)
+}
 ```
 
 ## FAQ

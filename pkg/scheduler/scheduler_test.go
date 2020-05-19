@@ -2,6 +2,8 @@ package scheduler
 
 import (
 	"errors"
+	"fmt"
+	"github.com/taskctl/taskctl/pkg/runner"
 	"testing"
 
 	"github.com/taskctl/taskctl/pkg/task"
@@ -104,5 +106,25 @@ func TestExecutionGraph_Scheduler_AllowFailure(t *testing.T) {
 
 	if stage3.Status == StatusCanceled {
 		t.Fatal("stage3 was cancelled")
+	}
+}
+
+func ExampleScheduler_Schedule() {
+	format := task.FromCommands("go fmt ./...")
+	build := task.FromCommands("go build ./..")
+	r, _ := runner.NewTaskRunner()
+	s := NewScheduler(r)
+
+	graph, err := NewExecutionGraph(
+		&Stage{Name: "format", Task: format},
+		&Stage{Name: "build", Task: build, DependsOn: []string{"format"}},
+	)
+	if err != nil {
+		return
+	}
+
+	err = s.Schedule(graph)
+	if err != nil {
+		fmt.Println(err)
 	}
 }
