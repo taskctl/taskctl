@@ -47,8 +47,6 @@ func NewDefaultExecutor() (*DefaultExecutor, error) {
 // Executes given job with provided context
 // Returns job output
 func (e *DefaultExecutor) Execute(ctx context.Context, job *Job) ([]byte, error) {
-	logrus.Debugf("Executing \"%s\"", job.Command)
-
 	command, err := utils.RenderString(job.Command, job.Vars.Map())
 	if err != nil {
 		return nil, err
@@ -65,6 +63,8 @@ func (e *DefaultExecutor) Execute(ctx context.Context, job *Job) ([]byte, error)
 	if job.Dir == "" {
 		job.Dir = e.dir
 	}
+
+	logrus.Debugf("Executing \"%s\"", command)
 
 	buf := bytes.NewBuffer(make([]byte, 4096))
 	r, err := interp.New(
