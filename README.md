@@ -21,14 +21,15 @@ Given a pipeline (composed of tasks or other pipelines) it builds a graph that o
 Beside pipelines, each single task can be performed manually or triggered by built-in filesystem watcher.
 
 ## Features
-- concurrent tasks execution
-- execution graph
-- highly customizable configuration
-- import remote configuration
-- integrated file watcher (live reload)
-- customizable contexts
 - human-readable configuration format (YAML, JSON or TOML)
+- concurrent tasks execution
+- highly customizable execution plan
+- cross platform
+- import local or remote configurations
+- integrated file watcher (live reload)
+- customizable execution contexts
 - different output types
+- embeddable task runner
 - interactive prompt
 - handy autocomplete
 - and many more...
@@ -81,7 +82,7 @@ According to this plan `lint` and `test` will run concurrently, `build` will sta
     - [Patterns](#patterns)
 - [Contexts](#contexts)
 - [Output formats](#taskctl-output-formats)
-- [Embedded task runner](#embedded-task-runner)
+- [Embeddable task runner](#embeddable-task-runner)
     - [Runner](#runner)
     - [Scheduler](#scheduler)
 - [FAQ](#faq)
@@ -105,8 +106,11 @@ sudo chmod +x /usr/local/bin/taskctl
 ```
 #### Ubuntu Linux
 ```
-snap install taskctl
+sudo snap install --classic taskctl
 ```
+
+#### deb/rpm:
+Download the .deb or .rpm from the [releases](https://github.com/taskctl/taskctl/releases) page and install with dpkg -i and rpm -i respectively.
 
 #### Windows
 ```
@@ -121,6 +125,8 @@ curl -sL https://raw.githubusercontent.com/taskctl/taskctl/master/install.sh | s
 ```
 go get -u github.com/taskctl/taskctl/cmd/taskctl
 ```
+#### Docker images
+Docker images available on [Docker hub](https://hub.docker.com/repository/docker/taskctl/taskctl)
 
 ### Usage
 - `taskctl` - run interactive task prompt
@@ -368,8 +374,10 @@ tasks:
     command: uname -a
 ```
 
-## Embedded
-*taskctl* may be embedded into any go program.
+## Embeddable task runner
+*taskctl* may be embedded into any go program. 
+Additional information may be found on taskctl's [pkg.go.dev](https://pkg.go.dev/github.com/taskctl/taskctl?tab=overview) page
+
 ### Runner
 ```go
 t := task.FromCommands("go fmt ./...", "go build ./..")

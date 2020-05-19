@@ -45,6 +45,7 @@ func buildContext(def *contextDefinition, shell *utils.Binary) (*runner.Executio
 		def.Before,
 		def.After,
 	)
+	c.Variables = variables.FromMap(def.Variables)
 
 	return c, nil
 }

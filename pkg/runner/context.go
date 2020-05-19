@@ -41,6 +41,7 @@ func NewExecutionContext(executable *utils.Binary, dir string, env variables.Con
 		down:       down,
 		before:     before,
 		after:      after,
+		Variables:  variables.NewVariables(),
 	}
 
 	return c
@@ -106,6 +107,7 @@ func (c *ExecutionContext) runServiceCommand(command string) (err error) {
 		Command: command,
 		Dir:     c.Dir,
 		Env:     c.Env,
+		Vars:    c.Variables,
 	})
 	if err != nil {
 		if _, ok := executor.IsExitStatus(err); ok {
