@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"reflect"
+	"strings"
 	"text/template"
 )
 
@@ -20,11 +21,7 @@ func IsURL(s string) bool {
 		return false
 	}
 
-	if u.Scheme != "" {
-		return true
-	}
-
-	return false
+	return strings.HasPrefix(u.Scheme, "http")
 }
 
 type Binary struct {

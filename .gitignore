@@ -1,3 +1,7 @@
 # Dependencies
 vendor/
 bin/
+
+# IDEs
+.idea
+.vscode

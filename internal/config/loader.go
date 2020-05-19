@@ -280,7 +280,7 @@ func (cl *Loader) decode(cm map[string]interface{}) (*configDefinition, error) {
 func (cl *Loader) resolveDefaultConfigFile() (file string, err error) {
 	dir := cl.dir
 	for {
-		if dir == "/" {
+		if dir == filepath.Dir(dir) {
 			break
 		}
 

@@ -153,6 +153,8 @@ func run() error {
 				cfg.Output = output.OutputFormatRaw
 			} else if c.Bool("cockpit") {
 				cfg.Output = output.OutputFormatCockpit
+			} else {
+				cfg.Output = output.OutputFormatRaw
 			}
 
 			return nil
