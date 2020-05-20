@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"io/ioutil"
 	"os"
 	"strings"
 
@@ -66,11 +67,21 @@ func (e *DefaultExecutor) Execute(ctx context.Context, job *Job) ([]byte, error)
 
 	logrus.Debugf("Executing \"%s\"", command)
 
+	stdout := job.Stdout
+	if stdout == nil {
+		stdout = ioutil.Discard
+	}
+
+	stderr := job.Stderr
+	if stderr == nil {
+		stderr = ioutil.Discard
+	}
+
 	buf := bytes.NewBuffer(make([]byte, 4096))
 	r, err := interp.New(
 		interp.Dir(job.Dir),
 		interp.Env(expand.ListEnviron(env...)),
-		interp.StdIO(job.Stdin, io.MultiWriter(buf, job.Stdout), job.Stderr),
+		interp.StdIO(job.Stdin, io.MultiWriter(buf, stdout), stderr),
 	)
 	if err != nil {
 		return nil, err

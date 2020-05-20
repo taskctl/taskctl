@@ -18,14 +18,14 @@ const ansi = "[\u001B\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)
 var ansiRegexp = regexp.MustCompile(ansi)
 
 type prefixedOutputDecorator struct {
-	t   *task.Task
-	buf *bufio.Writer
+	t *task.Task
+	w *bufio.Writer
 }
 
 func newPrefixedOutputWriter(t *task.Task, w io.Writer) *prefixedOutputDecorator {
 	return &prefixedOutputDecorator{
-		t:   t,
-		buf: bufio.NewWriter(&lineWriter{t: t, dst: w}),
+		t: t,
+		w: bufio.NewWriter(&lineWriter{t: t, dst: w}),
 	}
 }
 
@@ -41,12 +41,12 @@ func (d *prefixedOutputDecorator) Write(p []byte) (int, error) {
 			break
 		}
 
-		_, err = d.buf.Write(line)
+		_, err = d.w.Write(line)
 		if err != nil {
 			return 0, err
 		}
 
-		err = d.buf.Flush()
+		err = d.w.Flush()
 		if err != nil {
 			return 0, err
 		}
@@ -54,7 +54,7 @@ func (d *prefixedOutputDecorator) Write(p []byte) (int, error) {
 		p = p[advance:]
 	}
 
-	_, err := d.buf.Write(p)
+	_, err := d.w.Write(p)
 	if err != nil {
 		return 0, err
 	}
@@ -68,7 +68,7 @@ func (d *prefixedOutputDecorator) WriteHeader() error {
 }
 
 func (d *prefixedOutputDecorator) WriteFooter() error {
-	err := d.buf.Flush()
+	err := d.w.Flush()
 	if err != nil {
 		logrus.Warning(err)
 	}

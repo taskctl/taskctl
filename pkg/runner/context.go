@@ -125,6 +125,7 @@ func (c *ExecutionContext) runServiceCommand(command string) (err error) {
 // DefaultContext creates default ExecutionContext instance
 func DefaultContext() *ExecutionContext {
 	return &ExecutionContext{
-		Env: variables.NewVariables(),
+		Env:       variables.NewVariables(),
+		Variables: variables.NewVariables(),
 	}
 }

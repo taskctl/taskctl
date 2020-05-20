@@ -20,7 +20,7 @@ func TestConvertEnv(t *testing.T) {
 		args args
 		want []string
 	}{
-		{args: args{env: map[string]string{"key1": "val1", "key2": "val2"}}, want: []string{"key1=val1", "key2=val2"}},
+		{args: args{env: map[string]string{"key1": "val1"}}, want: []string{"key1=val1"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
