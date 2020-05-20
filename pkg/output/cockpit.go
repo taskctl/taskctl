@@ -41,9 +41,11 @@ func (b *baseCockpit) start() *spinner.Spinner {
 	s.Writer = b.w
 	s.PreUpdate = func(s *spinner.Spinner) {
 		tasks := make([]string, 0)
+		b.mu.Lock()
 		for _, v := range b.tasks {
 			tasks = append(tasks, v.Name)
 		}
+		defer b.mu.Unlock()
 		sort.Strings(tasks)
 		s.Suffix = " Running: " + strings.Join(tasks, ", ")
 	}
