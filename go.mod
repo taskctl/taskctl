@@ -6,7 +6,7 @@ require (
 	github.com/bmatcuk/doublestar v1.1.5
 	github.com/briandowns/spinner v0.0.0-20200215035459-6dc224009eae
 	github.com/emicklei/dot v0.10.2
-	github.com/fsnotify/fsnotify v1.4.7
+	github.com/fsnotify/fsnotify v1.4.9
 	github.com/imdario/mergo v0.3.8
 	github.com/logrusorgru/aurora v0.0.0-20191017060258-dc85c304c434
 	github.com/manifoldco/promptui v0.7.0

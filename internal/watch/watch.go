@@ -1,9 +1,8 @@
 package watch
 
 import (
-	"sync"
-
 	"github.com/taskctl/taskctl/pkg/variables"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 
@@ -140,10 +139,11 @@ func (w *Watcher) Run(r *runner.TaskRunner) (err error) {
 
 // Close  stops this watcher
 func (w *Watcher) Close() {
-	err := w.fsw.Close()
-	if err != nil {
-		logrus.Error(err)
-		return
+	if w.fsw != nil {
+		err := w.fsw.Close()
+		if err != nil {
+			logrus.Error(err)
+		}
 	}
 	<-w.finished
 }

@@ -34,11 +34,11 @@ func TestContext(t *testing.T) {
 
 	err = runner.Run(task2)
 	if err == nil {
-		t.Fatal()
+		t.Error()
 	}
 
 	if c2.startupError == nil || task2.ExitCode != -1 {
-		t.Fatal()
+		t.Error()
 	}
 
 	runner.Finish()

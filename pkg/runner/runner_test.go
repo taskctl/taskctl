@@ -3,6 +3,7 @@ package runner
 import (
 	"fmt"
 	"io/ioutil"
+	"strings"
 	"testing"
 	"time"
 
@@ -25,7 +26,7 @@ func TestTaskRunner_Run(t *testing.T) {
 	task1.Context = "local"
 	task1.ExportAs = "EXPORT_NAME"
 
-	task1.Commands = []string{"true"}
+	task1.Commands = []string{"echo 'taskctl'"}
 	task1.Name = "some test task"
 	task1.Dir = "{{.Root}}"
 
@@ -35,11 +36,23 @@ func TestTaskRunner_Run(t *testing.T) {
 	}
 
 	if task1.Start.IsZero() || task1.End.IsZero() {
-		t.Fatal()
+		t.Error()
 	}
 
-	if task1.Errored || task1.ExitCode != 0 || task1.ErrorMessage() != "" {
-		t.Fatal()
+	if !strings.Contains(task1.Output(), "taskctl") {
+		t.Error()
+	}
+
+	if task1.Errored {
+		t.Error()
+	}
+
+	if task1.ExitCode != 0 {
+		t.Error()
+	}
+
+	if task1.Error != nil || task1.ErrorMessage() != "" {
+		t.Error()
 	}
 
 	d := 1 * time.Minute
@@ -64,7 +77,11 @@ func TestTaskRunner_Run(t *testing.T) {
 	task3.Condition = "exit 1"
 	err = runner.Run(task3)
 	if err != nil || !task3.Skipped || task3.ExitCode != -1 {
-		t.Fatal()
+		t.Error()
+	}
+
+	if task3.Duration() < 0 {
+		t.Error()
 	}
 
 	runner.Finish()

@@ -71,6 +71,10 @@ func (t *Task) Duration() time.Duration {
 
 // ErrorMessage returns message of the error occurred during task execution
 func (t *Task) ErrorMessage() string {
+	if !t.Errored {
+		return ""
+	}
+
 	if t.Log.Stderr.Len() > 0 {
 		return utils.LastLine(&t.Log.Stderr)
 	}

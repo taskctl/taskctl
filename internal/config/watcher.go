@@ -7,8 +7,8 @@ import (
 )
 
 func buildWatcher(name string, def *watcherDefinition, cfg *Config) (*watch.Watcher, error) {
-	t := cfg.Tasks[def.Task]
-	if t == nil {
+	t, ok := cfg.Tasks[def.Task]
+	if !ok {
 		return nil, fmt.Errorf("watcher build failed. task %s not found", def.Task)
 	}
 

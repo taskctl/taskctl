@@ -3,7 +3,6 @@ package executor
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
 	"testing"
 )
 
@@ -14,7 +13,6 @@ func TestDefaultExecutor_Execute(t *testing.T) {
 	}
 
 	job := NewJobFromCommand("echo 'success'")
-	job.Stdout, job.Stderr = ioutil.Discard, ioutil.Discard
 
 	output, err := e.Execute(context.Background(), job)
 	if err != nil {
@@ -22,6 +20,17 @@ func TestDefaultExecutor_Execute(t *testing.T) {
 	}
 
 	if !bytes.Contains(output, []byte("success")) {
-		t.Fatal()
+		t.Error()
+	}
+
+	job = NewJobFromCommand("exit 1")
+
+	_, err = e.Execute(context.Background(), job)
+	if err == nil {
+		t.Error()
+	}
+
+	if _, ok := IsExitStatus(err); !ok {
+		t.Error()
 	}
 }
