@@ -14,6 +14,7 @@ const (
 	FormatCockpit  = "cockpit"
 )
 
+var closed = false
 var closeCh = make(chan bool)
 
 // DecoratedOutputWriter is a decorator for task output.
@@ -72,5 +73,8 @@ func (o TaskOutput) Finish() error {
 
 // Close releases resources and closes underlying decorators
 func Close() {
-	close(closeCh)
+	if !closed {
+		closed = true
+		close(closeCh)
+	}
 }
