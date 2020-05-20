@@ -1,9 +1,10 @@
 package executor
 
 import (
-	"github.com/taskctl/taskctl/pkg/variables"
 	"io"
 	"time"
+
+	"github.com/taskctl/taskctl/pkg/variables"
 )
 
 // Job is a linked list of jobs to execute by Executor

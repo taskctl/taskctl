@@ -3,8 +3,9 @@ package scheduler
 import (
 	"errors"
 	"fmt"
-	"github.com/taskctl/taskctl/pkg/runner"
 	"testing"
+
+	"github.com/taskctl/taskctl/pkg/runner"
 
 	"github.com/taskctl/taskctl/pkg/task"
 )
