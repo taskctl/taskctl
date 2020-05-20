@@ -63,7 +63,7 @@ func TestTaskRunner_Run(t *testing.T) {
 	task3 := taskpkg.NewTask()
 	task3.Condition = "exit 1"
 	err = runner.Run(task3)
-	if err == nil || !task3.Skipped || task3.ExitCode != 1 {
+	if err == nil || !task3.Skipped || task3.ExitCode != -1 {
 		t.Fatal()
 	}
 

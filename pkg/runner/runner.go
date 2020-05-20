@@ -113,7 +113,7 @@ func (r *TaskRunner) Run(t *task.Task) error {
 			logrus.Error(err)
 		}
 
-		if t.ExitCode == -1 && !t.Errored {
+		if t.ExitCode == -1 && !t.Errored && !t.Skipped {
 			t.ExitCode = 0
 		}
 	}()
