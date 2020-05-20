@@ -57,9 +57,15 @@ func listenSignals() {
 }
 
 func run() error {
+	app := makeApp()
+
+	return app.Run(os.Args)
+}
+
+func makeApp() *cli.App {
 	cl := config.NewConfigLoader()
 
-	app := &cli.App{
+	return &cli.App{
 		Name:                 "taskctl",
 		Usage:                "modern task runner",
 		Version:              version,
@@ -159,61 +165,7 @@ func run() error {
 
 			return nil
 		},
-		Action: func(c *cli.Context) (err error) {
-			taskRunner, err := buildTaskRunner(c)
-			if err != nil {
-				return err
-			}
-
-			targets := c.Args().Slice()
-			if len(targets) > 0 {
-				for _, target := range targets {
-					if target == "--" {
-						break
-					}
-
-					err = runTarget(target, c, taskRunner)
-					if err != nil {
-						return err
-					}
-				}
-				return nil
-			}
-
-			suggestions := buildSuggestions(cfg)
-			targetSelect := promptui.Select{
-				Label:        "Select task to run",
-				Items:        suggestions,
-				Size:         15,
-				CursorPos:    0,
-				IsVimMode:    false,
-				HideHelp:     false,
-				HideSelected: false,
-				Templates: &promptui.SelectTemplates{
-					Active:   fmt.Sprintf("%s {{ .DisplayName | underline }}", promptui.IconSelect),
-					Inactive: "  {{ .DisplayName }}",
-					Selected: fmt.Sprintf(`{{ "%s" | green }} {{ .DisplayName | faint }}`, promptui.IconGood),
-				},
-				Keys: nil,
-				Searcher: func(input string, index int) bool {
-					return strings.Contains(suggestions[index].DisplayName, input)
-				},
-				StartInSearchMode: true,
-			}
-
-			fmt.Println("Please use `Ctrl-C` to exit this program.")
-			index, _, err := targetSelect.Run()
-			if err != nil {
-				return err
-			}
-
-			selection := suggestions[index]
-			if selection.IsTask {
-				return runTask(cfg.Tasks[selection.Target], taskRunner)
-			}
-
-			return runPipeline(cfg.Pipelines[selection.Target], taskRunner, c.Bool("summary"))
-		},
+		Action: rootAction,
 		Commands: []*cli.Command{
 			newRunCommand(),
 			newInitCommand(),
@@ -231,8 +183,62 @@ func run() error {
 			},
 		},
 	}
+}
 
-	return app.Run(os.Args)
+func rootAction(c *cli.Context) (err error) {
+	taskRunner, err := buildTaskRunner(c)
+	if err != nil {
+		return err
+	}
+
+	targets := c.Args().Slice()
+	if len(targets) > 0 {
+		for _, target := range targets {
+			if target == "--" {
+				break
+			}
+
+			err = runTarget(target, c, taskRunner)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	suggestions := buildSuggestions(cfg)
+	targetSelect := promptui.Select{
+		Label:        "Select task to run",
+		Items:        suggestions,
+		Size:         15,
+		CursorPos:    0,
+		IsVimMode:    false,
+		HideHelp:     false,
+		HideSelected: false,
+		Templates: &promptui.SelectTemplates{
+			Active:   fmt.Sprintf("%s {{ .DisplayName | underline }}", promptui.IconSelect),
+			Inactive: "  {{ .DisplayName }}",
+			Selected: fmt.Sprintf(`{{ "%s" | green }} {{ .DisplayName | faint }}`, promptui.IconGood),
+		},
+		Keys: nil,
+		Searcher: func(input string, index int) bool {
+			return strings.Contains(suggestions[index].DisplayName, input)
+		},
+		StartInSearchMode: true,
+	}
+
+	fmt.Println("Please use `Ctrl-C` to exit this program.")
+	index, _, err := targetSelect.Run()
+	if err != nil {
+		return err
+	}
+
+	selection := suggestions[index]
+	if selection.IsTask {
+		return runTask(cfg.Tasks[selection.Target], taskRunner)
+	}
+
+	return runPipeline(cfg.Pipelines[selection.Target], taskRunner, c.Bool("summary"))
 }
 
 func abort() {

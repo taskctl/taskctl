@@ -112,6 +112,10 @@ func (r *TaskRunner) Run(t *task.Task) error {
 		if err != nil {
 			logrus.Error(err)
 		}
+
+		if t.ExitCode == -1 && !t.Errored {
+			t.ExitCode = 0
+		}
 	}()
 
 	vars := r.variables.Merge(t.Variables)
@@ -142,6 +146,13 @@ func (r *TaskRunner) Run(t *task.Task) error {
 	if err != nil {
 		return err
 	}
+
+	defer func() {
+		err := taskOutput.Finish()
+		if err != nil {
+			logrus.Warning(err)
+		}
+	}()
 
 	var stdin io.Reader
 	if t.Interactive {
@@ -205,30 +216,16 @@ func (r *TaskRunner) Run(t *task.Task) error {
 	}
 	t.End = time.Now()
 
-	err = taskOutput.Finish()
-	if err != nil {
-		logrus.Warning(err)
-	}
-
 	if t.Errored {
 		return t.Error
 	}
 
-	t.ExitCode = 0
-
 	r.storeTaskOutput(t)
 
 	if len(t.After) > 0 {
-		for _, command := range t.After {
-			job, err := r.Compile(command, t, execContext, nil, r.Stdout, r.Stderr, env, vars)
-			if err != nil {
-				return fmt.Errorf("\"after\" Command failed: %w", err)
-			}
-
-			_, err = r.Executor.Execute(r.ctx, job)
-			if err != nil {
-				logrus.Warning(err)
-			}
+		err = r.after(t, env, vars)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -284,6 +281,27 @@ func (r *TaskRunner) WithVariable(key, value string) *TaskRunner {
 	r.variables = r.variables.With(key, value)
 
 	return r
+}
+
+func (r *TaskRunner) after(t *task.Task, env, vars variables.Container) error {
+	execContext, err := r.contextForTask(t)
+	if err != nil {
+		return err
+	}
+
+	for _, command := range t.After {
+		job, err := r.Compile(command, t, execContext, nil, r.Stdout, r.Stderr, env, vars)
+		if err != nil {
+			return fmt.Errorf("\"after\" Command failed: %w", err)
+		}
+
+		_, err = r.Executor.Execute(r.ctx, job)
+		if err != nil {
+			logrus.Warning(err)
+		}
+	}
+
+	return nil
 }
 
 func (r *TaskRunner) contextForTask(t *task.Task) (c *ExecutionContext, err error) {

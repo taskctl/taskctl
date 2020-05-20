@@ -66,6 +66,9 @@ tasks:
   gofmt:
     command:
       - go fmt -x ./...
+      - gofmt -s -w cmd/**/*.go
+      - gofmt -s -w internal/**/*.go
+      - gofmt -s -w pkg/**/*.go
 
   tidy:
     command:

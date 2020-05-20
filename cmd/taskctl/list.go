@@ -58,7 +58,7 @@ func newListCommand() *cli.Command {
 			return err
 		},
 		Subcommands: []*cli.Command{
-			&cli.Command{
+			{
 				Name:        "tasks",
 				Description: "List tasks",
 				Action: func(c *cli.Context) error {
@@ -69,7 +69,7 @@ func newListCommand() *cli.Command {
 					return nil
 				},
 			},
-			&cli.Command{
+			{
 				Name:        "pipelines",
 				Description: "List pipelines",
 				Action: func(c *cli.Context) error {
@@ -80,7 +80,7 @@ func newListCommand() *cli.Command {
 					return nil
 				},
 			},
-			&cli.Command{
+			{
 				Name:        "watchers",
 				Description: "List watchers",
 				Action: func(c *cli.Context) error {
