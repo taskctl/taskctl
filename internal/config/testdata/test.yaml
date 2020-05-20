@@ -1,3 +1,5 @@
+import:
+  - tasks.yaml
 tasks:
   task1:
     command:

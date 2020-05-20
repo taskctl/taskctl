@@ -18,7 +18,7 @@ func TestLoader_Load(t *testing.T) {
 		t.Fatal(err)
 	}
 	if cfg.Tasks["task1"] == nil || cfg.Tasks["task1"].Commands[0] != "echo true" {
-		t.Fatal("yaml parsing failed")
+		t.Error("yaml parsing failed")
 	}
 
 	cl = NewConfigLoader()
@@ -27,6 +27,11 @@ func TestLoader_Load(t *testing.T) {
 		t.Fatal(err)
 	}
 	if cfg.Tasks["task1"] == nil || cfg.Tasks["task1"].Commands[0] != "echo true" {
-		t.Fatal("yaml parsing failed")
+		t.Error("yaml parsing failed")
+	}
+
+	_, err = cl.LoadGlobalConfig()
+	if err != nil {
+		t.Fatal()
 	}
 }
