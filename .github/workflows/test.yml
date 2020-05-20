@@ -2,7 +2,7 @@ name: Test
 on: [push, pull_request]
 jobs:
   build:
-    name: Build
+    name: Test
     runs-on: ubuntu-latest
     steps:
 
@@ -25,4 +25,4 @@ jobs:
 
     - name: Test
       run: |
-        go test ./...
+        go test -v ./...

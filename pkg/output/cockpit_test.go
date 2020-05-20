@@ -42,6 +42,4 @@ func Test_cockpitOutputDecorator(t *testing.T) {
 	if !strings.Contains(b.String(), "Finished") {
 		t.Fatal()
 	}
-
-	close(base.closeCh)
 }
