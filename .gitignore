@@ -1,3 +1,5 @@
+coverage.out
+
 # Dependencies
 vendor/
 bin/

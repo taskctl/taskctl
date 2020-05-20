@@ -31,7 +31,7 @@ func newWatchCommand() *cli.Command {
 				return err
 			}
 
-			taskRunner.OutputFormat = output.OutputFormatRaw
+			taskRunner.OutputFormat = output.FormatRaw
 
 			var wg sync.WaitGroup
 			for _, name := range c.Args().Slice() {

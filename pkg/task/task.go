@@ -9,10 +9,8 @@ import (
 	"github.com/taskctl/taskctl/pkg/utils"
 )
 
-type Executable interface {
-	NextCommand() interface{}
-}
-
+// Task is a structure that describes task, its commands, environment, working directory etc.
+// After task completes it provides task's execution status, exit code, stdout and stderr
 type Task struct {
 	Commands     []string // Commands to run
 	Context      string
@@ -45,6 +43,7 @@ type Task struct {
 	}
 }
 
+// NewTask creates new Task instance
 func NewTask() *Task {
 	return &Task{
 		Env:       variables.NewVariables(),
@@ -53,6 +52,7 @@ func NewTask() *Task {
 	}
 }
 
+// FromCommands creates task new Task instance with given commands
 func FromCommands(commands ...string) *Task {
 	t := NewTask()
 	t.Commands = commands
@@ -60,6 +60,7 @@ func FromCommands(commands ...string) *Task {
 	return t
 }
 
+// Duration returns task's execution duration
 func (t *Task) Duration() time.Duration {
 	if t.End.IsZero() {
 		return time.Since(t.Start)
@@ -68,6 +69,7 @@ func (t *Task) Duration() time.Duration {
 	return t.End.Sub(t.Start)
 }
 
+// ErrorMessage returns message of the error occurred during task execution
 func (t *Task) ErrorMessage() string {
 	if t.Log.Stderr.Len() > 0 {
 		return utils.LastLine(&t.Log.Stderr)
@@ -76,12 +78,14 @@ func (t *Task) ErrorMessage() string {
 	return utils.LastLine(&t.Log.Stdout)
 }
 
+// WithEnv sets environment variable
 func (t *Task) WithEnv(key, value string) *Task {
 	t.Env = t.Env.With(key, value)
 
 	return t
 }
 
+// GetVariations returns array of maps which are task's variations
 func (t *Task) GetVariations() []map[string]string {
 	variations := make([]map[string]string, 1)
 	if t.Variations != nil {
@@ -91,6 +95,7 @@ func (t *Task) GetVariations() []map[string]string {
 	return variations
 }
 
+// Output returns task's stdout as a string
 func (t *Task) Output() string {
 	return t.Log.Stdout.String()
 }

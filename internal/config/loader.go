@@ -21,16 +21,17 @@ import (
 	"github.com/taskctl/taskctl/pkg/utils"
 )
 
+// ErrConfigNotFound occurs when requested config file does not exists
 var ErrConfigNotFound = errors.New("config file not found")
 
-// reads config files and loads config
+// Loader reads and parses config files
 type Loader struct {
 	imports map[string]bool
 	dir     string
 	homeDir string
 }
 
-// config loader constructor
+// NewConfigLoader is Loader constructor
 func NewConfigLoader() Loader {
 	h, err := os.UserHomeDir()
 	if err != nil {
@@ -49,6 +50,7 @@ func NewConfigLoader() Loader {
 	}
 }
 
+// Load loads and parses requested config file
 func (cl *Loader) Load(file string) (*Config, error) {
 	cl.reset()
 	globalCfg, err := cl.LoadGlobalConfig()
@@ -92,6 +94,7 @@ func (cl *Loader) Load(file string) (*Config, error) {
 	return globalCfg, nil
 }
 
+// LoadGlobalConfig load global config file  - ~/.taskctl/config.yaml
 func (cl *Loader) LoadGlobalConfig() (*Config, error) {
 	if cl.homeDir == "" {
 		return nil, nil
@@ -128,7 +131,7 @@ func (cl *Loader) load(file string) (config map[string]interface{}, err error) {
 	cl.imports[file] = true
 
 	if utils.IsURL(file) {
-		config, err = cl.readUrl(file)
+		config, err = cl.readURL(file)
 	} else {
 		if !utils.FileExists(file) {
 			return config, fmt.Errorf("%s: %w", file, ErrConfigNotFound)
@@ -201,7 +204,7 @@ func (cl *Loader) loadDir(dir string) (map[string]interface{}, error) {
 	return cm, nil
 }
 
-func (cl *Loader) readUrl(u string) (map[string]interface{}, error) {
+func (cl *Loader) readURL(u string) (map[string]interface{}, error) {
 	resp, err := http.Get(u)
 	if err != nil {
 		return nil, err

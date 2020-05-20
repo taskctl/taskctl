@@ -5,6 +5,10 @@ import (
 	"fmt"
 )
 
+// ErrCycleDetected occurs when added edge causes cycle to appear
+var ErrCycleDetected = errors.New("cycle detected")
+
+// ExecutionGraph is a DAG whose nodes are Stages and edges are their dependencies
 type ExecutionGraph struct {
 	Env map[string][]string
 
@@ -14,6 +18,8 @@ type ExecutionGraph struct {
 	error error
 }
 
+// NewExecutionGraph creates new ExecutionGraph instance.
+// It accepts zero or more stages and adds them to resulted graph
 func NewExecutionGraph(stages ...*Stage) (*ExecutionGraph, error) {
 	graph := &ExecutionGraph{
 		nodes: make(map[string]*Stage),
@@ -32,10 +38,12 @@ func NewExecutionGraph(stages ...*Stage) (*ExecutionGraph, error) {
 	return graph, nil
 }
 
+// AddStage adds Stage to ExecutionGraph.
+// If newly added stage causes a cycle to appear in the graph it return an error
 func (g *ExecutionGraph) AddStage(stage *Stage) error {
-	g.AddNode(stage.Name, stage)
+	g.addNode(stage.Name, stage)
 	for _, dep := range stage.DependsOn {
-		err := g.AddEdge(dep, stage.Name)
+		err := g.addEdge(dep, stage.Name)
 		if err != nil {
 			return err
 		}
@@ -44,11 +52,13 @@ func (g *ExecutionGraph) AddStage(stage *Stage) error {
 	return nil
 }
 
-func (g *ExecutionGraph) AddNode(name string, stage *Stage) {
+// addNode adds a new node to the graph
+func (g *ExecutionGraph) addNode(name string, stage *Stage) {
 	g.nodes[name] = stage
 }
 
-func (g *ExecutionGraph) AddEdge(from string, to string) error {
+// addEdge adds a new edge to the graph
+func (g *ExecutionGraph) addEdge(from string, to string) error {
 	g.from[from] = append(g.from[from], to)
 	g.to[to] = append(g.to[to], from)
 
@@ -59,10 +69,12 @@ func (g *ExecutionGraph) AddEdge(from string, to string) error {
 	return nil
 }
 
+// Nodes returns ExecutionGraph stages
 func (g *ExecutionGraph) Nodes() map[string]*Stage {
 	return g.nodes
 }
 
+// Node returns stage by its name
 func (g *ExecutionGraph) Node(name string) (*Stage, error) {
 	t, ok := g.nodes[name]
 	if !ok {
@@ -72,17 +84,19 @@ func (g *ExecutionGraph) Node(name string) (*Stage, error) {
 	return t, nil
 }
 
+// From returns stages that depend on the given stage
 func (g *ExecutionGraph) From(name string) []string {
 	return g.from[name]
 }
 
+// To returns stages on whiсh given stage depends on
 func (g *ExecutionGraph) To(name string) []string {
 	return g.to[name]
 }
 
 func (g *ExecutionGraph) cycleDfs(t string, visited map[string]bool) error {
 	if visited[t] {
-		return errors.New("cycle detected")
+		return ErrCycleDetected
 	}
 	visited[t] = true
 
@@ -96,6 +110,7 @@ func (g *ExecutionGraph) cycleDfs(t string, visited map[string]bool) error {
 	return nil
 }
 
-func (g *ExecutionGraph) Error() error {
+// LastError returns latest error appeared during stages execution
+func (g *ExecutionGraph) LastError() error {
 	return g.error
 }

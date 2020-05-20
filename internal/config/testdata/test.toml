@@ -1,0 +1,3 @@
+[tasks]
+    [tasks.task1]
+    command = ["echo true"]

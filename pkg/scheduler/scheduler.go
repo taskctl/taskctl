@@ -13,6 +13,7 @@ import (
 	"github.com/taskctl/taskctl/pkg/runner"
 )
 
+// Scheduler executes ExecutionGraph
 type Scheduler struct {
 	taskRunner runner.Runner
 	pause      time.Duration
@@ -23,6 +24,7 @@ type Scheduler struct {
 	End   time.Time
 }
 
+// NewScheduler create new Scheduler instance
 func NewScheduler(r runner.Runner) *Scheduler {
 	s := &Scheduler{
 		pause:      50 * time.Millisecond,
@@ -32,6 +34,7 @@ func NewScheduler(r runner.Runner) *Scheduler {
 	return s
 }
 
+// Schedule starts execution of the given ExecutionGraph
 func (s *Scheduler) Schedule(g *ExecutionGraph) error {
 	s.startTimer()
 	defer s.stopTimer()
@@ -96,7 +99,18 @@ func (s *Scheduler) Schedule(g *ExecutionGraph) error {
 
 	wg.Wait()
 
-	return g.Error()
+	return g.LastError()
+}
+
+// Cancel cancels executing tasks
+func (s *Scheduler) Cancel() {
+	atomic.StoreInt32(&s.cancelled, 1)
+	s.taskRunner.Cancel()
+}
+
+// Finish finishes scheduler's TaskRunner
+func (s *Scheduler) Finish() {
+	s.taskRunner.Finish()
 }
 
 func (s *Scheduler) startTimer() {
@@ -105,11 +119,6 @@ func (s *Scheduler) startTimer() {
 
 func (s *Scheduler) stopTimer() {
 	s.End = time.Now()
-}
-
-func (s *Scheduler) Cancel() {
-	atomic.StoreInt32(&s.cancelled, 1)
-	s.taskRunner.Cancel()
 }
 
 func (s *Scheduler) isDone(p *ExecutionGraph) bool {
@@ -121,10 +130,6 @@ func (s *Scheduler) isDone(p *ExecutionGraph) bool {
 	}
 
 	return true
-}
-
-func (s *Scheduler) Finish() {
-	s.taskRunner.Finish()
 }
 
 func (s *Scheduler) runStage(stage *Stage) error {

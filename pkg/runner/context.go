@@ -2,7 +2,6 @@ package runner
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"github.com/taskctl/taskctl/pkg/executor"
@@ -14,6 +13,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// ExecutionContext allow you to set up execution environment, variables, binary which will run your task, up/down commands etc.
 type ExecutionContext struct {
 	Executable *utils.Binary
 	Dir        string
@@ -32,6 +32,7 @@ type ExecutionContext struct {
 	mu       sync.Mutex
 }
 
+// NewExecutionContext creates new ExecutionContext instance
 func NewExecutionContext(executable *utils.Binary, dir string, env variables.Container, up, down, before, after []string) *ExecutionContext {
 	c := &ExecutionContext{
 		Executable: executable,
@@ -47,6 +48,7 @@ func NewExecutionContext(executable *utils.Binary, dir string, env variables.Con
 	return c
 }
 
+// Up executes tasks defined to run once before first usage of the context
 func (c *ExecutionContext) Up() error {
 	c.onceUp.Do(func() {
 		for _, command := range c.up {
@@ -63,6 +65,7 @@ func (c *ExecutionContext) Up() error {
 	return c.startupError
 }
 
+// Down executes tasks defined to run once after last usage of the context
 func (c *ExecutionContext) Down() {
 	c.onceDown.Do(func() {
 		for _, command := range c.down {
@@ -74,6 +77,7 @@ func (c *ExecutionContext) Down() {
 	})
 }
 
+// Before executes tasks defined to run before every usage of the context
 func (c *ExecutionContext) Before() error {
 	for _, command := range c.before {
 		err := c.runServiceCommand(command)
@@ -85,6 +89,7 @@ func (c *ExecutionContext) Before() error {
 	return nil
 }
 
+// After executes tasks defined to run after every usage of the context
 func (c *ExecutionContext) After() error {
 	for _, command := range c.after {
 		err := c.runServiceCommand(command)
@@ -110,15 +115,14 @@ func (c *ExecutionContext) runServiceCommand(command string) (err error) {
 		Vars:    c.Variables,
 	})
 	if err != nil {
-		if _, ok := executor.IsExitStatus(err); ok {
-			return fmt.Errorf("%v\n%s\n%s\n", err, out, err.Error())
-		}
+		logrus.Warning(out)
 		return err
 	}
 
 	return nil
 }
 
+// DefaultContext creates default ExecutionContext instance
 func DefaultContext() *ExecutionContext {
 	return &ExecutionContext{
 		Env: variables.NewVariables(),

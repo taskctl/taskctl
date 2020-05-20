@@ -17,19 +17,19 @@ const ansi = "[\u001B\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)
 
 var ansiRegexp = regexp.MustCompile(ansi)
 
-type FormattedOutputDecorator struct {
+type prefixedOutputDecorator struct {
 	t   *task.Task
 	buf *bufio.Writer
 }
 
-func NewPrefixedOutputWriter(t *task.Task, w io.Writer) *FormattedOutputDecorator {
-	return &FormattedOutputDecorator{
+func newPrefixedOutputWriter(t *task.Task, w io.Writer) *prefixedOutputDecorator {
+	return &prefixedOutputDecorator{
 		t:   t,
 		buf: bufio.NewWriter(&lineWriter{t: t, dst: w}),
 	}
 }
 
-func (d *FormattedOutputDecorator) Write(p []byte) (int, error) {
+func (d *prefixedOutputDecorator) Write(p []byte) (int, error) {
 	n := len(p)
 	for {
 		advance, line, err := bufio.ScanLines(p, true)
@@ -62,12 +62,12 @@ func (d *FormattedOutputDecorator) Write(p []byte) (int, error) {
 	return n, nil
 }
 
-func (d *FormattedOutputDecorator) WriteHeader() error {
+func (d *prefixedOutputDecorator) WriteHeader() error {
 	logrus.Infof("Running task %s...", d.t.Name)
 	return nil
 }
 
-func (d *FormattedOutputDecorator) WriteFooter() error {
+func (d *prefixedOutputDecorator) WriteFooter() error {
 	err := d.buf.Flush()
 	if err != nil {
 		logrus.Warning(err)

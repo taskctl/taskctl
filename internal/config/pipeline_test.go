@@ -7,7 +7,7 @@ import (
 func TestBuildPipeline_Cyclic(t *testing.T) {
 	cfg := NewConfig()
 
-	stages := []*StageDefinition{
+	stages := []*stageDefinition{
 		{
 			Name:      "task1",
 			Task:      "task1",
@@ -26,7 +26,7 @@ func TestBuildPipeline_Cyclic(t *testing.T) {
 		},
 	}
 
-	tasks := map[string]*TaskDefinition{
+	tasks := map[string]*taskDefinition{
 		"task1": {
 			Name: "task1",
 		},

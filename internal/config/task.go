@@ -6,7 +6,7 @@ import (
 	"github.com/taskctl/taskctl/pkg/task"
 )
 
-func buildTask(def *TaskDefinition) (*task.Task, error) {
+func buildTask(def *taskDefinition) (*task.Task, error) {
 	t := &task.Task{
 		Name:         def.Name,
 		Description:  def.Description,

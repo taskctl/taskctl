@@ -6,11 +6,14 @@ import (
 
 func TestNewVariables(t *testing.T) {
 	vars1 := FromMap(map[string]string{"a": "1", "b": "2"})
-	vars2 := FromMap(map[string]string{"c": "3", "d": "4"})
 
 	if vars1.Get("a") != "1" {
 		t.Fatal("get test failed")
 	}
+
+	vars2 := NewVariables()
+	vars2.Set("c", "3")
+	vars2.Set("d", "4")
 
 	vars3 := vars2.With("e", "5")
 	if vars3.Get("e") != "5" {
@@ -28,5 +31,9 @@ func TestNewVariables(t *testing.T) {
 
 	if vars2.Get("c") != "3" {
 		t.Fatal("merge test failed")
+	}
+
+	if vars2.Has("d") == false {
+		t.Fatal()
 	}
 }

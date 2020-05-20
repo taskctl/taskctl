@@ -7,9 +7,9 @@ import (
 type configDefinition struct {
 	Import    []string
 	Contexts  map[string]*contextDefinition
-	Pipelines map[string][]*StageDefinition
-	Tasks     map[string]*TaskDefinition
-	Watchers  map[string]*WatcherDefinition
+	Pipelines map[string][]*stageDefinition
+	Tasks     map[string]*taskDefinition
+	Watchers  map[string]*watcherDefinition
 
 	Debug, DryRun bool
 	Output        string
@@ -17,7 +17,7 @@ type configDefinition struct {
 	Variables map[string]string
 }
 
-type StageDefinition struct {
+type stageDefinition struct {
 	Name         string
 	Condition    string
 	Task         string
@@ -29,7 +29,7 @@ type StageDefinition struct {
 	Variables    map[string]string
 }
 
-type TaskDefinition struct {
+type taskDefinition struct {
 	Name         string
 	Description  string
 	Condition    string
@@ -46,7 +46,7 @@ type TaskDefinition struct {
 	Variables    map[string]string
 }
 
-type WatcherDefinition struct {
+type watcherDefinition struct {
 	Events    []string
 	Watch     []string
 	Exclude   []string

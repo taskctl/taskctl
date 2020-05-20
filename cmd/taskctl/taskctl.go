@@ -150,11 +150,11 @@ func run() error {
 			if c.IsSet("output") {
 				cfg.Output = c.String("output")
 			} else if c.Bool("raw") {
-				cfg.Output = output.OutputFormatRaw
+				cfg.Output = output.FormatRaw
 			} else if c.Bool("cockpit") {
-				cfg.Output = output.OutputFormatCockpit
+				cfg.Output = output.FormatCockpit
 			} else {
-				cfg.Output = output.OutputFormatRaw
+				cfg.Output = output.FormatRaw
 			}
 
 			return nil

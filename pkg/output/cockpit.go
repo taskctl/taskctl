@@ -26,39 +26,9 @@ type baseCockpit struct {
 	closeCh chan bool
 }
 
-type CockpitOutputDecorator struct {
+type cockpitOutputDecorator struct {
 	b *baseCockpit
 	t *task.Task
-}
-
-func NewCockpitOutputWriter(t *task.Task, w io.Writer) *CockpitOutputDecorator {
-	if base == nil {
-		base = &baseCockpit{
-			charSet: 14,
-			w:       w,
-			tasks:   make([]*task.Task, 0),
-			closeCh: closeCh,
-		}
-	}
-
-	return &CockpitOutputDecorator{
-		t: t,
-		b: base,
-	}
-}
-
-func (d *CockpitOutputDecorator) Write(p []byte) (int, error) {
-	return len(p), nil
-}
-
-func (d *CockpitOutputDecorator) WriteHeader() error {
-	d.b.Add(d.t)
-	return nil
-}
-
-func (d *CockpitOutputDecorator) WriteFooter() error {
-	d.b.Remove(d.t)
-	return nil
 }
 
 func (b *baseCockpit) start() *spinner.Spinner {
@@ -81,7 +51,7 @@ func (b *baseCockpit) start() *spinner.Spinner {
 	return s
 }
 
-func (b *baseCockpit) Add(t *task.Task) {
+func (b *baseCockpit) add(t *task.Task) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -96,7 +66,7 @@ func (b *baseCockpit) Add(t *task.Task) {
 	}
 }
 
-func (b *baseCockpit) Remove(t *task.Task) {
+func (b *baseCockpit) remove(t *task.Task) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -113,4 +83,34 @@ func (b *baseCockpit) Remove(t *task.Task) {
 	b.spinner.FinalMSG = fmt.Sprintf("%s Finished %s in %s\r\n", mark, aurora.Bold(t.Name), t.Duration())
 	b.spinner.Restart()
 	b.spinner.FinalMSG = ""
+}
+
+func newCockpitOutputWriter(t *task.Task, w io.Writer) *cockpitOutputDecorator {
+	if base == nil {
+		base = &baseCockpit{
+			charSet: 14,
+			w:       w,
+			tasks:   make([]*task.Task, 0),
+			closeCh: closeCh,
+		}
+	}
+
+	return &cockpitOutputDecorator{
+		t: t,
+		b: base,
+	}
+}
+
+func (d *cockpitOutputDecorator) Write(p []byte) (int, error) {
+	return len(p), nil
+}
+
+func (d *cockpitOutputDecorator) WriteHeader() error {
+	d.b.add(d.t)
+	return nil
+}
+
+func (d *cockpitOutputDecorator) WriteFooter() error {
+	d.b.remove(d.t)
+	return nil
 }

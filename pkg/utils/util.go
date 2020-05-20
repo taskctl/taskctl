@@ -24,11 +24,13 @@ func IsURL(s string) bool {
 	return strings.HasPrefix(u.Scheme, "http")
 }
 
+// Binary is a structure for storing binary file path and arguments that should be passed on binary's invocation
 type Binary struct {
 	Bin  string
 	Args []string
 }
 
+// ConvertEnv converts map representing the environment to array of strings in the form "key=value"
 func ConvertEnv(env map[string]string) []string {
 	var i int
 	enva := make([]string, len(env))
@@ -40,11 +42,13 @@ func ConvertEnv(env map[string]string) []string {
 	return enva
 }
 
+// FileExists checks if the file exists
 func FileExists(file string) bool {
 	_, err := os.Stat(file)
 	return !os.IsNotExist(err)
 }
 
+// MapKeys returns an array of map's keys
 func MapKeys(m interface{}) (keys []string) {
 	v := reflect.ValueOf(m)
 	if v.Kind() != reflect.Map {
@@ -57,6 +61,7 @@ func MapKeys(m interface{}) (keys []string) {
 	return keys
 }
 
+// LastLine returns last line from provided reader
 func LastLine(r io.Reader) (l string) {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
@@ -66,6 +71,7 @@ func LastLine(r io.Reader) (l string) {
 	return l
 }
 
+// RenderString parses given string as a template and executes it with provided params
 func RenderString(tmpl string, variables map[string]string) (string, error) {
 	var buf bytes.Buffer
 	t, err := template.New("interpolate").Option("missingkey=error").Parse(tmpl)
@@ -78,6 +84,7 @@ func RenderString(tmpl string, variables map[string]string) (string, error) {
 	return buf.String(), err
 }
 
+// IsExitError checks if given error is an instance of exec.ExitError
 func IsExitError(err error) bool {
 	var e *exec.ExitError
 	return errors.As(err, &e)

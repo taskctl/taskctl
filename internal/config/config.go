@@ -21,7 +21,7 @@ var DefaultFileNames = []string{"taskctl.yaml", "tasks.yaml"}
 // NewConfig creates new config instance
 func NewConfig() *Config {
 	cfg := &Config{
-		Output:    output.OutputFormatPrefixed,
+		Output:    output.FormatPrefixed,
 		Contexts:  make(map[string]*runner.ExecutionContext),
 		Pipelines: make(map[string]*scheduler.ExecutionGraph),
 		Tasks:     make(map[string]*task.Task),

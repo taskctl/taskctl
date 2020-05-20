@@ -15,21 +15,22 @@ import (
 )
 
 const (
-	EventCreate = "create"
-	EventWrite  = "write"
-	EventRemove = "remove"
-	EventRename = "rename"
-	EventChmod  = "chmod"
+	eventCreate = "create"
+	eventWrite  = "write"
+	eventRemove = "remove"
+	eventRename = "rename"
+	eventChmod  = "chmod"
 )
 
 var fsnotifyMap = map[fsnotify.Op]string{
-	fsnotify.Create: EventCreate,
-	fsnotify.Write:  EventWrite,
-	fsnotify.Remove: EventRemove,
-	fsnotify.Rename: EventRename,
-	fsnotify.Chmod:  EventChmod,
+	fsnotify.Create: eventCreate,
+	fsnotify.Write:  eventWrite,
+	fsnotify.Remove: eventRemove,
+	fsnotify.Rename: eventRename,
+	fsnotify.Chmod:  eventChmod,
 }
 
+// Watcher is a file watcher. It triggers tasks or pipelines when filesystem event occurs
 type Watcher struct {
 	name     string
 	r        *runner.TaskRunner
@@ -42,6 +43,7 @@ type Watcher struct {
 	wg sync.WaitGroup
 }
 
+// NewWatcher creates new Watcher instance
 func NewWatcher(name string, events, watch, exclude []string, t *task.Task) (w *Watcher, err error) {
 	w = &Watcher{
 		name:     name,
@@ -78,7 +80,7 @@ func NewWatcher(name string, events, watch, exclude []string, t *task.Task) (w *
 	}
 
 	if len(events) == 0 {
-		events = []string{EventCreate, EventWrite, EventRemove, EventRename, EventChmod}
+		events = []string{eventCreate, eventWrite, eventRemove, eventRename, eventChmod}
 	}
 
 	for _, e := range events {
@@ -88,6 +90,7 @@ func NewWatcher(name string, events, watch, exclude []string, t *task.Task) (w *
 	return w, nil
 }
 
+// Run starts file watcher with provided TaskRunner
 func (w *Watcher) Run(r *runner.TaskRunner) (err error) {
 	w.r = r
 	w.fsw, err = fsnotify.NewWatcher()
@@ -135,6 +138,7 @@ func (w *Watcher) Run(r *runner.TaskRunner) (err error) {
 	return nil
 }
 
+// Close  stops this watcher
 func (w *Watcher) Close() {
 	err := w.fsw.Close()
 	if err != nil {

@@ -20,6 +20,7 @@ type Job struct {
 	Next *Job
 }
 
+// NewJobFromCommand creates new Job instance from given command
 func NewJobFromCommand(command string) *Job {
 	return &Job{
 		Command: command,

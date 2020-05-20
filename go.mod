@@ -13,9 +13,9 @@ require (
 	github.com/mattn/go-colorable v0.1.4 // indirect
 	github.com/mattn/go-isatty v0.0.10 // indirect
 	github.com/mitchellh/mapstructure v1.1.2
-	github.com/pelletier/go-toml v1.2.0
+	github.com/pelletier/go-toml v1.8.0
 	github.com/sirupsen/logrus v1.4.2
 	github.com/urfave/cli/v2 v2.2.0
-	gopkg.in/yaml.v2 v2.2.4
+	gopkg.in/yaml.v2 v2.3.0
 	mvdan.cc/sh/v3 v3.1.1
 )

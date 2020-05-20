@@ -9,6 +9,7 @@ import (
 	"github.com/taskctl/taskctl/pkg/task"
 )
 
+// Stage statuses
 const (
 	StatusWaiting = iota
 	StatusRunning
@@ -18,6 +19,7 @@ const (
 	StatusCanceled
 )
 
+// Stage is a structure that describes execution stage
 type Stage struct {
 	Name         string
 	Condition    string
@@ -34,14 +36,17 @@ type Stage struct {
 	End   time.Time
 }
 
+// UpdateStatus updates stage's status atomically
 func (s *Stage) UpdateStatus(status int32) {
 	atomic.StoreInt32(&s.Status, status)
 }
 
+// ReadStatus is a helper to read stage's status atomically
 func (s *Stage) ReadStatus() int32 {
 	return atomic.LoadInt32(&s.Status)
 }
 
+// Duration returns stage's execution duration
 func (s *Stage) Duration() time.Duration {
 	return s.End.Sub(s.Start)
 }

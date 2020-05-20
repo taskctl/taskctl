@@ -22,12 +22,14 @@ import (
 	"github.com/taskctl/taskctl/pkg/utils"
 )
 
+// Runner describes tasks runner interface
 type Runner interface {
 	Run(t *task.Task) error
 	Cancel()
 	Finish()
 }
 
+// TaskRunner run tasks
 type TaskRunner struct {
 	Executor  executor.Executor
 	DryRun    bool
@@ -45,7 +47,7 @@ type TaskRunner struct {
 	cleanupList sync.Map
 }
 
-// Creates new task runner.
+// NewTaskRunner creates new TaskRunner instance
 func NewTaskRunner(opts ...Opts) (*TaskRunner, error) {
 	exec, err := executor.NewDefaultExecutor()
 	if err != nil {
@@ -54,7 +56,7 @@ func NewTaskRunner(opts ...Opts) (*TaskRunner, error) {
 
 	r := &TaskRunner{
 		Executor:     exec,
-		OutputFormat: output.OutputFormatRaw,
+		OutputFormat: output.FormatRaw,
 		Stdin:        os.Stdin,
 		Stdout:       os.Stdout,
 		Stderr:       os.Stderr,
@@ -87,7 +89,8 @@ func (r *TaskRunner) SetVariables(contexts map[string]*ExecutionContext) *TaskRu
 	return r
 }
 
-// Run run provided task
+// Run run provided task.
+// TaskRunner first compiles task into linked list of Jobs, then passes those jobs to Executor
 func (r *TaskRunner) Run(t *task.Task) error {
 	execContext, err := r.contextForTask(t)
 	if err != nil {
@@ -132,7 +135,7 @@ func (r *TaskRunner) Run(t *task.Task) error {
 
 	outputFormat := r.OutputFormat
 	if t.Interactive {
-		outputFormat = output.OutputFormatRaw
+		outputFormat = output.FormatRaw
 	}
 
 	taskOutput, err := output.NewTaskOutput(t, outputFormat, r.Stdout, r.Stderr)
@@ -356,7 +359,7 @@ func WithContexts(contexts map[string]*ExecutionContext) Opts {
 	}
 }
 
-// WithContexts adds provided variables to task runner
+// WithVariables adds provided variables to task runner
 func WithVariables(variables variables.Container) Opts {
 	return func(runner *TaskRunner) {
 		runner.variables = variables
