@@ -1,10 +1,14 @@
 package watch
 
 import (
-	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/fsnotify/fsnotify"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
+
+	"github.com/taskctl/taskctl/pkg/runner"
+	"github.com/taskctl/taskctl/pkg/task"
 )
 
 func TestNewWatcher(t *testing.T) {
@@ -12,8 +16,31 @@ func TestNewWatcher(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = NewWatcher("w1", []string{eventCreate}, []string{filepath.Join(cwd, "*.exe")}, []string{}, task.FromCommands("true"))
+	w, err := NewWatcher("w1", []string{}, []string{filepath.Join(cwd, "*.go")}, []string{"watch_test.go"}, task.FromCommands("true"))
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	r, err := runner.NewTaskRunner()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		err = w.Run(r)
+		if err != nil {
+			t.Error(err)
+		}
+	}()
+
+	w.fsw.Events <- fsnotify.Event{
+		Name: "fake_file.json",
+		Op:   fsnotify.Rename,
+	}
+
+	w.Close()
+	wg.Wait()
 }

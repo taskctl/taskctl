@@ -1,10 +1,12 @@
 package watch
 
 import (
-	"github.com/taskctl/taskctl/pkg/variables"
 	"sync"
+	"time"
 
 	"github.com/sirupsen/logrus"
+
+	"github.com/taskctl/taskctl/pkg/variables"
 
 	"github.com/bmatcuk/doublestar"
 	"github.com/fsnotify/fsnotify"
@@ -38,8 +40,10 @@ type Watcher struct {
 	events   map[string]bool
 	task     *task.Task
 	fsw      *fsnotify.Watcher
+	closed   chan struct{}
+	isClosed bool
 
-	wg sync.WaitGroup
+	eventsWg sync.WaitGroup
 }
 
 // NewWatcher creates new Watcher instance
@@ -48,8 +52,14 @@ func NewWatcher(name string, events, watch, exclude []string, t *task.Task) (w *
 		name:     name,
 		paths:    make([]string, 0),
 		finished: make(chan struct{}),
+		closed:   make(chan struct{}),
 		task:     t,
 		events:   make(map[string]bool),
+	}
+
+	w.fsw, err = fsnotify.NewWatcher()
+	if err != nil {
+		return nil, err
 	}
 
 	for _, p := range watch {
@@ -92,10 +102,6 @@ func NewWatcher(name string, events, watch, exclude []string, t *task.Task) (w *
 // Run starts file watcher with provided TaskRunner
 func (w *Watcher) Run(r *runner.TaskRunner) (err error) {
 	w.r = r
-	w.fsw, err = fsnotify.NewWatcher()
-	if err != nil {
-		return err
-	}
 
 	logrus.Debugf("starting watcher %s", w.name)
 	for _, path := range w.paths {
@@ -109,12 +115,17 @@ func (w *Watcher) Run(r *runner.TaskRunner) (err error) {
 	go func() {
 		defer close(w.finished)
 		for {
+			if w.isClosed {
+				break
+			}
+
+			time.Sleep(1 * time.Second)
 			select {
 			case event, ok := <-w.fsw.Events:
 				if !ok {
 					return
 				}
-				w.wg.Add(1)
+				w.eventsWg.Add(1)
 				go w.handle(event)
 				logrus.Debugf("watcher %s; event %s; file: %s", w.name, event.Op.String(), event.Name)
 				if event.Op == fsnotify.Rename {
@@ -128,10 +139,11 @@ func (w *Watcher) Run(r *runner.TaskRunner) (err error) {
 					return
 				}
 				logrus.Error(err)
+			default:
 			}
 		}
 	}()
-	w.wg.Wait()
+	w.eventsWg.Wait()
 	<-w.finished
 
 	return nil
@@ -139,17 +151,21 @@ func (w *Watcher) Run(r *runner.TaskRunner) (err error) {
 
 // Close  stops this watcher
 func (w *Watcher) Close() {
+	if w.isClosed {
+		return
+	}
 	if w.fsw != nil {
 		err := w.fsw.Close()
 		if err != nil {
 			logrus.Error(err)
 		}
 	}
+	w.isClosed = true
 	<-w.finished
 }
 
 func (w *Watcher) handle(event fsnotify.Event) {
-	defer w.wg.Done()
+	defer w.eventsWg.Done()
 
 	eventName := fsnotifyMap[event.Op]
 	if !w.events[eventName] {

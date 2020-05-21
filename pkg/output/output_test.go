@@ -2,10 +2,12 @@ package output
 
 import (
 	"bytes"
-	"github.com/sirupsen/logrus"
-	"github.com/taskctl/taskctl/pkg/task"
 	"strings"
 	"testing"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/taskctl/taskctl/pkg/task"
 )
 
 func TestNewTaskOutput(t *testing.T) {
