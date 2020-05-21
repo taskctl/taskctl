@@ -35,3 +35,23 @@ func TestLoader_Load(t *testing.T) {
 		t.Fatal()
 	}
 }
+
+func TestLoader_resolveDefaultConfigFile(t *testing.T) {
+	cl := NewConfigLoader()
+
+	cl.dir = filepath.Join(cl.dir, "testdata")
+	file, err := cl.resolveDefaultConfigFile()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if filepath.Base(file) != "tasks.yaml" {
+		t.Error()
+	}
+
+	cl.dir = "/"
+	file, err = cl.resolveDefaultConfigFile()
+	if err == nil || file != "" {
+		t.Error()
+	}
+}
