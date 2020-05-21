@@ -42,6 +42,7 @@ type Watcher struct {
 	fsw      *fsnotify.Watcher
 	closed   chan struct{}
 	isClosed bool
+	mu       sync.Mutex
 
 	eventsWg sync.WaitGroup
 }
@@ -115,9 +116,11 @@ func (w *Watcher) Run(r *runner.TaskRunner) (err error) {
 	go func() {
 		defer close(w.finished)
 		for {
+			w.mu.Lock()
 			if w.isClosed {
 				break
 			}
+			w.mu.Unlock()
 
 			time.Sleep(1 * time.Second)
 			select {
@@ -160,7 +163,9 @@ func (w *Watcher) Close() {
 			logrus.Error(err)
 		}
 	}
+	w.mu.Lock()
 	w.isClosed = true
+	w.mu.Unlock()
 	<-w.finished
 }
 

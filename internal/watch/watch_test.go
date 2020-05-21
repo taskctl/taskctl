@@ -1,11 +1,12 @@
 package watch
 
 import (
-	"github.com/fsnotify/fsnotify"
 	"os"
 	"path/filepath"
 	"sync"
 	"testing"
+
+	"github.com/fsnotify/fsnotify"
 
 	"github.com/taskctl/taskctl/pkg/runner"
 	"github.com/taskctl/taskctl/pkg/task"
