@@ -19,9 +19,6 @@ type Scheduler struct {
 	pause      time.Duration
 
 	cancelled int32
-
-	Start time.Time
-	End   time.Time
 }
 
 // NewScheduler create new Scheduler instance
@@ -36,8 +33,9 @@ func NewScheduler(r runner.Runner) *Scheduler {
 
 // Schedule starts execution of the given ExecutionGraph
 func (s *Scheduler) Schedule(g *ExecutionGraph) error {
-	s.startTimer()
-	defer s.stopTimer()
+	g.start = time.Now()
+	defer func() { g.end = time.Now() }()
+
 	var wg = sync.WaitGroup{}
 
 	for !s.isDone(g) {
@@ -111,14 +109,6 @@ func (s *Scheduler) Cancel() {
 // Finish finishes scheduler's TaskRunner
 func (s *Scheduler) Finish() {
 	s.taskRunner.Finish()
-}
-
-func (s *Scheduler) startTimer() {
-	s.Start = time.Now()
-}
-
-func (s *Scheduler) stopTimer() {
-	s.End = time.Now()
 }
 
 func (s *Scheduler) isDone(p *ExecutionGraph) bool {

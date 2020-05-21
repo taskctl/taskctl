@@ -109,24 +109,24 @@ func runTarget(name string, c *cli.Context, taskRunner *runner.TaskRunner) (err 
 	return err
 }
 
-func runPipeline(p *scheduler.ExecutionGraph, taskRunner *runner.TaskRunner, summary bool) error {
+func runPipeline(g *scheduler.ExecutionGraph, taskRunner *runner.TaskRunner, summary bool) error {
 	sd := scheduler.NewScheduler(taskRunner)
 	go func() {
 		<-cancel
 		sd.Cancel()
 	}()
 
-	err := sd.Schedule(p)
+	err := sd.Schedule(g)
 	if err != nil {
 		return err
 	}
 	sd.Finish()
 
-	if summary {
-		printSummary(p)
-	}
+	fmt.Fprint(os.Stdout, "\r\n")
 
-	fmt.Fprintln(os.Stdout, aurora.Sprintf("\r\n%s: %s", aurora.Bold("Total duration"), aurora.Green(sd.End.Sub(sd.Start))))
+	if summary {
+		printSummary(g)
+	}
 
 	return nil
 }
@@ -158,9 +158,9 @@ func taskArgs(c *cli.Context) []string {
 	return runArgs
 }
 
-func printSummary(p *scheduler.ExecutionGraph) {
+func printSummary(g *scheduler.ExecutionGraph) {
 	var stages = make([]*scheduler.Stage, 0)
-	for _, stage := range p.Nodes() {
+	for _, stage := range g.Nodes() {
 		stages = append(stages, stage)
 	}
 
@@ -168,7 +168,7 @@ func printSummary(p *scheduler.ExecutionGraph) {
 		return stages[j].Start.Nanosecond() > stages[i].Start.Nanosecond()
 	})
 
-	fmt.Fprintln(os.Stdout, aurora.Bold("\r\nSummary:").String())
+	fmt.Fprintln(os.Stdout, aurora.Bold("Summary:").String())
 
 	var log string
 	for _, stage := range stages {
@@ -189,4 +189,6 @@ func printSummary(p *scheduler.ExecutionGraph) {
 			fmt.Fprintln(os.Stdout, aurora.Sprintf(aurora.Red("- Unexpected status %d for stage %s"), stage.Status, stage.Name))
 		}
 	}
+
+	fmt.Fprintln(os.Stdout, aurora.Sprintf("%s: %s", aurora.Bold("Total duration"), aurora.Green(g.Duration())))
 }

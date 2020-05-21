@@ -1,7 +1,6 @@
 package output
 
 import (
-	"fmt"
 	"io"
 )
 
@@ -22,6 +21,5 @@ func (d *rawOutputDecorator) Write(b []byte) (int, error) {
 }
 
 func (d *rawOutputDecorator) WriteFooter() error {
-	_, err := fmt.Fprint(d.w, "\r\n")
-	return err
+	return nil
 }

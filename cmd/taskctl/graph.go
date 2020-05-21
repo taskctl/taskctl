@@ -1,9 +1,11 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/emicklei/dot"
+	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 
 	"github.com/taskctl/taskctl/pkg/scheduler"
@@ -13,7 +15,7 @@ func newGraphCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "graph",
 		Aliases:   []string{"g"},
-		Usage:     "generates pipeline execution graph",
+		Usage:     "visualizes pipeline execution graph",
 		UsageText: "taskctl graph [pipeline] | dot -Tsvg > graph.svg",
 		Description: "Generates a visual representation of pipeline execution plan. " +
 			"The output is in the DOT format, which can be used by GraphViz to generate charts.",
@@ -24,6 +26,13 @@ func newGraphCommand() *cli.Command {
 			},
 		},
 		Action: func(c *cli.Context) error {
+			if c.NArg() == 0 {
+				err := cli.ShowCommandHelp(c, "graph")
+				if err != nil {
+					logrus.Error(err)
+				}
+				return errors.New("no pipeline set")
+			}
 			name := c.Args().First()
 			p := cfg.Pipelines[name]
 			if p == nil {

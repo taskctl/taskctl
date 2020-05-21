@@ -66,7 +66,7 @@ func TestExecutionGraph_Scheduler(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if schdlr.Start.IsZero() || schdlr.End.IsZero() {
+	if graph.start.IsZero() || graph.end.IsZero() {
 		t.Fatal()
 	}
 

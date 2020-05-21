@@ -3,6 +3,7 @@ package scheduler
 import (
 	"errors"
 	"fmt"
+	"time"
 )
 
 // ErrCycleDetected occurs when added edge causes cycle to appear
@@ -12,10 +13,11 @@ var ErrCycleDetected = errors.New("cycle detected")
 type ExecutionGraph struct {
 	Env map[string][]string
 
-	nodes map[string]*Stage
-	from  map[string][]string
-	to    map[string][]string
-	error error
+	nodes      map[string]*Stage
+	from       map[string][]string
+	to         map[string][]string
+	error      error
+	start, end time.Time
 }
 
 // NewExecutionGraph creates new ExecutionGraph instance.
@@ -113,4 +115,12 @@ func (g *ExecutionGraph) cycleDfs(t string, visited map[string]bool) error {
 // LastError returns latest error appeared during stages execution
 func (g *ExecutionGraph) LastError() error {
 	return g.error
+}
+
+func (g *ExecutionGraph) Duration() time.Duration {
+	if g.end.IsZero() {
+		return time.Since(g.start)
+	}
+
+	return g.end.Sub(g.start)
 }
