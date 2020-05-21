@@ -2,12 +2,15 @@ package config
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
 )
+
+const sampleCfg = "{\"tasks\": {\"task1\": {\"command\": [\"true\"]}}}"
 
 func TestLoader_Load(t *testing.T) {
 	cwd, err := os.Getwd()
@@ -85,7 +88,7 @@ func TestLoader_readURL(t *testing.T) {
 			writer.Header().Set("Content-Type", "application/json")
 			r++
 		}
-		fmt.Fprintln(writer, "{\"tasks\": {\"task1\": {\"command\": [\"true\"]}}}")
+		fmt.Fprintln(writer, sampleCfg)
 	}))
 
 	cl := NewConfigLoader()
@@ -102,5 +105,30 @@ func TestLoader_readURL(t *testing.T) {
 	_, err = cl.readURL(srv.URL)
 	if err != nil {
 		t.Fatal()
+	}
+}
+
+func TestLoader_LoadGlobalConfig(t *testing.T) {
+	h := os.TempDir()
+	_ = os.RemoveAll(filepath.Join(h, ".taskctl"))
+	err := os.Mkdir(filepath.Join(h, ".taskctl"), 0744)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = ioutil.WriteFile(filepath.Join(h, ".taskctl", "config.yaml"), []byte(sampleCfg), 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cl := NewConfigLoader()
+	cl.homeDir = h
+	cfg, err := cl.LoadGlobalConfig()
+	if err != nil {
+		t.Fatal()
+	}
+
+	if len(cfg.Tasks) == 0 {
+		t.Error()
 	}
 }
