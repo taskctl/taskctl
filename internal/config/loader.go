@@ -6,7 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"mime"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -219,7 +221,26 @@ func (cl *Loader) readURL(u string) (map[string]interface{}, error) {
 		return nil, fmt.Errorf("%s: %v", u, err)
 	}
 
-	ext := filepath.Ext(u)
+	var ext string
+	ct := resp.Header.Get("Content-Type")
+	if ct != "" {
+		mediaType, _, _ := mime.ParseMediaType(ct)
+		if mediaType == "application/json" {
+			ext = ".json"
+		}
+	}
+
+	if ext == "" {
+		up, err := url.Parse(u)
+		if err == nil {
+			ext = filepath.Ext(up.Path)
+		}
+	}
+
+	if ext == "" {
+		ext = ".yaml"
+	}
+
 	return cl.unmarshalData(data, ext)
 }
 

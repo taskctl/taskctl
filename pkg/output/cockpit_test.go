@@ -12,7 +12,8 @@ import (
 
 func Test_cockpitOutputDecorator(t *testing.T) {
 	b := safebuffer{}
-	dec := newCockpitOutputWriter(&task.Task{Name: "task1"}, &b)
+	closeCh = make(chan bool)
+	dec := newCockpitOutputWriter(&task.Task{Name: "task1"}, &b, closeCh)
 	err := dec.WriteHeader()
 	if err != nil {
 		t.Fatal(err)
@@ -43,6 +44,8 @@ func Test_cockpitOutputDecorator(t *testing.T) {
 	if !strings.Contains(b.String(), "Finished") {
 		t.Fatal()
 	}
+
+	close(closeCh)
 }
 
 // safebuffer is a goroutine safe bytes.safebuffer

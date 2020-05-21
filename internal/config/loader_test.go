@@ -1,6 +1,9 @@
 package config
 
 import (
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
@@ -53,5 +56,51 @@ func TestLoader_resolveDefaultConfigFile(t *testing.T) {
 	file, err = cl.resolveDefaultConfigFile()
 	if err == nil || file != "" {
 		t.Error()
+	}
+}
+
+func TestLoader_loadDir(t *testing.T) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cl := NewConfigLoader()
+	m, err := cl.loadDir(filepath.Join(cwd, "testdata"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tasks := m["tasks"].(map[interface{}]interface{})
+	if len(tasks) != 5 {
+		t.Error()
+	}
+}
+
+func TestLoader_readURL(t *testing.T) {
+	var r int
+	srv := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Type", "")
+		if r == 0 {
+			writer.Header().Set("Content-Type", "application/json")
+			r++
+		}
+		fmt.Fprintln(writer, "{\"tasks\": {\"task1\": {\"command\": [\"true\"]}}}")
+	}))
+
+	cl := NewConfigLoader()
+	m, err := cl.readURL(srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tasks := m["tasks"].(map[string]interface{})
+	if len(tasks) != 1 {
+		t.Error()
+	}
+
+	_, err = cl.readURL(srv.URL)
+	if err != nil {
+		t.Fatal()
 	}
 }

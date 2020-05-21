@@ -3,18 +3,19 @@
 </p>
 
 # taskctl - concurrent task runner, developer's routine tasks automation toolkit
+[![pkg.go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat)](https://pkg.go.dev/github.com/taskctl/taskctl?tab=doc)
+![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/taskctl/taskctl)
+![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/taskctl/taskctl)
+![GitHub closed issues](https://img.shields.io/github/issues-closed/taskctl/taskctl)
+![GitHub issues](https://img.shields.io/github/issues/taskctl/taskctl)
+![Licence](https://img.shields.io/github/license/taskctl/taskctl)
+
 ![Tests](https://github.com/taskctl/taskctl/workflows/Test/badge.svg)
 [![Requirements Status](https://requires.io/github/taskctl/taskctl/requirements.svg?branch=master)](https://requires.io/github/taskctl/taskctl/requirements/?branch=master)
 ![GitHub top language](https://img.shields.io/github/languages/top/taskctl/taskctl)
 [![Go Report Card](https://goreportcard.com/badge/github.com/taskctl/taskctl)](https://goreportcard.com/report/github.com/taskctl/taskctl)
 [![Test Coverage](https://codecov.io/gh/taskctl/taskctl/branch/master/graph/badge.svg)](https://codecov.io/gh/taskctl/taskctl/tree/master/pkg)
 [![Maintainability](https://api.codeclimate.com/v1/badges/a99a88d28ad37a79dbf6/maintainability)](https://codeclimate.com/github/codeclimate/codeclimate/maintainability)
-
-![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/taskctl/taskctl)
-![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/taskctl/taskctl)
-![GitHub closed issues](https://img.shields.io/github/issues-closed/taskctl/taskctl)
-![GitHub issues](https://img.shields.io/github/issues/taskctl/taskctl)
-![Licence](https://img.shields.io/github/license/taskctl/taskctl)
 
 Simple modern alternative to GNU Make. *taskctl* is concurrent task runner that allows you to design you routine tasks and development pipelines in nice and neat way in human-readable format (YAML, JSON or TOML). 
 Given a pipeline (composed of tasks or other pipelines) it builds a graph that outlines the execution plan. Each task my run concurrently or cascade.
