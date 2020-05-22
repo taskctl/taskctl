@@ -67,7 +67,7 @@ brews:
       email: yevhen.terentiev@gmail.com
     homepage: https://github.com/taskctl/taskctl
     install: |
-        bin.install "program"
+        bin.install "taskctl"
         bash_completion.install "autocomplete/bash_completion.bash"
         zsh_completion.install "autocomplete/zsh_completion.zsh"
 
