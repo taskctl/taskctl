@@ -1,0 +1,98 @@
+package runner
+
+import (
+	"io"
+	"strings"
+	"time"
+
+	"github.com/taskctl/taskctl/pkg/executor"
+	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/taskctl/taskctl/pkg/utils"
+	"github.com/taskctl/taskctl/pkg/variables"
+)
+
+type TaskCompiler struct {
+	variables variables.Container
+}
+
+func NewTaskCompiler() *TaskCompiler {
+	return &TaskCompiler{variables: variables.NewVariables()}
+}
+
+// CompileTask compiles task into Job (linked list of commands) executed by Executor
+func (tc *TaskCompiler) CompileTask(t *task.Task, executionContext *ExecutionContext, stdin io.Reader, stdout, stderr io.Writer, env, vars variables.Container) (*executor.Job, error) {
+	var job, prev *executor.Job
+	for _, variant := range t.GetVariations() {
+		for _, command := range t.Commands {
+			j, err := tc.CompileCommand(
+				command,
+				executionContext,
+				t.Dir,
+				t.Timeout,
+				stdin,
+				stdout,
+				stderr,
+				env.Merge(variables.FromMap(variant)),
+				t.Variables.Merge(vars),
+			)
+			if err != nil {
+				return nil, err
+			}
+
+			if job == nil {
+				job = j
+			}
+
+			if prev == nil {
+				prev = j
+			} else {
+				prev.Next = j
+				prev = prev.Next
+			}
+		}
+	}
+
+	return job, nil
+}
+
+// CompileCommand compiles command into Job
+func (tc *TaskCompiler) CompileCommand(
+	command string,
+	executionCtx *ExecutionContext,
+	dir string,
+	timeout *time.Duration,
+	stdin io.Reader,
+	stdout, stderr io.Writer,
+	env, vars variables.Container,
+) (*executor.Job, error) {
+	j := &executor.Job{
+		Timeout: timeout,
+		Env:     env,
+		Stdin:   stdin,
+		Stdout:  stdout,
+		Stderr:  stderr,
+		Vars:    tc.variables.Merge(vars),
+	}
+
+	c := make([]string, 0)
+	if executionCtx.Executable != nil {
+		c = append(c, executionCtx.Executable.Bin)
+		c = append(c, executionCtx.Executable.Args...)
+	}
+	c = append(c, command)
+	j.Command = strings.Join(c, " ")
+
+	var err error
+	if dir != "" {
+		j.Dir = dir
+	} else if executionCtx.Dir != "" {
+		j.Dir = executionCtx.Dir
+	}
+
+	j.Dir, err = utils.RenderString(j.Dir, j.Vars.Map())
+	if err != nil {
+		return nil, err
+	}
+
+	return j, nil
+}

@@ -19,7 +19,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/taskctl/taskctl/pkg/task"
-	"github.com/taskctl/taskctl/pkg/utils"
 )
 
 // Runner describes tasks runner interface
@@ -40,6 +39,8 @@ type TaskRunner struct {
 	ctx        context.Context
 	cancelFunc context.CancelFunc
 
+	compiler *TaskCompiler
+
 	Stdin          io.Reader
 	Stdout, Stderr io.Writer
 	OutputFormat   string
@@ -56,6 +57,7 @@ func NewTaskRunner(opts ...Opts) (*TaskRunner, error) {
 
 	r := &TaskRunner{
 		Executor:     exec,
+		compiler:     NewTaskCompiler(),
 		OutputFormat: output.FormatRaw,
 		Stdin:        os.Stdin,
 		Stdout:       os.Stdout,
@@ -97,49 +99,12 @@ func (r *TaskRunner) Run(t *task.Task) error {
 		return err
 	}
 
-	err = execContext.Up()
-	if err != nil {
-		return err
-	}
-
-	err = execContext.Before()
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		err := execContext.After()
-		if err != nil {
-			logrus.Error(err)
-		}
-
-		if t.ExitCode == -1 && !t.Errored && !t.Skipped {
-			t.ExitCode = 0
-		}
-	}()
-
-	vars := r.variables.Merge(t.Variables)
-
-	env := r.env.Merge(execContext.Env)
-	env = env.With("TASK_NAME", t.Name)
-	env = env.Merge(t.Env)
-
-	if t.Condition != "" {
-		meets, err := r.checkTaskCondition(t)
-		if err != nil {
-			return err
-		}
-
-		if !meets {
-			logrus.Infof("task %s was skipped", t.Name)
-			t.Skipped = true
-			return nil
-		}
-	}
-
 	outputFormat := r.OutputFormat
+
+	var stdin io.Reader
 	if t.Interactive {
 		outputFormat = output.FormatRaw
+		stdin = r.Stdin
 	}
 
 	taskOutput, err := output.NewTaskOutput(t, outputFormat, r.Stdout, r.Stderr)
@@ -150,43 +115,39 @@ func (r *TaskRunner) Run(t *task.Task) error {
 	defer func() {
 		err := taskOutput.Finish()
 		if err != nil {
-			logrus.Warning(err)
+			logrus.Error(err)
+		}
+
+		err = execContext.After()
+		if err != nil {
+			logrus.Error(err)
+		}
+
+		if !t.Errored && !t.Skipped {
+			t.ExitCode = 0
 		}
 	}()
 
-	var stdin io.Reader
-	if t.Interactive {
-		stdin = r.Stdin
+	vars := r.variables.Merge(t.Variables)
+
+	env := r.env.Merge(execContext.Env)
+	env = env.With("TASK_NAME", t.Name)
+	env = env.Merge(t.Env)
+
+	meets, err := r.checkTaskCondition(t)
+	if err != nil {
+		return err
 	}
 
-	var job, prev *executor.Job
-	for _, variant := range t.GetVariations() {
-		for _, command := range t.Commands {
-			j, err := r.Compile(
-				command,
-				t,
-				execContext,
-				stdin,
-				taskOutput.Stdout(),
-				taskOutput.Stderr(),
-				env.Merge(variables.FromMap(variant)),
-				t.Variables.Merge(vars),
-			)
-			if err != nil {
-				return err
-			}
+	if !meets {
+		logrus.Infof("task %s was skipped", t.Name)
+		t.Skipped = true
+		return nil
+	}
 
-			if job == nil {
-				job = j
-			}
-
-			if prev == nil {
-				prev = j
-			} else {
-				prev.Next = j
-				prev = prev.Next
-			}
-		}
+	job, err := r.compiler.CompileTask(t, execContext, stdin, taskOutput.Stdout(), taskOutput.Stderr(), env, vars)
+	if err != nil {
+		return err
 	}
 
 	err = taskOutput.Start()
@@ -211,25 +172,15 @@ func (r *TaskRunner) Run(t *task.Task) error {
 			}
 			t.Errored = true
 			t.Error = err
-			break
+			t.End = time.Now()
+			return t.Error
 		}
 	}
 	t.End = time.Now()
 
-	if t.Errored {
-		return t.Error
-	}
-
 	r.storeTaskOutput(t)
 
-	if len(t.After) > 0 {
-		err = r.after(t, env, vars)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return r.after(t, env, vars)
 }
 
 // Cancel cancels execution
@@ -247,34 +198,6 @@ func (r *TaskRunner) Finish() {
 	output.Close()
 }
 
-// Compile compiles task into Job executed by Executor
-func (r *TaskRunner) Compile(command string, t *task.Task, executionCtx *ExecutionContext, stdin io.Reader, stdout, stderr io.Writer, env, vars variables.Container) (*executor.Job, error) {
-	j := &executor.Job{
-		Timeout: t.Timeout,
-		Env:     env,
-		Stdin:   stdin,
-		Stdout:  stdout,
-		Stderr:  stderr,
-		Vars:    vars,
-	}
-
-	c := make([]string, 0)
-	if executionCtx.Executable != nil {
-		c = append(c, executionCtx.Executable.Bin)
-		c = append(c, executionCtx.Executable.Args...)
-	}
-	c = append(c, command)
-	j.Command = strings.Join(c, " ")
-
-	var err error
-	j.Dir, err = r.resolveDir(t, executionCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	return j, nil
-}
-
 // WithVariable adds variable to task runner's variables list.
 // It creates new instance of variables container.
 func (r *TaskRunner) WithVariable(key, value string) *TaskRunner {
@@ -284,13 +207,17 @@ func (r *TaskRunner) WithVariable(key, value string) *TaskRunner {
 }
 
 func (r *TaskRunner) after(t *task.Task, env, vars variables.Container) error {
+	if len(t.After) == 0 {
+		return nil
+	}
+
 	execContext, err := r.contextForTask(t)
 	if err != nil {
 		return err
 	}
 
 	for _, command := range t.After {
-		job, err := r.Compile(command, t, execContext, nil, r.Stdout, r.Stderr, env, vars)
+		job, err := r.compiler.CompileCommand(command, execContext, t.Dir, t.Timeout, nil, r.Stdout, r.Stderr, env, vars)
 		if err != nil {
 			return fmt.Errorf("\"after\" Command failed: %w", err)
 		}
@@ -306,26 +233,41 @@ func (r *TaskRunner) after(t *task.Task, env, vars variables.Container) error {
 
 func (r *TaskRunner) contextForTask(t *task.Task) (c *ExecutionContext, err error) {
 	if t.Context == "" {
-		return DefaultContext(), nil
+		c = DefaultContext()
+	} else {
+		var ok bool
+		c, ok = r.contexts[t.Context]
+		if !ok {
+			return nil, fmt.Errorf("no such context %s", t.Context)
+		}
+
+		r.cleanupList.Store(t.Context, c)
 	}
 
-	c, ok := r.contexts[t.Context]
-	if !ok {
-		return nil, fmt.Errorf("no such context %s", t.Context)
+	err = c.Up()
+	if err != nil {
+		return nil, err
 	}
 
-	r.cleanupList.Store(t.Context, c)
+	err = c.Before()
+	if err != nil {
+		return nil, err
+	}
 
 	return c, nil
 }
 
 func (r *TaskRunner) checkTaskCondition(t *task.Task) (bool, error) {
+	if t.Condition == "" {
+		return true, nil
+	}
+
 	executionContext, err := r.contextForTask(t)
 	if err != nil {
 		return false, err
 	}
 
-	j, err := r.Compile(t.Condition, t, executionContext, nil, r.Stdout, r.Stderr, r.env, r.variables)
+	j, err := r.compiler.CompileCommand(t.Condition, executionContext, t.Dir, t.Timeout, nil, r.Stdout, r.Stderr, r.env, r.variables)
 	if err != nil {
 		return false, err
 	}
@@ -357,16 +299,6 @@ func (r *TaskRunner) storeTaskOutput(t *task.Task) {
 	r.variables.Set(varName, t.Log.Stdout.String())
 }
 
-func (r *TaskRunner) resolveDir(t *task.Task, executionCtx *ExecutionContext) (string, error) {
-	if t.Dir != "" {
-		return utils.RenderString(t.Dir, r.variables.Merge(t.Variables).Map())
-	} else if executionCtx.Dir != "" {
-		return executionCtx.Dir, nil
-	}
-
-	return "", nil
-}
-
 // Opts is a task runner configuration function.
 type Opts func(*TaskRunner)
 
@@ -381,5 +313,6 @@ func WithContexts(contexts map[string]*ExecutionContext) Opts {
 func WithVariables(variables variables.Container) Opts {
 	return func(runner *TaskRunner) {
 		runner.variables = variables
+		runner.compiler.variables = variables
 	}
 }

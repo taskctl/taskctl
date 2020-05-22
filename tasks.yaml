@@ -13,7 +13,9 @@ pipelines:
 
   fixcs:
     - task: goimports
+      dir: "{{.Root}}"
     - task: gofmt
+      dir: "{{.Root}}"
       depends_on: goimports
 
   prepare:

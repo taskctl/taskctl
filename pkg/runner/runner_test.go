@@ -43,11 +43,7 @@ func TestTaskRunner_Run(t *testing.T) {
 		t.Error()
 	}
 
-	if task1.Errored {
-		t.Error()
-	}
-
-	if task1.ExitCode != 0 {
+	if task1.Errored || task1.ExitCode != 0 {
 		t.Error()
 	}
 
@@ -69,8 +65,8 @@ func TestTaskRunner_Run(t *testing.T) {
 		t.Fatal()
 	}
 
-	if !task2.Errored || task2.ExitCode == 0 {
-		t.Fatal()
+	if !task2.Errored {
+		t.Error()
 	}
 
 	task3 := taskpkg.NewTask()
