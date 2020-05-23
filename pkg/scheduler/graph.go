@@ -117,6 +117,7 @@ func (g *ExecutionGraph) LastError() error {
 	return g.error
 }
 
+// Duration returns execution duration
 func (g *ExecutionGraph) Duration() time.Duration {
 	if g.end.IsZero() {
 		return time.Since(g.start)

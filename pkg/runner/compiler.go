@@ -11,10 +11,12 @@ import (
 	"github.com/taskctl/taskctl/pkg/variables"
 )
 
+// TaskCompiler compiles tasks into jobs for executor
 type TaskCompiler struct {
 	variables variables.Container
 }
 
+// NewTaskCompiler create new TaskCompiler instance
 func NewTaskCompiler() *TaskCompiler {
 	return &TaskCompiler{variables: variables.NewVariables()}
 }

@@ -155,28 +155,10 @@ func (r *TaskRunner) Run(t *task.Task) error {
 		return err
 	}
 
-	t.Start = time.Now()
-	var prevOutput []byte
-	for nextJob := job; nextJob != nil; nextJob = nextJob.Next {
-		var err error
-		nextJob.Vars.Set("Output", string(prevOutput))
-
-		prevOutput, err = r.Executor.Execute(r.ctx, nextJob)
-		if err != nil {
-			logrus.Debug(err.Error())
-			if status, ok := executor.IsExitStatus(err); ok {
-				t.ExitCode = int16(status)
-				if t.AllowFailure {
-					continue
-				}
-			}
-			t.Errored = true
-			t.Error = err
-			t.End = time.Now()
-			return t.Error
-		}
+	err = r.start(t, job)
+	if err != nil {
+		return err
 	}
-	t.End = time.Now()
 
 	r.storeTaskOutput(t)
 
@@ -297,6 +279,33 @@ func (r *TaskRunner) storeTaskOutput(t *task.Task) {
 
 	r.env.Set(envVarName, t.Log.Stdout.String())
 	r.variables.Set(varName, t.Log.Stdout.String())
+}
+
+func (r *TaskRunner) start(t *task.Task, job *executor.Job) error {
+	t.Start = time.Now()
+	var prevOutput []byte
+	for nextJob := job; nextJob != nil; nextJob = nextJob.Next {
+		var err error
+		nextJob.Vars.Set("Output", string(prevOutput))
+
+		prevOutput, err = r.Executor.Execute(r.ctx, nextJob)
+		if err != nil {
+			logrus.Debug(err.Error())
+			if status, ok := executor.IsExitStatus(err); ok {
+				t.ExitCode = int16(status)
+				if t.AllowFailure {
+					continue
+				}
+			}
+			t.Errored = true
+			t.Error = err
+			t.End = time.Now()
+			return t.Error
+		}
+	}
+	t.End = time.Now()
+
+	return nil
 }
 
 // Opts is a task runner configuration function.

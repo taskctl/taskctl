@@ -30,27 +30,6 @@ func TestTaskRunner_Run(t *testing.T) {
 	task1.Name = "some test task"
 	task1.Dir = "{{.Root}}"
 
-	err = runner.Run(task1)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if task1.Start.IsZero() || task1.End.IsZero() {
-		t.Error()
-	}
-
-	if !strings.Contains(task1.Output(), "taskctl") {
-		t.Error()
-	}
-
-	if task1.Errored || task1.ExitCode != 0 {
-		t.Error()
-	}
-
-	if task1.Error != nil || task1.ErrorMessage() != "" {
-		t.Error()
-	}
-
 	d := 1 * time.Minute
 	task2 := taskpkg.NewTask()
 	task2.Timeout = &d
@@ -60,24 +39,45 @@ func TestTaskRunner_Run(t *testing.T) {
 	task2.Name = "some test task"
 	task2.Dir = "{{.Root}}"
 
-	err = runner.Run(task2)
-	if err == nil {
-		t.Fatal()
-	}
-
-	if !task2.Errored {
-		t.Error()
-	}
-
 	task3 := taskpkg.NewTask()
 	task3.Condition = "exit 1"
-	err = runner.Run(task3)
-	if err != nil || !task3.Skipped || task3.ExitCode != -1 {
-		t.Error()
+
+	cases := []struct {
+		t                *taskpkg.Task
+		skipped, errored bool
+		status           int16
+		output           string
+	}{
+		{t: task1, output: "taskctl"},
+		{t: task2, status: 1, errored: true},
+		{t: task3, status: -1, skipped: true},
 	}
 
-	if task3.Duration() < 0 {
-		t.Error()
+	for _, testCase := range cases {
+		err = runner.Run(testCase.t)
+		if err != nil && !testCase.errored && !testCase.skipped {
+			t.Fatal(err)
+		}
+
+		if !testCase.skipped && testCase.t.Start.IsZero() {
+			t.Error()
+		}
+
+		if !strings.Contains(testCase.t.Output(), testCase.output) {
+			t.Error()
+		}
+
+		if testCase.errored && !testCase.t.Errored {
+			t.Error()
+		}
+
+		if !testCase.errored && testCase.t.Errored {
+			t.Error()
+		}
+
+		if testCase.t.ExitCode != testCase.status {
+			t.Error()
+		}
 	}
 
 	runner.Finish()
