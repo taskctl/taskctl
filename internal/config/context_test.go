@@ -1,12 +1,12 @@
 package config
 
 import (
+	"os"
 	"testing"
 )
 
 func Test_buildContext(t *testing.T) {
 	c, err := buildContext(&contextDefinition{
-		Dir:       "/tmp",
 		Up:        []string{"true"},
 		Down:      []string{"true"},
 		Before:    []string{"true"},
@@ -18,7 +18,8 @@ func Test_buildContext(t *testing.T) {
 		t.Fatal()
 	}
 
-	if c.Dir != "/tmp" {
+	cwd, _ := os.Getwd()
+	if c.Dir != cwd {
 		t.Error()
 	}
 }

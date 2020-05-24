@@ -45,3 +45,9 @@ tasks:
 variables:
   test-variable: test-value
   sleep: 5
+
+watchers:
+  watcher1:
+    watch: ["README.*", "pkg/**/*.go"]
+    events: [create, write, remove, rename, chmod]
+    task: test-task
