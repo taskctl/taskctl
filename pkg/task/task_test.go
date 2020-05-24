@@ -1,8 +1,10 @@
 package task
 
-import "testing"
+import (
+	"testing"
+)
 
-func TestNewTask(t *testing.T) {
+func TestTask(t *testing.T) {
 	task := FromCommands("ls /tmp")
 	task.WithEnv("TEST_ENV", "TEST_VAL")
 
@@ -15,6 +17,16 @@ func TestNewTask(t *testing.T) {
 	}
 
 	if task.Duration().Seconds() <= 0 {
+		t.Error()
+	}
+}
+
+func TestTask_ErrorMessage(t *testing.T) {
+	task := NewTask()
+	task.Errored = true
+	task.Log.Stderr.Write([]byte("abc\ndef"))
+
+	if task.ErrorMessage() != "def" {
 		t.Error()
 	}
 }

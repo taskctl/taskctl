@@ -65,7 +65,7 @@ func runAppTest(app *cli.App, test appTest, t *testing.T) {
 	if len(test.output) > 0 {
 		for _, v := range test.output {
 			if !strings.Contains(s, v) {
-				t.Errorf("output test for \"%s\" fails", v)
+				t.Errorf("\"%s\" not found in \"%s\"", v, s)
 			}
 		}
 	}

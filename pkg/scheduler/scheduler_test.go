@@ -3,6 +3,7 @@ package scheduler
 import (
 	"errors"
 	"fmt"
+	"github.com/taskctl/taskctl/pkg/variables"
 	"testing"
 
 	"github.com/taskctl/taskctl/pkg/runner"
@@ -88,8 +89,11 @@ func TestExecutionGraph_Scheduler_AllowFailure(t *testing.T) {
 	}
 	stage3 := &Stage{
 		Name:      "stage3",
-		Task:      task.FromCommands("true"),
+		Task:      task.FromCommands("{{.command}}"),
 		DependsOn: []string{"stage2"},
+		Condition: "true",
+		Variables: variables.FromMap(map[string]string{"command": "true"}),
+		Env: variables.NewVariables(),
 	}
 
 	graph, err := NewExecutionGraph(stage1, stage2, stage3)

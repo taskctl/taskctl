@@ -14,7 +14,7 @@ func Test_graphCommand(t *testing.T) {
 		},
 		{
 			args:   []string{"", "-c", "testdata/graph.yaml", "graph", "graph:pipeline1"},
-			output: []string{"n1->n2", "n1->n3"},
+			output: []string{"label=\"graph:pipeline1\"", "label=\"graph:task1\""},
 		},
 		{
 			args:   []string{"", "-c", "testdata/graph.yaml", "graph", "--lr", "graph:pipeline1"},
