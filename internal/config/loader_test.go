@@ -132,3 +132,16 @@ func TestLoader_LoadGlobalConfig(t *testing.T) {
 		t.Error()
 	}
 }
+
+func TestLoader_unmarshalData(t *testing.T) {
+	cl := NewConfigLoader()
+	_, err := cl.unmarshalData([]byte(sampleCfg), ".json")
+	if err != nil {
+		t.Error(err)
+	}
+
+	_, err = cl.unmarshalData([]byte(sampleCfg), ".txt")
+	if err == nil {
+		t.Error()
+	}
+}

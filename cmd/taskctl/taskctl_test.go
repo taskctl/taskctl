@@ -65,7 +65,7 @@ func runAppTest(app *cli.App, test appTest, t *testing.T) {
 	if len(test.output) > 0 {
 		for _, v := range test.output {
 			if !strings.Contains(s, v) {
-				t.Errorf("output test for %s fails", v)
+				t.Errorf("output test for \"%s\" fails", v)
 			}
 		}
 	}
@@ -93,7 +93,15 @@ func stdinConfirm(t *testing.T) *os.File {
 	return tmpfile
 }
 
-func Test_rootAction(t *testing.T) {
+func TestBashComplete(t *testing.T) {
+	app := makeTestApp(t)
+	runAppTest(app, appTest{
+		args:   []string{"", "-c", "testdata/graph.yaml", "--generate-bash-completion"},
+		output: []string{"graph\\:task1", "graph\\:pipeline1"},
+	}, t)
+}
+
+func TestRootAction(t *testing.T) {
 	tests := []appTest{
 		{args: []string{"", "-c", "testdata/graph.yaml", "graph:task2"}, errored: true},
 

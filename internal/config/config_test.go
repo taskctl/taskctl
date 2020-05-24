@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"github.com/taskctl/taskctl/pkg/task"
 	"io/ioutil"
 	"testing"
 
@@ -37,5 +38,24 @@ func TestConfig_decode(t *testing.T) {
 
 	if len(cfg.Pipelines["pipeline2"]) != 2 {
 		t.Fatal("pipelines parsing failed")
+	}
+}
+
+func TestConfig_merge(t *testing.T) {
+	cfg1 := &Config{
+		Tasks: map[string]*task.Task{"task1": {}},
+	}
+
+	cfg2 := &Config{
+		Tasks: map[string]*task.Task{"task2": {}},
+	}
+
+	err := cfg1.merge(cfg2)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, ok := cfg1.Tasks["task2"]; !ok {
+		t.Error()
 	}
 }
