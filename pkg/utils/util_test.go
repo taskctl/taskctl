@@ -92,6 +92,7 @@ func TestIsURL(t *testing.T) {
 		{name: "HTTPS URL", args: args{s: "https://github.com/"}, want: true},
 		{name: "Windows path", args: args{s: "C:\\Windows"}, want: false},
 		{name: "Mailto", args: args{s: "mailto:admin@example.org"}, want: false},
+		{name: "Invalid", args: args{s: "::::::::not-parsed"}, want: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -134,6 +135,7 @@ func TestMapKeys(t *testing.T) {
 		wantKeys []string
 	}{
 		{args: args{m: map[string]bool{"a": true, "b": false}}, wantKeys: []string{"a", "b"}},
+		{args: args{m: []string{"a", "b"}}, wantKeys: []string{}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -167,6 +169,7 @@ func TestRenderString(t *testing.T) {
 	}{
 		{args: args{tmpl: "hello, {{ .Name }}!", variables: map[string]string{"Name": "world"}}, want: "hello, world!"},
 		{args: args{tmpl: "hello, {{ .Name }}!", variables: make(map[string]string)}, wantErr: true},
+		{args: args{tmpl: "hello, {{ .Name", variables: make(map[string]string)}, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

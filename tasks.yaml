@@ -66,6 +66,7 @@ tasks:
       - goreleaser --debug --rm-dist
 
   gofmt:
+    dir: "{{.Root}}"
     command:
       - go fmt -x ./...
       - gofmt -s -w cmd/**/*.go
