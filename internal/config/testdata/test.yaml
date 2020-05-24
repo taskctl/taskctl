@@ -1,5 +1,7 @@
 import:
   - tasks.yaml
+  - tasks.yaml
+
 tasks:
   task1:
     command:

@@ -1,8 +1,9 @@
 package config
 
 import (
-	"os"
 	"testing"
+
+	"github.com/taskctl/taskctl/pkg/utils"
 )
 
 func Test_buildContext(t *testing.T) {
@@ -18,7 +19,7 @@ func Test_buildContext(t *testing.T) {
 		t.Fatal()
 	}
 
-	cwd, _ := os.Getwd()
+	cwd := utils.MustGetwd()
 	if c.Dir != cwd {
 		t.Error()
 	}

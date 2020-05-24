@@ -29,6 +29,23 @@ func TestTask_ErrorMessage(t *testing.T) {
 	if task.ErrorMessage() != "def" {
 		t.Error()
 	}
+
+	task = NewTask()
+	if task.ErrorMessage() != "" {
+		t.Error()
+	}
+
+	task.Errored = true
+	task.Log.Stdout.Write([]byte("abc\ndef"))
+
+	if task.ErrorMessage() != "def" {
+		t.Error()
+	}
+
+	task.Log.Stdout.Write([]byte("new output"))
+	if task.Output() != "new output" {
+		t.Error()
+	}
 }
 
 func TestNewTask_WithVariations(t *testing.T) {

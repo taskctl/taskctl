@@ -28,11 +28,22 @@ func TestLoader_Load(t *testing.T) {
 	}
 
 	cl = NewConfigLoader()
-	cfg, err = cl.Load(filepath.Join(cwd, "testdata", "test.toml"))
+	cl.dir = filepath.Join(cwd, "testdata")
+	cfg, err = cl.Load("test.toml")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if cfg.Tasks["task1"] == nil || cfg.Tasks["task1"].Commands[0] != "echo true" {
+		t.Error("yaml parsing failed")
+	}
+
+	cl = NewConfigLoader()
+	cl.dir = filepath.Join(cwd, "testdata", "nested")
+	cfg, err = cl.Load("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := cfg.Tasks["test-task"]; !ok {
 		t.Error("yaml parsing failed")
 	}
 
@@ -86,9 +97,12 @@ func TestLoader_readURL(t *testing.T) {
 		writer.Header().Set("Content-Type", "")
 		if r == 0 {
 			writer.Header().Set("Content-Type", "application/json")
-			r++
+		}
+		if r == 2 {
+			writer.WriteHeader(500)
 		}
 		fmt.Fprintln(writer, sampleCfg)
+		r++
 	}))
 
 	cl := NewConfigLoader()
@@ -104,6 +118,11 @@ func TestLoader_readURL(t *testing.T) {
 
 	_, err = cl.readURL(srv.URL)
 	if err != nil {
+		t.Fatal()
+	}
+
+	_, err = cl.readURL(srv.URL)
+	if err == nil {
 		t.Fatal()
 	}
 }

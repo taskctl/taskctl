@@ -1,8 +1,6 @@
 package config
 
 import (
-	"os"
-
 	"github.com/taskctl/taskctl/pkg/runner"
 	"github.com/taskctl/taskctl/pkg/variables"
 
@@ -23,11 +21,7 @@ type contextDefinition struct {
 func buildContext(def *contextDefinition) (*runner.ExecutionContext, error) {
 	dir := def.Dir
 	if dir == "" {
-		var err error
-		dir, err = os.Getwd()
-		if err != nil {
-			return nil, err
-		}
+		dir = utils.MustGetwd()
 	}
 
 	c := runner.NewExecutionContext(

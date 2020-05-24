@@ -181,3 +181,23 @@ func TestRenderString(t *testing.T) {
 		})
 	}
 }
+
+func TestMustGetwd(t *testing.T) {
+	wd, _ := os.Getwd()
+	if wd != MustGetwd() {
+		t.Error()
+	}
+
+}
+
+func TestMustGetUserHomeDir(t *testing.T) {
+	err := os.Setenv("HOME", "/test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	hd := MustGetUserHomeDir()
+	if hd != "/test" {
+		t.Error()
+	}
+
+}

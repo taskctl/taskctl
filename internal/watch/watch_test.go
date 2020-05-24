@@ -17,7 +17,7 @@ func TestNewWatcher(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	w, err := NewWatcher("w1", []string{}, []string{filepath.Join(cwd, "*.go")}, []string{"watch_test.go"}, task.FromCommands("true"))
+	w, err := NewWatcher("w1", []string{}, []string{filepath.Join(cwd, "*")}, []string{"watch_test.go"}, task.FromCommands("true"))
 	if err != nil {
 		t.Fatal(err)
 	}

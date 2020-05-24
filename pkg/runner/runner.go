@@ -85,8 +85,8 @@ func (r *TaskRunner) SetContexts(contexts map[string]*ExecutionContext) *TaskRun
 }
 
 // SetVariables sets task runner's variables
-func (r *TaskRunner) SetVariables(contexts map[string]*ExecutionContext) *TaskRunner {
-	r.contexts = contexts
+func (r *TaskRunner) SetVariables(vars variables.Container) *TaskRunner {
+	r.variables = vars
 
 	return r
 }

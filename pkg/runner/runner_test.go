@@ -12,14 +12,23 @@ import (
 	taskpkg "github.com/taskctl/taskctl/pkg/task"
 )
 
-func TestTaskRunner_Run(t *testing.T) {
+func TestTaskRunner(t *testing.T) {
 	c := NewExecutionContext(nil, "/", variables.NewVariables(), []string{"true"}, []string{"false"}, []string{"echo 1"}, []string{"echo 2"})
 
 	runner, err := NewTaskRunner(WithContexts(map[string]*ExecutionContext{"local": c}))
 	if err != nil {
 		t.Fatal(err)
 	}
+	runner.SetContexts(map[string]*ExecutionContext{
+		"default": DefaultContext(),
+		"local":   c,
+	})
+	if _, ok := runner.contexts["default"]; !ok {
+		t.Error()
+	}
+
 	runner.Stdout, runner.Stderr = ioutil.Discard, ioutil.Discard
+	runner.SetVariables(variables.FromMap(map[string]string{"Root": "/tmp"}))
 	runner.WithVariable("Root", "/")
 
 	task1 := taskpkg.NewTask()
@@ -29,6 +38,7 @@ func TestTaskRunner_Run(t *testing.T) {
 	task1.Commands = []string{"echo 'taskctl'"}
 	task1.Name = "some test task"
 	task1.Dir = "{{.Root}}"
+	task1.After = []string{"echo 'after task1'"}
 
 	d := 1 * time.Minute
 	task2 := taskpkg.NewTask()
@@ -38,6 +48,7 @@ func TestTaskRunner_Run(t *testing.T) {
 	task2.Commands = []string{"false"}
 	task2.Name = "some test task"
 	task2.Dir = "{{.Root}}"
+	task2.Interactive = true
 
 	task3 := taskpkg.NewTask()
 	task3.Condition = "exit 1"

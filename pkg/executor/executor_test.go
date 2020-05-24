@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"testing"
+	"time"
 )
 
 func TestDefaultExecutor_Execute(t *testing.T) {
@@ -12,9 +13,11 @@ func TestDefaultExecutor_Execute(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	job := NewJobFromCommand("echo 'success'")
+	job1 := NewJobFromCommand("echo 'success'")
+	to := 1 * time.Minute
+	job1.Timeout = &to
 
-	output, err := e.Execute(context.Background(), job)
+	output, err := e.Execute(context.Background(), job1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -23,14 +26,20 @@ func TestDefaultExecutor_Execute(t *testing.T) {
 		t.Error()
 	}
 
-	job = NewJobFromCommand("exit 1")
+	job1 = NewJobFromCommand("exit 1")
 
-	_, err = e.Execute(context.Background(), job)
+	_, err = e.Execute(context.Background(), job1)
 	if err == nil {
 		t.Error()
 	}
 
 	if _, ok := IsExitStatus(err); !ok {
+		t.Error()
+	}
+
+	job2 := NewJobFromCommand("echo {{ .Fail }}")
+	_, err = e.Execute(context.Background(), job2)
+	if err == nil {
 		t.Error()
 	}
 }

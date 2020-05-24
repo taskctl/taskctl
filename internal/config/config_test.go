@@ -2,9 +2,10 @@ package config
 
 import (
 	"bytes"
-	"github.com/taskctl/taskctl/pkg/task"
 	"io/ioutil"
 	"testing"
+
+	"github.com/taskctl/taskctl/pkg/task"
 
 	"gopkg.in/yaml.v2"
 )

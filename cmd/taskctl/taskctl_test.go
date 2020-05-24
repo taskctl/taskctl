@@ -50,7 +50,7 @@ func runAppTest(app *cli.App, test appTest, t *testing.T) {
 	w.Close()
 
 	if err != nil && !test.errored {
-		t.Error(err)
+		t.Fatal(err)
 		return
 	}
 
@@ -75,15 +75,17 @@ func runAppTest(app *cli.App, test appTest, t *testing.T) {
 	}
 }
 
-func stdinConfirm(t *testing.T) *os.File {
+func stdinConfirm(t *testing.T, times int) *os.File {
 	tmpfile, err := ioutil.TempFile("", "confirm")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = binary.Write(tmpfile, binary.LittleEndian, promptui.KeyEnter)
-	if err != nil {
-		t.Fatal(err)
+	for i := 0; i < times; i++ {
+		err = binary.Write(tmpfile, binary.LittleEndian, promptui.KeyEnter)
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	if _, err := tmpfile.Seek(0, 0); err != nil {
@@ -103,7 +105,8 @@ func TestBashComplete(t *testing.T) {
 
 func TestRootAction(t *testing.T) {
 	tests := []appTest{
-		{args: []string{"", "-c", "testdata/graph.yaml", "graph:task2"}, errored: true},
+		{args: []string{""}, output: []string{"Please use `Ctrl-C` to exit this program"}, errored: true},
+		{args: []string{"", "-c", "--quiet", "testdata/graph.yaml", "graph:task2"}, errored: true},
 
 		{args: []string{"", "-c", "testdata/graph.yaml", "graph:task1"}, exactOutput: "hello, world!\n"},
 		{

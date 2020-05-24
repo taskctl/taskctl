@@ -89,3 +89,25 @@ func IsExitError(err error) bool {
 	var e *exec.ExitError
 	return errors.As(err, &e)
 }
+
+// MustGetwd returns current working directory.
+// Panics is os.Getwd() returns error
+func MustGetwd() string {
+	wd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+
+	return wd
+}
+
+// MustGetUserHomeDir returns current working directory.
+// Panics is os.UserHomeDir() returns error
+func MustGetUserHomeDir() string {
+	hd, err := os.UserHomeDir()
+	if err != nil {
+		panic(err)
+	}
+
+	return hd
+}

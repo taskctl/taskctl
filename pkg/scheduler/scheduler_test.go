@@ -3,8 +3,10 @@ package scheduler
 import (
 	"errors"
 	"fmt"
-	"github.com/taskctl/taskctl/pkg/variables"
+	"sync/atomic"
 	"testing"
+
+	"github.com/taskctl/taskctl/pkg/variables"
 
 	"github.com/taskctl/taskctl/pkg/runner"
 
@@ -29,8 +31,6 @@ func (t2 TestTaskRunner) Cancel() {}
 func (t2 TestTaskRunner) Finish() {}
 
 func TestExecutionGraph_Scheduler(t *testing.T) {
-	graph, _ := NewExecutionGraph()
-
 	stage1 := &Stage{
 		Name: "stage1",
 		Task: task.FromCommands("/usr/bin/true"),
@@ -45,16 +45,13 @@ func TestExecutionGraph_Scheduler(t *testing.T) {
 		Task:      task.FromCommands("/usr/bin/false"),
 		DependsOn: []string{"stage2"},
 	}
+	stage4 := &Stage{
+		Name:      "stage4",
+		Task:      task.FromCommands("true"),
+		DependsOn: []string{"stage3"},
+	}
 
-	err := graph.AddStage(stage1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = graph.AddStage(stage2)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = graph.AddStage(stage3)
+	graph, err := NewExecutionGraph(stage1, stage2, stage3, stage4)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,7 +68,7 @@ func TestExecutionGraph_Scheduler(t *testing.T) {
 		t.Fatal()
 	}
 
-	if stage3.Status != StatusCanceled {
+	if stage3.Status != StatusCanceled || stage4.Status != StatusCanceled {
 		t.Fatal("stage3 was not cancelled")
 	}
 }
@@ -91,9 +88,8 @@ func TestExecutionGraph_Scheduler_AllowFailure(t *testing.T) {
 		Name:      "stage3",
 		Task:      task.FromCommands("{{.command}}"),
 		DependsOn: []string{"stage2"},
-		Condition: "true",
 		Variables: variables.FromMap(map[string]string{"command": "true"}),
-		Env: variables.NewVariables(),
+		Env:       variables.NewVariables(),
 	}
 
 	graph, err := NewExecutionGraph(stage1, stage2, stage3)
@@ -111,6 +107,104 @@ func TestExecutionGraph_Scheduler_AllowFailure(t *testing.T) {
 
 	if stage3.Status == StatusCanceled {
 		t.Fatal("stage3 was cancelled")
+	}
+
+	if stage3.Duration() <= 0 {
+		t.Error()
+	}
+
+	schdlr.Finish()
+}
+
+func TestSkippedStage(t *testing.T) {
+	stage1 := &Stage{
+		Name:      "stage1",
+		Task:      task.FromCommands("true"),
+		Condition: "true",
+	}
+	stage2 := &Stage{
+		Name:         "stage2",
+		Task:         task.FromCommands("false"),
+		AllowFailure: true,
+		DependsOn:    []string{"stage1"},
+		Condition:    "false",
+	}
+
+	graph, err := NewExecutionGraph(stage1, stage2)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	taskRunner := TestTaskRunner{}
+
+	schdlr := NewScheduler(taskRunner)
+	err = schdlr.Schedule(graph)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if stage1.Status != StatusDone || stage2.Status != StatusSkipped {
+		t.Error()
+	}
+}
+
+func TestScheduler_Cancel(t *testing.T) {
+	stage1 := &Stage{
+		Name: "stage1",
+		Task: task.FromCommands("sleep 60"),
+	}
+
+	graph, err := NewExecutionGraph(stage1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	taskRunner := TestTaskRunner{}
+
+	schdlr := NewScheduler(taskRunner)
+	go func() {
+		schdlr.Cancel()
+	}()
+
+	err = schdlr.Schedule(graph)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if atomic.LoadInt32(&schdlr.cancelled) != 1 {
+		t.Error()
+	}
+}
+
+func TestConditionErroredStage(t *testing.T) {
+	stage1 := &Stage{
+		Name:      "stage1",
+		Task:      task.FromCommands("true"),
+		Condition: "true",
+	}
+	stage2 := &Stage{
+		Name:         "stage2",
+		Task:         task.FromCommands("false"),
+		AllowFailure: true,
+		DependsOn:    []string{"stage1"},
+		Condition:    "/unknown-bin",
+	}
+
+	graph, err := NewExecutionGraph(stage1, stage2)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	taskRunner := TestTaskRunner{}
+
+	schdlr := NewScheduler(taskRunner)
+	err = schdlr.Schedule(graph)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if stage1.Status != StatusDone || stage2.Status != StatusError {
+		t.Error()
 	}
 }
 

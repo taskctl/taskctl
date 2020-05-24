@@ -35,20 +35,10 @@ type Loader struct {
 
 // NewConfigLoader is Loader constructor
 func NewConfigLoader() Loader {
-	h, err := os.UserHomeDir()
-	if err != nil {
-		logrus.Warning(err)
-	}
-
-	dir, err := os.Getwd()
-	if err != nil {
-		logrus.Warning(err)
-	}
-
 	return Loader{
 		imports: make(map[string]bool),
-		homeDir: h,
-		dir:     dir,
+		homeDir: utils.MustGetUserHomeDir(),
+		dir:     utils.MustGetwd(),
 	}
 }
 
@@ -149,9 +139,15 @@ func (cl *Loader) load(file string) (config map[string]interface{}, err error) {
 	if imports, ok := config["import"]; ok {
 		for _, v := range imports.([]interface{}) {
 			if utils.IsURL(v.(string)) {
+				if cl.imports[v.(string)] {
+					continue
+				}
 				raw, err = cl.load(v.(string))
 			} else {
 				importFile := path.Join(importDir, v.(string))
+				if cl.imports[importFile] {
+					continue
+				}
 				fi, err := os.Stat(importFile)
 				if err != nil {
 					return nil, fmt.Errorf("%s: %v", importFile, err)

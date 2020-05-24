@@ -51,3 +51,8 @@ watchers:
     watch: ["README.*", "pkg/**/*.go"]
     events: [create, write, remove, rename, chmod]
     task: test-task
+
+contexts:
+  local:
+    env:
+      LOCAL_ENV: LOCAL_ENV_VALUE
