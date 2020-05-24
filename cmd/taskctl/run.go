@@ -41,7 +41,6 @@ func newRunCommand() *cli.Command {
 			return err
 		},
 		After: func(c *cli.Context) error {
-			close(done)
 			return nil
 		},
 		Action: func(c *cli.Context) (err error) {
@@ -52,6 +51,10 @@ func newRunCommand() *cli.Command {
 			for _, v := range c.Args().Slice() {
 				if v == "--" {
 					break
+				}
+
+				if v == "pipeline" {
+					continue
 				}
 
 				err = runTarget(v, c, taskRunner)

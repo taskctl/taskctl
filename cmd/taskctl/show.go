@@ -15,11 +15,11 @@ var showTmpl = `
 {{- end }}
   Context: {{ .Context }}
   Commands: 
-{{- range .CommandWithContext }}
+{{- range .Commands }}
     - {{ . -}}
 {{ end -}}
-{{ if .dir }}
-  dir: {{ .dir }}
+{{ if .Dir }}
+  Dir: {{ .Dir }}
 {{- end }}
 {{ if .Timeout }}
   Timeout: {{ .Timeout }}

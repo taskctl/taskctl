@@ -1,0 +1,22 @@
+pipelines:
+  graph:pipeline1:
+    - task: graph:task1
+    - task: graph:task2
+      depends_on: [graph:task1]
+    - task: graph:task3
+      depends_on: [graph:task1]
+    - pipeline: graph:pipeline1
+      depends_on: [graph:task3]
+
+  graph:pipeline2:
+    - task: graph:task1
+
+tasks:
+  graph:task1:
+    command: "echo 'hello, world!'"
+
+  graph:task2:
+    command: "echo 'hello, world!'"
+
+  graph:task3:
+    command: "echo 'hello, world!'"

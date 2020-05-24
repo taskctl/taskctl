@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -26,8 +27,9 @@ import (
 
 var version = "dev"
 
+var stdin io.ReadCloser
+
 var cancel = make(chan struct{})
-var done = make(chan bool)
 
 var cfg *config.Config
 
@@ -37,7 +39,6 @@ func main() {
 		TimestampFormat: "2006-01-02 15:04:05",
 		FullTimestamp:   false,
 	})
-	listenSignals()
 
 	err := run()
 	if err != nil {
@@ -57,7 +58,11 @@ func listenSignals() {
 }
 
 func run() error {
+	stdin = os.Stdin
+
 	app := makeApp()
+
+	listenSignals()
 
 	return app.Run(os.Args)
 }
@@ -243,7 +248,6 @@ func rootAction(c *cli.Context) (err error) {
 
 func abort() {
 	close(cancel)
-	<-done
 }
 
 func buildTaskRunner(c *cli.Context) (*runner.TaskRunner, error) {

@@ -44,29 +44,39 @@ func newInitCommand() *cli.Command {
 	cmd := &cli.Command{
 		Name:  "init",
 		Usage: "creates sample config file",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  "dir",
+				Usage: "directory to initialize",
+			},
+		},
 		Action: func(c *cli.Context) error {
 			fileSelect := promptui.Select{
 				Label: "Choose file name",
 				Items: config.DefaultFileNames,
+				Stdin: stdin,
 			}
 
 			_, filename, err := fileSelect.Run()
-
 			if err != nil {
 				return err
 			}
 
-			cwd, err := os.Getwd()
-			if err != nil {
-				return err
+			dir := c.String("dir")
+			if dir == "" {
+				dir, err = os.Getwd()
+				if err != nil {
+					return err
+				}
 			}
 
-			file := filepath.Join(cwd, filename)
+			file := filepath.Join(dir, filename)
 
 			if utils.FileExists(file) {
 				replaceConfirmation := promptui.Prompt{
 					Label:     "File already exists. Overwrite",
 					IsConfirm: true,
+					Stdin:     stdin,
 				}
 
 				_, err = replaceConfirmation.Run()
