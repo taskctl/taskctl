@@ -1,5 +1,8 @@
 name: Release
-on: [create]
+on:
+  create:
+    tags:
+      - '*'
 
 jobs:
   goreleaser:
