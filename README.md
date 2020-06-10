@@ -205,6 +205,7 @@ You can use those variables according to `text/template` [documentation](https:/
 
 Predefined variables are:
 - `.Root` - config file directory
+- `.TempDir` - system's temporary directory
 - `.Args` - provided arguments
 - `.Task.Name` - current task's name
 - `.Context.Name` - current task's execution context's name

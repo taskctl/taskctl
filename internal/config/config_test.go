@@ -60,3 +60,10 @@ func TestConfig_merge(t *testing.T) {
 		t.Error()
 	}
 }
+
+func TestNewConfig(t *testing.T) {
+	cfg := NewConfig()
+	if !cfg.Variables.Has("TempDir") {
+		t.Error()
+	}
+}

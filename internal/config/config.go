@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/taskctl/taskctl/pkg/variables"
 
@@ -26,6 +27,7 @@ func NewConfig() *Config {
 		Pipelines: make(map[string]*scheduler.ExecutionGraph),
 		Tasks:     make(map[string]*task.Task),
 		Watchers:  make(map[string]*watch.Watcher),
+		Variables: defaultConfigVariables(),
 	}
 
 	return cfg
@@ -105,7 +107,13 @@ func buildFromDefinition(def *configDefinition) (cfg *Config, err error) {
 	cfg.Import = def.Import
 	cfg.Debug = def.Debug
 	cfg.Output = def.Output
-	cfg.Variables = variables.FromMap(def.Variables)
+	cfg.Variables = cfg.Variables.Merge(variables.FromMap(def.Variables))
 
 	return cfg, nil
+}
+
+func defaultConfigVariables() variables.Container {
+	return variables.FromMap(map[string]string{
+		"TempDir": os.TempDir(),
+	})
 }
