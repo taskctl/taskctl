@@ -77,11 +77,11 @@ func (e *DefaultExecutor) Execute(ctx context.Context, job *Job) ([]byte, error)
 		stderr = ioutil.Discard
 	}
 
-	buf := bytes.NewBuffer(make([]byte, 4096))
+	var buf bytes.Buffer
 	r, err := interp.New(
 		interp.Dir(job.Dir),
 		interp.Env(expand.ListEnviron(env...)),
-		interp.StdIO(job.Stdin, io.MultiWriter(buf, stdout), stderr),
+		interp.StdIO(job.Stdin, io.MultiWriter(&buf, stdout), io.MultiWriter(&buf, stderr)),
 	)
 	if err != nil {
 		return nil, err

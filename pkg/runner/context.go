@@ -115,7 +115,10 @@ func (c *ExecutionContext) runServiceCommand(command string) (err error) {
 		Vars:    c.Variables,
 	})
 	if err != nil {
-		logrus.Warning(out)
+		if out != nil {
+			logrus.Warning(string(out))
+		}
+
 		return err
 	}
 
