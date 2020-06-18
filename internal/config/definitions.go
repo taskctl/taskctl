@@ -11,8 +11,8 @@ type configDefinition struct {
 	Tasks     map[string]*taskDefinition
 	Watchers  map[string]*watcherDefinition
 
-	Debug, DryRun bool
-	Output        string
+	Debug, DryRun, Summary bool
+	Output                 string
 
 	Variables map[string]string
 }

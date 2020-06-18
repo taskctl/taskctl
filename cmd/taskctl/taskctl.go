@@ -243,7 +243,7 @@ func rootAction(c *cli.Context) (err error) {
 		return runTask(cfg.Tasks[selection.Target], taskRunner)
 	}
 
-	return runPipeline(cfg.Pipelines[selection.Target], taskRunner, c.Bool("summary"))
+	return runPipeline(cfg.Pipelines[selection.Target], taskRunner, cfg.Summary || c.Bool("summary"))
 }
 
 func abort() {
@@ -282,6 +282,10 @@ type suggestion struct {
 }
 
 func buildSuggestions(cfg *config.Config) []suggestion {
+	if cfg == nil {
+		return nil
+	}
+
 	suggestions := make([]suggestion, 0)
 
 	for _, v := range utils.MapKeys(cfg.Pipelines) {

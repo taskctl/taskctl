@@ -97,7 +97,7 @@ func newRunCommand() *cli.Command {
 func runTarget(name string, c *cli.Context, taskRunner *runner.TaskRunner) (err error) {
 	p := cfg.Pipelines[name]
 	if p != nil {
-		err = runPipeline(p, taskRunner, c.Bool("summary"))
+		err = runPipeline(p, taskRunner, cfg.Summary || c.Bool("summary"))
 		if err != nil {
 			return err
 		}

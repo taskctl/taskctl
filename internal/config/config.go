@@ -41,8 +41,8 @@ type Config struct {
 	Tasks     map[string]*task.Task
 	Watchers  map[string]*watch.Watcher
 
-	Debug, DryRun bool
-	Output        string
+	Debug, DryRun, Summary bool
+	Output                 string
 
 	Variables variables.Container
 }
