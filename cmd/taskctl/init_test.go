@@ -10,26 +10,30 @@ import (
 func Test_initCommand(t *testing.T) {
 	confirm := stdinConfirm(t, 1)
 	defer func(f os.File) {
+		confirm.Close()
 		os.Remove(f.Name())
 	}(*confirm)
 
 	app := makeTestApp(t)
-	os.Remove(filepath.Join(os.TempDir(), "taskctl.yaml"))
+	dir := os.TempDir()
+	os.Remove(filepath.Join(dir, "taskctl.yaml"))
 
-	runAppTest(app, appTest{args: []string{"", "init", "--dir", os.TempDir()}, stdin: confirm}, t)
+	runAppTest(app, appTest{args: []string{"", "init", "--dir", dir}, stdin: confirm}, t)
 }
 
 func TestInitCommand_Overwrite(t *testing.T) {
 	confirm := stdinConfirm(t, 2)
 	defer func(f os.File) {
+		confirm.Close()
 		os.Remove(f.Name())
 	}(*confirm)
 
 	app := makeTestApp(t)
-	err := ioutil.WriteFile(filepath.Join(os.TempDir(), "taskctl.yaml"), []byte("here"), 0764)
+	dir := os.TempDir()
+	err := ioutil.WriteFile(filepath.Join(dir, "taskctl.yaml"), []byte("here"), 0764)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	runAppTest(app, appTest{args: []string{"", "init", "--dir", os.TempDir()}, stdin: confirm, errored: true}, t)
+	runAppTest(app, appTest{args: []string{"", "init", "--dir", dir}, stdin: confirm, errored: true}, t)
 }

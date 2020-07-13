@@ -32,7 +32,7 @@ func TestTaskCompiler_CompileCommand(t *testing.T) {
 		t.Error()
 	}
 
-	if job.Command != "/bin/sh -c echo 1" {
+	if job.Command != "/bin/sh -c \"echo 1\"" {
 		t.Error()
 	}
 }

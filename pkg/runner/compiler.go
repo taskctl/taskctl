@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"fmt"
 	"io"
 	"strings"
 	"time"
@@ -76,12 +77,15 @@ func (tc *TaskCompiler) CompileCommand(
 		Vars:    tc.variables.Merge(vars),
 	}
 
-	c := make([]string, 0)
+	var c []string
 	if executionCtx.Executable != nil {
-		c = append(c, executionCtx.Executable.Bin)
+		c = []string{executionCtx.Executable.Bin}
 		c = append(c, executionCtx.Executable.Args...)
+		c = append(c, fmt.Sprintf("\"%s\"", command))
+	} else {
+		c = []string{command}
 	}
-	c = append(c, command)
+
 	j.Command = strings.Join(c, " ")
 
 	var err error

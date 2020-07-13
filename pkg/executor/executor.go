@@ -53,7 +53,7 @@ func (e *DefaultExecutor) Execute(ctx context.Context, job *Job) ([]byte, error)
 		return nil, err
 	}
 
-	cmd, err := syntax.NewParser().Parse(strings.NewReader(command), "")
+	cmd, err := syntax.NewParser(syntax.KeepComments(true)).Parse(strings.NewReader(command), "")
 	if err != nil {
 		return nil, err
 	}
