@@ -17,7 +17,8 @@ import (
 	"github.com/taskctl/taskctl/pkg/utils"
 )
 
-var configTmpl = `# This is an example of taskctl tasks configuration file. Adjust it to fit your needs
+var configTmpl = `# This is an example of taskctl tasks configuration file.
+# More information at https://github.com/taskctl/taskctl
 pipelines:
   pipeline1:
     - task: task1
@@ -88,7 +89,7 @@ func newInitCommand() *cli.Command {
 				}
 			}
 
-			fw, err := os.OpenFile(file, os.O_CREATE|os.O_WRONLY, 0755)
+			fw, err := os.OpenFile(file, os.O_CREATE|os.O_WRONLY, 0644)
 			if err != nil {
 				return err
 			}
