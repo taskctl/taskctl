@@ -28,14 +28,16 @@ var ErrConfigNotFound = errors.New("config file not found")
 
 // Loader reads and parses config files
 type Loader struct {
+	dst     *Config
 	imports map[string]bool
 	dir     string
 	homeDir string
 }
 
 // NewConfigLoader is Loader constructor
-func NewConfigLoader() Loader {
+func NewConfigLoader(dst *Config) Loader {
 	return Loader{
+		dst:     dst,
 		imports: make(map[string]bool),
 		homeDir: utils.MustGetUserHomeDir(),
 		dir:     utils.MustGetwd(),
@@ -45,7 +47,7 @@ func NewConfigLoader() Loader {
 // Load loads and parses requested config file
 func (cl *Loader) Load(file string) (*Config, error) {
 	cl.reset()
-	globalCfg, err := cl.LoadGlobalConfig()
+	_, err := cl.LoadGlobalConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +55,7 @@ func (cl *Loader) Load(file string) (*Config, error) {
 	if file == "" {
 		file, err = cl.resolveDefaultConfigFile()
 		if err != nil {
-			return globalCfg, err
+			return cl.dst, err
 		}
 	}
 
@@ -76,14 +78,14 @@ func (cl *Loader) Load(file string) (*Config, error) {
 		return nil, err
 	}
 
-	err = globalCfg.merge(localCfg)
+	err = cl.dst.merge(localCfg)
 	if err != nil {
 		return nil, err
 	}
-	globalCfg.Variables.Set("Root", cl.dir)
+	cl.dst.Variables.Set("Root", cl.dir)
 
 	logrus.Debugf("config %s loaded", file)
-	return globalCfg, nil
+	return cl.dst, nil
 }
 
 // LoadGlobalConfig load global config file  - ~/.taskctl/config.yaml
@@ -94,7 +96,7 @@ func (cl *Loader) LoadGlobalConfig() (*Config, error) {
 
 	file := path.Join(cl.homeDir, ".taskctl", "config.yaml")
 	if !utils.FileExists(file) {
-		return &Config{}, nil
+		return cl.dst, nil
 	}
 
 	raw, err := cl.load(file)
@@ -112,7 +114,12 @@ func (cl *Loader) LoadGlobalConfig() (*Config, error) {
 		return nil, err
 	}
 
-	return cfg, err
+	err = cl.dst.merge(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return cl.dst, err
 }
 
 func (cl *Loader) reset() {

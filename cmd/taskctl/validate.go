@@ -21,7 +21,7 @@ func newValidateCommand() *cli.Command {
 			return nil
 		},
 		Action: func(c *cli.Context) error {
-			cl := config.NewConfigLoader()
+			cl := config.NewConfigLoader(cfg)
 
 			_, err := cl.Load(c.Args().First())
 			if err != nil {

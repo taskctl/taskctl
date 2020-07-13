@@ -18,7 +18,7 @@ func TestLoader_Load(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cl := NewConfigLoader()
+	cl := NewConfigLoader(NewConfig())
 	cfg, err := cl.Load(filepath.Join(cwd, "testdata", "test.yaml"))
 	if err != nil {
 		t.Fatal(err)
@@ -27,7 +27,7 @@ func TestLoader_Load(t *testing.T) {
 		t.Error("yaml parsing failed")
 	}
 
-	cl = NewConfigLoader()
+	cl = NewConfigLoader(NewConfig())
 	cl.dir = filepath.Join(cwd, "testdata")
 	cfg, err = cl.Load("test.toml")
 	if err != nil {
@@ -37,7 +37,7 @@ func TestLoader_Load(t *testing.T) {
 		t.Error("yaml parsing failed")
 	}
 
-	cl = NewConfigLoader()
+	cl = NewConfigLoader(NewConfig())
 	cl.dir = filepath.Join(cwd, "testdata", "nested")
 	cfg, err = cl.Load("")
 	if err != nil {
@@ -54,7 +54,7 @@ func TestLoader_Load(t *testing.T) {
 }
 
 func TestLoader_resolveDefaultConfigFile(t *testing.T) {
-	cl := NewConfigLoader()
+	cl := NewConfigLoader(NewConfig())
 
 	cl.dir = filepath.Join(cl.dir, "testdata")
 	file, err := cl.resolveDefaultConfigFile()
@@ -79,7 +79,7 @@ func TestLoader_loadDir(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cl := NewConfigLoader()
+	cl := NewConfigLoader(NewConfig())
 	m, err := cl.loadDir(filepath.Join(cwd, "testdata"))
 	if err != nil {
 		t.Fatal(err)
@@ -105,7 +105,7 @@ func TestLoader_readURL(t *testing.T) {
 		r++
 	}))
 
-	cl := NewConfigLoader()
+	cl := NewConfigLoader(NewConfig())
 	m, err := cl.readURL(srv.URL)
 	if err != nil {
 		t.Fatal(err)
@@ -140,7 +140,7 @@ func TestLoader_LoadGlobalConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cl := NewConfigLoader()
+	cl := NewConfigLoader(NewConfig())
 	cl.homeDir = h
 	cfg, err := cl.LoadGlobalConfig()
 	if err != nil {
@@ -153,7 +153,7 @@ func TestLoader_LoadGlobalConfig(t *testing.T) {
 }
 
 func TestLoader_unmarshalData(t *testing.T) {
-	cl := NewConfigLoader()
+	cl := NewConfigLoader(NewConfig())
 	_, err := cl.unmarshalData([]byte(sampleCfg), ".json")
 	if err != nil {
 		t.Error(err)

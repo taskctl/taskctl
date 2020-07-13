@@ -59,7 +59,6 @@ func listenSignals() {
 
 func run() error {
 	stdin = os.Stdin
-
 	app := makeApp()
 
 	listenSignals()
@@ -68,7 +67,8 @@ func run() error {
 }
 
 func makeApp() *cli.App {
-	cl := config.NewConfigLoader()
+	cfg = config.NewConfig()
+	cl := config.NewConfigLoader(cfg)
 
 	return &cli.App{
 		Name:                 "taskctl",

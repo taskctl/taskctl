@@ -13,7 +13,7 @@ import (
 var testConfig, _ = ioutil.ReadFile("testdata/tasks.yaml")
 
 func TestConfig_decode(t *testing.T) {
-	loader := NewConfigLoader()
+	loader := NewConfigLoader(NewConfig())
 
 	var cm = make(map[string]interface{})
 	var dec = yaml.NewDecoder(bytes.NewReader(testConfig))
@@ -24,20 +24,20 @@ func TestConfig_decode(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cfg, err := loader.decode(cm)
+	def, err := loader.decode(cm)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if _, ok := cfg.Tasks["test-task"]; !ok {
+	if _, ok := def.Tasks["test-task"]; !ok {
 		t.Fatal("tasks parsing error")
 	}
 
-	if _, ok := cfg.Pipelines["pipeline2"]; !ok {
+	if _, ok := def.Pipelines["pipeline2"]; !ok {
 		t.Fatal("pipelines parsing error")
 	}
 
-	if len(cfg.Pipelines["pipeline2"]) != 2 {
+	if len(def.Pipelines["pipeline2"]) != 2 {
 		t.Fatal("pipelines parsing failed")
 	}
 }
