@@ -14,6 +14,7 @@ func Test_buildContext(t *testing.T) {
 		After:     []string{"true"},
 		Env:       map[string]string{},
 		Variables: map[string]string{},
+		Quote:     "'",
 	})
 	if err != nil {
 		t.Fatal()

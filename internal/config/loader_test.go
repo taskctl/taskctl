@@ -27,6 +27,10 @@ func TestLoader_Load(t *testing.T) {
 		t.Error("yaml parsing failed")
 	}
 
+	if cfg.Contexts["local_wth_quote"].Quote != "'" {
+		t.Error("context's quote parsing failed")
+	}
+
 	cl = NewConfigLoader(NewConfig())
 	cl.dir = filepath.Join(cwd, "testdata")
 	cfg, err = cl.Load("test.toml")

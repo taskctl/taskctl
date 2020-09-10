@@ -349,6 +349,7 @@ contexts:
       VAR_NAME: VAR_VALUE
     variables:
       sleep: 10
+    quote: "'" # will quote command with provided symbol: "/bin/zsh -c 'echo 1'"
     before: echo "I'm local context!"
     after: echo "Have a nice day!"
 ```

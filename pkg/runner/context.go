@@ -19,6 +19,7 @@ type ExecutionContext struct {
 	Dir        string
 	Env        variables.Container
 	Variables  variables.Container
+	Quote      string
 
 	up     []string
 	down   []string
@@ -32,8 +33,11 @@ type ExecutionContext struct {
 	mu       sync.Mutex
 }
 
+// ExecutionContextOption is a functional option to configure ExecutionContext
+type ExecutionContextOption func(c *ExecutionContext)
+
 // NewExecutionContext creates new ExecutionContext instance
-func NewExecutionContext(executable *utils.Binary, dir string, env variables.Container, up, down, before, after []string) *ExecutionContext {
+func NewExecutionContext(executable *utils.Binary, dir string, env variables.Container, up, down, before, after []string, options ...ExecutionContextOption) *ExecutionContext {
 	c := &ExecutionContext{
 		Executable: executable,
 		Env:        env,
@@ -43,6 +47,10 @@ func NewExecutionContext(executable *utils.Binary, dir string, env variables.Con
 		before:     before,
 		after:      after,
 		Variables:  variables.NewVariables(),
+	}
+
+	for _, o := range options {
+		o(c)
 	}
 
 	return c
@@ -130,5 +138,12 @@ func DefaultContext() *ExecutionContext {
 	return &ExecutionContext{
 		Env:       variables.NewVariables(),
 		Variables: variables.NewVariables(),
+	}
+}
+
+// WithQuote is functional option to set Quote for ExecutionContext
+func WithQuote(quote string) ExecutionContextOption {
+	return func(c *ExecutionContext) {
+		c.Quote = quote
 	}
 }

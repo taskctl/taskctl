@@ -16,6 +16,7 @@ type contextDefinition struct {
 	Env        map[string]string
 	Variables  map[string]string
 	Executable utils.Binary
+	Quote      string
 }
 
 func buildContext(def *contextDefinition) (*runner.ExecutionContext, error) {
@@ -32,6 +33,7 @@ func buildContext(def *contextDefinition) (*runner.ExecutionContext, error) {
 		def.Down,
 		def.Before,
 		def.After,
+		runner.WithQuote(def.Quote),
 	)
 	c.Variables = variables.FromMap(def.Variables)
 

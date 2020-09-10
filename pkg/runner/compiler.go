@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"fmt"
 	"io"
 	"strings"
 	"time"
@@ -80,7 +81,7 @@ func (tc *TaskCompiler) CompileCommand(
 	if executionCtx.Executable != nil {
 		c = []string{executionCtx.Executable.Bin}
 		c = append(c, executionCtx.Executable.Args...)
-		c = append(c, command)
+		c = append(c, fmt.Sprintf("%s%s%s", executionCtx.Quote, command, executionCtx.Quote))
 	} else {
 		c = []string{command}
 	}

@@ -56,3 +56,8 @@ contexts:
   local:
     env:
       LOCAL_ENV: LOCAL_ENV_VALUE
+
+  local_wth_quote:
+    quote: "'"
+    env:
+      LOCAL_ENV: LOCAL_ENV_VALUE

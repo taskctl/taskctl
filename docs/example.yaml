@@ -118,6 +118,7 @@ contexts:
         - -c
     env:
       VAR_NAME: VAR_VALUE
+    quote: "'"
     before: echo "SOME COMMAND TO RUN BEFORE EVERY TASK"
     after: echo "SOME COMMAND TO RUN WHEN TASK FINISHED SUCCESSFULLY"
 
