@@ -16,6 +16,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/taskctl/taskctl)](https://goreportcard.com/report/github.com/taskctl/taskctl)
 [![Test Coverage](https://codecov.io/gh/taskctl/taskctl/branch/master/graph/badge.svg)](https://codecov.io/gh/taskctl/taskctl/tree/master/pkg)
 [![Maintainability](https://api.codeclimate.com/v1/badges/a99a88d28ad37a79dbf6/maintainability)](https://codeclimate.com/github/codeclimate/codeclimate/maintainability)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat)](https://github.com/taskctl/taskctl/pulls)
 
 Simple modern alternative to GNU Make. *taskctl* is concurrent task runner that allows you to design you routine tasks and development pipelines in nice and neat way in human-readable format (YAML, JSON or TOML). 
 Given a pipeline (composed of tasks or other pipelines) it builds a graph that outlines the execution plan. Each task my run concurrently or cascade.
