@@ -107,7 +107,7 @@ func (w *Watcher) Run(r *runner.TaskRunner) (err error) {
 	logrus.Debugf("starting watcher %s", w.name)
 	for _, path := range w.paths {
 		err = w.fsw.Add(path)
-		logrus.Debugf("watcher %s is waiting for events in %s", w.name, path)
+		logrus.Debugf("watcher \"%s\" is waiting for events in %s", w.name, path)
 		if err != nil {
 			return err
 		}
@@ -130,7 +130,7 @@ func (w *Watcher) Run(r *runner.TaskRunner) (err error) {
 				}
 				w.eventsWg.Add(1)
 				go w.handle(event)
-				logrus.Debugf("watcher %s; event %s; file: %s", w.name, event.Op.String(), event.Name)
+				logrus.Debugf("%s: event \"%s\" in file \"%s\"", w.name, event.Op.String(), event.Name)
 				if event.Op == fsnotify.Rename {
 					err = w.fsw.Add(event.Name)
 					if err != nil {
@@ -177,7 +177,8 @@ func (w *Watcher) handle(event fsnotify.Event) {
 		return
 	}
 
-	logrus.Debugf("triggering %s for %s", w.task.Name, w.name)
+	logrus.Debugf("triggering \"%s\" for watcher \"%s\"", w.task.Name, w.name)
+	w.r.Cancel()
 
 	t := *w.task
 	t.Env = t.Env.Merge(variables.FromMap(map[string]string{

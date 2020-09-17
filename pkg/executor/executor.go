@@ -99,7 +99,6 @@ func (e *DefaultExecutor) Execute(ctx context.Context, job *Job) ([]byte, error)
 
 	err = r.Run(ctx, cmd)
 	if err != nil {
-		logrus.Debug(err.Error())
 		return buf.Bytes(), err
 	}
 

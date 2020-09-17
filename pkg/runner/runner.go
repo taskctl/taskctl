@@ -2,6 +2,7 @@ package runner
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -155,8 +156,12 @@ func (r *TaskRunner) Run(t *task.Task) error {
 		return err
 	}
 
-	err = r.start(t, job)
+	err = r.execute(t, job)
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil
+		}
+
 		return err
 	}
 
@@ -167,7 +172,7 @@ func (r *TaskRunner) Run(t *task.Task) error {
 
 // Cancel cancels execution
 func (r *TaskRunner) Cancel() {
-	logrus.Debug("Runner has been cancelled")
+	logrus.Debug("runner has been cancelled")
 	r.cancelFunc()
 }
 
@@ -281,7 +286,7 @@ func (r *TaskRunner) storeTaskOutput(t *task.Task) {
 	r.variables.Set(varName, t.Log.Stdout.String())
 }
 
-func (r *TaskRunner) start(t *task.Task, job *executor.Job) error {
+func (r *TaskRunner) execute(t *task.Task, job *executor.Job) error {
 	t.Start = time.Now()
 	var prevOutput []byte
 	for nextJob := job; nextJob != nil; nextJob = nextJob.Next {
