@@ -84,7 +84,7 @@ func buildFromDefinition(def *configDefinition) (cfg *Config, err error) {
 	for k, v := range def.Watchers {
 		t := cfg.Tasks[v.Task]
 		if t == nil {
-			return nil, fmt.Errorf("no such task")
+			return nil, fmt.Errorf("no such task %s", v.Task)
 		}
 		cfg.Watchers[k], err = buildWatcher(k, v, cfg)
 		if err != nil {

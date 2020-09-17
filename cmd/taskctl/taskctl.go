@@ -138,7 +138,7 @@ func makeApp() *cli.App {
 		Before: func(c *cli.Context) (err error) {
 			cfg, err = cl.Load(c.String("config"))
 			if err != nil && (c.IsSet("config") && errors.Is(err, config.ErrConfigNotFound) || !errors.Is(err, config.ErrConfigNotFound)) {
-				return err
+				return fmt.Errorf("invalid config; %w", err)
 			}
 
 			for _, c := range c.StringSlice("set") {
