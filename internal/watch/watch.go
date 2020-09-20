@@ -114,6 +114,13 @@ func (w *Watcher) Run(r *runner.TaskRunner) (err error) {
 	}
 
 	go func() {
+		err := w.r.Run(w.task)
+		if err != nil {
+			logrus.Error(err)
+		}
+	}()
+
+	go func() {
 		defer close(w.finished)
 		for {
 			w.mu.Lock()
@@ -177,8 +184,8 @@ func (w *Watcher) handle(event fsnotify.Event) {
 		return
 	}
 
-	logrus.Debugf("triggering \"%s\" for watcher \"%s\"", w.task.Name, w.name)
 	w.r.Cancel()
+	logrus.Debugf("running task \"%s\" for watcher \"%s\"", w.task.Name, w.name)
 
 	t := *w.task
 	t.Env = t.Env.Merge(variables.FromMap(map[string]string{

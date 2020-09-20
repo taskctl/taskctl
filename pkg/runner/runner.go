@@ -2,7 +2,6 @@ package runner
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -39,6 +38,7 @@ type TaskRunner struct {
 
 	ctx        context.Context
 	cancelFunc context.CancelFunc
+	doneCh     chan struct{}
 
 	compiler *TaskCompiler
 
@@ -65,6 +65,7 @@ func NewTaskRunner(opts ...Opts) (*TaskRunner, error) {
 		Stderr:       os.Stderr,
 		variables:    variables.NewVariables(),
 		env:          variables.NewVariables(),
+		doneCh:       make(chan struct{}, 1),
 	}
 
 	r.ctx, r.cancelFunc = context.WithCancel(context.Background())
@@ -95,6 +96,14 @@ func (r *TaskRunner) SetVariables(vars variables.Container) *TaskRunner {
 // Run run provided task.
 // TaskRunner first compiles task into linked list of Jobs, then passes those jobs to Executor
 func (r *TaskRunner) Run(t *task.Task) error {
+	defer func() {
+		r.doneCh <- struct{}{}
+	}()
+
+	if err := r.ctx.Err(); err != nil {
+		return err
+	}
+
 	execContext, err := r.contextForTask(t)
 	if err != nil {
 		return err
@@ -156,24 +165,20 @@ func (r *TaskRunner) Run(t *task.Task) error {
 		return err
 	}
 
-	err = r.execute(t, job)
+	err = r.execute(r.ctx, t, job)
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			return nil
-		}
-
 		return err
 	}
-
 	r.storeTaskOutput(t)
 
-	return r.after(t, env, vars)
+	return r.after(r.ctx, t, env, vars)
 }
 
 // Cancel cancels execution
 func (r *TaskRunner) Cancel() {
-	logrus.Debug("runner has been cancelled")
+	defer logrus.Debug("runner has been cancelled")
 	r.cancelFunc()
+	<-r.doneCh
 }
 
 // Finish makes cleanup tasks over contexts
@@ -193,7 +198,7 @@ func (r *TaskRunner) WithVariable(key, value string) *TaskRunner {
 	return r
 }
 
-func (r *TaskRunner) after(t *task.Task, env, vars variables.Container) error {
+func (r *TaskRunner) after(ctx context.Context, t *task.Task, env, vars variables.Container) error {
 	if len(t.After) == 0 {
 		return nil
 	}
@@ -209,7 +214,7 @@ func (r *TaskRunner) after(t *task.Task, env, vars variables.Container) error {
 			return fmt.Errorf("\"after\" Command failed: %w", err)
 		}
 
-		_, err = r.Executor.Execute(r.ctx, job)
+		_, err = r.Executor.Execute(ctx, job)
 		if err != nil {
 			logrus.Warning(err)
 		}
@@ -259,7 +264,7 @@ func (r *TaskRunner) checkTaskCondition(t *task.Task) (bool, error) {
 		return false, err
 	}
 
-	_, err = r.Executor.Execute(r.ctx, j)
+	_, err = r.Executor.Execute(context.Background(), j)
 	if err != nil {
 		if _, ok := executor.IsExitStatus(err); ok {
 			return false, nil
@@ -286,14 +291,14 @@ func (r *TaskRunner) storeTaskOutput(t *task.Task) {
 	r.variables.Set(varName, t.Log.Stdout.String())
 }
 
-func (r *TaskRunner) execute(t *task.Task, job *executor.Job) error {
+func (r *TaskRunner) execute(ctx context.Context, t *task.Task, job *executor.Job) error {
 	t.Start = time.Now()
 	var prevOutput []byte
 	for nextJob := job; nextJob != nil; nextJob = nextJob.Next {
 		var err error
 		nextJob.Vars.Set("Output", string(prevOutput))
 
-		prevOutput, err = r.Executor.Execute(r.ctx, nextJob)
+		prevOutput, err = r.Executor.Execute(ctx, nextJob)
 		if err != nil {
 			logrus.Debug(err.Error())
 			if status, ok := executor.IsExitStatus(err); ok {
