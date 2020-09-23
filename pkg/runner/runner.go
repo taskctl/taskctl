@@ -36,9 +36,11 @@ type TaskRunner struct {
 	variables variables.Container
 	env       variables.Container
 
-	ctx        context.Context
-	cancelFunc context.CancelFunc
-	doneCh     chan struct{}
+	ctx         context.Context
+	cancelFunc  context.CancelFunc
+	cancelMutex sync.RWMutex
+	canceling   bool
+	doneCh      chan struct{}
 
 	compiler *TaskCompiler
 
@@ -97,7 +99,11 @@ func (r *TaskRunner) SetVariables(vars variables.Container) *TaskRunner {
 // TaskRunner first compiles task into linked list of Jobs, then passes those jobs to Executor
 func (r *TaskRunner) Run(t *task.Task) error {
 	defer func() {
-		r.doneCh <- struct{}{}
+		r.cancelMutex.RLock()
+		if r.canceling {
+			close(r.doneCh)
+		}
+		r.cancelMutex.RUnlock()
 	}()
 
 	if err := r.ctx.Err(); err != nil {
@@ -176,8 +182,13 @@ func (r *TaskRunner) Run(t *task.Task) error {
 
 // Cancel cancels execution
 func (r *TaskRunner) Cancel() {
-	defer logrus.Debug("runner has been cancelled")
-	r.cancelFunc()
+	r.cancelMutex.Lock()
+	if !r.canceling {
+		r.canceling = true
+		defer logrus.Debug("runner has been cancelled")
+		r.cancelFunc()
+	}
+	r.cancelMutex.Unlock()
 	<-r.doneCh
 }
 
