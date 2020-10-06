@@ -35,6 +35,7 @@ type taskDefinition struct {
 	Condition    string
 	Command      []string
 	After        []string
+	Before       []string
 	Context      string
 	Variations   []map[string]string `yaml:",omitempty"`
 	Dir          string

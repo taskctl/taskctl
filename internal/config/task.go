@@ -19,6 +19,7 @@ func buildTask(def *taskDefinition) (*task.Task, error) {
 		Timeout:      def.Timeout,
 		AllowFailure: def.AllowFailure,
 		After:        def.After,
+		Before:       def.Before,
 		ExportAs:     def.ExportAs,
 		Context:      def.Context,
 		Interactive:  def.Interactive,

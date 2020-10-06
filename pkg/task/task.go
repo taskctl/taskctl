@@ -21,6 +21,7 @@ type Task struct {
 	Timeout      *time.Duration
 	AllowFailure bool
 	After        []string
+	Before       []string
 	Interactive  bool
 
 	Condition string
