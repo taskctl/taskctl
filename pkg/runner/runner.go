@@ -161,6 +161,11 @@ func (r *TaskRunner) Run(t *task.Task) error {
 		return nil
 	}
 
+	err = r.before(r.ctx, t, env, vars)
+	if err != nil {
+		return err
+	}
+
 	job, err := r.compiler.CompileTask(t, execContext, stdin, taskOutput.Stdout(), taskOutput.Stderr(), env, vars)
 	if err != nil {
 		return err
@@ -209,6 +214,31 @@ func (r *TaskRunner) WithVariable(key, value string) *TaskRunner {
 	return r
 }
 
+func (r *TaskRunner) before(ctx context.Context, t *task.Task, env, vars variables.Container) error {
+	if len(t.Before) == 0 {
+		return nil
+	}
+
+	execContext, err := r.contextForTask(t)
+	if err != nil {
+		return err
+	}
+
+	for _, command := range t.Before {
+		job, err := r.compiler.CompileCommand(command, execContext, t.Dir, t.Timeout, nil, r.Stdout, r.Stderr, env, vars)
+		if err != nil {
+			return fmt.Errorf("\"before\" command compilation failed: %w", err)
+		}
+
+		_, err = r.Executor.Execute(ctx, job)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (r *TaskRunner) after(ctx context.Context, t *task.Task, env, vars variables.Container) error {
 	if len(t.After) == 0 {
 		return nil
@@ -222,7 +252,7 @@ func (r *TaskRunner) after(ctx context.Context, t *task.Task, env, vars variable
 	for _, command := range t.After {
 		job, err := r.compiler.CompileCommand(command, execContext, t.Dir, t.Timeout, nil, r.Stdout, r.Stderr, env, vars)
 		if err != nil {
-			return fmt.Errorf("\"after\" Command failed: %w", err)
+			return fmt.Errorf("\"after\" command compilation failed: %w", err)
 		}
 
 		_, err = r.Executor.Execute(ctx, job)

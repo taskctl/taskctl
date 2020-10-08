@@ -20,7 +20,7 @@ tasks:
     before: mkdir some-dir
     after: rm -rf some-dir
     exportAs: TASK1_STORED_OUTPUT
-    conditions: git diff --exit-code
+    condition: git diff --exit-code
 
   task2:
     context: docker-context-name
