@@ -223,6 +223,7 @@ tasks:
           - echo "My name is {{ .Task.Name }}"
           - echo {{ .Output }} # My name is task1
           - echo "Sleep for {{ .sleep }} seconds"
+          - sleep {{ .sleep | default 10 }}
           - sleep {{ .sleep }}
         variables:
           sleep: 3

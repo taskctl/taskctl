@@ -168,6 +168,7 @@ func TestRenderString(t *testing.T) {
 		wantErr bool
 	}{
 		{args: args{tmpl: "hello, {{ .Name }}!", variables: map[string]string{"Name": "world"}}, want: "hello, world!"},
+		{args: args{tmpl: "hello, {{ .Name | default \"John\" }}!", variables: map[string]string{"Name": ""}}, want: "hello, John!"},
 		{args: args{tmpl: "hello, {{ .Name }}!", variables: make(map[string]string)}, wantErr: true},
 		{args: args{tmpl: "hello, {{ .Name", variables: make(map[string]string)}, wantErr: true},
 	}
