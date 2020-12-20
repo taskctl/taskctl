@@ -24,7 +24,17 @@ func NewTaskCompiler() *TaskCompiler {
 
 // CompileTask compiles task into Job (linked list of commands) executed by Executor
 func (tc *TaskCompiler) CompileTask(t *task.Task, executionContext *ExecutionContext, stdin io.Reader, stdout, stderr io.Writer, env, vars variables.Container) (*executor.Job, error) {
+	vars = t.Variables.Merge(vars)
 	var job, prev *executor.Job
+
+	for k, v := range vars.Map() {
+		v, err := utils.RenderString(v, vars.Map())
+		if err != nil {
+			return nil, err
+		}
+		vars.Set(k, v)
+	}
+
 	for _, variant := range t.GetVariations() {
 		for _, command := range t.Commands {
 			j, err := tc.CompileCommand(
@@ -36,7 +46,7 @@ func (tc *TaskCompiler) CompileTask(t *task.Task, executionContext *ExecutionCon
 				stdout,
 				stderr,
 				env.Merge(variables.FromMap(variant)),
-				t.Variables.Merge(vars),
+				vars,
 			)
 			if err != nil {
 				return nil, err

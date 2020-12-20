@@ -2,10 +2,10 @@ package runner
 
 import (
 	"bytes"
-	"testing"
-
+	"github.com/taskctl/taskctl/pkg/task"
 	"github.com/taskctl/taskctl/pkg/utils"
 	"github.com/taskctl/taskctl/pkg/variables"
+	"testing"
 )
 
 var shBin = utils.Binary{
@@ -55,5 +55,27 @@ func TestTaskCompiler_CompileCommand(t *testing.T) {
 
 	if job.Command != "/bin/sh -c \"echo 1\"" {
 		t.Error("task with context wasn't quoted")
+	}
+}
+
+func TestTaskCompiler_CompileTask(t *testing.T) {
+	tc := NewTaskCompiler()
+	j, err := tc.CompileTask(&task.Task{
+		Commands:  []string{"echo 1"},
+		Variables: variables.FromMap(map[string]string{"TestInterpolatedVar": "TestVar={{.TestVar}}"}),
+	},
+		NewExecutionContext(&shBin, "/tmp", variables.FromMap(map[string]string{"HOME": "/root"}), nil, nil, nil, nil),
+		&bytes.Buffer{},
+		&bytes.Buffer{},
+		&bytes.Buffer{},
+		variables.NewVariables(),
+		variables.FromMap(map[string]string{"TestVar": "TestVarValue"}),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if j.Vars.Get("TestInterpolatedVar") != "TestVar=TestVarValue" {
+		t.Error("var interpolation failed")
 	}
 }
