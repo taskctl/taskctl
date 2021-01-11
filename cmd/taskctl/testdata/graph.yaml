@@ -5,7 +5,7 @@ pipelines:
       depends_on: [graph:task1]
     - task: graph:task3
       depends_on: [graph:task1]
-    - pipeline: graph:pipeline1
+    - pipeline: graph:pipeline2 # pipeline: graph:pipeline2 - fix cycle detection
       depends_on: [graph:task3]
 
   graph:pipeline2:
