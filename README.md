@@ -205,7 +205,8 @@ Along with globally predefined, variables can be set in a task's definition.
 You can use those variables according to `text/template` [documentation](https://golang.org/pkg/text/template/).
 
 Predefined variables are:
-- `.Root` - config file directory
+- `.Root` - root config file directory
+- `.Dir` - config file directory
 - `.TempDir` - system's temporary directory
 - `.Args` - provided arguments
 - `.Task.Name` - current task's name

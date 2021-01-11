@@ -94,11 +94,14 @@ func buildFromDefinition(def *configDefinition) (cfg *Config, err error) {
 
 	// to allow pipeline-to-pipeline links
 	for k := range def.Pipelines {
-		cfg.Pipelines[k] = &scheduler.ExecutionGraph{}
+		cfg.Pipelines[k], err = scheduler.NewExecutionGraph()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	for k, v := range def.Pipelines {
-		cfg.Pipelines[k], err = buildPipeline(v, cfg)
+		cfg.Pipelines[k], err = buildPipeline(cfg.Pipelines[k], v, cfg)
 		if err != nil {
 			return nil, err
 		}

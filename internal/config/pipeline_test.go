@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/taskctl/taskctl/pkg/scheduler"
 	"strings"
 	"testing"
 )
@@ -48,7 +49,8 @@ func TestBuildPipeline_Cyclic(t *testing.T) {
 		}
 	}
 
-	_, err = buildPipeline(stages, cfg)
+	g, _ := scheduler.NewExecutionGraph()
+	_, err = buildPipeline(g, stages, cfg)
 	if err == nil || err.Error() != "cycle detected" {
 		t.Errorf("cycles detection failed")
 	}
@@ -86,7 +88,8 @@ func TestBuildPipeline_Error(t *testing.T) {
 		},
 	}
 
-	_, err = buildPipeline(stages1, cfg)
+	g, _ := scheduler.NewExecutionGraph()
+	_, err = buildPipeline(g, stages1, cfg)
 	if err == nil || !strings.Contains(err.Error(), "no such task") {
 		t.Error()
 	}
@@ -100,7 +103,8 @@ func TestBuildPipeline_Error(t *testing.T) {
 		},
 	}
 
-	_, err = buildPipeline(stages2, cfg)
+	g, _ = scheduler.NewExecutionGraph()
+	_, err = buildPipeline(g, stages2, cfg)
 	if err == nil || !strings.Contains(err.Error(), "no such pipeline") {
 		t.Error()
 	}
@@ -120,7 +124,8 @@ func TestBuildPipeline_Error(t *testing.T) {
 		},
 	}
 
-	_, err = buildPipeline(stages3, cfg)
+	g, _ = scheduler.NewExecutionGraph()
+	_, err = buildPipeline(g, stages3, cfg)
 	if err == nil || !strings.Contains(err.Error(), "stage with same name") {
 		t.Error()
 	}

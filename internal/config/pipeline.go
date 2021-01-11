@@ -9,9 +9,7 @@ import (
 	"github.com/taskctl/taskctl/pkg/task"
 )
 
-func buildPipeline(stages []*stageDefinition, cfg *Config) (g *scheduler.ExecutionGraph, err error) {
-	g, _ = scheduler.NewExecutionGraph()
-
+func buildPipeline(g *scheduler.ExecutionGraph, stages []*stageDefinition, cfg *Config) (*scheduler.ExecutionGraph, error) {
 	for _, def := range stages {
 		var stageTask *task.Task
 		var stagePipeline *scheduler.ExecutionGraph
@@ -64,7 +62,7 @@ func buildPipeline(stages []*stageDefinition, cfg *Config) (g *scheduler.Executi
 			return nil, fmt.Errorf("stage with same name %s already exists", stage.Name)
 		}
 
-		err = g.AddStage(stage)
+		err := g.AddStage(stage)
 		if err != nil {
 			return nil, err
 		}
