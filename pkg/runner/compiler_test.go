@@ -75,7 +75,7 @@ func TestTaskCompiler_CompileTask(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if j.Vars.Get("TestInterpolatedVar") != "TestVar=TestVarValue" {
+	if j.Vars.Get("TestInterpolatedVar").(string) != "TestVar=TestVarValue" {
 		t.Error("var interpolation failed")
 	}
 }

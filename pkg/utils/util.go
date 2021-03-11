@@ -42,6 +42,16 @@ func ConvertEnv(env map[string]string) []string {
 	return enva
 }
 
+// ConvertToMapOfStrings converts map of interfaces to map of strings
+func ConvertToMapOfStrings(m map[string]interface{}) map[string]string {
+	mdst := make(map[string]string)
+
+	for k, v := range m {
+		mdst[k] = v.(string)
+	}
+	return mdst
+}
+
 // FileExists checks if the file exists
 func FileExists(file string) bool {
 	_, err := os.Stat(file)
@@ -72,7 +82,7 @@ func LastLine(r io.Reader) (l string) {
 }
 
 // RenderString parses given string as a template and executes it with provided params
-func RenderString(tmpl string, variables map[string]string) (string, error) {
+func RenderString(tmpl string, variables map[string]interface{}) (string, error) {
 	funcMap := template.FuncMap{
 		"default": func(arg interface{}, value interface{}) interface{} {
 			v := reflect.ValueOf(value)
@@ -92,6 +102,7 @@ func RenderString(tmpl string, variables map[string]string) (string, error) {
 			return value
 		},
 	}
+
 	var buf bytes.Buffer
 	t, err := template.New("interpolate").Funcs(funcMap).Option("missingkey=error").Parse(tmpl)
 	if err != nil {

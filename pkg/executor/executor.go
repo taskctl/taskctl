@@ -59,7 +59,7 @@ func (e *DefaultExecutor) Execute(ctx context.Context, job *Job) ([]byte, error)
 	}
 
 	env := e.env
-	env = append(env, utils.ConvertEnv(job.Env.Map())...)
+	env = append(env, utils.ConvertEnv(utils.ConvertToMapOfStrings(job.Env.Map()))...)
 
 	if job.Dir == "" {
 		job.Dir = e.dir

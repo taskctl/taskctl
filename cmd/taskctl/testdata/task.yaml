@@ -1,0 +1,9 @@
+tasks:
+  task:task1:
+    command: "echo 'This is {{index .ArgsList 0}} argument'"
+
+  task:task2:
+    command: "echo 'This is {{index .ArgsList 1}} argument'"
+    
+  task:task3:
+    command: "echo 'This is {{.Args }} arguments'"

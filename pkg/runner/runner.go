@@ -76,7 +76,7 @@ func NewTaskRunner(opts ...Opts) (*TaskRunner, error) {
 		o(r)
 	}
 
-	r.env = variables.FromMap(map[string]string{"ARGS": r.variables.Get("Args")})
+	r.env = variables.FromMap(map[string]string{"ARGS": r.variables.Get("Args").(string)})
 
 	return r, nil
 }

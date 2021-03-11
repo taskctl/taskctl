@@ -7,12 +7,12 @@ import (
 // Container is an interface of variables container.
 // Is is simple key-value structure.
 type Container interface {
-	Set(string, string)
-	Get(string) string
+	Set(string, interface{})
+	Get(string) interface{}
 	Has(string) bool
-	Map() map[string]string
+	Map() map[string]interface{}
 	Merge(Container) Container
-	With(string, string) Container
+	With(string, interface{}) Container
 }
 
 // Variables is struct containing simple key-value string values
@@ -36,18 +36,18 @@ func FromMap(values map[string]string) Container {
 }
 
 // Set stores value with given key
-func (vars *Variables) Set(key, value string) {
+func (vars *Variables) Set(key string, value interface{}) {
 	vars.m.Store(key, value)
 }
 
 // Get returns value by given key
-func (vars *Variables) Get(key string) string {
+func (vars *Variables) Get(key string) interface{} {
 	v, ok := vars.m.Load(key)
 	if !ok {
 		return ""
 	}
 
-	return v.(string)
+	return v
 }
 
 // Has checks if value exists
@@ -57,10 +57,10 @@ func (vars *Variables) Has(name string) bool {
 }
 
 // Map returns container in map[string]string form
-func (vars *Variables) Map() map[string]string {
-	m := make(map[string]string)
+func (vars *Variables) Map() map[string]interface{} {
+	m := make(map[string]interface{})
 	vars.m.Range(func(key, value interface{}) bool {
-		m[key.(string)] = value.(string)
+		m[key.(string)] = value
 		return true
 	})
 	return m
@@ -84,7 +84,7 @@ func (vars *Variables) Merge(src Container) Container {
 }
 
 // With creates new container and sets key to given value
-func (vars *Variables) With(key, value string) Container {
+func (vars *Variables) With(key string, value interface{}) Container {
 	dst := &Variables{}
 	dst = dst.Merge(vars).(*Variables)
 	dst.Set(key, value)

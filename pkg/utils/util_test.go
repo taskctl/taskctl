@@ -159,7 +159,7 @@ func TestMapKeys(t *testing.T) {
 func TestRenderString(t *testing.T) {
 	type args struct {
 		tmpl      string
-		variables map[string]string
+		variables map[string]interface{}
 	}
 	tests := []struct {
 		name    string
@@ -167,10 +167,10 @@ func TestRenderString(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		{args: args{tmpl: "hello, {{ .Name }}!", variables: map[string]string{"Name": "world"}}, want: "hello, world!"},
-		{args: args{tmpl: "hello, {{ .Name | default \"John\" }}!", variables: map[string]string{"Name": ""}}, want: "hello, John!"},
-		{args: args{tmpl: "hello, {{ .Name }}!", variables: make(map[string]string)}, wantErr: true},
-		{args: args{tmpl: "hello, {{ .Name", variables: make(map[string]string)}, wantErr: true},
+		{args: args{tmpl: "hello, {{ .Name }}!", variables: map[string]interface{}{"Name": "world"}}, want: "hello, world!"},
+		{args: args{tmpl: "hello, {{ .Name | default \"John\" }}!", variables: map[string]interface{}{"Name": ""}}, want: "hello, John!"},
+		{args: args{tmpl: "hello, {{ .Name }}!", variables: make(map[string]interface{})}, wantErr: true},
+		{args: args{tmpl: "hello, {{ .Name", variables: make(map[string]interface{})}, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -3,6 +3,7 @@ package runner
 import (
 	"fmt"
 	"io"
+	"reflect"
 	"strings"
 	"time"
 
@@ -28,7 +29,11 @@ func (tc *TaskCompiler) CompileTask(t *task.Task, executionContext *ExecutionCon
 	var job, prev *executor.Job
 
 	for k, v := range vars.Map() {
-		v, err := utils.RenderString(v, vars.Map())
+		if reflect.ValueOf(v).Kind() != reflect.String {
+			continue
+		}
+
+		v, err := utils.RenderString(v.(string), vars.Map())
 		if err != nil {
 			return nil, err
 		}

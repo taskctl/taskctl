@@ -208,7 +208,8 @@ Predefined variables are:
 - `.Root` - root config file directory
 - `.Dir` - config file directory
 - `.TempDir` - system's temporary directory
-- `.Args` - provided arguments
+- `.Args` - provided arguments as a string
+- `.ArgsList` - array of provided arguments
 - `.Task.Name` - current task's name
 - `.Context.Name` - current task's execution context's name
 - `.Stage.Name` - current stage's name
@@ -231,17 +232,23 @@ tasks:
 ```
 
 ### Pass CLI arguments to task
-Any command line arguments succeeding `--` are passed to each task via `.Args` variable or `ARGS` environment variable.
+Any command line arguments succeeding `--` are passed to each task via `.Args`, `.ArgsList` variables or `ARGS` environment variable.
 
 Given this definition:
 ```yaml
-lint:
+lint1:
   command: go lint {{.Args}}
+
+lint2:
+  command: go lint {{index .ArgsList 1}}
 ```
 the resulting command is:
 ```
-$ taskctl lint -- package.go
+$ taskctl lint1 -- package.go
 # go lint package.go
+
+$ taskctl lint2 -- package.go main.go
+# go lint main.go
 ```
 
 ### Storing task's output

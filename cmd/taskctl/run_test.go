@@ -21,3 +21,16 @@ func Test_runCommand(t *testing.T) {
 		runAppTest(app, v, t)
 	}
 }
+
+func Test_runCommandWithArgumentsList(t *testing.T) {
+	tests := []appTest{
+		{args: []string{"", "-c", "testdata/task.yaml", "run", "task", "task:task1", "--", "first", "second"}, exactOutput: "This is first argument\n"},
+		{args: []string{"", "-c", "testdata/task.yaml", "run", "task", "task:task2", "--", "first", "second"}, exactOutput: "This is second argument\n"},
+		{args: []string{"", "-c", "testdata/task.yaml", "run", "task", "task:task3", "--", "first", "and", "second"}, exactOutput: "This is first and second arguments\n"},
+	}
+
+	for _, v := range tests {
+		app := makeTestApp(t)
+		runAppTest(app, v, t)
+	}
+}
