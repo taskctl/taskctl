@@ -1,6 +1,6 @@
 module github.com/taskctl/taskctl
 
-go 1.14
+go 1.16
 
 require (
 	github.com/bmatcuk/doublestar v1.1.5
