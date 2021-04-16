@@ -1,13 +1,15 @@
 package config
 
 import (
+	"path/filepath"
+
 	"github.com/taskctl/taskctl/pkg/utils"
 	"github.com/taskctl/taskctl/pkg/variables"
 
 	"github.com/taskctl/taskctl/pkg/task"
 )
 
-func buildTask(def *taskDefinition) (*task.Task, error) {
+func buildTask(def *taskDefinition, lc *loaderContext) (*task.Task, error) {
 	t := &task.Task{
 		Name:         def.Name,
 		Description:  def.Description,
@@ -30,6 +32,11 @@ func buildTask(def *taskDefinition) (*task.Task, error) {
 	t.Variables.Set("Task.Name", t.Name)
 
 	if def.EnvFile != "" {
+		filename := def.EnvFile
+		if !filepath.IsAbs(filename) && lc.Dir != "" {
+			filename = filepath.Join(lc.Dir, filename)
+		}
+
 		envs, err := utils.ReadEnvFile(def.EnvFile)
 		if err != nil {
 			return nil, err

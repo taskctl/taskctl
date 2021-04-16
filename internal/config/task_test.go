@@ -1,8 +1,9 @@
 package config
 
 import (
-	"github.com/taskctl/taskctl/pkg/variables"
 	"testing"
+
+	"github.com/taskctl/taskctl/pkg/variables"
 )
 
 func Test_buildTask(t *testing.T) {
@@ -21,7 +22,7 @@ func Test_buildTask(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := buildTask(tt.args.def)
+			got, err := buildTask(tt.args.def, &loaderContext{})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("buildTask() error = %v, wantErr %v", err, tt.wantErr)
 				return

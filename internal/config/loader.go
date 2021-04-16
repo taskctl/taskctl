@@ -44,9 +44,17 @@ func NewConfigLoader(dst *Config) Loader {
 	}
 }
 
+type loaderContext struct {
+	Dir string
+}
+
 // Load loads and parses requested config file
 func (cl *Loader) Load(file string) (*Config, error) {
 	cl.reset()
+	lc := &loaderContext{
+		Dir: cl.dir,
+	}
+
 	_, err := cl.LoadGlobalConfig()
 	if err != nil {
 		return nil, err
@@ -73,7 +81,7 @@ func (cl *Loader) Load(file string) (*Config, error) {
 		return nil, err
 	}
 
-	localCfg, err := buildFromDefinition(def)
+	localCfg, err := buildFromDefinition(def, lc)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +117,7 @@ func (cl *Loader) LoadGlobalConfig() (*Config, error) {
 		return nil, err
 	}
 
-	cfg, err := buildFromDefinition(def)
+	cfg, err := buildFromDefinition(def, &loaderContext{})
 	if err != nil {
 		return nil, err
 	}

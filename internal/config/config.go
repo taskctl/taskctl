@@ -61,7 +61,7 @@ func (cfg *Config) merge(src *Config) error {
 	return nil
 }
 
-func buildFromDefinition(def *configDefinition) (cfg *Config, err error) {
+func buildFromDefinition(def *configDefinition, lc *loaderContext) (cfg *Config, err error) {
 	cfg = NewConfig()
 
 	for k, v := range def.Contexts {
@@ -72,7 +72,7 @@ func buildFromDefinition(def *configDefinition) (cfg *Config, err error) {
 	}
 
 	for k, v := range def.Tasks {
-		cfg.Tasks[k], err = buildTask(v)
+		cfg.Tasks[k], err = buildTask(v, lc)
 		if cfg.Tasks[k].Name == "" {
 			cfg.Tasks[k].Name = k
 		}

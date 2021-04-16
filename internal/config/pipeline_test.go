@@ -44,7 +44,7 @@ func TestBuildPipeline_Cyclic(t *testing.T) {
 
 	var err error
 	for k, v := range tasks {
-		cfg.Tasks[k], err = buildTask(v)
+		cfg.Tasks[k], err = buildTask(v, &loaderContext{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -74,7 +74,7 @@ func TestBuildPipeline_Error(t *testing.T) {
 
 	var err error
 	for k, v := range tasks {
-		cfg.Tasks[k], err = buildTask(v)
+		cfg.Tasks[k], err = buildTask(v, &loaderContext{})
 		if err != nil {
 			t.Fatal(err)
 		}

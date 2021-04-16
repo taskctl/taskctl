@@ -72,7 +72,7 @@ func runAppTest(app *cli.App, test appTest, t *testing.T) {
 	}
 
 	if test.exactOutput != "" && s != test.exactOutput {
-		t.Error()
+		t.Errorf("output mismatch, expected = %s, got = %s", test.exactOutput, s)
 	}
 }
 
@@ -109,7 +109,7 @@ func TestRootAction(t *testing.T) {
 		{args: []string{""}, output: []string{"Please use `Ctrl-C` to exit this program"}, errored: true},
 		{args: []string{"", "-c", "--quiet", "testdata/graph.yaml", "graph:task2"}, errored: true},
 
-		{args: []string{"", "-c", "testdata/graph.yaml", "graph:task1"}, exactOutput: "hello, world!\n"},
+		{args: []string{"", "--raw", "-c", "testdata/graph.yaml", "graph:task1"}, exactOutput: "hello, world!\n"},
 		{
 			args:   []string{"", "--output=prefixed", "-c", "testdata/graph.yaml", "graph:pipeline1"},
 			output: []string{"graph:task1", "graph:task2", "graph:task3", "hello, world!"},
