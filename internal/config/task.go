@@ -37,7 +37,7 @@ func buildTask(def *taskDefinition, lc *loaderContext) (*task.Task, error) {
 			filename = filepath.Join(lc.Dir, filename)
 		}
 
-		envs, err := utils.ReadEnvFile(def.EnvFile)
+		envs, err := utils.ReadEnvFile(filename)
 		if err != nil {
 			return nil, err
 		}
