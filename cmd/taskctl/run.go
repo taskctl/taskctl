@@ -99,7 +99,7 @@ func runTarget(name string, c *cli.Context, taskRunner *runner.TaskRunner) (err 
 	if p != nil {
 		err = runPipeline(p, taskRunner, cfg.Summary || c.Bool("summary"))
 		if err != nil {
-			return err
+			return fmt.Errorf("pipeline %s failed: %w", name, err)
 		}
 		return nil
 	}
@@ -109,7 +109,11 @@ func runTarget(name string, c *cli.Context, taskRunner *runner.TaskRunner) (err 
 		return fmt.Errorf("unknown task or pipeline %s", name)
 	}
 	err = runTask(t, taskRunner)
-	return err
+	if err != nil {
+		return fmt.Errorf("task %s failed: %w", name, err)
+	}
+
+	return nil
 }
 
 func runPipeline(g *scheduler.ExecutionGraph, taskRunner *runner.TaskRunner, summary bool) error {

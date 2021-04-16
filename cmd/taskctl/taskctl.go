@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/signal"
 	"sort"
@@ -42,7 +41,7 @@ func main() {
 
 	err := run()
 	if err != nil {
-		log.Fatal(err)
+		logrus.Fatal(err)
 	}
 }
 
@@ -155,17 +154,23 @@ func makeApp() *cli.App {
 			}
 
 			if c.Bool("quiet") {
-				logrus.SetOutput(ioutil.Discard)
+				c.App.ErrWriter = io.Discard
+				logrus.SetOutput(io.Discard)
+				cfg.Quiet = true
+			} else {
+				if c.IsSet("output") {
+					cfg.Output = c.String("output")
+				} else if c.Bool("raw") {
+					cfg.Output = output.FormatRaw
+				} else if c.Bool("cockpit") {
+					cfg.Output = output.FormatCockpit
+				} else if cfg.Output == "" {
+					cfg.Output = output.FormatRaw
+				}
 			}
 
-			if c.IsSet("output") {
-				cfg.Output = c.String("output")
-			} else if c.Bool("raw") {
-				cfg.Output = output.FormatRaw
-			} else if c.Bool("cockpit") {
-				cfg.Output = output.FormatCockpit
-			} else {
-				cfg.Output = output.FormatRaw
+			if c.Bool("dry-run") {
+				cfg.DryRun = true
 			}
 
 			return nil
@@ -260,14 +265,11 @@ func buildTaskRunner(c *cli.Context) (*runner.TaskRunner, error) {
 	}
 
 	taskRunner.OutputFormat = cfg.Output
+	taskRunner.DryRun = cfg.DryRun
 
-	if c.Bool("quiet") {
+	if cfg.Quiet {
 		taskRunner.Stdout = ioutil.Discard
 		taskRunner.Stderr = ioutil.Discard
-	}
-
-	if c.Bool("dry-run") {
-		taskRunner.DryRun = true
 	}
 
 	go func() {

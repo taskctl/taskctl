@@ -1,3 +1,4 @@
+output: cockpit
 pipelines:
   build:
     - name: Build "darwin"

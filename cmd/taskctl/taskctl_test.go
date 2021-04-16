@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -118,5 +119,21 @@ func TestRootAction(t *testing.T) {
 	for _, v := range tests {
 		app := makeTestApp(t)
 		runAppTest(app, v, t)
+	}
+}
+
+func Test_makeApp(t *testing.T) {
+	tests := []struct {
+		name string
+		want *cli.App
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := makeApp(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("makeApp() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

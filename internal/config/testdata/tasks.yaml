@@ -1,4 +1,5 @@
 debug: false
+output: prefixed
 pipelines:
   pipeline1:
     - task: test-task
