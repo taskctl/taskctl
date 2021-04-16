@@ -111,7 +111,7 @@ func (c *ExecutionContext) After() error {
 
 func (c *ExecutionContext) runServiceCommand(command string) (err error) {
 	logrus.Debugf("running context service command: %s", command)
-	ex, err := executor.NewDefaultExecutor()
+	ex, err := executor.NewDefaultExecutor(nil, nil, nil)
 	if err != nil {
 		return err
 	}

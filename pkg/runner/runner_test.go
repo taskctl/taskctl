@@ -53,6 +53,9 @@ func TestTaskRunner(t *testing.T) {
 	task3 := taskpkg.NewTask()
 	task3.Condition = "exit 1"
 
+	task4 := taskpkg.NewTask()
+	task4.Commands = []string{"function test_func() { echo \"BBB\"; } ", "test_func"}
+
 	cases := []struct {
 		t                *taskpkg.Task
 		skipped, errored bool
@@ -62,6 +65,7 @@ func TestTaskRunner(t *testing.T) {
 		{t: task1, output: "taskctl"},
 		{t: task2, status: 1, errored: true},
 		{t: task3, status: -1, skipped: true},
+		{t: task4, output: "BBB"},
 	}
 
 	for _, testCase := range cases {

@@ -2,10 +2,11 @@ package runner
 
 import (
 	"bytes"
+	"testing"
+
 	"github.com/taskctl/taskctl/pkg/task"
 	"github.com/taskctl/taskctl/pkg/utils"
 	"github.com/taskctl/taskctl/pkg/variables"
-	"testing"
 )
 
 var shBin = utils.Binary{

@@ -1,9 +1,10 @@
 package config
 
 import (
-	"github.com/taskctl/taskctl/pkg/scheduler"
 	"strings"
 	"testing"
+
+	"github.com/taskctl/taskctl/pkg/scheduler"
 )
 
 func TestBuildPipeline_Cyclic(t *testing.T) {

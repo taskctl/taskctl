@@ -53,13 +53,7 @@ type TaskRunner struct {
 
 // NewTaskRunner creates new TaskRunner instance
 func NewTaskRunner(opts ...Opts) (*TaskRunner, error) {
-	exec, err := executor.NewDefaultExecutor()
-	if err != nil {
-		return nil, err
-	}
-
 	r := &TaskRunner{
-		Executor:     exec,
 		compiler:     NewTaskCompiler(),
 		OutputFormat: output.FormatRaw,
 		Stdin:        os.Stdin,
@@ -230,7 +224,12 @@ func (r *TaskRunner) before(ctx context.Context, t *task.Task, env, vars variabl
 			return fmt.Errorf("\"before\" command compilation failed: %w", err)
 		}
 
-		_, err = r.Executor.Execute(ctx, job)
+		exec, err := executor.NewDefaultExecutor(job.Stdin, job.Stdout, job.Stderr)
+		if err != nil {
+			return err
+		}
+
+		_, err = exec.Execute(ctx, job)
 		if err != nil {
 			return err
 		}
@@ -255,7 +254,12 @@ func (r *TaskRunner) after(ctx context.Context, t *task.Task, env, vars variable
 			return fmt.Errorf("\"after\" command compilation failed: %w", err)
 		}
 
-		_, err = r.Executor.Execute(ctx, job)
+		exec, err := executor.NewDefaultExecutor(job.Stdin, job.Stdout, job.Stderr)
+		if err != nil {
+			return err
+		}
+
+		_, err = exec.Execute(ctx, job)
 		if err != nil {
 			logrus.Warning(err)
 		}
@@ -300,12 +304,17 @@ func (r *TaskRunner) checkTaskCondition(t *task.Task) (bool, error) {
 		return false, err
 	}
 
-	j, err := r.compiler.CompileCommand(t.Condition, executionContext, t.Dir, t.Timeout, nil, r.Stdout, r.Stderr, r.env, r.variables)
+	job, err := r.compiler.CompileCommand(t.Condition, executionContext, t.Dir, t.Timeout, nil, r.Stdout, r.Stderr, r.env, r.variables)
 	if err != nil {
 		return false, err
 	}
 
-	_, err = r.Executor.Execute(context.Background(), j)
+	exec, err := executor.NewDefaultExecutor(job.Stdin, job.Stdout, job.Stderr)
+	if err != nil {
+		return false, err
+	}
+
+	_, err = exec.Execute(context.Background(), job)
 	if err != nil {
 		if _, ok := executor.IsExitStatus(err); ok {
 			return false, nil
@@ -333,13 +342,18 @@ func (r *TaskRunner) storeTaskOutput(t *task.Task) {
 }
 
 func (r *TaskRunner) execute(ctx context.Context, t *task.Task, job *executor.Job) error {
+	exec, err := executor.NewDefaultExecutor(job.Stdin, job.Stdout, job.Stderr)
+	if err != nil {
+		return err
+	}
+
 	t.Start = time.Now()
 	var prevOutput []byte
 	for nextJob := job; nextJob != nil; nextJob = nextJob.Next {
 		var err error
 		nextJob.Vars.Set("Output", string(prevOutput))
 
-		prevOutput, err = r.Executor.Execute(ctx, nextJob)
+		prevOutput, err = exec.Execute(ctx, nextJob)
 		if err != nil {
 			logrus.Debug(err.Error())
 			if status, ok := executor.IsExitStatus(err); ok {

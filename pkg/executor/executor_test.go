@@ -3,12 +3,13 @@ package executor
 import (
 	"bytes"
 	"context"
+	"io/ioutil"
 	"testing"
 	"time"
 )
 
 func TestDefaultExecutor_Execute(t *testing.T) {
-	e, err := NewDefaultExecutor()
+	e, err := NewDefaultExecutor(nil, ioutil.Discard, ioutil.Discard)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -26,18 +25,35 @@ type Executor interface {
 // DefaultExecutor is a default executor used for jobs
 // Uses `mvdan.cc/sh/v3/interp` under the hood
 type DefaultExecutor struct {
-	dir string
-	env []string
+	dir    string
+	env    []string
+	interp *interp.Runner
+	buf    bytes.Buffer
 }
 
 // NewDefaultExecutor creates new default executor
-func NewDefaultExecutor() (*DefaultExecutor, error) {
+func NewDefaultExecutor(stdin io.Reader, stdout, stderr io.Writer) (*DefaultExecutor, error) {
 	var err error
 	e := &DefaultExecutor{
 		env: os.Environ(),
 	}
 
 	e.dir, err = os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+
+	if stdout == nil {
+		stdout = io.Discard
+	}
+
+	if stderr == nil {
+		stdout = io.Discard
+	}
+
+	e.interp, err = interp.New(
+		interp.StdIO(stdin, io.MultiWriter(&e.buf, stdout), io.MultiWriter(&e.buf, stderr)),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -67,25 +83,8 @@ func (e *DefaultExecutor) Execute(ctx context.Context, job *Job) ([]byte, error)
 
 	logrus.Debugf("Executing \"%s\"", command)
 
-	stdout := job.Stdout
-	if stdout == nil {
-		stdout = ioutil.Discard
-	}
-
-	stderr := job.Stderr
-	if stderr == nil {
-		stderr = ioutil.Discard
-	}
-
-	var buf bytes.Buffer
-	r, err := interp.New(
-		interp.Dir(job.Dir),
-		interp.Env(expand.ListEnviron(env...)),
-		interp.StdIO(job.Stdin, io.MultiWriter(&buf, stdout), io.MultiWriter(&buf, stderr)),
-	)
-	if err != nil {
-		return nil, err
-	}
+	e.interp.Dir = job.Dir
+	e.interp.Env = expand.ListEnviron(env...)
 
 	var cancelFn context.CancelFunc
 	if job.Timeout != nil {
@@ -97,12 +96,13 @@ func (e *DefaultExecutor) Execute(ctx context.Context, job *Job) ([]byte, error)
 		}
 	}()
 
-	err = r.Run(ctx, cmd)
+	offset := e.buf.Len()
+	err = e.interp.Run(ctx, cmd)
 	if err != nil {
-		return buf.Bytes(), err
+		return e.buf.Bytes()[offset:], err
 	}
 
-	return buf.Bytes(), nil
+	return e.buf.Bytes()[offset:], nil
 }
 
 // IsExitStatus checks if given `err` is an exit status
