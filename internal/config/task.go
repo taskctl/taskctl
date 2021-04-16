@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/taskctl/taskctl/pkg/utils"
 	"github.com/taskctl/taskctl/pkg/variables"
 
 	"github.com/taskctl/taskctl/pkg/task"
@@ -27,6 +28,15 @@ func buildTask(def *taskDefinition) (*task.Task, error) {
 
 	t.Variables.Set("Context.Name", t.Context)
 	t.Variables.Set("Task.Name", t.Name)
+
+	if def.EnvFile != "" {
+		envs, err := utils.ReadEnvFile(def.EnvFile)
+		if err != nil {
+			return nil, err
+		}
+
+		t.Env = variables.FromMap(envs).Merge(t.Env)
+	}
 
 	return t, nil
 }

@@ -141,3 +141,24 @@ func MustGetUserHomeDir() string {
 
 	return hd
 }
+
+// ReadEnvFile reads env file inv `k=v` format
+func ReadEnvFile(filename string) (map[string]string, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+
+	envs := make(map[string]string)
+	envscanner := bufio.NewScanner(f)
+	for envscanner.Scan() {
+		kv := strings.Split(envscanner.Text(), "=")
+		envs[kv[0]] = kv[1]
+	}
+
+	if err := envscanner.Err(); err != nil {
+		return nil, err
+	}
+
+	return envs, nil
+}

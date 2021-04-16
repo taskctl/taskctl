@@ -178,6 +178,7 @@ tasks:
         env: 
           GOOS: linux
           GOARCH: amd64
+        env_file: /data/.env
         after: rm -rf tmp/*
         variations:
           - GOARCH: amd64
@@ -189,6 +190,7 @@ Task definition takes following parameters:
 - `variations` - list of variations (env variables) to apply to command
 - `context` - execution context's name
 - `env` - environment variables. All existing environment variables will be passed automatically
+- `env_file` - env file in `k=v` format to read variables from
 - `dir` - working directory. Current working directory by default
 - `timeout` - command execution timeout (default: none)
 - `allow_failure` - if set to `true` failed commands will not interrupt execution (default: `false`)

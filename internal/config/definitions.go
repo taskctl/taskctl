@@ -44,6 +44,7 @@ type taskDefinition struct {
 	Interactive  bool
 	ExportAs     string
 	Env          map[string]string
+	EnvFile      string
 	Variables    map[string]string
 }
 
