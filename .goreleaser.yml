@@ -59,7 +59,7 @@ snapcrafts:
         completer: autocomplete/bash_completion.bash
 
 brews:
-  - github:
+  - tap:
       owner: taskctl
       name: homebrew-taskctl
     commit_author:

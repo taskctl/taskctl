@@ -48,7 +48,7 @@ func NewDefaultExecutor(stdin io.Reader, stdout, stderr io.Writer) (*DefaultExec
 	}
 
 	if stderr == nil {
-		stdout = io.Discard
+		stderr = io.Discard
 	}
 
 	e.interp, err = interp.New(
