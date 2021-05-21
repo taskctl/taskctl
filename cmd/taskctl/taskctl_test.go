@@ -107,18 +107,17 @@ func TestBashComplete(t *testing.T) {
 func TestCustomOutputFormat(t *testing.T) {
 	tests := []appTest{
 		{
-			args:   []string{"", "-c", "testdata/output-none.yaml", "task1"},
+			args:        []string{"", "-c", "testdata/output-none.yaml", "task1"},
 			exactOutput: "\x1b[36mtask1\x1b[0m: hello, world!\r\n",
 		},
 		{
-			args:   []string{"", "-c", "testdata/output-raw.yaml", "task1"},
+			args:        []string{"", "-c", "testdata/output-raw.yaml", "task1"},
 			exactOutput: "hello, world!\n",
 		},
 		{
-			args:   []string{"", "-c", "testdata/output-raw.yaml", "--output", "prefixed", "task1"},
+			args:        []string{"", "-c", "testdata/output-raw.yaml", "--output", "prefixed", "task1"},
 			exactOutput: "\x1b[36mtask1\x1b[0m: hello, world!\r\n",
 		},
-
 	}
 
 	for _, v := range tests {
