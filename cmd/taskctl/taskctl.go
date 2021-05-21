@@ -165,7 +165,7 @@ func makeApp() *cli.App {
 				} else if c.Bool("cockpit") {
 					cfg.Output = output.FormatCockpit
 				} else if cfg.Output == "" {
-					cfg.Output = output.FormatRaw
+					cfg.Output = output.FormatPrefixed
 				}
 			}
 
