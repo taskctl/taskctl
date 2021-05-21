@@ -1,0 +1,5 @@
+output: raw
+
+tasks:
+  task1:
+    command: "echo 'hello, world!'"
