@@ -2,6 +2,9 @@ package config
 
 import (
 	"fmt"
+	"path/filepath"
+
+	"github.com/taskctl/taskctl/pkg/utils"
 
 	"github.com/taskctl/taskctl/pkg/variables"
 
@@ -26,20 +29,36 @@ func buildPipeline(g *scheduler.ExecutionGraph, stages []*stageDefinition, cfg *
 			}
 		}
 
+		dir := def.Dir
+		if def.Dir == "" && stageTask != nil {
+			dir = stageTask.Dir
+		}
+
+		envs := variables.FromMap(def.Env)
+		if def.EnvFile != "" {
+			filename := def.EnvFile
+			if !filepath.IsAbs(filename) && def.Dir != "" {
+				filename = filepath.Join(def.Dir, filename)
+			}
+
+			fileEnvs, err := utils.ReadEnvFile(filename)
+			if err != nil {
+				return nil, err
+			}
+
+			envs = variables.FromMap(fileEnvs).Merge(envs)
+		}
+
 		stage := &scheduler.Stage{
 			Name:         def.Name,
 			Condition:    def.Condition,
 			Task:         stageTask,
 			Pipeline:     stagePipeline,
 			DependsOn:    def.DependsOn,
-			Dir:          def.Dir,
+			Dir:          dir,
 			AllowFailure: def.AllowFailure,
-			Env:          variables.FromMap(def.Env),
+			Env:          envs,
 			Variables:    variables.FromMap(def.Variables),
-		}
-
-		if stage.Dir != "" {
-			stage.Task.Dir = stage.Dir
 		}
 
 		if stage.Name == "" {
