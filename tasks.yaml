@@ -1,4 +1,5 @@
 output: cockpit
+
 pipelines:
   build:
     - name: Build "darwin"
@@ -11,6 +12,11 @@ pipelines:
       env:
         GOOS: linux
         BIN_OUT: bin/taskctl_linux_amd64
+    - name: Build "windows"
+      task: build
+      env:
+        GOOS: windows
+        BIN_OUT: bin/taskctl_windows_amd64.exe
 
   fixcs:
     - task: goimports
@@ -42,11 +48,14 @@ tasks:
 
   build:
     command:
-      - GOOS=${GOOS} GOARCH=amd64 go build -o bin/taskctl_${GOOS} ./cmd/taskctl
+      - GOOS=${GOOS} GOARCH=amd64 go build -o ${BIN_OUT} ./cmd/taskctl
     variations:
       - GOOS: linux
+        BIN_OUT: bin/taskctl_linux_amd64
       - GOOS: darwin
+        BIN_OUT: bin/taskctl_darwin_amd64
       - GOOS: windows
+        BIN_OUT: bin/taskctl_windows_amd64.exe
 
   golint:
     command:
