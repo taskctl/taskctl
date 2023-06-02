@@ -4,6 +4,9 @@ jobs:
   build:
     name: Test
     runs-on: ubuntu-latest
+    env:
+      TASKCTL_CONFIG_FILE: taskctl.yml
+
     steps:
 
     - name: Set up Go
