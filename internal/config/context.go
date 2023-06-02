@@ -14,6 +14,7 @@ type contextDefinition struct {
 	Before     []string
 	After      []string
 	Env        map[string]string
+	Envfile    utils.Envfile
 	Variables  map[string]string
 	Executable utils.Binary
 	Quote      string
@@ -29,6 +30,7 @@ func buildContext(def *contextDefinition) (*runner.ExecutionContext, error) {
 		&def.Executable,
 		dir,
 		variables.FromMap(def.Env),
+		&def.Envfile,
 		def.Up,
 		def.Down,
 		def.Before,

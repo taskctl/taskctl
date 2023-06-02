@@ -2,6 +2,12 @@ package runner
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
 	"sync"
 
 	"github.com/taskctl/taskctl/pkg/executor"
@@ -18,6 +24,7 @@ type ExecutionContext struct {
 	Executable *utils.Binary
 	Dir        string
 	Env        variables.Container
+	Envfile    *utils.Envfile
 	Variables  variables.Container
 	Quote      string
 
@@ -37,10 +44,11 @@ type ExecutionContext struct {
 type ExecutionContextOption func(c *ExecutionContext)
 
 // NewExecutionContext creates new ExecutionContext instance
-func NewExecutionContext(executable *utils.Binary, dir string, env variables.Container, up, down, before, after []string, options ...ExecutionContextOption) *ExecutionContext {
+func NewExecutionContext(executable *utils.Binary, dir string, env variables.Container, envfile *utils.Envfile, up, down, before, after []string, options ...ExecutionContextOption) *ExecutionContext {
 	c := &ExecutionContext{
 		Executable: executable,
 		Env:        env,
+		Envfile:    envfile,
 		Dir:        dir,
 		up:         up,
 		down:       down,
@@ -105,6 +113,96 @@ func (c *ExecutionContext) After() error {
 			return err
 		}
 	}
+
+	return nil
+}
+
+func (c *ExecutionContext) GenerateEnvfile() error {
+
+	// only generate the file if it has been explicitly asked for
+	if !c.Envfile.Generate {
+		return nil
+	}
+
+	// set default values
+	if c.Envfile.Path == "" {
+		c.Envfile.Path = "envfile"
+	}
+
+	if c.Envfile.ReplaceChar == "" {
+		c.Envfile.ReplaceChar = " "
+	}
+
+	// return an error if the include and exclude have both been specified
+	if len(c.Envfile.Exclude) > 0 && len(c.Envfile.Include) > 0 {
+		err := errors.New("include and exclude lists are mutually exclusive")
+		return err
+	}
+
+	// determine the path to the envfile
+	// if it is not absolute then prepare the current dir to it
+	isAbsolute := filepath.IsAbs(c.Envfile.Path)
+	if !isAbsolute {
+
+		// get the current working directory
+		cwd, err := os.Getwd()
+
+		if err != nil {
+			return err
+		}
+
+		c.Envfile.Path = filepath.Join(cwd, c.Envfile.Path)
+	}
+
+	// create a string builder object to hold all of the lines that need to be written out to
+	// the resultant file
+	builder := strings.Builder{}
+	spacePattern := regexp.MustCompile(`\s`)
+
+	// iterate around all of the environment variables and add the selected ones to the builder
+	for _, env := range os.Environ() {
+
+		// split the environment variable using = as the delimiter
+		// this is so that newlines can be surpressed
+		parts := strings.SplitN(env, "=", 2)
+
+		// Get the name of the variable
+		name := parts[0]
+
+		// determine if the variable should be included or excluded
+		shouldExclude := utils.SliceContains(c.Envfile.Exclude, name)
+
+		shouldInclude := true
+		if len(c.Envfile.Include) > 0 {
+			shouldInclude = utils.SliceContains(c.Envfile.Include, name)
+		}
+
+		// if the variable should excluded or not explicitly included then move onto the next variable
+		if shouldExclude || !shouldInclude {
+			continue
+		}
+
+		// replace any newline characters with a space, this is to prevent multiline variables being passed in
+		value := strings.Replace(parts[1], "\n", c.Envfile.ReplaceChar, -1)
+
+		// quote the value if it has spaces in it
+		if spacePattern.MatchString(value) && c.Envfile.Quote {
+			value = fmt.Sprintf("\"%s\"", value)
+		}
+
+		// Add the name and the value to the string builder
+		builder.WriteString(fmt.Sprintf("%s=%s\n", name, value))
+	}
+
+	// get the full output from the string builder
+	output := builder.String()
+
+	// write the output to the file
+	if err := os.WriteFile(c.Envfile.Path, []byte(output), 0666); err != nil {
+		logrus.Fatalf("Error writing out file: %s\n", err.Error())
+	}
+
+	logrus.Debug(output)
 
 	return nil
 }

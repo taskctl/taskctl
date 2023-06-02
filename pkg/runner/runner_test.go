@@ -13,7 +13,7 @@ import (
 )
 
 func TestTaskRunner(t *testing.T) {
-	c := NewExecutionContext(nil, "/", variables.NewVariables(), []string{"true"}, []string{"false"}, []string{"echo 1"}, []string{"echo 2"})
+	c := NewExecutionContext(nil, "/", variables.NewVariables(), nil, []string{"true"}, []string{"false"}, []string{"echo 1"}, []string{"echo 2"})
 
 	runner, err := NewTaskRunner(WithContexts(map[string]*ExecutionContext{"local": c}))
 	if err != nil {
