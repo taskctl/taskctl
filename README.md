@@ -415,6 +415,8 @@ tasks:
     command: uname -a
 ```
 
+Being able to pass environment variables to a Docker container is crucial for many build scenarios.
+
 ## Embeddable task runner
 *taskctl* may be embedded into any go program. 
 Additional information may be found on taskctl's [pkg.go.dev](https://pkg.go.dev/github.com/taskctl/taskctl?tab=overview) page
