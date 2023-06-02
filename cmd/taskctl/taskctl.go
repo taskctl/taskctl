@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/signal"
 	"sort"
@@ -269,8 +268,8 @@ func buildTaskRunner(c *cli.Context) (*runner.TaskRunner, error) {
 	taskRunner.DryRun = cfg.DryRun
 
 	if cfg.Quiet {
-		taskRunner.Stdout = ioutil.Discard
-		taskRunner.Stderr = ioutil.Discard
+		taskRunner.Stdout = io.Discard
+		taskRunner.Stderr = io.Discard
 	}
 
 	go func() {

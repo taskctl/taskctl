@@ -291,7 +291,10 @@ func (r *TaskRunner) contextForTask(t *task.Task) (c *ExecutionContext, err erro
 		return nil, err
 	}
 
-	c.GenerateEnvfile()
+	err = c.GenerateEnvfile()
+	if err != nil {
+		return nil, err
+	}
 
 	return c, nil
 }

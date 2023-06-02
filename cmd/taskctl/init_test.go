@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -30,7 +29,7 @@ func TestInitCommand_Overwrite(t *testing.T) {
 
 	app := makeTestApp(t)
 	dir := os.TempDir()
-	err := ioutil.WriteFile(filepath.Join(dir, "taskctl.yaml"), []byte("here"), 0764)
+	err := os.WriteFile(filepath.Join(dir, "taskctl.yaml"), []byte("here"), 0764)
 	if err != nil {
 		t.Fatal(err)
 	}

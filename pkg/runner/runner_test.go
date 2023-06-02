@@ -2,7 +2,7 @@ package runner
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"strings"
 	"testing"
 	"time"
@@ -27,7 +27,7 @@ func TestTaskRunner(t *testing.T) {
 		t.Error()
 	}
 
-	runner.Stdout, runner.Stderr = ioutil.Discard, ioutil.Discard
+	runner.Stdout, runner.Stderr = io.Discard, io.Discard
 	runner.SetVariables(variables.FromMap(map[string]string{"Root": "/tmp"}))
 	runner.WithVariable("Root", "/")
 

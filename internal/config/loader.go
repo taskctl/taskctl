@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"mime"
 	"net/http"
 	"net/url"
@@ -227,7 +227,7 @@ func (cl *Loader) readURL(u string) (map[string]interface{}, error) {
 		return nil, fmt.Errorf("%d: config request failed - %s", resp.StatusCode, u)
 	}
 
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %v", u, err)
 	}
@@ -256,7 +256,7 @@ func (cl *Loader) readURL(u string) (map[string]interface{}, error) {
 }
 
 func (cl *Loader) readFile(filename string) (map[string]interface{}, error) {
-	data, err := ioutil.ReadFile(filename)
+	data, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %v", filename, err)
 	}

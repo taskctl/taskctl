@@ -2,7 +2,7 @@ package config
 
 import (
 	"bytes"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/taskctl/taskctl/pkg/task"
@@ -10,7 +10,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-var testConfig, _ = ioutil.ReadFile("testdata/tasks.yaml")
+var testConfig, _ = os.ReadFile("testdata/tasks.yaml")
 
 func TestConfig_decode(t *testing.T) {
 	loader := NewConfigLoader(NewConfig())

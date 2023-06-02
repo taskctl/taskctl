@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"io"
-	"io/ioutil"
 	"os"
 	"reflect"
 	"strings"
@@ -77,7 +76,7 @@ func runAppTest(app *cli.App, test appTest, t *testing.T) {
 }
 
 func stdinConfirm(t *testing.T, times int) *os.File {
-	tmpfile, err := ioutil.TempFile("", "confirm")
+	tmpfile, err := os.CreateTemp("", "confirm")
 	if err != nil {
 		t.Fatal(err)
 	}

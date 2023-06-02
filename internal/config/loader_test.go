@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -139,7 +138,7 @@ func TestLoader_LoadGlobalConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = ioutil.WriteFile(filepath.Join(h, ".taskctl", "config.yaml"), []byte(sampleCfg), 0644)
+	err = os.WriteFile(filepath.Join(h, ".taskctl", "config.yaml"), []byte(sampleCfg), 0644)
 	if err != nil {
 		t.Fatal(err)
 	}

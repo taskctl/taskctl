@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -15,7 +15,7 @@ func newCompletionCommand() *cli.Command {
 		UsageText: helpText,
 		Action: func(c *cli.Context) error {
 			logrus.SetLevel(logrus.PanicLevel)
-			logrus.SetOutput(ioutil.Discard)
+			logrus.SetOutput(io.Discard)
 
 			var shell string
 			if !c.Args().Present() {
