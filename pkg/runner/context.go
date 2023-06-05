@@ -235,6 +235,7 @@ func (c *ExecutionContext) runServiceCommand(command string) (err error) {
 func DefaultContext() *ExecutionContext {
 	return &ExecutionContext{
 		Env:       variables.NewVariables(),
+		Envfile:   &utils.Envfile{},
 		Variables: variables.NewVariables(),
 	}
 }

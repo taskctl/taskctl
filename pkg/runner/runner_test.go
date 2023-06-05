@@ -7,13 +7,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/taskctl/taskctl/pkg/utils"
 	"github.com/taskctl/taskctl/pkg/variables"
 
 	taskpkg "github.com/taskctl/taskctl/pkg/task"
 )
 
 func TestTaskRunner(t *testing.T) {
-	c := NewExecutionContext(nil, "/", variables.NewVariables(), nil, []string{"true"}, []string{"false"}, []string{"echo 1"}, []string{"echo 2"})
+	c := NewExecutionContext(nil, "/", variables.NewVariables(), &utils.Envfile{}, []string{"true"}, []string{"false"}, []string{"echo 1"}, []string{"echo 2"})
 
 	runner, err := NewTaskRunner(WithContexts(map[string]*ExecutionContext{"local": c}))
 	if err != nil {

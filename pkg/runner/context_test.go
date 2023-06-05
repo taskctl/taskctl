@@ -7,14 +7,15 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/taskctl/taskctl/pkg/utils"
 	"github.com/taskctl/taskctl/pkg/variables"
 )
 
 func TestContext(t *testing.T) {
 	logrus.SetOutput(io.Discard)
 
-	c1 := NewExecutionContext(nil, "/", variables.NewVariables(), nil, []string{"true"}, []string{"false"}, []string{"true"}, []string{"false"})
-	c2 := NewExecutionContext(nil, "/", variables.NewVariables(), nil, []string{"false"}, []string{"false"}, []string{"false"}, []string{"false"})
+	c1 := NewExecutionContext(nil, "/", variables.NewVariables(), &utils.Envfile{}, []string{"true"}, []string{"false"}, []string{"true"}, []string{"false"})
+	c2 := NewExecutionContext(nil, "/", variables.NewVariables(), &utils.Envfile{}, []string{"false"}, []string{"false"}, []string{"false"}, []string{"false"})
 
 	runner, err := NewTaskRunner(WithContexts(map[string]*ExecutionContext{"after_failed": c1, "before_failed": c2}))
 	if err != nil {
