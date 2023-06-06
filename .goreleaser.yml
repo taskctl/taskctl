@@ -44,53 +44,53 @@ checksum:
 changelog:
   skip: true
 
-snapcrafts:
-  - name: taskctl
-    confinement: classic
-    grade: stable
-    publish: true
-    summary: taskctl - concurrent task runner, developer's routine tasks automation toolkit. Simple modern alternative to GNU Make
-    description: |
-      Simple modern alternative to GNU Make. *taskctl* is concurrent task runner that allows you to design you routine tasks and development pipelines in nice and neat way in human-readable format (YAML, JSON or TOML).
-      Each pipeline composed of tasks or other pipelines and allows them to run in parallel or one-by-one.
-      Beside pipelines, each single task can be performed manually or triggered by built-in filesystem watcher.
-    apps:
-      taskctl:
-        completer: autocomplete/bash_completion.bash
+# snapcrafts:
+#   - name: taskctl
+#     confinement: classic
+#     grade: stable
+#     publish: true
+#     summary: taskctl - concurrent task runner, developer's routine tasks automation toolkit. Simple modern alternative to GNU Make
+#     description: |
+#       Simple modern alternative to GNU Make. *taskctl* is concurrent task runner that allows you to design you routine tasks and development pipelines in nice and neat way in human-readable format (YAML, JSON or TOML).
+#       Each pipeline composed of tasks or other pipelines and allows them to run in parallel or one-by-one.
+#       Beside pipelines, each single task can be performed manually or triggered by built-in filesystem watcher.
+#     apps:
+#       taskctl:
+#         completer: autocomplete/bash_completion.bash
 
-brews:
-  - tap:
-      owner: taskctl
-      name: homebrew-taskctl
-    commit_author:
-      name: Yevhen Terentiev
-      email: yevhen.terentiev@gmail.com
-    homepage: https://github.com/taskctl/taskctl
-    install: |
-        bin.install "taskctl"
-        bash_completion.install "autocomplete/bash_completion.bash"
-        zsh_completion.install "autocomplete/zsh_completion.zsh"
+# brews:
+#   - tap:
+#       owner: taskctl
+#       name: homebrew-taskctl
+#     commit_author:
+#       name: Yevhen Terentiev
+#       email: yevhen.terentiev@gmail.com
+#     homepage: https://github.com/taskctl/taskctl
+#     install: |
+#         bin.install "taskctl"
+#         bash_completion.install "autocomplete/bash_completion.bash"
+#         zsh_completion.install "autocomplete/zsh_completion.zsh"
 
-dockers:
-  - image_templates:
-      - "docker.io/taskctl/taskctl:latest"
-      - "docker.io/taskctl/taskctl:{{ .Tag }}"
-    skip_push: auto
+# dockers:
+#   - image_templates:
+#       - "docker.io/taskctl/taskctl:latest"
+#       - "docker.io/taskctl/taskctl:{{ .Tag }}"
+#     skip_push: auto
 
-scoop:
-  bucket:
-    owner: taskctl
-    name: scoop-taskctl
-  commit_author:
-    name: Yevhen Terentiev
-    email: yevhen.terentiev@gmail.com
-  homepage: https://github.com/taskctl/taskctl
+# scoop:
+#   bucket:
+#     owner: taskctl
+#     name: scoop-taskctl
+#   commit_author:
+#     name: Yevhen Terentiev
+#     email: yevhen.terentiev@gmail.com
+#   homepage: https://github.com/taskctl/taskctl
 
-nfpms:
-  -
-    homepage: https://github.com/taskctl/taskctl
-    maintainer: Yevhen Terentiev <yevhen.terentiev@gmail.com>
-    description: taskctl - concurrent task runner, developer's routine tasks automation toolkit. Simple modern alternative to GNU Make 🧰
-    formats:
-      - deb
-      - rpm
+# nfpms:
+#   -
+#     homepage: https://github.com/taskctl/taskctl
+#     maintainer: Yevhen Terentiev <yevhen.terentiev@gmail.com>
+#     description: taskctl - concurrent task runner, developer's routine tasks automation toolkit. Simple modern alternative to GNU Make 🧰
+#     formats:
+#       - deb
+#       - rpm
