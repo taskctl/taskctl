@@ -1,6 +1,6 @@
 name: Release
 on:
-  create:
+  push:
     tags:
       - '*'
 
@@ -16,23 +16,29 @@ jobs:
         with:
           go-version: 1.19.x
 
-      - name: Install Snapcraft
-        uses: samuelmeuli/action-snapcraft@v2
-        with:
-          snapcraft_token: ${{ secrets.SNAPCRAFT_TOKEN }}
+      #- name: Install Snapcraft
+      #  uses: samuelmeuli/action-snapcraft@v2
+      #  with:
+      #    snapcraft_token: ${{ secrets.SNAPCRAFT_TOKEN }}
 
-      - name: Docker login
-        uses: azure/docker-login@v2
-        with:
-          login-server: 'https://index.docker.io/v1/'
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+      #- name: Docker login
+      #  uses: azure/docker-login@v2
+      #  with:
+      #    login-server: 'https://index.docker.io/v1/'
+      #    username: ${{ secrets.DOCKER_HUB_USERNAME }}
+      #    password: ${{ secrets.DOCKER_HUB_PASSWORD }}
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v4
         with:
-          version: v0.149.0
+          version: latest
           args: release --rm-dist
         env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TASKCTL_TOKEN}}
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
           GOPATH: /home/runner/go
+
+      - name: Upload assets
+        uses: actions/upload-artifact@v3
+        with:
+          name: taskctl
+          path: bin/*
