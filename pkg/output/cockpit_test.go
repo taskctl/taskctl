@@ -1,3 +1,6 @@
+//go:build cockpit
+// +build cockpit
+
 package output
 
 import (
