@@ -5,7 +5,7 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     env:
-      TASKCTL_CONFIG_FILE: ../../tasks.yml
+      TASKCTL_CONFIG_FILE: ../../tasks.yaml
 
     steps:
 
