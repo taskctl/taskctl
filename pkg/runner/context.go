@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/taskctl/taskctl/pkg/executor"
 
@@ -203,6 +204,11 @@ func (c *ExecutionContext) GenerateEnvfile() error {
 	}
 
 	logrus.Debug(output)
+
+	// delay the ongoing execution of taskctl if a value has been set
+	if c.Envfile.Delay > 0 {
+		time.Sleep(time.Duration(c.Envfile.Delay) * time.Millisecond)
+	}
 
 	return nil
 }
