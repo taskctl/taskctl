@@ -40,6 +40,7 @@ type Envfile struct {
 	Path        string
 	ReplaceChar string
 	Quote       bool
+	Delay       int
 }
 
 // ConvertEnv converts map representing the environment to array of strings in the form "key=value"
