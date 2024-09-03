@@ -6,9 +6,9 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/taskctl/taskctl/pkg/task"
-	"github.com/taskctl/taskctl/pkg/utils"
-	"github.com/taskctl/taskctl/pkg/variables"
+	"github.com/ensono/taskctl/pkg/task"
+	"github.com/ensono/taskctl/pkg/utils"
+	"github.com/ensono/taskctl/pkg/variables"
 )
 
 func TestContext(t *testing.T) {

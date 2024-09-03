@@ -10,15 +10,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/taskctl/taskctl/pkg/executor"
+	"github.com/ensono/taskctl/pkg/executor"
 
-	"github.com/taskctl/taskctl/pkg/variables"
+	"github.com/ensono/taskctl/pkg/variables"
 
-	"github.com/taskctl/taskctl/pkg/output"
+	"github.com/ensono/taskctl/pkg/output"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/ensono/taskctl/pkg/task"
 )
 
 // Runner describes tasks runner interface

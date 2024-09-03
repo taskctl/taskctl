@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/taskctl/taskctl/pkg/utils"
-	"github.com/taskctl/taskctl/pkg/variables"
+	"github.com/ensono/taskctl/pkg/utils"
+	"github.com/ensono/taskctl/pkg/variables"
 
-	taskpkg "github.com/taskctl/taskctl/pkg/task"
+	taskpkg "github.com/ensono/taskctl/pkg/task"
 )
 
 func TestTaskRunner(t *testing.T) {

@@ -3,7 +3,7 @@ package config
 import (
 	"testing"
 
-	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/ensono/taskctl/pkg/task"
 )
 
 func Test_buildWatcher(t *testing.T) {

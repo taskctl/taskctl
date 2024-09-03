@@ -3,7 +3,7 @@ package config
 import (
 	"fmt"
 
-	"github.com/taskctl/taskctl/internal/watch"
+	"github.com/ensono/taskctl/internal/watch"
 )
 
 func buildWatcher(name string, def *watcherDefinition, cfg *Config) (*watch.Watcher, error) {

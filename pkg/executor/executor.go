@@ -14,7 +14,7 @@ import (
 	"mvdan.cc/sh/v3/interp"
 	"mvdan.cc/sh/v3/syntax"
 
-	"github.com/taskctl/taskctl/pkg/utils"
+	"github.com/ensono/taskctl/pkg/utils"
 )
 
 // Executor executes given job

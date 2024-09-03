@@ -3,10 +3,10 @@ package config
 import (
 	"path/filepath"
 
-	"github.com/taskctl/taskctl/pkg/utils"
-	"github.com/taskctl/taskctl/pkg/variables"
+	"github.com/ensono/taskctl/pkg/utils"
+	"github.com/ensono/taskctl/pkg/variables"
 
-	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/ensono/taskctl/pkg/task"
 )
 
 func buildTask(def *taskDefinition, lc *loaderContext) (*task.Task, error) {

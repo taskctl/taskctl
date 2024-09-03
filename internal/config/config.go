@@ -4,16 +4,16 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/taskctl/taskctl/pkg/variables"
+	"github.com/ensono/taskctl/pkg/variables"
 
 	"github.com/imdario/mergo"
 	"github.com/sirupsen/logrus"
 
-	"github.com/taskctl/taskctl/internal/watch"
-	"github.com/taskctl/taskctl/pkg/output"
-	"github.com/taskctl/taskctl/pkg/runner"
-	"github.com/taskctl/taskctl/pkg/scheduler"
-	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/ensono/taskctl/internal/watch"
+	"github.com/ensono/taskctl/pkg/output"
+	"github.com/ensono/taskctl/pkg/runner"
+	"github.com/ensono/taskctl/pkg/scheduler"
+	"github.com/ensono/taskctl/pkg/task"
 )
 
 // DefaultFileNames is default names for tasks' files

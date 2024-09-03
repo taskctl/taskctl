@@ -6,11 +6,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/taskctl/taskctl/pkg/utils"
+	"github.com/ensono/taskctl/pkg/utils"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/taskctl/taskctl/pkg/runner"
+	"github.com/ensono/taskctl/pkg/runner"
 )
 
 // Scheduler executes ExecutionGraph
