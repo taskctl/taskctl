@@ -1,10 +1,10 @@
 package config
 
 import (
-	"github.com/ensono/taskctl/pkg/runner"
-	"github.com/ensono/taskctl/pkg/variables"
+	"github.com/Ensono/taskctl/pkg/runner"
+	"github.com/Ensono/taskctl/pkg/variables"
 
-	"github.com/ensono/taskctl/pkg/utils"
+	"github.com/Ensono/taskctl/pkg/utils"
 )
 
 type contextDefinition struct {

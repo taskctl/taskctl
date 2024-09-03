@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/ensono/taskctl/pkg/task"
-	"github.com/ensono/taskctl/pkg/utils"
-	"github.com/ensono/taskctl/pkg/variables"
+	"github.com/Ensono/taskctl/pkg/task"
+	"github.com/Ensono/taskctl/pkg/utils"
+	"github.com/Ensono/taskctl/pkg/variables"
 )
 
 var shBin = utils.Binary{

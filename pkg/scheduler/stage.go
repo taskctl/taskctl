@@ -4,9 +4,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ensono/taskctl/pkg/variables"
+	"github.com/Ensono/taskctl/pkg/variables"
 
-	"github.com/ensono/taskctl/pkg/task"
+	"github.com/Ensono/taskctl/pkg/task"
 )
 
 // Stage statuses

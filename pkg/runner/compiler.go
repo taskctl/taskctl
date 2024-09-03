@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ensono/taskctl/pkg/executor"
-	"github.com/ensono/taskctl/pkg/task"
-	"github.com/ensono/taskctl/pkg/utils"
-	"github.com/ensono/taskctl/pkg/variables"
+	"github.com/Ensono/taskctl/pkg/executor"
+	"github.com/Ensono/taskctl/pkg/task"
+	"github.com/Ensono/taskctl/pkg/utils"
+	"github.com/Ensono/taskctl/pkg/variables"
 )
 
 // TaskCompiler compiles tasks into jobs for executor

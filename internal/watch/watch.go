@@ -6,13 +6,13 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/ensono/taskctl/pkg/variables"
+	"github.com/Ensono/taskctl/pkg/variables"
 
 	"github.com/bmatcuk/doublestar"
 	"github.com/fsnotify/fsnotify"
 
-	"github.com/ensono/taskctl/pkg/runner"
-	"github.com/ensono/taskctl/pkg/task"
+	"github.com/Ensono/taskctl/pkg/runner"
+	"github.com/Ensono/taskctl/pkg/task"
 )
 
 const (

@@ -3,10 +3,10 @@ package config
 import (
 	"fmt"
 
-	"github.com/ensono/taskctl/pkg/variables"
+	"github.com/Ensono/taskctl/pkg/variables"
 
-	"github.com/ensono/taskctl/pkg/scheduler"
-	"github.com/ensono/taskctl/pkg/task"
+	"github.com/Ensono/taskctl/pkg/scheduler"
+	"github.com/Ensono/taskctl/pkg/task"
 )
 
 func buildPipeline(g *scheduler.ExecutionGraph, stages []*stageDefinition, cfg *Config) (*scheduler.ExecutionGraph, error) {

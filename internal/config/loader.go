@@ -20,7 +20,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 
-	"github.com/ensono/taskctl/pkg/utils"
+	"github.com/Ensono/taskctl/pkg/utils"
 )
 
 // ErrConfigNotFound occurs when requested config file does not exists

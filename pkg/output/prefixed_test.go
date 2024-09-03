@@ -7,7 +7,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/ensono/taskctl/pkg/task"
+	"github.com/Ensono/taskctl/pkg/task"
 )
 
 func Test_prefixedOutputDecorator(t *testing.T) {

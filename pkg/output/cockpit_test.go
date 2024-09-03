@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ensono/taskctl/pkg/task"
+	"github.com/Ensono/taskctl/pkg/task"
 )
 
 func Test_cockpitOutputDecorator(t *testing.T) {

@@ -3,7 +3,7 @@ package config
 import (
 	"testing"
 
-	"github.com/ensono/taskctl/pkg/utils"
+	"github.com/Ensono/taskctl/pkg/utils"
 )
 
 func Test_buildContext(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ensono/taskctl/pkg/task"
+	"github.com/Ensono/taskctl/pkg/task"
 
 	"gopkg.in/yaml.v2"
 )

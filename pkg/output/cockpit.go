@@ -12,7 +12,7 @@ import (
 
 	"github.com/briandowns/spinner"
 
-	"github.com/ensono/taskctl/pkg/task"
+	"github.com/Ensono/taskctl/pkg/task"
 )
 
 var frame = 100 * time.Millisecond

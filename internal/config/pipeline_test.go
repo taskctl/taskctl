@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ensono/taskctl/pkg/scheduler"
+	"github.com/Ensono/taskctl/pkg/scheduler"
 )
 
 func TestBuildPipeline_Cyclic(t *testing.T) {

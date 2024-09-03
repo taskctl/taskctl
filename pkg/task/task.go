@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"time"
 
-	"github.com/ensono/taskctl/pkg/variables"
+	"github.com/Ensono/taskctl/pkg/variables"
 
-	"github.com/ensono/taskctl/pkg/utils"
+	"github.com/Ensono/taskctl/pkg/utils"
 )
 
 // Task is a structure that describes task, its commands, environment, working directory etc.
