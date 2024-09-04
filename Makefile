@@ -14,8 +14,10 @@ test_prereq:
 	go install github.com/axw/gocov/gocov@v1.0.0 && \
 	go install github.com/AlekSi/gocov-xml@v1.0.0
 
+# go test ./... -v -mod=readonly -coverprofile=.coverage/out -race > .coverage/test.out ; \
+
 test: test_prereq
-	go test ./... -v -mod=readonly -coverprofile=.coverage/out -race > .coverage/test.out ; \
+	go test ./... -v -mod=readonly -coverprofile=.coverage/out > .coverage/test.out ; \
 	cat .coverage/test.out | go-junit-report > .coverage/report-junit.xml ; \
 	gocov convert .coverage/out | gocov-xml > .coverage/report-cobertura.xml ; \
 	cat .coverage/test.out

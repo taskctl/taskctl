@@ -11,14 +11,10 @@ import (
 	"time"
 
 	"github.com/Ensono/taskctl/pkg/executor"
-
-	"github.com/Ensono/taskctl/pkg/variables"
-
 	"github.com/Ensono/taskctl/pkg/output"
-
-	"github.com/sirupsen/logrus"
-
 	"github.com/Ensono/taskctl/pkg/task"
+	"github.com/Ensono/taskctl/pkg/variables"
+	"github.com/sirupsen/logrus"
 )
 
 // Runner describes tasks runner interface
@@ -395,3 +391,5 @@ func WithVariables(variables variables.Container) Opts {
 		runner.compiler.variables = variables
 	}
 }
+
+

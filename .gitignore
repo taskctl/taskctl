@@ -11,3 +11,4 @@ bin/
 # Random
 local/
 
+.coverage/
