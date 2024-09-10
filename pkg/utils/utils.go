@@ -9,8 +9,8 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"reflect"
-	"regexp"
 	"strings"
 	"text/template"
 )
@@ -34,18 +34,75 @@ type Binary struct {
 // Envile is a structure for storing the information required to generate an envfile which can be consumed
 // by the specified binary
 type Envfile struct {
-	Generate    bool
-	Exclude     []string
-	Include     []string
+	Generate bool
+	// list of variables to be excluded
+	// from the injection into container runtimes
+	//
+	// Currently this is based on a prefix
+	//
+	// Example:
+	// HOME=foo,HOMELAB=bar
+	//
+	// Both of these will be skipped
+	Exclude []string
+	Include []string
+	// Path is generated using task name and current timestamp
+	// TODO: include additional graph info about the execution
+	// e.g. owning pipeline (if any) execution number
 	Path        string
 	ReplaceChar string
 	Quote       bool
 	Delay       int
+	Modify      []ModifyEnv
+	// defaults to .taskctl in the current director
+	GeneratedDir string
+}
+
+const REPLACE_CHAR_DEFAULT = " "
+
+// Opts is a task runner configuration function.
+type EnvFileOpts func(*Envfile)
+
+// NewEnvFile creates a new instance of the EnvFile
+// initializes it with some defaults
+func NewEnvFile(opts ...EnvFileOpts) *Envfile {
+	e := &Envfile{}
+	e.ReplaceChar = REPLACE_CHAR_DEFAULT
+	// e.Path = "envfile"
+	e.GeneratedDir = ".taskctl"
+	for _, o := range opts {
+		o(e)
+	}
+	return e
+}
+
+var ErrInvalidOptionsEnvFile = errors.New("invalid options on envfile")
+
+// Validate checks input is correct
+//
+// This will be added to later
+func (e *Envfile) Validate() error {
+	// validate modify
+	for _, v := range e.Modify {
+		if !v.IsValid() {
+			return fmt.Errorf("%s, %w", "modify pattern", ErrInvalidOptionsEnvFile)
+		}
+	}
+	return nil
+}
+
+type ModifyEnv struct {
+	Pattern   string
+	Operation string
+}
+
+func (me ModifyEnv) IsValid() bool {
+	return strings.Contains(me.Pattern, "keyword") && strings.Contains(me.Pattern, "varname")
 }
 
 // ConvertEnv converts map representing the environment to array of strings in the form "key=value"
 func ConvertEnv(env map[string]string) []string {
-	var i int
+	i := 0
 	enva := make([]string, len(env))
 	for k, v := range env {
 		enva[i] = fmt.Sprintf("%s=%s", k, v)
@@ -55,12 +112,25 @@ func ConvertEnv(env map[string]string) []string {
 	return enva
 }
 
+// ConvertFromEnv takes a string array and coverts it to a map of strings
+// since an env variable can only really be a string
+// it's safe to convert to string and not interface
+// downstream programs need to cast values to what they expect
+func ConvertFromEnv(env []string) map[string]string {
+	envMap := make(map[string]string)
+	for _, val := range env {
+		v := strings.Split(val, "=")
+		envMap[v[0]] = v[1]
+	}
+	return envMap
+}
+
 // ConvertToMapOfStrings converts map of interfaces to map of strings
 func ConvertToMapOfStrings(m map[string]interface{}) map[string]string {
 	mdst := make(map[string]string)
 
 	for k, v := range m {
-		mdst[k] = v.(string)
+		mdst[k] = fmt.Sprintf("%v", v)
 	}
 	return mdst
 }
@@ -144,6 +214,15 @@ func MustGetwd() string {
 	return wd
 }
 
+// GetFullPath
+func GetFullPath(path string) string {
+	fileIsLocal := filepath.IsLocal(path)
+	if fileIsLocal {
+		return filepath.Join(MustGetwd(), path)
+	}
+	return path
+}
+
 // MustGetUserHomeDir returns current working directory.
 // Panics is os.UserHomeDir() returns error
 func MustGetUserHomeDir() string {
@@ -176,25 +255,18 @@ func ReadEnvFile(filename string) (map[string]string, error) {
 	return envs, nil
 }
 
-// sliceContains performs a case insensitive match to see if the slice
-// contains the specified value
-func SliceContains(slice []string, value string) bool {
-	var result bool
+// ConvertStringToMachineFriendly takes astring and replaces
+// any occurence of non machine friendly chars with machine friendly ones
+func ConvertStringToMachineFriendly(str string) string {
+	// These pairs can be extended cane
+	return strings.NewReplacer(":", "_", ` `, "__").Replace(str)
+}
 
-	for _, x := range slice {
-
-		// create regular expression pattern to test against
-		// this allows multiple variables to be added or excluded
-		pattern := fmt.Sprintf(`(?i)\b%s\b`, x)
-		re := regexp.MustCompile(pattern)
-
-		// match the value against the re
-		result = re.MatchString(value)
-
-		if result {
-			break
-		}
-	}
-
-	return result
+// ConvertStringToHumanFriendly takes a ConvertStringToMachineFriendly generated string and
+// and converts it back to its original human friendly form
+func ConvertStringToHumanFriendly(str string) string {
+	// Order is important
+	// pass in the __ first to replace that with spaces
+	// and only _ should be left to go back to :
+	return strings.NewReplacer("__", ` `, "_", ":").Replace(str)
 }

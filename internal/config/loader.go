@@ -1,7 +1,6 @@
 package config
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,13 +13,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/imdario/mergo"
+	"dario.cat/mergo"
+	"github.com/Ensono/taskctl/pkg/utils"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
-
-	"github.com/taskctl/taskctl/pkg/utils"
+	"gopkg.in/yaml.v3"
 )
 
 // ErrConfigNotFound occurs when requested config file does not exists
@@ -28,20 +26,37 @@ var ErrConfigNotFound = errors.New("config file not found")
 
 // Loader reads and parses config files
 type Loader struct {
-	dst     *Config
-	imports map[string]bool
-	dir     string
-	homeDir string
+	dst           *Config
+	imports       map[string]bool
+	dir           string
+	homeDir       string
+	strictDecoder bool
 }
 
 // NewConfigLoader is Loader constructor
 func NewConfigLoader(dst *Config) Loader {
 	return Loader{
-		dst:     dst,
-		imports: make(map[string]bool),
-		homeDir: utils.MustGetUserHomeDir(),
-		dir:     utils.MustGetwd(),
+		dst:           dst,
+		imports:       make(map[string]bool),
+		homeDir:       utils.MustGetUserHomeDir(),
+		dir:           utils.MustGetwd(),
+		strictDecoder: false,
 	}
+}
+
+func (c *Loader) WithDir(dir string) *Loader {
+	c.dir = dir
+	return c
+}
+
+// Dir
+func (c *Loader) Dir() string {
+	return c.dir
+}
+
+func (c *Loader) WithStrictDecoder() *Loader {
+	c.strictDecoder = true
+	return c
 }
 
 type loaderContext struct {
@@ -61,7 +76,7 @@ func (cl *Loader) Load(file string) (*Config, error) {
 	}
 
 	if file == "" {
-		file, err = cl.resolveDefaultConfigFile()
+		file, err = cl.ResolveDefaultConfigFile()
 		if err != nil {
 			return cl.dst, err
 		}
@@ -150,7 +165,8 @@ func (cl *Loader) load(file string) (config map[string]interface{}, err error) {
 	}
 
 	var raw map[string]interface{}
-	importDir := path.Dir(file)
+
+	importDir := filepath.Dir(file)
 	if imports, ok := config["import"]; ok {
 		for _, v := range imports.([]interface{}) {
 			if utils.IsURL(v.(string)) {
@@ -191,6 +207,10 @@ func (cl *Loader) load(file string) (config map[string]interface{}, err error) {
 }
 
 func (cl *Loader) loadDir(dir string) (map[string]interface{}, error) {
+	// this is only going to work on yaml files
+	// this program seems to want to accept json/toml and yaml
+	//
+	// TODO: remove json/toml support - unnecessary
 	pattern := filepath.Join(dir, "*.yaml")
 	q, err := filepath.Glob(pattern)
 	if err != nil {
@@ -217,42 +237,42 @@ func (cl *Loader) loadDir(dir string) (map[string]interface{}, error) {
 	return cm, nil
 }
 
-func (cl *Loader) readURL(u string) (map[string]interface{}, error) {
-	resp, err := http.Get(u)
+func (cl *Loader) readURL(urlStr string) (map[string]interface{}, error) {
+	resp, err := http.Get(urlStr)
 	if err != nil {
 		return nil, err
 	}
 
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("%d: config request failed - %s", resp.StatusCode, u)
+		return nil, fmt.Errorf("%d: config request failed - %s", resp.StatusCode, urlStr)
 	}
 
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %v", u, err)
-	}
+	// data, err := io.ReadAll(resp.Body)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("%s: %v", urlStr, err)
+	// }
 
-	var ext string
+	ext := ""
 	ct := resp.Header.Get("Content-Type")
-	if ct != "" {
-		mediaType, _, _ := mime.ParseMediaType(ct)
-		if mediaType == "application/json" {
-			ext = ".json"
-		}
-	}
 
-	if ext == "" {
-		up, err := url.Parse(u)
-		if err == nil {
-			ext = filepath.Ext(up.Path)
-		}
-	}
+	mediaType, _, _ := mime.ParseMediaType(ct)
 
-	if ext == "" {
+	switch mediaType {
+	case "application/json":
+		ext = ".json"
+	case "application/x-yaml", "application/yaml", "text/yaml":
 		ext = ".yaml"
+	case "application/x-toml", "application/toml", "text/toml":
+		ext = ".toml"
+	default:
+		up, err := url.Parse(urlStr)
+		if err != nil {
+			return cl.unmarshalDataStream(resp.Body, "")
+		}
+		ext = filepath.Ext(up.Path)
 	}
 
-	return cl.unmarshalData(data, ext)
+	return cl.unmarshalDataStream(resp.Body, ext)
 }
 
 func (cl *Loader) readFile(filename string) (map[string]interface{}, error) {
@@ -261,31 +281,51 @@ func (cl *Loader) readFile(filename string) (map[string]interface{}, error) {
 		return nil, fmt.Errorf("%s: %v", filename, err)
 	}
 
-	ext := filepath.Ext(filename)
-
-	return cl.unmarshalData(data, ext)
+	return cl.unmarshalDataByte(data, filepath.Ext(filename))
 }
 
-func (cl *Loader) unmarshalData(data []byte, ext string) (map[string]interface{}, error) {
-	var cm map[string]interface{}
+func (cl *Loader) unmarshalDataByte(data []byte, ext string) (map[string]interface{}, error) {
+	cm := make(map[string]any)
 
 	switch strings.ToLower(ext) {
 	case ".yaml", ".yml":
-		err := yaml.NewDecoder(bytes.NewReader(data)).Decode(&cm)
-		if err != nil {
+		if err := yaml.Unmarshal(data, &cm); err != nil {
 			return nil, err
 		}
 	case ".json":
-		err := json.NewDecoder(bytes.NewReader(data)).Decode(&cm)
-		if err != nil {
+		if err := json.Unmarshal(data, &cm); err != nil {
 			return nil, err
 		}
 	case ".toml":
-		err := toml.NewDecoder(bytes.NewReader(data)).Decode(&cm)
-		if err != nil {
+		if err := toml.Unmarshal(data, &cm); err != nil {
 			return nil, err
 		}
 	default:
+		return nil, errors.New("unsupported config file type")
+	}
+
+	return cm, nil
+}
+
+func (cl *Loader) unmarshalDataStream(data io.Reader, ext string) (map[string]interface{}, error) {
+	cm := make(map[string]any)
+
+	switch strings.ToLower(ext) {
+	case ".yaml", ".yml":
+		if err := yaml.NewDecoder(data).Decode(&cm); err != nil {
+			return nil, err
+		}
+	case ".json":
+		if err := json.NewDecoder(data).Decode(&cm); err != nil {
+			return nil, err
+		}
+	case ".toml":
+		if err := toml.NewDecoder(data).Decode(&cm); err != nil {
+			return nil, err
+		}
+	default:
+		// speed up GC cycle if data is not read
+		_, _ = io.Copy(io.Discard, data)
 		return nil, errors.New("unsupported config file type")
 	}
 
@@ -312,7 +352,7 @@ func (cl *Loader) decode(cm map[string]interface{}) (*configDefinition, error) {
 	return c, nil
 }
 
-func (cl *Loader) resolveDefaultConfigFile() (file string, err error) {
+func (cl *Loader) ResolveDefaultConfigFile() (file string, err error) {
 	dir := cl.dir
 	for {
 		if dir == filepath.Dir(dir) {

@@ -1,16 +1,20 @@
-package main
+package cmd_test
 
 import "testing"
 
 func Test_validateCommand(t *testing.T) {
-	app := makeTestApp(t)
 
-	tests := []appTest{
-		{args: []string{"", "validate", "testdata/graph2.yaml"}, errored: true},
-		{args: []string{"", "validate", "testdata/graph.yaml"}, output: []string{"file is valid"}},
-	}
+	t.Run("errors with missing config", func(t *testing.T) {
+		runTestHelper(t, runTestIn{
+			args:    []string{"validate", "testdata/graph2.yaml"},
+			errored: true,
+		})
+	})
 
-	for _, v := range tests {
-		runAppTest(app, v, t)
-	}
+	t.Run("succeeds with correct config", func(t *testing.T) {
+		runTestHelper(t, runTestIn{
+			args:   []string{"validate", "testdata/graph.yaml"},
+			output: []string{"file is valid"},
+		})
+	})
 }

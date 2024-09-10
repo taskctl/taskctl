@@ -6,11 +6,11 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/taskctl/taskctl/pkg/variables"
+	"github.com/Ensono/taskctl/pkg/variables"
 
-	"github.com/taskctl/taskctl/pkg/runner"
+	"github.com/Ensono/taskctl/pkg/runner"
 
-	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/Ensono/taskctl/pkg/task"
 )
 
 type TestTaskRunner struct {

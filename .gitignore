@@ -7,3 +7,11 @@ bin/
 # IDEs
 .idea
 .vscode
+.DS_Store
+
+# Random
+local/
+
+# Generated outputs
+.coverage/
+.taskctl/

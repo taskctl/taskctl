@@ -1,38 +1,46 @@
-package main
+package cmd_test
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/Ensono/taskctl/internal/cmdutils"
 )
 
-func Test_initCommand(t *testing.T) {
-	confirm := stdinConfirm(t, 1)
-	defer func(f os.File) {
-		confirm.Close()
-		os.Remove(f.Name())
-	}(*confirm)
-
-	app := makeTestApp(t)
-	dir := os.TempDir()
-	os.Remove(filepath.Join(dir, "taskctl.yaml"))
-
-	runAppTest(app, appTest{args: []string{"", "init", "--dir", dir}, stdin: confirm}, t)
+func setupCleanUp() (dir string, deferFn func()) {
+	dir, _ = os.MkdirTemp(os.TempDir(), "initTester")
+	deferFn = func() {
+		os.RemoveAll(dir)
+	}
+	return
 }
 
-func TestInitCommand_Overwrite(t *testing.T) {
-	confirm := stdinConfirm(t, 2)
-	defer func(f os.File) {
-		confirm.Close()
-		os.Remove(f.Name())
-	}(*confirm)
+func Test_initCommand(t *testing.T) {
+	t.Run("custom_dir", func(t *testing.T) {
+		dir, cleanUp := setupCleanUp()
+		defer cleanUp()
+		file := filepath.Join(dir, "tasks.yml")
 
-	app := makeTestApp(t)
-	dir := os.TempDir()
-	err := os.WriteFile(filepath.Join(dir, "taskctl.yaml"), []byte("here"), 0764)
-	if err != nil {
-		t.Fatal(err)
-	}
+		runTestHelper(t, runTestIn{
+			args:   []string{"--dir", dir, "init", "tasks.yml", "--no-prompt"},
+			output: []string{fmt.Sprintf(cmdutils.GREEN_TERMINAL+" "+cmdutils.MAGENTA_TERMINAL, file, "was created. Edit it accordingly to your needs")},
+		})
 
-	runAppTest(app, appTest{args: []string{"", "init", "--dir", dir}, stdin: confirm, errored: true}, t)
+		files, _ := os.ReadDir(dir)
+
+		if len(files) != 1 {
+			t.Fatal("Incorrect files written")
+		}
+	})
+
+	t.Run("errors on missing params if not in interactive mode", func(t *testing.T) {
+		dir, cleanUp := setupCleanUp()
+		defer cleanUp()
+		runTestHelper(t, runTestIn{
+			args:    []string{"--dir", dir, "init", "--no-prompt"},
+			errored: true,
+		})
+	})
 }

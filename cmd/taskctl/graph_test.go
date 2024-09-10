@@ -1,28 +1,28 @@
-package main
+package cmd_test
 
 import (
 	"testing"
 )
 
 func Test_graphCommand(t *testing.T) {
-	app := makeTestApp(t)
 
-	tests := []appTest{
-		{
-			args:    []string{"", "-c", "testdata/graph.yaml", "graph"},
+	t.Run("errors with pipeline missing", func(t *testing.T) {
+		runTestHelper(t, runTestIn{
+			args:    []string{"-c", "testdata/graph.yaml", "graph"},
 			errored: true,
-		},
-		{
-			args:   []string{"", "-c", "testdata/graph.yaml", "graph", "graph:pipeline1"},
+		})
+	})
+	t.Run("succeeds with pipeline specified", func(t *testing.T) {
+		runTestHelper(t, runTestIn{
+			args:   []string{"-c", "testdata/graph.yaml", "graph", "graph:pipeline1"},
 			output: []string{"label=\"graph:pipeline2\"", "label=\"graph:task1\""},
-		},
-		{
-			args:   []string{"", "-c", "testdata/graph.yaml", "graph", "--lr", "graph:pipeline1"},
-			output: []string{"rankdir=\"LR\""},
-		},
-	}
+		})
+	})
 
-	for _, test := range tests {
-		runAppTest(app, test, t)
-	}
+	t.Run("succeeds with pipeline specified left to right", func(t *testing.T) {
+		runTestHelper(t, runTestIn{
+			args:   []string{"-c", "testdata/graph.yaml", "graph", "--lr", "graph:pipeline1"},
+			output: []string{"rankdir=\"LR\""},
+		})
+	})
 }

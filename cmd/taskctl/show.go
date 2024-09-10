@@ -1,11 +1,10 @@
-package main
+package cmd
 
 import (
-	"errors"
-	"os"
-	"text/template"
+	"fmt"
+	"html/template"
 
-	"github.com/urfave/cli/v2"
+	"github.com/spf13/cobra"
 )
 
 var showTmpl = `
@@ -27,22 +26,29 @@ var showTmpl = `
   AllowFailure: {{ .AllowFailure }}
 `
 
-func newShowCommand() *cli.Command {
-	cmd := &cli.Command{
-		Name:      "show",
-		Usage:     "shows task's details",
-		ArgsUsage: "show (TASK)",
-		Action: func(c *cli.Context) (err error) {
-			t := cfg.Tasks[c.Args().First()]
-			if t == nil {
-				return errors.New("unknown task")
+var (
+	showCmd = &cobra.Command{
+		Use:     "show",
+		Aliases: []string{},
+		Short:   `shows task's details`,
+		Args:    cobra.RangeArgs(1, 1),
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			return initConfig()
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			t := conf.Tasks[args[0]]
+			if t != nil {
+				tmpl := template.Must(template.New("show").Parse(showTmpl))
+				return tmpl.Execute(ChannelOut, t)
 			}
-
-			tmpl := template.Must(template.New("show").Parse(showTmpl))
-			err = tmpl.Execute(os.Stdout, t)
-			return err
+			return fmt.Errorf("%s. %w", args[0], ErrIncorrectPipelineTaskArg)
+		},
+		PostRunE: func(cmd *cobra.Command, args []string) error {
+			return postRunReset()
 		},
 	}
+)
 
-	return cmd
+func init() {
+	TaskCtlCmd.AddCommand(showCmd)
 }

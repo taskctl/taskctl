@@ -1,0 +1,10 @@
+# https://golangci-lint.run/usage/configuration/#output-configuration
+# Build this for a more controllable lint run
+# Options for analysis running.
+run:
+  # See the dedicated "run" documentation section.
+  tests: false
+output:
+  formats:
+    - path: stdout
+      format: colored-line-number # junit-xml 

@@ -7,7 +7,7 @@ import (
 type configDefinition struct {
 	Import    []string
 	Contexts  map[string]*contextDefinition
-	Pipelines map[string][]*stageDefinition
+	Pipelines map[string][]*pipelineDefinition
 	Tasks     map[string]*taskDefinition
 	Watchers  map[string]*watcherDefinition
 
@@ -17,7 +17,7 @@ type configDefinition struct {
 	Variables map[string]string
 }
 
-type stageDefinition struct {
+type pipelineDefinition struct {
 	Name         string
 	Condition    string
 	Task         string

@@ -6,11 +6,9 @@ import (
 	"io"
 	"regexp"
 
-	"github.com/logrusorgru/aurora"
-
 	"github.com/sirupsen/logrus"
 
-	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/Ensono/taskctl/pkg/task"
 )
 
 const ansi = "[\u001B\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?\u0007)|(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))"
@@ -85,7 +83,7 @@ type lineWriter struct {
 func (l lineWriter) Write(p []byte) (n int, err error) {
 	n = len(p)
 	p = ansiRegexp.ReplaceAllLiteral(p, []byte{})
-	_, err = fmt.Fprintf(l.dst, "%s: %s\r\n", aurora.Cyan(l.t.Name), p)
+	_, err = fmt.Fprintf(l.dst, "\x1b[18m%s\x1b[0m: %s\r\n", l.t.Name, p)
 
 	return n, err
 }

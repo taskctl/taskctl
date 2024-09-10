@@ -1,6 +1,6 @@
 pipelines:
   graph:pipeline1:
-    - task: graph:task1
+    - task: graph:task1 # => graph:pipeline1__graph:task1__executionOrder
     - task: graph:task2
       depends_on: [graph:task1]
     - task: graph:task3

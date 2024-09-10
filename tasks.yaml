@@ -6,12 +6,12 @@ pipelines:
       task: build
       env:
         GOOS: darwin
-        BIN_OUT: bin/taskctl_darwin_amd64
+        BIN_OUT: bin/taskctl_darwin
     - name: Build "linux"
       task: build
       env:
         GOOS: linux
-        BIN_OUT: bin/taskctl_linux_amd64
+        BIN_OUT: bin/taskctl_linux
     - name: Build "windows"
       task: build
       env:
@@ -33,18 +33,37 @@ pipelines:
     - task: gofmt
       depends_on: goimports
     - pipeline: lints
-    - task: update-completers
-      depends_on: test
 
   lints:
     - task: golint
     - task: govet
       depends_on: golint
+  
+  testOut:
+    - task: clean
+    - task: test
+      depends_on: clean
 
 tasks:
+  clean: 
+    command: 
+      - | 
+        rm -rf bin/*
+        rm -rf dist/*
+        rm -rf vendor/*
+      - |
+        mkdir -p .coverage
+        go install github.com/jstemmer/go-junit-report@v0.9.1 && \
+        go install github.com/axw/gocov/gocov@v1.0.0 && \
+        go install github.com/AlekSi/gocov-xml@v1.0.0
+
   test:
     command:
-      - go test ./...
+      - mkdir -p .coverage
+      - go test ./... -v -mod=readonly -coverprofile=.coverage/out > .coverage/test.out
+      - cat .coverage/test.out | go-junit-report > .coverage/report-junit.xml
+      - gocov convert .coverage/out | gocov-xml > .coverage/report-cobertura.xml
+      # - cat .coverage/test.out
 
   build:
     command:
@@ -58,38 +77,36 @@ tasks:
         BIN_OUT: bin/taskctl_windows_amd64.exe
 
   golint:
+  # in CI it is run 
     command:
-      - golint  $(go list ./... | grep -v /vendor/)
+      - go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+      - golangci-lint run
 
   govet:
     command:
-      - go vet $(go list ./... | grep -v /vendor/)
+      - go vet ./...
 
   goimports:
     command:
-      - goimports -v -local github.com/taskctl/taskctl -w -format-only $(ls -d internal/**/*.go)
-      - goimports -v -local github.com/taskctl/taskctl -w -format-only $(ls -d pkg/**/*.go)
-      - goimports -v -local github.com/taskctl/taskctl -w -format-only $(ls -d cmd/**/*.go)
+      - goimports -v -local github.com/Ensono/taskctl -w -format-only $(ls -d internal/**/*.go)
+      - goimports -v -local github.com/Ensono/taskctl -w -format-only $(ls -d pkg/**/*.go)
+      - goimports -v -local github.com/Ensono/taskctl -w -format-only $(ls -d cmd/**/*.go)
 
   goreleaser:
     command:
       - goreleaser --debug --rm-dist
 
   gofmt:
-    dir: "{{.Root}}"
     command:
       - go fmt -x ./...
       - gofmt -s -w cmd/**/*.go
       - gofmt -s -w internal/**/*.go
       - gofmt -s -w pkg/**/*.go
 
+  echo:
+    command: echo {{ .Name }}
+    # variations:
+    #   Name: foo
   tidy:
     command:
       - go mod tidy
-
-  update-completers:
-    dir: "{{.Root}}/cmd/taskctl"
-    command:
-      - rm -rf ../../autocomplete/*
-      - go run . completion bash > ./../../autocomplete/bash_completion.bash
-      - go run . completion zsh > ./../../autocomplete/zsh_completion.zsh

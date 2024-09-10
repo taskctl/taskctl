@@ -1,57 +1,61 @@
-package main
+package cmd
 
 import (
-	"errors"
 	"fmt"
 
+	"github.com/Ensono/taskctl/pkg/scheduler"
 	"github.com/emicklei/dot"
-	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli/v2"
-
-	"github.com/taskctl/taskctl/pkg/scheduler"
+	"github.com/spf13/cobra"
 )
 
-func newGraphCommand() *cli.Command {
-	return &cli.Command{
-		Name:      "graph",
-		Aliases:   []string{"g"},
-		Usage:     "visualizes pipeline execution graph",
-		UsageText: "taskctl graph [pipeline] | dot -Tsvg > graph.svg",
-		Description: "Generates a visual representation of pipeline execution plan. " +
-			"The output is in the DOT format, which can be used by GraphViz to generate charts.",
-		Flags: []cli.Flag{
-			&cli.BoolFlag{
-				Name:  "lr",
-				Usage: "orients outputted graph left-to-right",
-			},
+var (
+	leftToRight bool
+	graphCmd    = &cobra.Command{
+		Use:     "graph",
+		Aliases: []string{"g"},
+		Short:   `visualizes pipeline execution graph`,
+		Long: `Generates a visual representation of pipeline execution plan.
+The output is in the DOT format, which can be used by GraphViz to generate charts.`,
+		Args: cobra.MinimumNArgs(1),
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if err := initConfig(); err != nil {
+				return err
+			}
+			return buildTaskRunner(args)
 		},
-		Action: func(c *cli.Context) error {
-			if c.NArg() == 0 {
-				err := cli.ShowCommandHelp(c, "graph")
-				if err != nil {
-					logrus.Error(err)
-				}
-				return errors.New("no pipeline set")
-			}
-			name := c.Args().First()
-			p := cfg.Pipelines[name]
-			if p == nil {
-				return fmt.Errorf("no such pipeline %s", name)
-			}
-
-			g := dot.NewGraph(dot.Directed)
-			g.Attr("center", "true")
-			if c.Bool("lr") {
-				g.Attr("rankdir", "LR")
-			}
-
-			draw(g, p)
-
-			fmt.Println(g.String())
-
-			return nil
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return graphCmdRun(args[0])
+		},
+		PostRunE: func(cmd *cobra.Command, args []string) error {
+			return postRunReset()
 		},
 	}
+)
+
+func init() {
+	graphCmd.PersistentFlags().BoolVarP(&leftToRight, "lr", "", false, "orients outputted graph left-to-right")
+
+	TaskCtlCmd.AddCommand(graphCmd)
+}
+
+func graphCmdRun(name string) error {
+
+	p := conf.Pipelines[name]
+	if p == nil {
+		return fmt.Errorf("no such pipeline %s", name)
+	}
+
+	g := dot.NewGraph(dot.Directed)
+	g.Attr("center", "true")
+	if leftToRight {
+		g.Attr("rankdir", "LR")
+	}
+
+	draw(g, p)
+
+	fmt.Fprintln(ChannelOut, g.String())
+
+	return nil
 }
 
 func draw(g *dot.Graph, p *scheduler.ExecutionGraph) {

@@ -33,7 +33,15 @@ func TestNewVariables(t *testing.T) {
 		t.Fatal("merge test failed")
 	}
 
-	if vars2.Has("d") == false {
+	if !vars2.Has("d") {
 		t.Fatal()
 	}
+
+	// test overwrite
+	vars2.Set("a", "overwritten")
+	varsMergedOverwrite := vars1.Merge(vars2)
+	if varsMergedOverwrite.Get("a") != "overwritten" {
+		t.Fatalf("merge test overwrite failed, got %v, want: 'overwritten'", varsMergedOverwrite.Get("a"))
+	}
+
 }

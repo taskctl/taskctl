@@ -3,14 +3,16 @@ package runner
 import (
 	"fmt"
 	"io"
+	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"time"
 
-	"github.com/taskctl/taskctl/pkg/executor"
-	"github.com/taskctl/taskctl/pkg/task"
-	"github.com/taskctl/taskctl/pkg/utils"
-	"github.com/taskctl/taskctl/pkg/variables"
+	"github.com/Ensono/taskctl/pkg/executor"
+	"github.com/Ensono/taskctl/pkg/task"
+	"github.com/Ensono/taskctl/pkg/utils"
+	"github.com/Ensono/taskctl/pkg/variables"
 )
 
 // TaskCompiler compiles tasks into jobs for executor
@@ -43,6 +45,7 @@ func (tc *TaskCompiler) CompileTask(t *task.Task, executionContext *ExecutionCon
 	for _, variant := range t.GetVariations() {
 		for _, command := range t.Commands {
 			j, err := tc.CompileCommand(
+				t.Name,
 				command,
 				executionContext,
 				t.Dir,
@@ -75,6 +78,7 @@ func (tc *TaskCompiler) CompileTask(t *task.Task, executionContext *ExecutionCon
 
 // CompileCommand compiles command into Job
 func (tc *TaskCompiler) CompileCommand(
+	taskName string,
 	command string,
 	executionCtx *ExecutionContext,
 	dir string,
@@ -92,13 +96,52 @@ func (tc *TaskCompiler) CompileCommand(
 		Vars:    tc.variables.Merge(vars),
 	}
 
-	var c []string
+	// Look at the executable details and check if the command is running `docker` determine if an Envfile is being generated
+	// If it has then check to see if the args contains the --env-file flag and if does modify the path to the envfile
+	// if it does not then add the --env-file flag to the args array
+	if executionCtx.Executable != nil &&
+		slices.Contains([]string{"docker", "podman"}, strings.ToLower(executionCtx.Executable.Bin)) &&
+		executionCtx.Envfile.Generate {
+
+		// define the filename to hold the envfile path
+		// get the timestamp to use to append to the envfile name
+		filename := utils.GetFullPath(
+			filepath.Join(
+				executionCtx.Envfile.GeneratedDir,
+				fmt.Sprintf("generated_%s_%v.env", utils.ConvertStringToMachineFriendly(taskName), time.Now().UnixNano()),
+			),
+		)
+
+		// does the args contain the --env-file string
+		// currently we will always either overwrite or just append the `--env-file flag`
+		//
+		// TODO: might want to look at preserving usersupplied values and merging with generated "¯\_(ツ)_/¯"
+		//
+		idx := slices.Index(executionCtx.Executable.Args, "--env-file")
+		// the envfile has been added to the args, need to overwrite the value
+		if idx > -1 {
+			executionCtx.Executable.Args[idx+1] = filename
+		} else {
+			// the envfile has NOT been added to the args, so this needs to be added in
+			// as the docker args order is important, these will be prepended to the array
+			executionCtx.Executable.Args = append([]string{executionCtx.Executable.Args[0], "--env-file", filename}, executionCtx.Executable.Args[1:]...)
+		}
+
+		// set the path to the envfile
+		executionCtx.Envfile.Path = filename
+
+		// generate the envfile
+		err := executionCtx.GenerateEnvfile()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	c := []string{command}
 	if executionCtx.Executable != nil {
 		c = []string{executionCtx.Executable.Bin}
 		c = append(c, executionCtx.Executable.Args...)
 		c = append(c, fmt.Sprintf("%s%s%s", executionCtx.Quote, command, executionCtx.Quote))
-	} else {
-		c = []string{command}
 	}
 
 	j.Command = strings.Join(c, " ")

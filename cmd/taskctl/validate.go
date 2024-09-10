@@ -1,38 +1,30 @@
-package main
+package cmd
 
 import (
 	"fmt"
 
-	"github.com/urfave/cli/v2"
-
-	"github.com/taskctl/taskctl/internal/config"
+	"github.com/spf13/cobra"
 )
 
-func newValidateCommand() *cli.Command {
-	cmd := &cli.Command{
-		Name:      "validate",
-		Usage:     "validates config file",
-		ArgsUsage: "some-tasks-file.yaml",
-		Before: func(c *cli.Context) error {
-			if c.NArg() == 0 {
-				return fmt.Errorf("please provide file to validate")
+var (
+	validateCmd = &cobra.Command{
+		Use:   "validate",
+		Short: `validates config file`,
+		Args:  cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfgFilePath = args[0]
+			if err := initConfig(); err != nil {
+				return err
 			}
-
+			fmt.Fprintln(ChannelOut, "file is valid")
 			return nil
 		},
-		Action: func(c *cli.Context) error {
-			cl := config.NewConfigLoader(cfg)
-
-			_, err := cl.Load(c.Args().First())
-			if err != nil {
-				fmt.Println(err.Error())
-				return nil
-			}
-
-			fmt.Println("file is valid")
-			return nil
+		PostRunE: func(cmd *cobra.Command, args []string) error {
+			return postRunReset()
 		},
 	}
+)
 
-	return cmd
+func init() {
+	TaskCtlCmd.AddCommand(validateCmd)
 }

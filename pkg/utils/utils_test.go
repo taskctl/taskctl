@@ -44,9 +44,9 @@ func TestFileExists(t *testing.T) {
 		args args
 		want bool
 	}{
-		{args: args{file: filepath.Join(cwd, "util.go")}, want: true},
-		{args: args{file: filepath.Join(cwd, "util_test.go")}, want: true},
-		{args: args{file: filepath.Join(cwd, "manifesto.txt")}, want: false},
+		{args: args{file: filepath.Join(cwd, "utils.go")}, want: true, name: "file exists"},
+		{args: args{file: filepath.Join(cwd, "utils_test.go")}, want: true, name: "test file exists"},
+		{args: args{file: filepath.Join(cwd, "manifesto.txt")}, want: false, name: "file does not exist"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

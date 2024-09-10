@@ -14,7 +14,7 @@ import (
 	"mvdan.cc/sh/v3/interp"
 	"mvdan.cc/sh/v3/syntax"
 
-	"github.com/taskctl/taskctl/pkg/utils"
+	"github.com/Ensono/taskctl/pkg/utils"
 )
 
 // Executor executes given job
@@ -90,6 +90,7 @@ func (e *DefaultExecutor) Execute(ctx context.Context, job *Job) ([]byte, error)
 	if job.Timeout != nil {
 		ctx, cancelFn = context.WithTimeout(ctx, *job.Timeout)
 	}
+
 	defer func() {
 		if cancelFn != nil {
 			cancelFn()

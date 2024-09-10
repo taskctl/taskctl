@@ -1,6 +1,7 @@
 tasks:
   watch:task1:
     command: "echo 'hello, world!'"
+    allow_failure: true
 
 watchers:
   watch:watcher1:

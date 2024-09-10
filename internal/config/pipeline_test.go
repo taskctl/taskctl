@@ -1,133 +1,142 @@
-package config
+package config_test
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/taskctl/taskctl/pkg/scheduler"
+	"github.com/Ensono/taskctl/internal/config"
 )
 
-func TestBuildPipeline_Cyclic(t *testing.T) {
-	cfg := NewConfig()
+func TestBuildPipeline_Cyclical(t *testing.T) {
 
-	stages := []*stageDefinition{
-		{
-			Name:      "task1",
-			Task:      "task1",
-			DependsOn: []string{"last-stage"},
-			Dir:       "/root",
-		},
-		{
-			Name:      "task2",
-			Task:      "task2",
-			DependsOn: []string{"task1"},
-			Env:       nil,
-		},
-		{
-			Name:      "last-stage",
-			Task:      "task3",
-			DependsOn: []string{"task2"},
-		},
-	}
+	var cyclicalYaml = `pipelines:
+  pipeline1:    
+    - task: task1
+      name: task1
+      depends_on: 
+        - last-stage
+      dir: "/root"
+    - task: task2
+      name: task2
+      depends_on:
+        - task1
+      env: {}
+    - task: task3
+      name: last-stage
+      depends_on: 
+        - task2
 
-	tasks := map[string]*taskDefinition{
-		"task1": {
-			Name: "task1",
-		},
-		"task2": {
-			Name: "task2",
-		},
-		"task3": {
-			Name: "task3",
-		},
-	}
+tasks:
+  task1:
+    name: task1
+  task2:
+    name: task2
+  task3:
+    name: task3
+`
 
-	var err error
-	for k, v := range tasks {
-		cfg.Tasks[k], err = buildTask(v, &loaderContext{})
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
+	tmpDir, _ := os.MkdirTemp(os.TempDir(), "cyclical-pipeline")
 
-	g, _ := scheduler.NewExecutionGraph()
-	_, err = buildPipeline(g, stages, cfg)
+	defer func() {
+		os.RemoveAll(tmpDir)
+	}()
+
+	file := filepath.Join(tmpDir, "cyclical.yaml")
+	_ = os.WriteFile(file, []byte(cyclicalYaml), 0777)
+
+	cl := config.NewConfigLoader(config.NewConfig())
+	_, err := cl.Load(file)
 	if err == nil || err.Error() != "cycle detected" {
 		t.Errorf("cycles detection failed")
 	}
 }
 
 func TestBuildPipeline_Error(t *testing.T) {
-	cfg := NewConfig()
+	tmpDir, _ := os.MkdirTemp(os.TempDir(), "error-on-pipeline")
+	defer func() {
+		os.RemoveAll(tmpDir)
+	}()
 
-	tasks := map[string]*taskDefinition{
-		"task1": {
-			Name: "task1",
-		},
-		"task2": {
-			Name: "task2",
-		},
-		"task3": {
-			Name: "task3",
-		},
-	}
+	t.Run("no such task", func(t *testing.T) {
+		var errorYaml = `pipelines:
+  pipeline1:    
+    - task: task4
+      name: task4
+      depends_on:
+        - last-stage
+      dir: "/root"
+tasks:
+  task1:
+    name: task1
+  task2:
+    name: task2
+  task3:
+    name: task3
+`
+		file := filepath.Join(tmpDir, "nosuch-task.yaml")
+		_ = os.WriteFile(file, []byte(errorYaml), 0777)
 
-	var err error
-	for k, v := range tasks {
-		cfg.Tasks[k], err = buildTask(v, &loaderContext{})
-		if err != nil {
-			t.Fatal(err)
+		cl := config.NewConfigLoader(config.NewConfig())
+		_, err := cl.Load(file)
+		if err == nil || !strings.Contains(err.Error(), "no such task") {
+			t.Error()
 		}
-	}
+	})
+	t.Run("no such pipeline", func(t *testing.T) {
+		var errorYaml = `pipelines:
+  pipeline1:    
+    - pipeline: task4
+      name: task4
+      depends_on:
+        - last-stage
+      dir: "/root"
+tasks:
+  task1:
+    name: task1
+  task2:
+    name: task2
+  task3:
+    name: task3
+`
+		file := filepath.Join(tmpDir, "nosuch-pipeline.yaml")
+		_ = os.WriteFile(file, []byte(errorYaml), 0777)
 
-	stages1 := []*stageDefinition{
-		{
-			Name:      "task4",
-			Task:      "task4",
-			DependsOn: []string{"last-stage"},
-			Dir:       "/root",
-		},
-	}
+		cl := config.NewConfigLoader(config.NewConfig())
+		_, err := cl.Load(file)
+		if err == nil || !strings.Contains(err.Error(), "no such pipeline") {
+			t.Error()
+		}
+	})
+	t.Run("stage with same name", func(t *testing.T) {
+		var errorYaml = `pipelines:
+  pipeline1:    
+    - task: task1
+      name: task1
+      depends_on:
+        - last-stage
+      dir: "/root"
+    - task: task1
+      name: task1
+      depends_on:
+        - last-stage
+      dir: "/root"
+tasks:
+  task1:
+    name: task1
+  task2:
+    name: task2
+  task3:
+    name: task3
+`
+		file := filepath.Join(tmpDir, "stage.yaml")
+		_ = os.WriteFile(file, []byte(errorYaml), 0777)
 
-	g, _ := scheduler.NewExecutionGraph()
-	_, err = buildPipeline(g, stages1, cfg)
-	if err == nil || !strings.Contains(err.Error(), "no such task") {
-		t.Error()
-	}
-
-	stages2 := []*stageDefinition{
-		{
-			Name:      "task1",
-			Pipeline:  "pipeline1",
-			DependsOn: []string{"last-stage"},
-			Dir:       "/root",
-		},
-	}
-
-	g, _ = scheduler.NewExecutionGraph()
-	_, err = buildPipeline(g, stages2, cfg)
-	if err == nil || !strings.Contains(err.Error(), "no such pipeline") {
-		t.Error()
-	}
-
-	stages3 := []*stageDefinition{
-		{
-			Name:      "task1",
-			Task:      "task1",
-			DependsOn: []string{"last-stage"},
-			Dir:       "/root",
-		},
-		{
-			Name:      "task1",
-			Task:      "task1",
-			DependsOn: []string{"last-stage"},
-			Dir:       "/root",
-		},
-	}
-
-	g, _ = scheduler.NewExecutionGraph()
-	_, err = buildPipeline(g, stages3, cfg)
-	if err == nil || !strings.Contains(err.Error(), "stage with same name") {
-		t.Error()
-	}
+		cl := config.NewConfigLoader(config.NewConfig())
+		_, err := cl.Load(file)
+		if err == nil || !strings.Contains(err.Error(), "stage with same name") {
+			t.Error()
+		}
+	})
 }

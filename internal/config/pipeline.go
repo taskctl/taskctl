@@ -3,13 +3,13 @@ package config
 import (
 	"fmt"
 
-	"github.com/taskctl/taskctl/pkg/variables"
+	"github.com/Ensono/taskctl/pkg/variables"
 
-	"github.com/taskctl/taskctl/pkg/scheduler"
-	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/Ensono/taskctl/pkg/scheduler"
+	"github.com/Ensono/taskctl/pkg/task"
 )
 
-func buildPipeline(g *scheduler.ExecutionGraph, stages []*stageDefinition, cfg *Config) (*scheduler.ExecutionGraph, error) {
+func buildPipeline(g *scheduler.ExecutionGraph, stages []*pipelineDefinition, cfg *Config) (*scheduler.ExecutionGraph, error) {
 	for _, def := range stages {
 		var stageTask *task.Task
 		var stagePipeline *scheduler.ExecutionGraph

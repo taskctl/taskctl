@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/taskctl/taskctl/pkg/task"
-	"github.com/taskctl/taskctl/pkg/utils"
-	"github.com/taskctl/taskctl/pkg/variables"
+	"github.com/Ensono/taskctl/pkg/task"
+	"github.com/Ensono/taskctl/pkg/utils"
+	"github.com/Ensono/taskctl/pkg/variables"
 )
 
 var shBin = utils.Binary{
@@ -22,6 +22,7 @@ func TestTaskCompiler_CompileCommand(t *testing.T) {
 	tc := NewTaskCompiler()
 
 	job, err := tc.CompileCommand(
+		"test1",
 		"echo 1",
 		NewExecutionContext(&shBin, "/tmp", variables.FromMap(map[string]string{"HOME": "/root"}), &envFile, nil, nil, nil, nil),
 		"/root", nil,
@@ -45,6 +46,7 @@ func TestTaskCompiler_CompileCommand(t *testing.T) {
 
 	quotedContext := NewExecutionContext(&shBin, "/", variables.NewVariables(), &envFile, []string{"false"}, []string{"false"}, []string{"false"}, []string{"false"}, WithQuote("\""))
 	job, err = tc.CompileCommand(
+		"test1",
 		"echo 1",
 		quotedContext,
 		"/root", nil,

@@ -4,16 +4,16 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/taskctl/taskctl/pkg/variables"
+	"github.com/Ensono/taskctl/pkg/variables"
 
-	"github.com/imdario/mergo"
+	"dario.cat/mergo"
 	"github.com/sirupsen/logrus"
 
-	"github.com/taskctl/taskctl/internal/watch"
-	"github.com/taskctl/taskctl/pkg/output"
-	"github.com/taskctl/taskctl/pkg/runner"
-	"github.com/taskctl/taskctl/pkg/scheduler"
-	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/Ensono/taskctl/internal/watch"
+	"github.com/Ensono/taskctl/pkg/output"
+	"github.com/Ensono/taskctl/pkg/runner"
+	"github.com/Ensono/taskctl/pkg/scheduler"
+	"github.com/Ensono/taskctl/pkg/task"
 )
 
 // DefaultFileNames is default names for tasks' files
@@ -33,6 +33,14 @@ func NewConfig() *Config {
 	return cfg
 }
 
+type OutputEnum string
+
+const (
+	RawOutput      OutputEnum = "raw"
+	CockpitOutput  OutputEnum = "cockpit"
+	PrefixedOutput OutputEnum = "prefixed"
+)
+
 // Config is a taskctl internal config structure
 type Config struct {
 	Import    []string
@@ -42,7 +50,7 @@ type Config struct {
 	Watchers  map[string]*watch.Watcher
 
 	Quiet, Debug, DryRun, Summary bool
-	Output                        string
+	Output                        OutputEnum
 
 	Variables variables.Container
 }
@@ -101,6 +109,8 @@ func buildFromDefinition(def *configDefinition, lc *loaderContext) (cfg *Config,
 	}
 
 	for k, v := range def.Pipelines {
+		// This never errors out on the cyclical dependency
+		//
 		cfg.Pipelines[k], err = buildPipeline(cfg.Pipelines[k], v, cfg)
 		if err != nil {
 			return nil, err
@@ -109,7 +119,7 @@ func buildFromDefinition(def *configDefinition, lc *loaderContext) (cfg *Config,
 
 	cfg.Import = def.Import
 	cfg.Debug = def.Debug
-	cfg.Output = def.Output
+	cfg.Output = OutputEnum(def.Output)
 	cfg.Variables = cfg.Variables.Merge(variables.FromMap(def.Variables))
 
 	return cfg, nil

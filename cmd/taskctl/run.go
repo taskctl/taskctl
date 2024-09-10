@@ -1,116 +1,127 @@
-package main
+package cmd
 
 import (
+	"errors"
 	"fmt"
-	"os"
-	"sort"
+	"io"
 	"strings"
 
-	"github.com/urfave/cli/v2"
-
-	"github.com/logrusorgru/aurora"
-
-	"github.com/taskctl/taskctl/pkg/runner"
-	"github.com/taskctl/taskctl/pkg/scheduler"
-	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/Ensono/taskctl/internal/cmdutils"
+	"github.com/Ensono/taskctl/internal/config"
+	"github.com/Ensono/taskctl/pkg/runner"
+	"github.com/Ensono/taskctl/pkg/scheduler"
+	"github.com/Ensono/taskctl/pkg/task"
+	"github.com/Ensono/taskctl/pkg/variables"
+	"github.com/spf13/cobra"
 )
 
-func newRunCommand() *cli.Command {
-	var taskRunner *runner.TaskRunner
-	cmd := &cli.Command{
-		Name:      "run",
-		ArgsUsage: "run (PIPELINE1 OR TASK1) [PIPELINE2 OR TASK2]... [flags] [-- TASKS_ARGS]",
-		Usage:     "runs pipeline or task",
-		UsageText: "taskctl run pipeline1\n" +
-			"taskctl pipeline1\n" +
-			"taskctl task1",
-		Flags: []cli.Flag{
-			&cli.BoolFlag{
-				Name:  "dry-run",
-				Usage: "dry run",
-			},
-			&cli.BoolFlag{
-				Name:    "summary",
-				Usage:   "show summary",
-				Aliases: []string{"s"},
-				Value:   true,
-			},
-		},
-		Before: func(c *cli.Context) (err error) {
-			taskRunner, err = buildTaskRunner(c)
-			return err
-		},
-		After: func(c *cli.Context) error {
+var cancel = make(chan struct{})
+
+// ensure this initialised from Viper
+var conf *config.Config
+
+var taskRunner *runner.TaskRunner
+
+// Arg munging
+var (
+	taskOrPipelineName string                    = ""
+	pipelineName       *scheduler.ExecutionGraph = nil
+	taskName           *task.Task                = nil
+	argsList           []string                  = nil
+)
+
+var (
+	runCmd = &cobra.Command{
+		Use:     "run",
+		Aliases: []string{},
+		Short:   `runs <pipeline or task>`,
+		Example: `taskctl run pipeline1
+taskctl run task1`,
+		Args:         cobra.MinimumNArgs(0),
+		SilenceUsage: true,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if err := initConfig(); err != nil {
+				return err
+			}
 			return nil
 		},
-		Action: func(c *cli.Context) (err error) {
-			if !c.Args().Present() {
-				return fmt.Errorf("no target specified")
-			}
-
-			for _, v := range c.Args().Slice() {
-				if v == "--" {
-					break
-				}
-
-				if v == "pipeline" {
-					continue
-				}
-
-				err = runTarget(v, c, taskRunner)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// display selector if nothing is supplied
+			if len(args) == 0 {
+				selected, err := cmdutils.DisplayTaskSelection(conf)
 				if err != nil {
 					return err
 				}
+				args = append([]string{selected}, args[0:]...)
 			}
-			return nil
+
+			if err := buildTaskRunner(args); err != nil {
+				return err
+			}
+			return runTarget(taskRunner)
 		},
-		Subcommands: []*cli.Command{
-			{
-				Name:      "task",
-				ArgsUsage: "task (TASK1) [TASK2]... [flags] [-- TASK_ARGS]",
-				Usage:     "run specified task(s)",
-				Action: func(c *cli.Context) error {
-					for _, v := range c.Args().Slice() {
-						if v == "--" {
-							break
-						}
-
-						t := cfg.Tasks[v]
-						if t == nil {
-							return fmt.Errorf("unknown task %s", v)
-						}
-						err := runTask(t, taskRunner)
-						if err != nil {
-							return err
-						}
-					}
-
-					return nil
-				},
-			},
+		PostRunE: func(cmd *cobra.Command, args []string) error {
+			return postRunReset()
 		},
 	}
+	runPipelineCmd = &cobra.Command{
+		Use:     "pipeline",
+		Short:   `runs pipeline <task>`,
+		Example: `taskctl pipeline task1`,
+		Args:    cobra.MinimumNArgs(1),
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if err := initConfig(); err != nil {
+				return err
+			}
+			return buildTaskRunner(args)
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runPipeline(pipelineName, taskRunner, conf.Summary)
+		},
+		PostRunE: func(cmd *cobra.Command, args []string) error {
+			return postRunReset()
+		},
+	}
+	runTaskCmd = &cobra.Command{
+		Use:     "task",
+		Aliases: []string{},
+		Short:   `runs task <task>`,
+		Example: `taskctl run task1`,
+		Args:    cobra.MinimumNArgs(1),
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if err := initConfig(); err != nil {
+				return err
+			}
+			return buildTaskRunner(args)
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runTask(taskName, taskRunner)
+		},
+		PostRunE: func(cmd *cobra.Command, args []string) error {
+			return postRunReset()
+		},
+	}
+)
 
-	return cmd
+func init() {
+	runCmd.AddCommand(runPipelineCmd)
+	runCmd.AddCommand(runTaskCmd)
+	TaskCtlCmd.AddCommand(runCmd)
 }
 
-func runTarget(name string, c *cli.Context, taskRunner *runner.TaskRunner) (err error) {
-	p := cfg.Pipelines[name]
-	if p != nil {
-		err = runPipeline(p, taskRunner, cfg.Summary || c.Bool("summary"))
-		if err != nil {
-			return fmt.Errorf("pipeline %s failed: %w", name, err)
+func runTarget(taskRunner *runner.TaskRunner) (err error) {
+
+	if pipelineName != nil {
+		if err := runPipeline(pipelineName, taskRunner, conf.Summary); err != nil {
+			return fmt.Errorf("pipeline %s failed: %w", taskOrPipelineName, err)
 		}
 		return nil
 	}
 
-	t := cfg.Tasks[name]
-	if t == nil {
-		return fmt.Errorf("unknown task or pipeline %s", name)
-	}
-	err = runTask(t, taskRunner)
-	if err != nil {
-		return fmt.Errorf("task %s failed: %w", name, err)
+	if taskName != nil {
+		if err := runTask(taskName, taskRunner); err != nil {
+			return fmt.Errorf("task %s failed: %w", taskOrPipelineName, err)
+		}
 	}
 
 	return nil
@@ -129,10 +140,10 @@ func runPipeline(g *scheduler.ExecutionGraph, taskRunner *runner.TaskRunner, sum
 	}
 	sd.Finish()
 
-	fmt.Fprint(os.Stdout, "\r\n")
+	fmt.Fprint(ChannelOut, "\r\n")
 
 	if summary {
-		printSummary(g)
+		cmdutils.PrintSummary(g, ChannelOut)
 	}
 
 	return nil
@@ -149,53 +160,64 @@ func runTask(t *task.Task, taskRunner *runner.TaskRunner) error {
 	return nil
 }
 
-func taskArgs(c *cli.Context) []string {
-	var runArgs []string
-	var dash = -1
-	for k, arg := range c.Args().Slice() {
-		if arg == "--" {
-			dash = k
-		}
+// buildTaskRunner initiates the task runner struct
+//
+// assigns to the global var to the package
+// args are the stdin inputs of strings following the `--` parameter
+//
+// TODO: make this less globally and more testable
+func buildTaskRunner(args []string) error {
+	if err := argsValidator(args); err != nil {
+		return err
 	}
-
-	if dash >= 0 && dash != c.NArg()-1 {
-		runArgs = c.Args().Slice()[dash+1:]
-	}
-
-	return runArgs
-}
-
-func printSummary(g *scheduler.ExecutionGraph) {
-	var stages = make([]*scheduler.Stage, 0)
-	for _, stage := range g.Nodes() {
-		stages = append(stages, stage)
-	}
-
-	sort.Slice(stages, func(i, j int) bool {
-		return stages[j].Start.Nanosecond() > stages[i].Start.Nanosecond()
+	vars := variables.FromMap(variableSet)
+	// These are stdin args passed over `-- arg1 arg2`
+	vars.Set("ArgsList", argsList)
+	vars.Set("Args", strings.Join(argsList, " "))
+	tr, err := runner.NewTaskRunner(runner.WithContexts(conf.Contexts), runner.WithVariables(vars), func(runner *runner.TaskRunner) {
+		runner.Stdout = ChannelOut
+		runner.Stderr = ChannelErr
 	})
 
-	fmt.Fprintln(os.Stdout, aurora.Bold("Summary:").String())
+	if err != nil {
+		return err
+	}
+	tr.OutputFormat = string(conf.Output)
+	tr.DryRun = conf.DryRun
 
-	var log string
-	for _, stage := range stages {
-		switch stage.ReadStatus() {
-		case scheduler.StatusDone:
-			fmt.Fprintln(os.Stdout, aurora.Sprintf(aurora.Green("- Stage %s was completed in %s"), stage.Name, stage.Duration()))
-		case scheduler.StatusSkipped:
-			fmt.Fprintln(os.Stdout, aurora.Sprintf(aurora.Green("- Stage %s was skipped"), stage.Name))
-		case scheduler.StatusError:
-			log = strings.TrimSpace(stage.Task.ErrorMessage())
-			fmt.Fprintln(os.Stdout, aurora.Sprintf(aurora.Red("- Stage %s failed in %s"), stage.Name, stage.Duration()))
-			if log != "" {
-				fmt.Fprintln(os.Stdout, aurora.Sprintf(aurora.Red("  > %s"), log))
-			}
-		case scheduler.StatusCanceled:
-			fmt.Fprintln(os.Stdout, aurora.Sprintf(aurora.Gray(12, "- Stage %s was cancelled"), stage.Name))
-		default:
-			fmt.Fprintln(os.Stdout, aurora.Sprintf(aurora.Red("- Unexpected status %d for stage %s"), stage.Status, stage.Name))
-		}
+	if conf.Quiet {
+		tr.Stdout = io.Discard
+		tr.Stderr = io.Discard
 	}
 
-	fmt.Fprintln(os.Stdout, aurora.Sprintf("%s: %s", aurora.Bold("Total duration"), aurora.Green(g.Duration())))
+	go func() {
+		<-cancel
+		tr.Cancel()
+	}()
+
+	taskRunner = tr
+	return nil
+}
+
+var ErrIncorrectPipelineTaskArg = errors.New("supplied argument does not match any pipelines or tasks")
+
+// argsValidator assigns the task or pipeline name to run
+// Will have errored already if the args length is 0
+//
+// the first arg should be the name of the task or pipeline
+func argsValidator(args []string) error {
+	if conf.Pipelines[args[0]] != nil {
+		pipelineName = conf.Pipelines[args[0]]
+	}
+	if conf.Tasks[args[0]] != nil {
+		taskName = conf.Tasks[args[0]]
+	}
+
+	if pipelineName == nil && taskName == nil && conf.Watchers[args[0]] == nil {
+		return fmt.Errorf("%s does not exist, ensure your first argument is the name of the pipeline or task. %w", args[0], ErrIncorrectPipelineTaskArg)
+	}
+
+	argsList = args[1:]
+	taskOrPipelineName = args[0]
+	return nil
 }

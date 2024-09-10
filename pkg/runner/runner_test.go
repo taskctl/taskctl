@@ -1,16 +1,17 @@
 package runner
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/taskctl/taskctl/pkg/utils"
-	"github.com/taskctl/taskctl/pkg/variables"
+	"github.com/Ensono/taskctl/pkg/utils"
+	"github.com/Ensono/taskctl/pkg/variables"
 
-	taskpkg "github.com/taskctl/taskctl/pkg/task"
+	taskpkg "github.com/Ensono/taskctl/pkg/task"
 )
 
 func TestTaskRunner(t *testing.T) {
@@ -97,6 +98,56 @@ func TestTaskRunner(t *testing.T) {
 	}
 
 	runner.Finish()
+}
+
+func Test_DockerExec_Cmd(t *testing.T) {
+	// t.Skip()
+	ttests := map[string]struct {
+		execContext *ExecutionContext
+		command     string
+	}{
+		"runs with default env file": {
+			execContext: NewExecutionContext(&utils.Binary{Bin: "docker", Args: []string{
+				"run",
+				"--rm",
+				"alpine", "sh", "-c",
+			}}, "/", variables.NewVariables(), utils.NewEnvFile(func(e *utils.Envfile) {
+				e.Generate = true
+			}), []string{"true"}, []string{"false"}, []string{"echo 1"}, []string{"echo 2"}),
+			command: "echo 'taskctl'",
+		},
+	}
+	for name, tt := range ttests {
+		t.Run(name, func(t *testing.T) {
+			runner, err := NewTaskRunner(WithContexts(map[string]*ExecutionContext{"default_docker": tt.execContext}))
+			if err != nil {
+				t.Fatal(err)
+			}
+			testOut, testErr := &bytes.Buffer{}, &bytes.Buffer{}
+			runner.Stdout, runner.Stderr = testOut, testErr
+			runner.SetVariables(variables.FromMap(map[string]string{"Root": "/tmp"}))
+			runner.WithVariable("Root", "/")
+
+			task1 := taskpkg.NewTask()
+			task1.Context = "default_docker"
+			task1.ExportAs = "EXPORT_NAME"
+
+			task1.Commands = []string{tt.command}
+			task1.Name = "some test task"
+			task1.Dir = "{{.Root}}"
+			task1.After = []string{"echo 'after task1'"}
+
+			err = runner.Run(task1)
+			if err != nil {
+				fmt.Println(testOut.String())
+				t.Fatal(err)
+			}
+			if len(testErr.Bytes()) > 0 {
+				t.Fatalf("got: %s, wanted nil", testErr.String())
+			}
+			runner.Finish()
+		})
+	}
 }
 
 func ExampleTaskRunner_Run() {
