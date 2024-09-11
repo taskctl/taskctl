@@ -9,32 +9,15 @@ import (
 	"github.com/Ensono/taskctl/pkg/utils"
 )
 
-type contextDefinition struct {
-	Dir    string
-	Up     []string
-	Down   []string
-	Before []string
-	After  []string
-	// Env is supplied from config file definition and is merged with the
-	// current process environemnt variables list
-	//
-	// User supplied env map will overwrite any keys inside the process env
-	// TODO: check this is desired behaviour
-	Env        map[string]string
-	Envfile    utils.Envfile
-	Variables  map[string]string
-	Executable utils.Binary
-	Quote      string
-}
-
-func buildContext(def *contextDefinition) (*runner.ExecutionContext, error) {
+func buildContext(def *ContextDefinition) (*runner.ExecutionContext, error) {
 	dir := def.Dir
 	if dir == "" {
 		dir = utils.MustGetwd()
 	}
-
-	if err := def.Envfile.Validate(); err != nil {
-		return nil, err
+	if def.Envfile != nil {
+		if err := def.Envfile.Validate(); err != nil {
+			return nil, err
+		}
 	}
 
 	osEnvVars := variables.FromMap(utils.ConvertFromEnv(os.Environ()))
@@ -45,10 +28,10 @@ func buildContext(def *contextDefinition) (*runner.ExecutionContext, error) {
 	buildEnvVars := osEnvVars.Merge(userEnvVars)
 
 	c := runner.NewExecutionContext(
-		&def.Executable,
+		def.Executable,
 		dir,
 		buildEnvVars,
-		&def.Envfile,
+		def.Envfile,
 		def.Up,
 		def.Down,
 		def.Before,

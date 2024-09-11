@@ -27,14 +27,20 @@ func IsURL(s string) bool {
 
 // Binary is a structure for storing binary file path and arguments that should be passed on binary's invocation
 type Binary struct {
-	Bin  string
-	Args []string
+	// Bin is the name of the executable to run
+	// it must exist on the path
+	// If using a default mvdn.sh context then
+	// ensure it is on your path as symlink if you are only using aliases.
+	Bin  string   `mapstructure:"bin" yaml:"bin" json:"bin"`
+	Args []string `mapstructure:"args" yaml:"args,omitempty" json:"args,omitempty"`
 }
 
 // Envile is a structure for storing the information required to generate an envfile which can be consumed
 // by the specified binary
 type Envfile struct {
-	Generate bool
+	// Generate will toggle the creation of the envFile
+	// this "envFile" is only used in executables of type `docker|podman`
+	Generate bool `mapstructure:"generate" yaml:"generate,omitempty" json:"generate,omitempty"`
 	// list of variables to be excluded
 	// from the injection into container runtimes
 	//
@@ -44,37 +50,29 @@ type Envfile struct {
 	// HOME=foo,HOMELAB=bar
 	//
 	// Both of these will be skipped
-	Exclude []string
-	Include []string
+	Exclude []string `mapstructure:"exclude" yaml:"exclude,omitempty" json:"exclude,omitempty"`
+	Include []string `mapstructure:"include" yaml:"include,omitempty" json:"include,omitempty"`
 	// Path is generated using task name and current timestamp
 	// TODO: include additional graph info about the execution
 	// e.g. owning pipeline (if any) execution number
-	Path        string
-	ReplaceChar string
-	Quote       bool
-	Delay       int
-	Modify      []ModifyEnv
-	// defaults to .taskctl in the current director
-	GeneratedDir string
+	Path        string `mapstructure:"path" yaml:"path,omitempty" json:"path,omitempty"`
+	ReplaceChar string `mapstructure:"replace_char" yaml:"replace_char,omitempty" json:"replace_char,omitempty"`
+	Quote       bool   `mapstructure:"quote" yaml:"quote,omitempty" json:"quote,omitempty"`
+	// Delay can be removed
+	Delay int `mapstructure:"delay" yaml:"delay,omitempty" json:"delay,omitempty"`
+	// Modify specifies the modifications to make to each env var and whether it meets the criteria
+	// example:
+	// - pattern: "^(?P<keyword>TF_VAR_)(?P<varname>.*)"
+	// 	 operation: lower
+	// the inputs are validated at task/pipeline build time and will fail if the
+	// <keyword> and <varname> sub expressions are not present in the `pattern`
+	Modify []ModifyEnv `mapstructure:"modify" yaml:"modify,omitempty" json:"modify,omitempty"`
+	// defaults to .taskctl in the current directory
+	// again this should be hidden from the user...
+	GeneratedDir string `mapstructure:"generated_dir" yaml:"generated_dir,omitempty" json:"generated_dir,omitempty"`
 }
 
 const REPLACE_CHAR_DEFAULT = " "
-
-// Opts is a task runner configuration function.
-type EnvFileOpts func(*Envfile)
-
-// NewEnvFile creates a new instance of the EnvFile
-// initializes it with some defaults
-func NewEnvFile(opts ...EnvFileOpts) *Envfile {
-	e := &Envfile{}
-	e.ReplaceChar = REPLACE_CHAR_DEFAULT
-	// e.Path = "envfile"
-	e.GeneratedDir = ".taskctl"
-	for _, o := range opts {
-		o(e)
-	}
-	return e
-}
 
 var ErrInvalidOptionsEnvFile = errors.New("invalid options on envfile")
 
@@ -92,12 +90,28 @@ func (e *Envfile) Validate() error {
 }
 
 type ModifyEnv struct {
-	Pattern   string
-	Operation string
+	Pattern   string `mapstructure:"pattern" yaml:"pattern" json:"pattern"`
+	Operation string `mapstructure:"operation" yaml:"operation" json:"operation" jsonschema:"enum=upper,enum=lower"`
 }
 
 func (me ModifyEnv) IsValid() bool {
 	return strings.Contains(me.Pattern, "keyword") && strings.Contains(me.Pattern, "varname")
+}
+
+// Opts is a task runner configuration function.
+type EnvFileOpts func(*Envfile)
+
+// NewEnvFile creates a new instance of the EnvFile
+// initializes it with some defaults
+func NewEnvFile(opts ...EnvFileOpts) *Envfile {
+	e := &Envfile{}
+	e.ReplaceChar = REPLACE_CHAR_DEFAULT
+	// e.Path = "envfile"
+	e.GeneratedDir = ".taskctl"
+	for _, o := range opts {
+		o(e)
+	}
+	return e
 }
 
 // ConvertEnv converts map representing the environment to array of strings in the form "key=value"

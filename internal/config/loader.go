@@ -332,8 +332,8 @@ func (cl *Loader) unmarshalDataStream(data io.Reader, ext string) (map[string]in
 	return cm, nil
 }
 
-func (cl *Loader) decode(cm map[string]interface{}) (*configDefinition, error) {
-	c := &configDefinition{}
+func (cl *Loader) decode(cm map[string]interface{}) (*ConfigDefinition, error) {
+	c := &ConfigDefinition{}
 	md, _ := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
 			mapstructure.StringToTimeDurationHookFunc(),

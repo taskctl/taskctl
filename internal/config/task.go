@@ -9,7 +9,7 @@ import (
 	"github.com/Ensono/taskctl/pkg/task"
 )
 
-func buildTask(def *taskDefinition, lc *loaderContext) (*task.Task, error) {
+func buildTask(def *TaskDefinition, lc *loaderContext) (*task.Task, error) {
 	t := &task.Task{
 		Name:         def.Name,
 		Description:  def.Description,

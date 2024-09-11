@@ -69,7 +69,7 @@ func (cfg *Config) merge(src *Config) error {
 	return nil
 }
 
-func buildFromDefinition(def *configDefinition, lc *loaderContext) (cfg *Config, err error) {
+func buildFromDefinition(def *ConfigDefinition, lc *loaderContext) (cfg *Config, err error) {
 	cfg = NewConfig()
 
 	for k, v := range def.Contexts {

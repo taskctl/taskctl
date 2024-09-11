@@ -9,7 +9,7 @@ import (
 	"github.com/Ensono/taskctl/pkg/task"
 )
 
-func buildPipeline(g *scheduler.ExecutionGraph, stages []*pipelineDefinition, cfg *Config) (*scheduler.ExecutionGraph, error) {
+func buildPipeline(g *scheduler.ExecutionGraph, stages []*PipelineDefinition, cfg *Config) (*scheduler.ExecutionGraph, error) {
 	for _, def := range stages {
 		var stageTask *task.Task
 		var stagePipeline *scheduler.ExecutionGraph

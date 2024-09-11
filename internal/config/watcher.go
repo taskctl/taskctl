@@ -6,7 +6,7 @@ import (
 	"github.com/Ensono/taskctl/internal/watch"
 )
 
-func buildWatcher(name string, def *watcherDefinition, cfg *Config) (*watch.Watcher, error) {
+func buildWatcher(name string, def *WatcherDefinition, cfg *Config) (*watch.Watcher, error) {
 	t, ok := cfg.Tasks[def.Task]
 	if !ok {
 		return nil, fmt.Errorf("watcher build failed. task %s not found", def.Task)

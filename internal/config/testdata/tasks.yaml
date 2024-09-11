@@ -1,5 +1,7 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Ensono/taskctl/fix/config-schema-generator/internal/config/schemas/schema_v1.json
+
 debug: false
-output: prefixed
+output: cockpit
 pipelines:
   pipeline1:
     - task: test-task
@@ -9,14 +11,14 @@ pipelines:
       name: stage2
     - task: test-task
       name: stage3
-      depends_on: [stage2]
+      depends_on: stage2
     - task: test-task
       name: final-stage
       depends_on: [stage1, stage3]
 
   pipeline2:
-    - pipeline: pipeline1
-      name: stage1
+    - name: stage1
+      pipeline: pipeline1
     - task: test-task
       depends_on: [stage1]
 
@@ -45,7 +47,7 @@ tasks:
 
 variables:
   test-variable: test-value
-  sleep: 5
+  sleep: "5"
 
 watchers:
   watcher1:

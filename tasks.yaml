@@ -1,3 +1,6 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Ensono/taskctl/fix/config-schema-generator/internal/config/schemas/schema_v1.json
+
+debug: true
 output: cockpit
 
 pipelines:
@@ -103,10 +106,14 @@ tasks:
       - gofmt -s -w internal/**/*.go
       - gofmt -s -w pkg/**/*.go
 
+  generateschema:
+    command:
+      - go run tools/schemagenerator/main.go
   echo:
     command: echo {{ .Name }}
     # variations:
     #   Name: foo
   tidy:
+    name: "tidy me up"
     command:
       - go mod tidy
