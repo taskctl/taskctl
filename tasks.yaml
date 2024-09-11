@@ -1,7 +1,12 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/Ensono/taskctl/fix/config-schema-generator/internal/config/schemas/schema_v1.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Ensono/taskctl/master/internal/config/schemas/schema_v1.json
 
 debug: true
 output: cockpit
+# TODO: top level variables are not being munged int
+variables:
+  RepoOwner: Ensono
+  BinName: taskctl
+  LDFLAGS: -ldflags="-s -w -X \"github.com/{{.RepoOwner}})/{{.BinName}})/cmd/taskctl.Version={{.Version}}\" -X \"github.com/{{.RepoOwner}}/{{.BinName}})/cmd/taskctl.Revision={{.Revision}}\" -extldflags -static"
 
 pipelines:
   build:
@@ -70,14 +75,16 @@ tasks:
 
   build:
     command:
-      - GOOS=${GOOS} GOARCH=amd64 go build -o ${BIN_OUT} ./cmd/taskctl
-    variations:
-      - GOOS: linux
-        BIN_OUT: bin/taskctl_linux_amd64
-      - GOOS: darwin
-        BIN_OUT: bin/taskctl_darwin_amd64
-      - GOOS: windows
-        BIN_OUT: bin/taskctl_windows_amd64.exe
+      - rm -rf bin/*
+      - |
+        ldflags="-s -w -X \"github.com/{{.RepoOwner}}/{{.BinName}}/cmd/taskctl.Version={{.Version}}\" -X \"github.com/{{.RepoOwner}}/{{.BinName}}/cmd/taskctl.Revision={{.Revision}}\" -extldflags -static"
+        GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -mod=readonly -buildvcs=false -ldflags="$ldflags" -o bin/{{.BinName}}-windows-amd64.exe cmd/main.go
+        GOOS=windows GOARCH=386 CGO_ENABLED=0 go build -mod=readonly -buildvcs=false -ldflags="$ldflags" -o bin/{{.BinName}}-windows-386.exe cmd/main.go
+        GOOS=darwin CGO_ENABLED=0 go build -mod=readonly -buildvcs=false -ldflags="$ldflags" -o bin/{{.BinName}}-darwin cmd/main.go
+        GOOS=linux CGO_ENABLED=0 go build -mod=readonly -buildvcs=false -ldflags="$ldflags" -o bin/{{.BinName}}-linux cmd/main.go
+    variables:
+      RepoOwner: Ensono
+      BinName: taskctl
 
   golint:
   # in CI it is run 
@@ -109,10 +116,17 @@ tasks:
   generateschema:
     command:
       - go run tools/schemagenerator/main.go
-  echo:
-    command: echo {{ .Name }}
-    # variations:
-    #   Name: foo
+      # todo: error in CI if changes detected 
+      # git diff --porcelain
+  show_coverage:
+    command:
+      - go tool cover -html=.coverage/out
+
+  show_docs:
+    command:
+      - go install golang.org/x/tools/cmd/godoc@latest
+      - open http://localhost:6060/pkg/github.com/Ensono/taskctl/?m=all
+      - godoc -notes "BUG|TODO" -play -http=:6060
   tidy:
     name: "tidy me up"
     command:

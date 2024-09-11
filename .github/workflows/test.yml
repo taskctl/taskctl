@@ -1,5 +1,13 @@
 name: Test
-on: [pull_request]
+on: 
+  pull_request:
+    branches: 
+      - main
+      - master
+  push:
+    branches:
+      - main
+      - master
 jobs:
   build:
     name: Test
@@ -8,7 +16,6 @@ jobs:
       TASKCTL_CONFIG_FILE: tasks.yaml
 
     steps:
-
     - name: Set up Go
       uses: actions/setup-go@v4
       with:

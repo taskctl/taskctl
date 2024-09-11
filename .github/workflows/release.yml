@@ -1,35 +1,72 @@
 name: Release
 on:
-  push:
-    tags:
-      - '*'
-  workflow_dispatch:
+  workflow_run:
+    workflows: ['Test']
+    types:
+      - completed
+
+permissions:
+  contents: write
 
 jobs:
-  goreleaser:
+  set-version-tag:
+    if: ${{ github.event.workflow_run.head_branch == 'master' }}
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    outputs:
+      semVer: ${{ steps.gitversion.outputs.semVer }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Set up Go
-        uses: actions/setup-go@v4
+      - uses: actions/checkout@v4
+      # get version
+      - uses: actions/checkout@v4
         with:
-          go-version: 1.19.x
-
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v4
+          fetch-depth: 0
+      - name: install deps
+        run: |
+          apt-get update && apt-get install -y jq git
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config user.email ${{ github.actor }}-ci@gha.org
+          git config user.name ${{ github.actor }}
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v1.1.1
         with:
-          version: latest
-          args: release --clean
-        env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-          GOPATH: /home/runner/go
+          versionSpec: '5.x'
+      - name: Set SemVer Version
+        uses: gittools/actions/gitversion/execute@v1.1.1
+        id: gitversion
 
-      - name: Upload assets
-        uses: actions/upload-artifact@v3
+  release:
+    runs-on: ubuntu-latest
+    container:
+      image: golang:1.23-bullseye
+      env:
+        FOO: Bar
+    needs: set-version-tag
+    env:
+      SEMVER: ${{ needs.set-version-tag.outputs.semVer }}
+    steps:
+      - uses: actions/checkout@v4
         with:
-          name: taskctl
-          path: bin/*
+          fetch-depth: 1
+
+      - name: build binaries
+        run: |
+          go run cmd/main.go run task build --set Version=v${SEMVER} --set Revision=$GITHUB_SHA
+
+      # tag repo
+      - name: tag repo
+        run: | 
+          echo "REVISION  -> $GITHUB_SHA"
+          echo "VERSION -> $GITVERSION_SEMVER"
+          git tag -a "v${SEMVER}" -m "ci tag release uistrategy" $GITHUB_SHA
+          git push origin "v${SEMVER}"
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          # body_path: ${{ github.workspace }}-CHANGELOG.txt
+          # repository: my_gh_org/my_gh_repo
+          generate_release_notes: true
+          # note you'll typically need to create a personal access token
+          # with permissions to create releases in the other repo
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: ./bin/*
