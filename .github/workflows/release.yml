@@ -1,16 +1,24 @@
 name: Release
+
+# revert 
+# on:
+#   workflow_run:
+#     workflows: ['Test']
+#     types:
+#       - completed
+
 on:
-  workflow_run:
-    workflows: ['Test']
-    types:
-      - completed
+  push:
+    branches:
+      - main
+      - master
 
 permissions:
   contents: write
 
 jobs:
   set-version-tag:
-    if: ${{ github.event.workflow_run.head_branch == 'master' }}
+    # if: ${{ github.event.workflow_run.head_branch == 'master' }}
     runs-on: ubuntu-latest
     outputs:
       semVer: ${{ steps.gitversion.outputs.semVer }}
@@ -20,26 +28,18 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: install deps
-        run: |
-          apt-get update && apt-get install -y jq git
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git config user.email ${{ github.actor }}-ci@gha.org
-          git config user.name ${{ github.actor }}
       - name: Install GitVersion
-        uses: gittools/actions/gitversion/setup@v1.1.1
+        uses: gittools/actions/gitversion/setup@v3.0
         with:
           versionSpec: '5.x'
       - name: Set SemVer Version
-        uses: gittools/actions/gitversion/execute@v1.1.1
+        uses: gittools/actions/gitversion/execute@v3.0
         id: gitversion
 
   release:
     runs-on: ubuntu-latest
     container:
       image: golang:1.23-bullseye
-      env:
-        FOO: Bar
     needs: set-version-tag
     env:
       SEMVER: ${{ needs.set-version-tag.outputs.semVer }}
@@ -48,8 +48,17 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: set up git for tag pushing
+        run: |
+          apt-get update && apt-get install -y git
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config user.email ${{ github.actor }}-ci@gha.org
+          git config user.name ${{ github.actor }}
+
       - name: build binaries
         run: |
+          echo "Version: v$SEMVER"
+          echo "Revision: $GITHUB_SHA"
           go run cmd/main.go run task build --set Version=v${SEMVER} --set Revision=$GITHUB_SHA
 
       # tag repo
@@ -57,8 +66,9 @@ jobs:
         run: | 
           echo "REVISION  -> $GITHUB_SHA"
           echo "VERSION -> $GITVERSION_SEMVER"
-          git tag -a "v${SEMVER}" -m "ci tag release uistrategy" $GITHUB_SHA
+          git tag -a "v${SEMVER}" -m "ci tag release" $GITHUB_SHA
           git push origin "v${SEMVER}"
+
       - name: Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')

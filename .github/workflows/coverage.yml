@@ -1,36 +1,12 @@
-# name: Generate coverage report
-# on:
-#   push:
-#     branches:
-#       - master
+name: Generate coverage report
 
-# jobs:
-#   run:
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: actions/checkout@master
-#       - name: Set up Go
-#         uses: actions/setup-go@v4
-#         with:
-#           go-version: 1.19.x
-          
-#       - name: Check out code into the Go module directory
-#         uses: actions/checkout@v3
+on: 
+  push:
+    branches:
+      - never
 
-#       - name: Cache Go modules
-#         uses: actions/cache@v3
-#         with:
-#           path: ~/go/pkg/mod
-#           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-#           restore-keys: |
-#             ${{ runner.os }}-go-
-
-#       - name: Test with coverage report
-#         run: |
-#           go test -race -coverprofile=coverage.out -covermode=atomic ./...
-
-#       - name: Upload coverage to Codecov
-#         uses: codecov/codecov-action@v3
-#         with:
-#           token: ${{ secrets.CODECOV_TOKEN }}
-#           files: ./coverage.out
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "generate coverage using sonarcloud"
