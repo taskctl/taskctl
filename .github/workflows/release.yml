@@ -72,6 +72,7 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ needs.set-version-tag.outputs.semVer }}
           # body_path: ${{ github.workspace }}-CHANGELOG.txt
           # repository: my_gh_org/my_gh_repo
           generate_release_notes: true
