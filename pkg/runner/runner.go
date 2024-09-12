@@ -1,3 +1,6 @@
+// package runner
+//
+// Runner runs the command inside the executor shell
 package runner
 
 import (
@@ -5,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -13,6 +15,7 @@ import (
 	"github.com/Ensono/taskctl/pkg/executor"
 	"github.com/Ensono/taskctl/pkg/output"
 	"github.com/Ensono/taskctl/pkg/task"
+	"github.com/Ensono/taskctl/pkg/utils"
 	"github.com/Ensono/taskctl/pkg/variables"
 	"github.com/sirupsen/logrus"
 )
@@ -24,7 +27,8 @@ type Runner interface {
 	Finish()
 }
 
-// TaskRunner run tasks
+// TaskRunner struct holds the properties and methods
+// for running the tasks inside the given executor
 type TaskRunner struct {
 	Executor  executor.Executor
 	DryRun    bool
@@ -287,13 +291,6 @@ func (r *TaskRunner) contextForTask(t *task.Task) (c *ExecutionContext, err erro
 		return nil, err
 	}
 
-	/*
-		err = c.GenerateEnvfile()
-		if err != nil {
-			return nil, err
-		}
-	*/
-
 	return c, nil
 }
 
@@ -330,14 +327,12 @@ func (r *TaskRunner) checkTaskCondition(t *task.Task) (bool, error) {
 }
 
 func (r *TaskRunner) storeTaskOutput(t *task.Task) {
-	var envVarName string
-	varName := fmt.Sprintf("Tasks.%s.Output", strings.ToTitle(t.Name))
-
-	if t.ExportAs == "" {
-		envVarName = fmt.Sprintf("%s_OUTPUT", strings.ToUpper(t.Name))
-		envVarName = regexp.MustCompile("[^a-zA-Z0-9_]").ReplaceAllString(envVarName, "_")
-	} else {
-		envVarName = t.ExportAs
+	envVarName := t.ExportAs
+	varName := fmt.Sprintf("Tasks.%s.Output", utils.ConvertStringToMachineFriendly(t.Name))
+	if envVarName == "" {
+		envVarName = fmt.Sprintf("%s_OUTPUT", strings.ToTitle(utils.ConvertStringToMachineFriendly(t.Name)))
+		// TODO: need to think about this as this is not a very good replacement technique
+		// envVarName = regexp.MustCompile("[^a-zA-Z0-9_]").ReplaceAllString(envVarName, "_")
 	}
 
 	r.env.Set(envVarName, t.Log.Stdout.String())
@@ -346,12 +341,14 @@ func (r *TaskRunner) storeTaskOutput(t *task.Task) {
 
 func (r *TaskRunner) execute(ctx context.Context, t *task.Task, job *executor.Job) error {
 	exec, err := executor.NewDefaultExecutor(job.Stdin, job.Stdout, job.Stderr)
+	exec.WithReset(t.ResetContext)
 	if err != nil {
 		return err
 	}
 
 	t.Start = time.Now()
 	var prevOutput []byte
+
 	for nextJob := job; nextJob != nil; nextJob = nextJob.Next {
 		var err error
 		nextJob.Vars.Set("Output", string(prevOutput))

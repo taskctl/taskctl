@@ -28,10 +28,10 @@ func TestContext(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	task1 := task.FromCommands("true")
+	task1 := task.FromCommands("t1", "true")
 	task1.Context = "after_failed"
 
-	task2 := task.FromCommands("true")
+	task2 := task.FromCommands("t2", "true")
 	task2.Context = "before_failed"
 
 	err = runner.Run(task1)

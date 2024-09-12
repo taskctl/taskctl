@@ -80,13 +80,15 @@ func buildFromDefinition(def *ConfigDefinition, lc *loaderContext) (cfg *Config,
 	}
 
 	for k, v := range def.Tasks {
-		cfg.Tasks[k], err = buildTask(v, lc)
-		if cfg.Tasks[k].Name == "" {
-			cfg.Tasks[k].Name = k
+		// need to project the name from the key if not set by user
+		if v.Name == "" {
+			v.Name = k
 		}
+		builtTask, err := buildTask(v, lc)
 		if err != nil {
 			return nil, err
 		}
+		cfg.Tasks[k] = builtTask
 	}
 
 	for k, v := range def.Watchers {

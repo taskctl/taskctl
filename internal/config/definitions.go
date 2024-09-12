@@ -6,7 +6,7 @@ import (
 	"github.com/Ensono/taskctl/pkg/utils"
 )
 
-//go:generate go run ../../tools/schemagenerator/main.go
+//go:generate go run ../../tools/schemagenerator/main.go -dir ../../
 
 // ConfigDefinition holds the top most config definition
 // this can be parsed from a yaml, json, toml files/mediaTypes
@@ -42,7 +42,7 @@ type ConfigDefinition struct {
 	// - task
 	// - commandline.
 	// Variables can be used inside templating using the text/template go package
-	Variables map[string]string `mapstructure:"variables" yaml:"variables" json:"variables,omitempty" jsonschema:"additionalproperties_type=string;integer"`
+	Variables map[string]string `mapstructure:"variables" yaml:"variables" json:"variables,omitempty"` // jsonschema:"additional_properties_type=string;integer"`
 }
 
 type ContextDefinition struct {
@@ -108,6 +108,8 @@ type TaskDefinition struct {
 	// it must exist
 	Context string `mapstructure:"context" yaml:"context,omitempty" json:"context,omitempty"`
 	// Variations is per execution env var mutator
+	// the number of variations in the list defines the number of times the command will be run
+	// if using the default executor, see `ResetContext` if you need
 	Variations []map[string]string `mapstructure:"variations" yaml:"variations,omitempty" json:"variations,omitempty"`
 	// Dir to run the command from
 	// If empty defaults to current directory
@@ -123,6 +125,9 @@ type TaskDefinition struct {
 	// Variables merged with others if any already priovided
 	// These will overwrite any previously set keys
 	Variables map[string]string `mapstructure:"variables" yaml:"variables,omitempty" json:"variables,omitempty" jsonschema:"oneof_type=string;integer"`
+	// ResetContext ensures each invocation of the variation is runs a Reset on the executor.
+	// Currently only applies to a default executor.
+	ResetContext bool `mapstructure:"reset_context" yaml:"reset_context,omitempty" json:"reset_context,omitempty" jsonschema:"default=false"`
 }
 
 type WatcherDefinition struct {

@@ -53,12 +53,12 @@ func NewTaskOutput(t *task.Task, format string, stdout, stderr io.Writer) (*Task
 
 // Stdout returns io.Writer that can be used for Job's STDOUT
 func (o *TaskOutput) Stdout() io.Writer {
-	return io.MultiWriter(o.decorator, &o.t.Log.Stdout)
+	return io.MultiWriter(o.decorator, o.t.Log.Stdout)
 }
 
 // Stderr returns io.Writer that can be used for Job's STDERR
 func (o *TaskOutput) Stderr() io.Writer {
-	return io.MultiWriter(o.decorator, &o.t.Log.Stderr)
+	return io.MultiWriter(o.decorator, o.t.Log.Stderr)
 }
 
 // Start should be called before task's output starts

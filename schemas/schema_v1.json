@@ -1,0 +1,440 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Ensono/taskctl/internal/config/config-definition",
+  "$ref": "#/$defs/ConfigDefinition",
+  "$defs": {
+    "Binary": {
+      "properties": {
+        "bin": {
+          "type": "string",
+          "description": "Bin is the name of the executable to run\nit must exist on the path\nIf using a default mvdn.sh context then\nensure it is on your path as symlink if you are only using aliases."
+        },
+        "args": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "bin"
+      ],
+      "description": "Binary is a structure for storing binary file path and arguments that should be passed on binary's invocation"
+    },
+    "ConfigDefinition": {
+      "properties": {
+        "import": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "Import is a list of additional resources to bring into the main config\nthese can be remote or local resources"
+        },
+        "contexts": {
+          "additionalProperties": {
+            "$ref": "#/$defs/ContextDefinition"
+          },
+          "type": "object",
+          "description": "Contexts is a map of contexts to use\nfor specific tasks"
+        },
+        "pipelines": {
+          "additionalProperties": {
+            "items": {
+              "$ref": "#/$defs/PipelineDefinition"
+            },
+            "type": "array"
+          },
+          "type": "object",
+          "description": "Pipelines are a set of tasks wrapped in additional run conditions\ne.g. depends on or allow failure"
+        },
+        "tasks": {
+          "additionalProperties": {
+            "$ref": "#/$defs/TaskDefinition"
+          },
+          "type": "object",
+          "description": "Tasks are the most basic buidling blocks"
+        },
+        "watchers": {
+          "additionalProperties": {
+            "$ref": "#/$defs/WatcherDefinition"
+          },
+          "type": "object"
+        },
+        "debug": {
+          "type": "boolean"
+        },
+        "dry_run": {
+          "type": "boolean"
+        },
+        "summary": {
+          "type": "boolean"
+        },
+        "output": {
+          "type": "string",
+          "enum": [
+            "raw",
+            "cockpit",
+            "prefixed"
+          ],
+          "description": "Output sets globally the output type for all tasks and pipelines"
+        },
+        "variables": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "Variables are the top most variables and will be merged and overwritten with lower level\nspecifications.\ne.g. variable of Version=123\nwill be overwritten by a variables specified in this order, lowest takes the highest precedence\n- context\n- pipeline\n- task\n- commandline.\nVariables can be used inside templating using the text/template go package"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "tasks"
+      ],
+      "description": "ConfigDefinition holds the top most config definition this can be parsed from a yaml, json, toml files/mediaTypes"
+    },
+    "ContextDefinition": {
+      "properties": {
+        "dir": {
+          "type": "string"
+        },
+        "up": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "down": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "before": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "after": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "env": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "Env is supplied from config file definition and is merged with the\ncurrent process environemnt variables list\n\nUser supplied env map will overwrite any keys inside the process env\nTODO: check this is desired behaviour"
+        },
+        "envfile": {
+          "$ref": "#/$defs/Envfile",
+          "description": "Envfile is a special block for use in executables that support file mapping\ne.g. podman or docker\n\nthe generated outputs will be merged with existing os.Environ()"
+        },
+        "variables": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "Variables"
+        },
+        "executable": {
+          "$ref": "#/$defs/Binary",
+          "description": "Executable block holds the exec info"
+        },
+        "quote": {
+          "type": "string",
+          "description": "Quote is the quote char to use when parsing commands into non-mvdan shells"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "Envfile": {
+      "properties": {
+        "generate": {
+          "type": "boolean",
+          "description": "Generate will toggle the creation of the envFile\nthis \"envFile\" is only used in executables of type `docker|podman`"
+        },
+        "exclude": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "list of variables to be excluded\nfrom the injection into container runtimes\n\nCurrently this is based on a prefix\n\nExample:\nHOME=foo,HOMELAB=bar\n\nBoth of these will be skipped"
+        },
+        "include": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "path": {
+          "type": "string",
+          "description": "Path is generated using task name and current timestamp\nTODO: include additional graph info about the execution\ne.g. owning pipeline (if any) execution number"
+        },
+        "replace_char": {
+          "type": "string"
+        },
+        "quote": {
+          "type": "boolean"
+        },
+        "delay": {
+          "type": "integer",
+          "description": "Delay can be removed"
+        },
+        "modify": {
+          "items": {
+            "$ref": "#/$defs/ModifyEnv"
+          },
+          "type": "array",
+          "description": "Modify specifies the modifications to make to each env var and whether it meets the criteria\nexample:\n- pattern: \"^(?P\u003ckeyword\u003eTF_VAR_)(?P\u003cvarname\u003e.*)\"\n\t operation: lower\nthe inputs are validated at task/pipeline build time and will fail if the\n\u003ckeyword\u003e and \u003cvarname\u003e sub expressions are not present in the `pattern`"
+        },
+        "generated_dir": {
+          "type": "string",
+          "description": "defaults to .taskctl in the current directory\nagain this should be hidden from the user..."
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "description": "Envile is a structure for storing the information required to generate an envfile which can be consumed by the specified binary"
+    },
+    "ModifyEnv": {
+      "properties": {
+        "pattern": {
+          "type": "string"
+        },
+        "operation": {
+          "type": "string",
+          "enum": [
+            "upper",
+            "lower"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "pattern",
+        "operation"
+      ]
+    },
+    "PipelineDefinition": {
+      "oneOf": [
+        {
+          "required": [
+            "task"
+          ],
+          "title": "task"
+        },
+        {
+          "required": [
+            "pipeline"
+          ],
+          "title": "pipeline"
+        }
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name is the friendly name to give to pipeline"
+        },
+        "condition": {
+          "type": "string",
+          "description": "Condition is the condition to evaluate on whether to run this task or not"
+        },
+        "task": {
+          "type": "string",
+          "description": "Task is the pointer to the task to run\nit has to match the key in tasks map"
+        },
+        "pipeline": {
+          "type": "string",
+          "description": "Pipeline is the name of the pipeline to run\nTask and Pipeline are mutually exclusive\nif both are specified task will win"
+        },
+        "depends_on": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array"
+            }
+          ],
+          "items": {
+            "type": "string"
+          },
+          "description": "DependsOn"
+        },
+        "allow_failure": {
+          "type": "boolean",
+          "description": "AllowFailure"
+        },
+        "dir": {
+          "type": "string",
+          "description": "Dir is the place where to run the task(s) in.\nIf empty - currentDir is used"
+        },
+        "env": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "Env is the Key: Value map of env vars to inject into the tasks"
+        },
+        "variables": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "Variables is the Key: Value map of vars vars to inject into the tasks"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "TaskDefinition": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "condition": {
+          "type": "string"
+        },
+        "command": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array"
+            }
+          ],
+          "items": {
+            "type": "string"
+          },
+          "description": "Command is the actual command to run in either a specified executable or\nin mvdn.shell"
+        },
+        "after": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "before": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "context": {
+          "type": "string",
+          "description": "Context is the pointer to the key in the context map\nit must exist"
+        },
+        "variations": {
+          "items": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "type": "array",
+          "description": "Variations is per execution env var mutator\nthe number of variations in the list defines the number of times the command will be run\nif using the default executor, see `ResetContext` if you need"
+        },
+        "dir": {
+          "type": "string",
+          "description": "Dir to run the command from\nIf empty defaults to current directory"
+        },
+        "timeout": {
+          "type": "integer"
+        },
+        "allow_failure": {
+          "type": "boolean"
+        },
+        "interactive": {
+          "type": "boolean"
+        },
+        "export_as": {
+          "type": "string"
+        },
+        "env": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "env_file": {
+          "type": "string",
+          "description": "EnvFile string pointing to the file that could be read in as an envFile\ncontents will be merged with the Env (os.Environ())"
+        },
+        "variables": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            }
+          ],
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Variables merged with others if any already priovided\nThese will overwrite any previously set keys"
+        },
+        "reset_context": {
+          "type": "boolean",
+          "description": "ResetContext ensures each invocation of the variation is runs a Reset on the executor.\nCurrently only applies to a default executor.",
+          "default": false
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "command"
+      ]
+    },
+    "WatcherDefinition": {
+      "properties": {
+        "events": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "watch": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "exclude": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "task": {
+          "type": "string"
+        },
+        "variables": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "events",
+        "watch",
+        "task"
+      ]
+    }
+  }
+}

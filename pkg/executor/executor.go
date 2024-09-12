@@ -1,3 +1,9 @@
+// package executor
+//
+// It uses the mvdan.sh shell implementation in Go.
+// injects a custom environment per execution
+//
+// not all *nix* commands are available, should only be used for a limited number of scenarios
 package executor
 
 import (
@@ -29,13 +35,15 @@ type DefaultExecutor struct {
 	env    []string
 	interp *interp.Runner
 	buf    bytes.Buffer
+	// doReset resets the execution environment after each run
+	doReset bool
 }
 
 // NewDefaultExecutor creates new default executor
 func NewDefaultExecutor(stdin io.Reader, stdout, stderr io.Writer) (*DefaultExecutor, error) {
 	var err error
 	e := &DefaultExecutor{
-		env: os.Environ(),
+		env: os.Environ(), // do not want to set the environment here
 	}
 
 	e.dir, err = os.Getwd()
@@ -59,6 +67,11 @@ func NewDefaultExecutor(stdin io.Reader, stdout, stderr io.Writer) (*DefaultExec
 	}
 
 	return e, nil
+}
+
+func (e *DefaultExecutor) WithReset(doReset bool) *DefaultExecutor {
+	e.doReset = doReset
+	return e
 }
 
 // Execute executes given job with provided context
@@ -98,11 +111,16 @@ func (e *DefaultExecutor) Execute(ctx context.Context, job *Job) ([]byte, error)
 	}()
 
 	offset := e.buf.Len()
+	// Reset needs to be called before Run
+	// even the first time around else the vars won't be cleared correctly
+	// and re-injected by the mvdan shell
+	if e.doReset {
+		e.interp.Reset()
+	}
 	err = e.interp.Run(ctx, cmd)
 	if err != nil {
 		return e.buf.Bytes()[offset:], err
 	}
-
 	return e.buf.Bytes()[offset:], nil
 }
 

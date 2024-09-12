@@ -33,21 +33,21 @@ func (t2 TestTaskRunner) Finish() {}
 func TestExecutionGraph_Scheduler(t *testing.T) {
 	stage1 := &Stage{
 		Name: "stage1",
-		Task: task.FromCommands("/usr/bin/true"),
+		Task: task.FromCommands("t1", "/usr/bin/true"),
 	}
 	stage2 := &Stage{
 		Name:      "stage2",
-		Task:      task.FromCommands("/usr/bin/false"),
+		Task:      task.FromCommands("t2", "/usr/bin/false"),
 		DependsOn: []string{"stage1"},
 	}
 	stage3 := &Stage{
 		Name:      "stage3",
-		Task:      task.FromCommands("/usr/bin/false"),
+		Task:      task.FromCommands("t2", "/usr/bin/false"),
 		DependsOn: []string{"stage2"},
 	}
 	stage4 := &Stage{
 		Name:      "stage4",
-		Task:      task.FromCommands("true"),
+		Task:      task.FromCommands("t3", "true"),
 		DependsOn: []string{"stage3"},
 	}
 
@@ -76,17 +76,17 @@ func TestExecutionGraph_Scheduler(t *testing.T) {
 func TestExecutionGraph_Scheduler_AllowFailure(t *testing.T) {
 	stage1 := &Stage{
 		Name: "stage1",
-		Task: task.FromCommands("true"),
+		Task: task.FromCommands("t1", "true"),
 	}
 	stage2 := &Stage{
 		Name:         "stage2",
-		Task:         task.FromCommands("false"),
+		Task:         task.FromCommands("t2", "false"),
 		AllowFailure: true,
 		DependsOn:    []string{"stage1"},
 	}
 	stage3 := &Stage{
 		Name:      "stage3",
-		Task:      task.FromCommands("{{.command}}"),
+		Task:      task.FromCommands("t3", "{{.command}}"),
 		DependsOn: []string{"stage2"},
 		Variables: variables.FromMap(map[string]string{"command": "true"}),
 		Env:       variables.NewVariables(),
@@ -119,12 +119,12 @@ func TestExecutionGraph_Scheduler_AllowFailure(t *testing.T) {
 func TestSkippedStage(t *testing.T) {
 	stage1 := &Stage{
 		Name:      "stage1",
-		Task:      task.FromCommands("true"),
+		Task:      task.FromCommands("t1", "true"),
 		Condition: "true",
 	}
 	stage2 := &Stage{
 		Name:         "stage2",
-		Task:         task.FromCommands("false"),
+		Task:         task.FromCommands("t2", "false"),
 		AllowFailure: true,
 		DependsOn:    []string{"stage1"},
 		Condition:    "false",
@@ -151,7 +151,7 @@ func TestSkippedStage(t *testing.T) {
 func TestScheduler_Cancel(t *testing.T) {
 	stage1 := &Stage{
 		Name: "stage1",
-		Task: task.FromCommands("sleep 60"),
+		Task: task.FromCommands("t1", "sleep 60"),
 	}
 
 	graph, err := NewExecutionGraph(stage1)
@@ -179,12 +179,12 @@ func TestScheduler_Cancel(t *testing.T) {
 func TestConditionErroredStage(t *testing.T) {
 	stage1 := &Stage{
 		Name:      "stage1",
-		Task:      task.FromCommands("true"),
+		Task:      task.FromCommands("t1", "true"),
 		Condition: "true",
 	}
 	stage2 := &Stage{
 		Name:         "stage2",
-		Task:         task.FromCommands("false"),
+		Task:         task.FromCommands("t2", "false"),
 		AllowFailure: true,
 		DependsOn:    []string{"stage1"},
 		Condition:    "/unknown-bin",
@@ -209,8 +209,8 @@ func TestConditionErroredStage(t *testing.T) {
 }
 
 func ExampleScheduler_Schedule() {
-	format := task.FromCommands("go fmt ./...")
-	build := task.FromCommands("go build ./..")
+	format := task.FromCommands("t1", "go fmt ./...")
+	build := task.FromCommands("t2", "go build ./..")
 	r, _ := runner.NewTaskRunner()
 	s := NewScheduler(r)
 

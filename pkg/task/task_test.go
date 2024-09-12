@@ -5,7 +5,7 @@ import (
 )
 
 func TestTask(t *testing.T) {
-	task := FromCommands("ls /tmp")
+	task := FromCommands("t1", "ls /tmp")
 	task.WithEnv("TEST_ENV", "TEST_VAL")
 
 	if task.Commands[0] != "ls /tmp" {
@@ -22,7 +22,7 @@ func TestTask(t *testing.T) {
 }
 
 func TestTask_ErrorMessage(t *testing.T) {
-	task := NewTask()
+	task := NewTask("abc")
 	task.Errored = true
 	task.Log.Stderr.Write([]byte("abc\ndef"))
 
@@ -30,7 +30,7 @@ func TestTask_ErrorMessage(t *testing.T) {
 		t.Error()
 	}
 
-	task = NewTask()
+	task = NewTask("errored")
 	if task.ErrorMessage() != "" {
 		t.Error()
 	}
@@ -49,7 +49,7 @@ func TestTask_ErrorMessage(t *testing.T) {
 }
 
 func TestNewTask_WithVariations(t *testing.T) {
-	task := FromCommands("ls /tmp")
+	task := FromCommands("t1", "ls /tmp")
 
 	if len(task.GetVariations()) != 1 {
 		t.Error()

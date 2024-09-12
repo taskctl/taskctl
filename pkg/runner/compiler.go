@@ -28,6 +28,7 @@ func NewTaskCompiler() *TaskCompiler {
 // CompileTask compiles task into Job (linked list of commands) executed by Executor
 func (tc *TaskCompiler) CompileTask(t *task.Task, executionContext *ExecutionContext, stdin io.Reader, stdout, stderr io.Writer, env, vars variables.Container) (*executor.Job, error) {
 	vars = t.Variables.Merge(vars)
+
 	var job, prev *executor.Job
 
 	for k, v := range vars.Map() {
@@ -41,8 +42,9 @@ func (tc *TaskCompiler) CompileTask(t *task.Task, executionContext *ExecutionCon
 		}
 		vars.Set(k, v)
 	}
-
+	// creating multiple versions of the same task with different env input
 	for _, variant := range t.GetVariations() {
+		// each command in the array needs compiling
 		for _, command := range t.Commands {
 			j, err := tc.CompileCommand(
 				t.Name,

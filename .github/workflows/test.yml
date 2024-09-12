@@ -38,7 +38,7 @@ jobs:
     
     - name: Test
       run: |
-        go run cmd/main.go run pipeline testOut
+        go run cmd/main.go run pipeline test:unit
     
     - name: Publish Junit style Test Report
       uses: mikepenz/action-junit-report@v3
@@ -54,3 +54,4 @@ jobs:
         badge: true
         format: markdown
 
+    # TODO: add sonar cloud

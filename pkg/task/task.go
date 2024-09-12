@@ -23,9 +23,10 @@ type Task struct {
 	After        []string
 	Before       []string
 	Interactive  bool
-
-	Condition string
-	Skipped   bool
+	// ResetContext is useful if multiple variations are running in the same task
+	ResetContext bool
+	Condition    string
+	Skipped      bool
 
 	Name        string
 	Description string
@@ -39,25 +40,32 @@ type Task struct {
 	Errored  bool
 	Error    error
 	Log      struct {
-		Stderr bytes.Buffer
-		Stdout bytes.Buffer
+		Stderr *bytes.Buffer
+		Stdout *bytes.Buffer
 	}
 }
 
 // NewTask creates new Task instance
-func NewTask() *Task {
+func NewTask(name string) *Task {
 	return &Task{
+		Name:      name,
 		Env:       variables.NewVariables(),
 		Variables: variables.NewVariables(),
 		ExitCode:  -1,
+		Log: struct {
+			Stderr *bytes.Buffer
+			Stdout *bytes.Buffer
+		}{
+			Stderr: &bytes.Buffer{},
+			Stdout: &bytes.Buffer{},
+		},
 	}
 }
 
 // FromCommands creates task new Task instance with given commands
-func FromCommands(commands ...string) *Task {
-	t := NewTask()
+func FromCommands(name string, commands ...string) *Task {
+	t := NewTask(name)
 	t.Commands = commands
-
 	return t
 }
 
@@ -77,10 +85,10 @@ func (t *Task) ErrorMessage() string {
 	}
 
 	if t.Log.Stderr.Len() > 0 {
-		return utils.LastLine(&t.Log.Stderr)
+		return utils.LastLine(t.Log.Stderr)
 	}
 
-	return utils.LastLine(&t.Log.Stdout)
+	return utils.LastLine(t.Log.Stdout)
 }
 
 // WithEnv sets environment variable

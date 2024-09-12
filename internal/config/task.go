@@ -10,23 +10,27 @@ import (
 )
 
 func buildTask(def *TaskDefinition, lc *loaderContext) (*task.Task, error) {
-	t := &task.Task{
-		Name:         def.Name,
-		Description:  def.Description,
-		Condition:    def.Condition,
-		Commands:     def.Command,
-		Env:          variables.FromMap(def.Env),
-		Variables:    variables.FromMap(def.Variables),
-		Variations:   def.Variations,
-		Dir:          def.Dir,
-		Timeout:      def.Timeout,
-		AllowFailure: def.AllowFailure,
-		After:        def.After,
-		Before:       def.Before,
-		ExportAs:     def.ExportAs,
-		Context:      def.Context,
-		Interactive:  def.Interactive,
-	}
+
+	t := task.NewTask(def.Name)
+
+	t.Description = def.Description
+	t.Condition = def.Condition
+	t.Commands = def.Command
+	// t.Env = variables.FromMap(def.Env)
+	// t.Variables = variables.FromMap(def.Variables)
+	t.Variations = def.Variations
+	t.Dir = def.Dir
+	t.Timeout = def.Timeout
+	t.AllowFailure = def.AllowFailure
+	t.After = def.After
+	t.Before = def.Before
+	t.ExportAs = def.ExportAs
+	t.Context = def.Context
+	t.Interactive = def.Interactive
+	t.ResetContext = def.ResetContext
+
+	t.Env.Merge(variables.FromMap(def.Env))
+	t.Variables.Merge(variables.FromMap(def.Variables))
 
 	t.Variables.Set("Context.Name", t.Context)
 	t.Variables.Set("Task.Name", t.Name)

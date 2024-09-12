@@ -33,7 +33,7 @@ func TestTaskRunner(t *testing.T) {
 	runner.SetVariables(variables.FromMap(map[string]string{"Root": "/tmp"}))
 	runner.WithVariable("Root", "/")
 
-	task1 := taskpkg.NewTask()
+	task1 := taskpkg.NewTask("t1")
 	task1.Context = "local"
 	task1.ExportAs = "EXPORT_NAME"
 
@@ -43,7 +43,7 @@ func TestTaskRunner(t *testing.T) {
 	task1.After = []string{"echo 'after task1'"}
 
 	d := 1 * time.Minute
-	task2 := taskpkg.NewTask()
+	task2 := taskpkg.NewTask("t2")
 	task2.Timeout = &d
 	task2.Variations = []map[string]string{{"GOOS": "windows"}, {"GOOS": "linux"}}
 
@@ -52,10 +52,10 @@ func TestTaskRunner(t *testing.T) {
 	task2.Dir = "{{.Root}}"
 	task2.Interactive = true
 
-	task3 := taskpkg.NewTask()
+	task3 := taskpkg.NewTask("t3")
 	task3.Condition = "exit 1"
 
-	task4 := taskpkg.NewTask()
+	task4 := taskpkg.NewTask("t4")
 	task4.Commands = []string{"function test_func() { echo \"BBB\"; } ", "test_func"}
 
 	cases := []struct {
@@ -101,7 +101,6 @@ func TestTaskRunner(t *testing.T) {
 }
 
 func Test_DockerExec_Cmd(t *testing.T) {
-	// t.Skip()
 	ttests := map[string]struct {
 		execContext *ExecutionContext
 		command     string
@@ -123,12 +122,14 @@ func Test_DockerExec_Cmd(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			defer runner.Finish()
+
 			testOut, testErr := &bytes.Buffer{}, &bytes.Buffer{}
 			runner.Stdout, runner.Stderr = testOut, testErr
 			runner.SetVariables(variables.FromMap(map[string]string{"Root": "/tmp"}))
 			runner.WithVariable("Root", "/")
 
-			task1 := taskpkg.NewTask()
+			task1 := taskpkg.NewTask("default:docker")
 			task1.Context = "default_docker"
 			task1.ExportAs = "EXPORT_NAME"
 
@@ -137,22 +138,24 @@ func Test_DockerExec_Cmd(t *testing.T) {
 			task1.Dir = "{{.Root}}"
 			task1.After = []string{"echo 'after task1'"}
 
-			err = runner.Run(task1)
-			if err != nil {
+			if err := runner.Run(task1); err != nil {
 				fmt.Println(testOut.String())
 				t.Fatal(err)
 			}
+
 			if len(testErr.Bytes()) > 0 {
 				t.Fatalf("got: %s, wanted nil", testErr.String())
 			}
-			runner.Finish()
 		})
 	}
 }
 
 func ExampleTaskRunner_Run() {
-	t := taskpkg.FromCommands("go fmt ./...", "go build ./..")
-	r, err := NewTaskRunner()
+	t := taskpkg.FromCommands("t1", "go doc github.com/Ensono/taskctl/pkg/runner.Runner")
+	ob := &bytes.Buffer{}
+	r, err := NewTaskRunner(func(tr *TaskRunner) {
+		tr.Stdout = ob
+	})
 	if err != nil {
 		return
 	}
@@ -160,5 +163,69 @@ func ExampleTaskRunner_Run() {
 	if err != nil {
 		fmt.Println(err, t.ExitCode, t.ErrorMessage())
 	}
-	fmt.Println(t.Output())
+	fmt.Println(ob.String())
+	// indentation is important with the matched output here
+	// Output: package runner // import "github.com/Ensono/taskctl/pkg/runner"
+	//
+	// type Runner interface {
+	// 	Run(t *task.Task) error
+	// 	Cancel()
+	//	Finish()
+	// }
+	//     Runner describes tasks runner interface
+}
+
+func TestTaskRunner_ResetContext_WithVariations(t *testing.T) {
+
+	ttests := map[string]struct {
+		resetContext bool
+		want         string
+		variations   []map[string]string
+	}{
+		"noreset:context": {
+			false,
+			"first\nfirst\nfirst\nfirst\n",
+			[]map[string]string{
+				{"Var1": "first"}, {"Var1": "second"},
+				{"Var1": "third"}, {"Var1": "fourth"},
+			},
+		},
+		"withreset:context": {
+			true,
+			"first\nsecond\nthird\nfourth\n",
+			[]map[string]string{
+				{"Var1": "first"}, {"Var1": "second"},
+				{"Var1": "third"}, {"Var1": "fourth"},
+			},
+		},
+	}
+
+	for name, tt := range ttests {
+		t.Run(name, func(t *testing.T) {
+			task := taskpkg.NewTask(name)
+			task.Commands = []string{"echo $Var1"}
+			task.ResetContext = tt.resetContext // this is set by defualt but setting here for clarity
+			task.Variations = tt.variations
+
+			r, err := NewTaskRunner()
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			ob, eb := &bytes.Buffer{}, &bytes.Buffer{}
+			r.Stderr = eb
+			r.Stdout = ob
+
+			if err := r.Run(task); err != nil {
+				t.Fatal(err)
+			}
+
+			if len(task.Output()) < 1 {
+				t.Error("nothing written")
+			}
+			if string(task.Output()) != tt.want {
+				t.Errorf("\ngot:\n%s\nwant:\n%s", task.Output(), tt.want)
+			}
+		})
+	}
 }

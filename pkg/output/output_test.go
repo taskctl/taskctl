@@ -23,7 +23,7 @@ func TestNewTaskOutput_Prefixed(t *testing.T) {
 	}
 
 	logrus.SetOutput(&b)
-	tt := task.FromCommands("echo 1")
+	tt := task.FromCommands("t1", "echo 1")
 	tt.Name = "task1"
 	o, err := NewTaskOutput(
 		tt,
@@ -64,7 +64,7 @@ func TestNewTaskOutput(t *testing.T) {
 	}
 
 	logrus.SetOutput(&b)
-	tt := task.FromCommands("echo 1")
+	tt := task.FromCommands("t1", "echo 1")
 	tt.Name = "task1"
 	o, err := NewTaskOutput(
 		tt,
