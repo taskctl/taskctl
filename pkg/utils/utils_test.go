@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -230,5 +231,92 @@ func TestUtils_Envfile(t *testing.T) {
 	if envfile.GeneratedDir != ".taskctl" {
 		t.Error("generated dir not set correctly")
 	}
+}
 
+func TestUtils_ConvertFromEnv(t *testing.T) {
+	ttests := map[string]struct {
+		envPairs   []string
+		expectKeys []string
+		expectVals []string
+	}{
+		"with vars with =": {
+			envPairs:   []string{"=somestt", "key=val", "SOM_LONG=region=qradf,sdfsfd=84hndsfdsf;off=true"},
+			expectKeys: []string{"", "key", "SOM_LONG"},
+			expectVals: []string{"somestt", "val", "region=qradf,sdfsfd=84hndsfdsf;off=true"},
+		},
+		"with vars with newlines": {
+			envPairs: []string{"=", "key=val", `SOM_LONG=rdffsdfsdfsdgbew23r44fr3435f
+f5g5rtrdf;sdf094wsdf
+truedsf sf sdf sdff sd
+sdf sdsfdsfd fds sdf f sd
+sdfds dfsg w45 546rth ghfdsr ht hrt
+fdsggfd gdf`},
+			expectKeys: []string{"", "key", "SOM_LONG"},
+			expectVals: []string{"", "val", `rdffsdfsdfsdgbew23r44fr3435f
+f5g5rtrdf;sdf094wsdf
+truedsf sf sdf sdff sd
+sdf sdsfdsfd fds sdf f sd
+sdfds dfsg w45 546rth ghfdsr ht hrt
+fdsggfd gdf`},
+		},
+	}
+
+	for name, tt := range ttests {
+		t.Run(name, func(t *testing.T) {
+			got := utils.ConvertFromEnv(tt.envPairs)
+			for _, k := range tt.expectKeys {
+				val, ok := got[k]
+				if !ok {
+					t.Fatalf("got %s\nnot in wanted keys output: %v", k, tt.expectKeys)
+				}
+				if !slices.Contains(tt.expectVals, val) {
+					t.Fatalf("got %s\nnot in wanted values output: %v", val, tt.expectVals)
+				}
+			}
+		})
+	}
+}
+
+func TestUtils_ConvertToMapOfStrings(t *testing.T) {
+	in := make(map[string]any)
+	in["str"] = "string"
+	in["int"] = 123
+	in["bool"] = true
+	got := utils.ConvertToMapOfStrings(in)
+
+	if got["str"] != "string" {
+		t.Fatal("str incorrect")
+	}
+	if got["int"] != "123" {
+		t.Fatal("int incorrect")
+	}
+
+	if got["bool"] != "true" {
+		t.Fatal("bool incorrect")
+	}
+}
+
+func TestUtils_ConvertStringToMachineFriendly(t *testing.T) {
+	ttests := map[string]struct {
+		input string
+	}{
+		"with :": {
+			"task:123",
+		},
+		"with space": {
+			"task name with space",
+		},
+		"with existing _": {
+			"task123:with space and _",
+		},
+	}
+	for name, tt := range ttests {
+		t.Run(name, func(t *testing.T) {
+			got := utils.ConvertStringToMachineFriendly(tt.input)
+			inverseGot := utils.ConvertStringToHumanFriendly(got)
+			if inverseGot != tt.input {
+				t.Errorf("got: %s\nwanted: %s", inverseGot, tt.input)
+			}
+		})
+	}
 }

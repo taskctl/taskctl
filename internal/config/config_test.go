@@ -30,7 +30,7 @@ func TestConfig_decode(t *testing.T) {
 	}
 }
 
-// TODO:  config.merge is tested implicitely
+// TODO:  config.merge is tested implicitly
 // needs to provide negative cases which throw
 // config merge
 

@@ -20,7 +20,8 @@ import (
 var (
 	// define a list of environment variable names that are not permitted
 	invalidEnvVarKeys = []string{
-		`!::`, // this is found in a cygwin environment
+		"",                              //skip any empty key names
+		`!::`, `=::`, `::=::`, `::=::\`, // this is found in a cygwin environment
 	}
 )
 
@@ -145,15 +146,11 @@ func (c *ExecutionContext) GenerateEnvfile() error {
 	builder := []string{}
 
 	// iterate around all of the environment variables and add the selected ones to the builder
-	// TODO: shouldn't this be the local properties variable.Container on the ExecutionContext?
-	//
-	// c.Env.Map() && c.Variables.Get()
 	for varName, varValue := range c.Env.Map() {
-
 		// check to see if the env matches an invalid variable, if it does
-		// move onto the next loop
+		// move onto the next item in the  loop
 		if slices.Contains(invalidEnvVarKeys, varName) {
-			logrus.Warnf("Skipping invalid environment variable: `%s`", varName)
+			logrus.Warnf("Skipping invalid env var: %s=%v\n'%s' is not a valid key", varName, varValue, varName)
 			continue
 		}
 

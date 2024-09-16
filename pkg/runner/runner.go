@@ -327,6 +327,9 @@ func (r *TaskRunner) checkTaskCondition(t *task.Task) (bool, error) {
 
 func (r *TaskRunner) storeTaskOutput(t *task.Task) {
 	envVarName := t.ExportAs
+	// TODO: chagne this to only store output if specified
+	// and do not just scrape the stdout
+	compoundedTaskOutput := t.Log.Stdout.String()
 	varName := fmt.Sprintf("Tasks.%s.Output", utils.ConvertStringToMachineFriendly(t.Name))
 	if envVarName == "" {
 		envVarName = fmt.Sprintf("%s_OUTPUT", strings.ToTitle(utils.ConvertStringToMachineFriendly(t.Name)))
@@ -334,10 +337,11 @@ func (r *TaskRunner) storeTaskOutput(t *task.Task) {
 		// envVarName = regexp.MustCompile("[^a-zA-Z0-9_]").ReplaceAllString(envVarName, "_")
 	}
 
-	r.env.Set(envVarName, t.Log.Stdout.String())
-	r.variables.Set(varName, t.Log.Stdout.String())
+	r.env.Set(envVarName, compoundedTaskOutput)
+	r.variables.Set(varName, compoundedTaskOutput)
 }
 
+// execute
 func (r *TaskRunner) execute(ctx context.Context, t *task.Task, job *executor.Job) error {
 	exec, err := executor.NewDefaultExecutor(job.Stdin, job.Stdout, job.Stderr)
 	exec.WithReset(t.ResetContext)

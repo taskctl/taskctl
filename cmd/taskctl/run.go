@@ -44,10 +44,11 @@ func newRunCmd(rootCmd *TaskCtlCmd) {
 	}
 
 	runCmd.AddCommand(&cobra.Command{
-		Use:     "pipeline",
-		Short:   `runs pipeline <task>`,
-		Example: `taskctl run pipeline pipeline:name`,
-		Args:    cobra.MinimumNArgs(1),
+		Use:          "pipeline",
+		Short:        `runs pipeline <task>`,
+		Example:      `taskctl run pipeline pipeline:name`,
+		Args:         cobra.MinimumNArgs(1),
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			conf, err := rootCmd.initConfig()
 			if err != nil {
@@ -62,11 +63,12 @@ func newRunCmd(rootCmd *TaskCtlCmd) {
 	})
 
 	runCmd.AddCommand(&cobra.Command{
-		Use:     "task",
-		Aliases: []string{},
-		Short:   `runs task <task>`,
-		Example: `taskctl run task1`,
-		Args:    cobra.MinimumNArgs(1),
+		Use:          "task",
+		Aliases:      []string{},
+		Short:        `runs task <task>`,
+		Example:      `taskctl run task1`,
+		SilenceUsage: true,
+		Args:         cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			conf, err := rootCmd.initConfig()
 			if err != nil {

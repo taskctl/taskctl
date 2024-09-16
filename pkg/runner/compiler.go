@@ -111,8 +111,7 @@ func (tc *TaskCompiler) CompileCommand(
 			filepath.Join(
 				executionCtx.Envfile.GeneratedDir,
 				fmt.Sprintf("generated_%s_%v.env", utils.ConvertStringToMachineFriendly(taskName), time.Now().UnixNano()),
-			),
-		)
+			))
 
 		// does the args contain the --env-file string
 		// currently we will always either overwrite or just append the `--env-file flag`

@@ -54,7 +54,7 @@
             "$ref": "#/$defs/TaskDefinition"
           },
           "type": "object",
-          "description": "Tasks are the most basic buidling blocks"
+          "description": "Tasks are the most basic building blocks of taskctl"
         },
         "watchers": {
           "additionalProperties": {
@@ -129,7 +129,7 @@
             "type": "string"
           },
           "type": "object",
-          "description": "Env is supplied from config file definition and is merged with the\ncurrent process environemnt variables list\n\nUser supplied env map will overwrite any keys inside the process env\nTODO: check this is desired behaviour"
+          "description": "Env is supplied from config file definition and is merged with the\ncurrent process environment variables list\n\nUser supplied env map will overwrite any keys inside the process env\nTODO: check this is desired behaviour"
         },
         "envfile": {
           "$ref": "#/$defs/Envfile",

@@ -206,7 +206,7 @@ func TestTaskRunner_ResetContext_WithVariations(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			task := taskpkg.NewTask(name)
 			task.Commands = []string{"echo $Var1"}
-			task.ResetContext = tt.resetContext // this is set by defualt but setting here for clarity
+			task.ResetContext = tt.resetContext // this is set by default but setting here for clarity
 			task.Variations = tt.variations
 
 			r, err := NewTaskRunner()

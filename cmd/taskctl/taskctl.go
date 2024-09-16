@@ -181,8 +181,6 @@ func (tc *TaskCtlCmd) initConfig() (*config.Config, error) {
 //
 // assigns to the global var to the package
 // args are the stdin inputs of strings following the `--` parameter
-//
-// TODO: make this less globally and more testable
 func (tc *TaskCtlCmd) buildTaskRunner(args []string, conf *config.Config) (*runner.TaskRunner, *argsToStringsMapper, error) {
 	argsStringer, err := argsValidator(args, conf)
 	if err != nil {

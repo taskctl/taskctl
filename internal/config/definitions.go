@@ -24,7 +24,7 @@ type ConfigDefinition struct {
 	// Pipelines are a set of tasks wrapped in additional run conditions
 	// e.g. depends on or allow failure
 	Pipelines map[string][]*PipelineDefinition `mapstructure:"pipelines" yaml:"pipelines" json:"pipelines,omitempty"`
-	// Tasks are the most basic buidling blocks
+	// Tasks are the most basic building blocks of taskctl
 	Tasks    map[string]*TaskDefinition    `mapstructure:"tasks" yaml:"tasks" json:"tasks"`
 	Watchers map[string]*WatcherDefinition `mapstructure:"watchers" yaml:"watchers" json:"watchers,omitempty"`
 	Debug    bool                          `json:"debug,omitempty"`
@@ -52,7 +52,7 @@ type ContextDefinition struct {
 	Before []string `mapstructure:"before" yaml:"before" json:"before,omitempty"`
 	After  []string `mapstructure:"after" yaml:"after" json:"after,omitempty"`
 	// Env is supplied from config file definition and is merged with the
-	// current process environemnt variables list
+	// current process environment variables list
 	//
 	// User supplied env map will overwrite any keys inside the process env
 	// TODO: check this is desired behaviour

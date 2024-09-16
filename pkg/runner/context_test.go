@@ -99,7 +99,8 @@ func Test_Generate_Env_file(t *testing.T) {
 
 		defer cleanUp()
 
-		osEnvVars := variables.FromMap(map[string]string{"var1": "original", "var2": "original222", "!::": "whatever val will never be added", "excld1": "bye bye", "exclude3": "sadgfddf"})
+		osEnvVars := variables.FromMap(map[string]string{"var1": "original", "var2": "original222", "!::": "whatever val will never be added", "=::": "whatever val will never be added",
+			"": "::=::", " ": "::=::", "excld1": "bye bye", "exclude3": "sadgfddf"})
 		userEnvVars := variables.FromMap(map[string]string{"foo": "bar", "var1": "userOverwrittemdd", "userSuppliedButExcluded": `¯\_(ツ)_/¯`})
 
 		contents := genEnvFileHelperTestRunner(t, osEnvVars.Merge(userEnvVars), utils.NewEnvFile(func(e *utils.Envfile) {
@@ -110,8 +111,16 @@ func Test_Generate_Env_file(t *testing.T) {
 
 		for _, excluded := range []string{"excld1=bye bye", "exclude3=sadgfddf", `userSuppliedButExcluded=¯\_(ツ)_/¯`} {
 			if slices.Contains(strings.Split(contents, "\n"), excluded) {
-				t.Fatal("invalid cahrs not skipped properly and overwritten env vars")
+				t.Fatal("invalid chars not skipped properly and overwritten env vars")
 			}
+		}
+
+		if slices.Contains(strings.Split(contents, "\n"), "=::=whatever val will never be added") {
+			t.Fatal("invalid chars not skipped properly and overwritten env vars")
+		}
+
+		if slices.Contains(strings.Split(contents, "\n"), "!::=whatever val will never be added") {
+			t.Fatal("invalid chars not skipped properly and overwritten env vars")
 		}
 	})
 
@@ -120,7 +129,7 @@ func Test_Generate_Env_file(t *testing.T) {
 
 		defer cleanUp()
 
-		osEnvVars := variables.FromMap(map[string]string{"var1": "original", "var2": "original222", "!::": "whatever val will never be added", "incld1": "welcome var", "exclude3": "sadgfddf"})
+		osEnvVars := variables.FromMap(map[string]string{"var1": "original", "var2": "original222", "!::": "whatever val will never be added", "=::": "whatever val will never be added 2", "incld1": "welcome var", "exclude3": "sadgfddf"})
 		userEnvVars := variables.FromMap(map[string]string{"foo": "bar", "var1": "userOverwrittemdd", "userSuppliedButExcluded": `¯\_(ツ)_/¯`})
 
 		contents := genEnvFileHelperTestRunner(t, osEnvVars.Merge(userEnvVars), utils.NewEnvFile(func(e *utils.Envfile) {
@@ -155,6 +164,7 @@ func Test_Generate_Env_file(t *testing.T) {
 		if err := execContext.GenerateEnvfile(); err == nil {
 			t.Fatal("got nil, wanted an error")
 		}
+
 	})
 
 }

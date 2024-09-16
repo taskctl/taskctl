@@ -16,14 +16,32 @@ permissions:
   pull-requests: write
 
 jobs:
+  set-version-tag:
+    runs-on: ubuntu-latest
+    outputs:
+      semVer: ${{ steps.gitversion.outputs.semVer }}
+    steps:
+      - uses: actions/checkout@v4
+      # get version
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v3.0
+        with:
+          versionSpec: '5.x'
+      - name: Set SemVer Version
+        uses: gittools/actions/gitversion/execute@v3.0
+        id: gitversion
   build:
     name: Test
     runs-on: ubuntu-latest
     # container:
     #   image: golang:1.23-bullseye
+    needs: set-version-tag
     env:
       TASKCTL_CONFIG_FILE: tasks.yaml
-
+      SEMVER: ${{ needs.set-version-tag.outputs.semVer }}
     steps:
     - name: Set up Go
       uses: actions/setup-go@v4
@@ -63,21 +81,13 @@ jobs:
         fail_on_failure: true
         check_name: Taskctl Unit Tests
 
-    - name: Code Coverage Summary Report
-      uses: irongut/CodeCoverageSummary@v1.3.0
-      if: always()
+    - name: Analyze with SonarCloud         
+      uses: SonarSource/sonarcloud-github-action@v3
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}   # Generate a token on Sonarcloud.io, add it to the secrets of this repo with the name SONAR_TOKEN (Settings > Secrets > Actions > add new repository secret)
       with:
-        filename: '.coverage/report-cobertura.xml'
-        badge: true
-        format: markdown
-        fail_below_min: true
-        output: both
-        thresholds: '60 80'
-
-    - name: Add Coverage PR Comment
-      uses: marocchino/sticky-pull-request-comment@v2
-      if: github.event_name == 'pull_request'
-      with:
-        recreate: true
-        path: code-coverage-results.md
-    # TODO: add sonar cloud
+        args:             
+          -Dsonar.projectVersion=${{ needs.set-version-tag.outputs.semVer }}
+          -Dsonar.go.coverage.reportPaths=/github/workspace/.coverage/out
+          -Dsonar.go.tests.reportPaths=/github/workspace/.coverage/report-junit.xml

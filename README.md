@@ -1,21 +1,22 @@
 <p align="center">
-<img width="400" src="https://raw.githubusercontent.com/taskctl/taskctl/master/docs/logo.png" alt="taskctl - developer's routine tasks automation toolkit" title="taskctl - developer's routine tasks automation toolkit" />
+<img width="400" src="https://raw.githubusercontent.com/Ensono/taskctl/master/docs/logo.png" alt="taskctl - developer's routine tasks automation toolkit" title="taskctl - developer's routine tasks automation toolkit" />
 </p>
 
-
 # taskctl - concurrent task runner, developer's routine tasks automation toolkit
-<!-- TODO: update badges -->
-![Code Coverage](https://img.shields.io/badge/Code%20Coverage-76%25-success?style=flat)
-[![pkg.go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat)](https://pkg.go.dev/github.com/taskctl/taskctl?tab=doc)
-![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/taskctl/taskctl)
-![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/taskctl/taskctl)
-![GitHub closed issues](https://img.shields.io/github/issues-closed/taskctl/taskctl)
-![GitHub issues](https://img.shields.io/github/issues/taskctl/taskctl)
-![Licence](https://img.shields.io/github/license/taskctl/taskctl)
-![GitHub top language](https://img.shields.io/github/languages/top/taskctl/taskctl)
-[![Go Report Card](https://goreportcard.com/badge/github.com/taskctl/taskctl)](https://goreportcard.com/report/github.com/taskctl/taskctl)
-[![Maintainability](https://api.codeclimate.com/v1/badges/a99a88d28ad37a79dbf6/maintainability)](https://codeclimate.com/github/codeclimate/codeclimate/maintainability)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat)](https://github.com/taskctl/taskctl/pulls)
+
+> modified taskctl/taskctl
+
+[![Go Reference](https://pkg.go.dev/badge/github.com/Ensono/taskctl.svg)](https://pkg.go.dev/github.com/Ensono/taskctl)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Ensono/taskctl)](https://goreportcard.com/report/github.com/Ensono/taskctl)
+
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=Ensono_taskctl&metric=bugs)](https://sonarcloud.io/summary/new_code?id=Ensono_taskctl)
+[![Technical Debt](https://sonarcloud.io/api/project_badges/measure?project=Ensono_taskctl&metric=sqale_index)](https://sonarcloud.io/summary/new_code?id=Ensono_taskctl)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=Ensono_taskctl&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=Ensono_taskctl)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=Ensono_taskctl&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=Ensono_taskctl)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Ensono_taskctl&metric=coverage)](https://sonarcloud.io/summary/new_code?id=Ensono_taskctl)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Ensono_taskctl&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=Ensono_taskctl)
+
+## 
 
 Simple modern alternative to GNU Make. *taskctl* is concurrent task runner that allows you to design you routine tasks and development pipelines in nice and neat way in human-readable format (YAML, JSON or TOML). 
 Given a pipeline (composed of tasks or other pipelines) it builds a graph that outlines the execution plan. Each task my run concurrently or cascade.
