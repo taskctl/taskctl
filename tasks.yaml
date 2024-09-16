@@ -12,23 +12,6 @@ variables:
 #   LDFLAGS: -ldflags="-s -w -X \"github.com/{{.RepoOwner}})/{{.BinName}})/cmd/taskctl.Version={{.Version}}\" -X \"github.com/{{.RepoOwner}}/{{.BinName}})/cmd/taskctl.Revision={{.Revision}}\" -extldflags -static"
 
 pipelines:
-  build:
-    - name: Build "darwin"
-      task: build
-      env:
-        GOOS: darwin
-        BIN_OUT: bin/taskctl_darwin
-    - name: Build "linux"
-      task: build
-      env:
-        GOOS: linux
-        BIN_OUT: bin/taskctl_linux
-    - name: Build "windows"
-      task: build
-      env:
-        GOOS: windows
-        BIN_OUT: bin/taskctl_windows_amd64.exe
-
   fixcs:
     - task: goimports
       dir: "{{.Root}}"
@@ -83,11 +66,10 @@ tasks:
 
   test:
     command:
-      - mkdir -p .coverage
-      - go test ./... -v -mod=readonly -coverprofile=.coverage/out > .coverage/test.out
+      - go test ./... -v -race -mod=readonly -coverprofile=.coverage/out > .coverage/test.out
       - cat .coverage/test.out | go-junit-report > .coverage/report-junit.xml
       - gocov convert .coverage/out | gocov-xml > .coverage/report-cobertura.xml
-      # - cat .coverage/test.out
+      - cat .coverage/test.out
 
   build:
     command:
@@ -121,25 +103,6 @@ tasks:
       RepoOwner: Ensono
       BinName: taskctl
 
-  variationsTester:noReset:
-    command:
-      - echo "VAR1 is $VAR1"
-    variations:
-      - VAR1: var1
-      - VAR1: var2
-      - VAR1: var3
-      - VAR1: var4
-
-  variationsTester:withReset:
-    command:
-      - echo "VAR1 is $VAR1"
-    variations:
-      - VAR1: var11
-      - VAR1: var22
-      - VAR1: var3
-      - VAR1: var4
-    reset_context: true
-
   golint:
   # in CI it is run 
     command:
@@ -171,7 +134,14 @@ tasks:
     command:
       - go run tools/schemagenerator/main.go
       # todo: error in CI if changes detected 
-      # git diff --porcelain
+      - | 
+        if [ ! -z "$(git status --porcelain --untracked-files=no)" ]; then 
+          if [ ! -z ${CI+x} ] ; then
+            echo "In CI with an unclean tree - exiting"
+            echo "Info: make sure you have generatedschema and committed"
+            exit 1
+          fi
+        fi
   show_coverage:
     command:
       - go tool cover -html=.coverage/out

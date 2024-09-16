@@ -86,7 +86,7 @@ func (b *baseCockpit) remove(t *task.Task) {
 	b.spinner.FinalMSG = ""
 }
 
-func newCockpitOutputWriter(t *task.Task, w io.Writer, close chan bool) *cockpitOutputDecorator {
+func NewCockpitOutputWriter(t *task.Task, w io.Writer, close chan bool) *cockpitOutputDecorator {
 	if base == nil {
 		base = &baseCockpit{
 			charSet: 14,

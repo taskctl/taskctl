@@ -5,9 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
+	"strings"
 
 	"github.com/Ensono/taskctl/internal/config"
+	outputpkg "github.com/Ensono/taskctl/pkg/output"
+	"github.com/Ensono/taskctl/pkg/runner"
+	"github.com/Ensono/taskctl/pkg/variables"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -20,37 +25,107 @@ var (
 
 var (
 	// Keep public for test overwrites
-	// TODO: see why logrus is needed if all logging happens over
-	// fmt.Fprintln()
-	ChannelOut io.Writer = nil
-	ChannelErr io.Writer = nil
+	// TODO: Wither these 2 params
+	ChannelOut io.Writer
+	ChannelErr io.Writer
 )
 
-var (
-	debug       bool
-	cfgFilePath string
-	output      string
-	raw         bool
-	cockpit     bool
-	quiet       bool
-	variableSet map[string]string
-	dryRun      bool
+var cancel = make(chan struct{})
+
+type rootCmdFlags struct {
+	// all vars here
+	Debug       bool
+	CfgFilePath string
+	Output      string
+	Raw         bool
+	Cockpit     bool
+	Quiet       bool
+	VariableSet map[string]string
+	DryRun      bool
 	// Summary report at the end of the task run
 	// this was set to default as true in the original
 	// - not sure this makes sense for a boolean flag "¯\_(ツ)_/¯"
-	summary bool
-)
-
-var TaskCtlCmd = &cobra.Command{
-	Use:     "taskctl",
-	Version: fmt.Sprintf("%s-%s", Version, Revision),
-	Short:   "modern task runner",
-	Long: `Concurrent task runner, developer's routine tasks automation toolkit. 
-Simple modern alternative to GNU Make 🧰`, // taken from original GH repo
-	SuggestionsMinimumDistance: 1,
+	Summary bool
 }
 
-func Execute(ctx context.Context) {
+type TaskCtlCmd struct {
+	Cmd       *cobra.Command
+	viperConf *viper.Viper
+	rootFlags *rootCmdFlags
+}
+
+func NewTaskCtlCmd() *TaskCtlCmd {
+	tc := &TaskCtlCmd{
+		Cmd: &cobra.Command{
+			Use:     "taskctl",
+			Version: fmt.Sprintf("%s-%s", Version, Revision),
+			Args:    cobra.ExactArgs(0),
+			Short:   "modern task runner",
+			Long: `Concurrent task runner, developer's routine tasks automation toolkit.
+			Simple modern alternative to GNU Make 🧰`, // taken from original GH repo
+			SuggestionsMinimumDistance: 1,
+		},
+	}
+
+	tc.rootFlags = &rootCmdFlags{}
+	tc.viperConf = viper.NewWithOptions()
+	tc.viperConf.SetEnvPrefix("TASKCTL")
+	tc.viperConf.SetConfigName("taskctl_conf")
+
+	tc.Cmd.PersistentFlags().StringVarP(&tc.rootFlags.CfgFilePath, "config", "c", "tasks.yaml", "config file to use") // tasks.yaml or taskctl.yaml
+	if err := tc.viperConf.BindEnv("config", "TASKCTL_CONFIG_FILE"); err != nil {
+		log.Fatal(err)
+	}
+	if err := tc.viperConf.BindPFlag("config", tc.Cmd.PersistentFlags().Lookup("config")); err != nil {
+		log.Fatal(err)
+	}
+
+	tc.Cmd.PersistentFlags().StringVarP(&tc.rootFlags.Output, "output", "o", string(outputpkg.RawOutput), "output format (raw, prefixed or cockpit)")
+	_ = tc.viperConf.BindEnv("output", "TASKCTL_OUTPUT_FORMAT")
+	_ = tc.viperConf.BindPFlag("output", tc.Cmd.PersistentFlags().Lookup("output"))
+
+	// Shortcut flags
+	tc.Cmd.PersistentFlags().BoolVarP(&tc.rootFlags.Raw, "raw", "r", false, "shortcut for --output=raw")
+	_ = tc.viperConf.BindPFlag("raw", tc.Cmd.PersistentFlags().Lookup("raw")) // TASKCTL_DEBUG
+
+	tc.Cmd.PersistentFlags().BoolVarP(&tc.rootFlags.Cockpit, "cockpit", "", false, "shortcut for --output=cockpit")
+	_ = tc.viperConf.BindPFlag("cockpit", tc.Cmd.PersistentFlags().Lookup("cockpit")) // TASKCTL_DEBUG
+
+	// Key=Value pairs
+	// can be supplied numerous times
+	tc.Cmd.PersistentFlags().StringToStringVarP(&tc.rootFlags.VariableSet, "set", "", nil, "set global variable value")
+	_ = tc.viperConf.BindPFlag("set", tc.Cmd.PersistentFlags().Lookup("set")) // TASKCTL_DEBUG
+
+	// flag toggles
+	tc.Cmd.PersistentFlags().BoolVarP(&tc.rootFlags.Debug, "debug", "d", false, "enable debug")
+	_ = tc.viperConf.BindPFlag("debug", tc.Cmd.PersistentFlags().Lookup("debug")) // TASKCTL_DEBUG
+
+	tc.Cmd.PersistentFlags().BoolVarP(&tc.rootFlags.DryRun, "dry-run", "", false, "dry run")
+	_ = tc.viperConf.BindPFlag("dry-run", tc.Cmd.PersistentFlags().Lookup("dry-run"))
+
+	tc.Cmd.PersistentFlags().BoolVarP(&tc.rootFlags.Summary, "summary", "s", true, "show summary")
+	_ = tc.viperConf.BindPFlag("summary", tc.Cmd.PersistentFlags().Lookup("summary"))
+
+	tc.Cmd.PersistentFlags().BoolVarP(&tc.rootFlags.Quiet, "quiet", "q", false, "quite mode")
+	_ = tc.viperConf.BindPFlag("quiet", tc.Cmd.PersistentFlags().Lookup("quiet"))
+
+	return tc
+}
+
+func (tc *TaskCtlCmd) InitCommand() error {
+	// add all sub commands
+	// TODO: perhaps think about a better way of doing this
+	newRunCmd(tc)
+	newGraphCmd(tc)
+	newShowCmd(tc)
+	newListCmd(tc)
+	newInitCmd(tc)
+	newValidateCmd(tc)
+	newWatchCmd(tc)
+	return nil
+}
+
+func (tc *TaskCtlCmd) Execute(ctx context.Context) error {
 	// NOTE: do we need logrus ???
 	// latest Go has structured logging...
 	logrus.SetFormatter(&logrus.TextFormatter{
@@ -60,94 +135,84 @@ func Execute(ctx context.Context) {
 	})
 	logrus.SetOutput(ChannelErr)
 
-	if err := TaskCtlCmd.ExecuteContext(ctx); err != nil {
-		logrus.Fatal(err)
-	}
-}
-
-func init() {
-
-	TaskCtlCmd.PersistentFlags().StringVarP(&cfgFilePath, "config", "c", "tasks.yaml", "config file to use") // tasks.yaml or taskctl.yaml
-	_ = viper.BindEnv("config", "TASKCTL_CONFIG_FILE")
-	_ = viper.BindPFlag("config", TaskCtlCmd.PersistentFlags().Lookup("config"))
-
-	TaskCtlCmd.PersistentFlags().StringVarP(&output, "output", "o", string(config.RawOutput), "output format (raw, prefixed or cockpit)")
-	_ = viper.BindEnv("output", "TASKCTL_OUTPUT_FORMAT")
-	_ = viper.BindPFlag("output", TaskCtlCmd.PersistentFlags().Lookup("output")) // TASKCTL_OUTPUT_FORMAT
-
-	// Shortcut flags
-	TaskCtlCmd.PersistentFlags().BoolVarP(&raw, "raw", "r", true, "shortcut for --output=raw")
-	TaskCtlCmd.PersistentFlags().BoolVarP(&cockpit, "cockpit", "", false, "shortcut for --output=cockpit")
-
-	// Key=Value pairs
-	// can be supplied numerous times
-	TaskCtlCmd.PersistentFlags().StringToStringVarP(&variableSet, "set", "", nil, "set global variable value")
-
-	// flag toggles
-	TaskCtlCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "enable debug")
-	_ = viper.BindPFlag("debug", TaskCtlCmd.PersistentFlags().Lookup("debug")) // TASKCTL_DEBUG
-	TaskCtlCmd.PersistentFlags().BoolVarP(&dryRun, "dry-run", "", false, "dry run")
-	TaskCtlCmd.PersistentFlags().BoolVarP(&summary, "summary", "s", true, "show summary")
-	TaskCtlCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "quite mode")
-
-	// Channels overwritable for testing
-	ChannelOut = os.Stdout
-	ChannelErr = os.Stderr
+	return tc.Cmd.ExecuteContext(ctx)
 }
 
 var (
 	ErrIncompleteConfig = errors.New("config key is missing")
 )
 
-func initConfig() error {
+func (tc *TaskCtlCmd) initConfig() (*config.Config, error) {
 	// Viper magic here
-	viper.SetEnvPrefix("TASKCTL")
-	viper.AutomaticEnv()
-
-	conf = config.NewConfig()
-	cl := config.NewConfigLoader(conf)
-	configFilePath := viper.GetString("config")
-	if configFilePath == "" {
-		return fmt.Errorf("config file was not provided, %w", ErrIncompleteConfig)
-	}
-	var confError error
-	conf, confError = cl.Load(configFilePath)
-	if confError != nil {
-		return confError
+	tc.viperConf.AutomaticEnv()
+	configFilePath := tc.viperConf.GetString("config")
+	if _, err := os.Stat(configFilePath); err != nil {
+		return nil, fmt.Errorf("%w\nincorrect config file (%s) does not exist", ErrIncompleteConfig, configFilePath)
 	}
 
-	conf.Debug = debug
-	conf.Quiet = quiet
-	conf.DryRun = dryRun
-	conf.Summary = summary
-	conf.Output = config.OutputEnum(output)
-	if raw {
-		conf.Output = config.RawOutput
-	}
-	if cockpit {
-		conf.Output = config.CockpitOutput
+	cl := config.NewConfigLoader(config.NewConfig())
+
+	conf, err := cl.Load(configFilePath)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil
+	conf.Debug = tc.viperConf.GetBool("debug")
+	conf.Quiet = tc.viperConf.GetBool("quiet")
+	conf.DryRun = tc.viperConf.GetBool("dry-run")
+	conf.Summary = tc.viperConf.GetBool("summary")
+
+	conf.Output = outputpkg.OutputEnum(tc.viperConf.GetString("output"))
+	if tc.viperConf.GetBool("raw") {
+		conf.Output = outputpkg.RawOutput
+	}
+
+	if tc.viperConf.GetBool("cockpit") {
+		conf.Output = outputpkg.CockpitOutput
+	}
+
+	conf.Options.GraphOrientationLeftRight = tc.viperConf.GetBool("lr")
+	conf.Options.InitDir = tc.viperConf.GetString("dir")
+	conf.Options.InitNoPrompt = tc.viperConf.GetBool("no-prompt")
+	return conf, nil
 }
 
-// postRunReset is a test helper function to clear any set values
-func postRunReset() error {
-	cancel = nil
-	conf = nil
-	taskRunner = nil
-	taskOrPipelineName = ""
-	pipelineName = nil
-	taskName = nil
-	argsList = nil
-	debug = false
-	cfgFilePath = ""
-	output = ""
-	raw = false
-	cockpit = false
-	quiet = false
-	variableSet = nil
-	dryRun = false
-	summary = false
-	return nil
+// buildTaskRunner initiates the task runner struct
+//
+// assigns to the global var to the package
+// args are the stdin inputs of strings following the `--` parameter
+//
+// TODO: make this less globally and more testable
+func (tc *TaskCtlCmd) buildTaskRunner(args []string, conf *config.Config) (*runner.TaskRunner, *argsToStringsMapper, error) {
+	argsStringer, err := argsValidator(args, conf)
+	if err != nil {
+		return nil, nil, err
+	}
+	// fmt.Println(viper.GetStringMapString("set"))
+	vars := variables.FromMap(tc.viperConf.GetStringMapString("set"))
+	// These are stdin args passed over `-- arg1 arg2`
+	vars.Set("ArgsList", argsStringer.argsList)
+	vars.Set("Args", strings.Join(argsStringer.argsList, " "))
+	tr, err := runner.NewTaskRunner(runner.WithContexts(conf.Contexts), runner.WithVariables(vars), func(runner *runner.TaskRunner) {
+		runner.Stdout = ChannelOut
+		runner.Stderr = ChannelErr
+	})
+
+	if err != nil {
+		return nil, nil, err
+	}
+	tr.OutputFormat = string(conf.Output)
+	tr.DryRun = conf.DryRun
+
+	if conf.Quiet {
+		tr.Stdout = io.Discard
+		tr.Stderr = io.Discard
+	}
+
+	go func() {
+		<-cancel
+		tr.Cancel()
+	}()
+
+	return tr, argsStringer, nil
 }

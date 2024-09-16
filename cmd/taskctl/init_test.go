@@ -23,7 +23,7 @@ func Test_initCommand(t *testing.T) {
 		defer cleanUp()
 		file := filepath.Join(dir, "tasks.yml")
 
-		runTestHelper(t, runTestIn{
+		cmdRunTestHelper(t, &cmdRunTestInput{
 			args:   []string{"--dir", dir, "init", "tasks.yml", "--no-prompt"},
 			output: []string{fmt.Sprintf(cmdutils.GREEN_TERMINAL+" "+cmdutils.MAGENTA_TERMINAL, file, "was created. Edit it accordingly to your needs")},
 		})
@@ -38,7 +38,7 @@ func Test_initCommand(t *testing.T) {
 	t.Run("errors on missing params if not in interactive mode", func(t *testing.T) {
 		dir, cleanUp := setupCleanUp()
 		defer cleanUp()
-		runTestHelper(t, runTestIn{
+		cmdRunTestHelper(t, &cmdRunTestInput{
 			args:    []string{"--dir", dir, "init", "--no-prompt"},
 			errored: true,
 		})

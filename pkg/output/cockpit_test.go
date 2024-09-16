@@ -1,7 +1,7 @@
 //go:build cockpit
 // +build cockpit
 
-package output
+package output_test
 
 import (
 	"bytes"
@@ -10,13 +10,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Ensono/taskctl/pkg/output"
 	"github.com/Ensono/taskctl/pkg/task"
 )
 
 func Test_cockpitOutputDecorator(t *testing.T) {
 	b := safebuffer{}
 	closeCh = make(chan bool)
-	dec := newCockpitOutputWriter(&task.Task{Name: "task1"}, &b, closeCh)
+	dec := output.NewCockpitOutputWriter(&task.Task{Name: "task1"}, &b, closeCh)
 	err := dec.WriteHeader()
 	if err != nil {
 		t.Fatal(err)

@@ -105,7 +105,7 @@ type TaskDefinition struct {
 	After   []string `mapstructure:"after" yaml:"after,omitempty" json:"after,omitempty"`
 	Before  []string `mapstructure:"before" yaml:"before,omitempty" json:"before,omitempty"`
 	// Context is the pointer to the key in the context map
-	// it must exist
+	// it must exist else it will fallback to default context
 	Context string `mapstructure:"context" yaml:"context,omitempty" json:"context,omitempty"`
 	// Variations is per execution env var mutator
 	// the number of variations in the list defines the number of times the command will be run

@@ -1,18 +1,18 @@
-package output
+package output_test
 
 import (
 	"bytes"
 	"strings"
 	"testing"
 
-	"github.com/sirupsen/logrus"
-
+	"github.com/Ensono/taskctl/pkg/output"
 	"github.com/Ensono/taskctl/pkg/task"
+	"github.com/sirupsen/logrus"
 )
 
 func TestNewTaskOutput_Prefixed(t *testing.T) {
 	var b bytes.Buffer
-	_, err := NewTaskOutput(
+	_, err := output.NewTaskOutput(
 		&task.Task{Name: "task1"},
 		"unknown-format",
 		&b,
@@ -25,9 +25,9 @@ func TestNewTaskOutput_Prefixed(t *testing.T) {
 	logrus.SetOutput(&b)
 	tt := task.FromCommands("t1", "echo 1")
 	tt.Name = "task1"
-	o, err := NewTaskOutput(
+	o, err := output.NewTaskOutput(
 		tt,
-		FormatPrefixed,
+		string(output.PrefixedOutput),
 		&b,
 		&b,
 	)
@@ -53,7 +53,7 @@ func TestNewTaskOutput_Prefixed(t *testing.T) {
 
 func TestNewTaskOutput(t *testing.T) {
 	var b bytes.Buffer
-	_, err := NewTaskOutput(
+	_, err := output.NewTaskOutput(
 		&task.Task{Name: "task1"},
 		"unknown-format",
 		&b,
@@ -66,9 +66,9 @@ func TestNewTaskOutput(t *testing.T) {
 	logrus.SetOutput(&b)
 	tt := task.FromCommands("t1", "echo 1")
 	tt.Name = "task1"
-	o, err := NewTaskOutput(
+	o, err := output.NewTaskOutput(
 		tt,
-		FormatRaw,
+		string(output.RawOutput),
 		&b,
 		&b,
 	)
@@ -105,16 +105,17 @@ func TestNewTaskOutput(t *testing.T) {
 		t.Error()
 	}
 
-	closeCh = make(chan bool)
-	_, err = NewTaskOutput(
+	closeCh := make(chan bool)
+	to, err := output.NewTaskOutput(
 		tt,
-		FormatCockpit,
+		string(output.CockpitOutput),
 		&b,
 		&b,
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
+	to.WithCloseCh(closeCh)
 
-	Close()
+	to.Close()
 }

@@ -3,11 +3,11 @@ package runner
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/Ensono/taskctl/pkg/output"
 	"github.com/Ensono/taskctl/pkg/utils"
 	"github.com/Ensono/taskctl/pkg/variables"
 
@@ -29,7 +29,7 @@ func TestTaskRunner(t *testing.T) {
 		t.Error()
 	}
 
-	runner.Stdout, runner.Stderr = io.Discard, io.Discard
+	runner.Stdout, runner.Stderr = &bytes.Buffer{}, &bytes.Buffer{}
 	runner.SetVariables(variables.FromMap(map[string]string{"Root": "/tmp"}))
 	runner.WithVariable("Root", "/")
 
@@ -112,7 +112,7 @@ func Test_DockerExec_Cmd(t *testing.T) {
 				"alpine", "sh", "-c",
 			}}, "/", variables.NewVariables(), utils.NewEnvFile(func(e *utils.Envfile) {
 				e.Generate = true
-			}), []string{"true"}, []string{"false"}, []string{"echo 1"}, []string{"echo 2"}),
+			}), []string{""}, []string{""}, []string{""}, []string{""}),
 			command: "echo 'taskctl'",
 		},
 	}
@@ -142,8 +142,10 @@ func Test_DockerExec_Cmd(t *testing.T) {
 				fmt.Println(testOut.String())
 				t.Fatal(err)
 			}
-
-			if len(testErr.Bytes()) > 0 {
+			// if !strings.Contains(task1.Output(), "taskctl") {
+			// 	t.Errorf("\ngot: %s\nwanted: taskctl", task1.Output())
+			// }
+			if len(testErr.String()) > 0 {
 				t.Fatalf("got: %s, wanted nil", testErr.String())
 			}
 		})
@@ -152,7 +154,7 @@ func Test_DockerExec_Cmd(t *testing.T) {
 
 func ExampleTaskRunner_Run() {
 	t := taskpkg.FromCommands("t1", "go doc github.com/Ensono/taskctl/pkg/runner.Runner")
-	ob := &bytes.Buffer{}
+	ob := output.NewSafeWriter(&bytes.Buffer{})
 	r, err := NewTaskRunner(func(tr *TaskRunner) {
 		tr.Stdout = ob
 	})

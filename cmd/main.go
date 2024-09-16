@@ -5,17 +5,24 @@ import (
 	"os"
 	"slices"
 
-	cmd "github.com/Ensono/taskctl/cmd/taskctl"
+	taskctlcmd "github.com/Ensono/taskctl/cmd/taskctl"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 )
 
-func subCommands() (commandNames []string) {
-	for _, command := range cmd.TaskCtlCmd.Commands() {
+func subCommands(cmd *cobra.Command) (commandNames []string) {
+	for _, command := range cmd.Commands() {
 		commandNames = append(commandNames, append(command.Aliases, command.Name())...)
 	}
 	return
 }
 
-func setDefaultCommandIfNonePresent() {
+// setDefaultCommandIfNonePresent This is only here for backwards compatibility
+//
+// If any user names a runnable task or pipeline the same as
+// an existing command command will always take precedence ;)
+// And will most likely fail as the argument into the command was perceived as a command name
+func setDefaultCommandIfNonePresent(cmd *cobra.Command) {
 	// to maintain the existing behaviour of
 	// displaying a pipeline/task selector
 	if len(os.Args) == 1 {
@@ -33,7 +40,7 @@ func setDefaultCommandIfNonePresent() {
 	if len(os.Args) > 1 {
 		// This will turn `taskctl [pipeline task]` => `taskctl run [pipeline task]`
 		potentialCommand := os.Args[1]
-		for _, command := range subCommands() {
+		for _, command := range subCommands(cmd) {
 			if command == potentialCommand {
 				return
 			}
@@ -43,11 +50,16 @@ func setDefaultCommandIfNonePresent() {
 }
 
 func main() {
-	// This is only here for backwards compatibility
-	//
-	// If any user names a runnable task or pipeline the same as
-	// an existing command command will always take precedence ;)
-	// And will most likely fail as the argument into the command was perceived as a command name
-	setDefaultCommandIfNonePresent()
-	cmd.Execute(context.Background())
+	taskctlRootCmd := taskctlcmd.NewTaskCtlCmd()
+
+	if err := taskctlRootCmd.InitCommand(); err != nil {
+		logrus.Fatal(err)
+	}
+
+	taskctlcmd.ChannelOut = os.Stdout
+	taskctlcmd.ChannelErr = os.Stderr
+	setDefaultCommandIfNonePresent(taskctlRootCmd.Cmd)
+	if err := taskctlRootCmd.Execute(context.Background()); err != nil {
+		logrus.Fatal(err)
+	}
 }

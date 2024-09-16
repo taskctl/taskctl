@@ -334,7 +334,7 @@
         },
         "context": {
           "type": "string",
-          "description": "Context is the pointer to the key in the context map\nit must exist"
+          "description": "Context is the pointer to the key in the context map\nit must exist else it will fallback to default context"
         },
         "variations": {
           "items": {

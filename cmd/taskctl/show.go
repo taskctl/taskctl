@@ -26,16 +26,19 @@ var showTmpl = `
   AllowFailure: {{ .AllowFailure }}
 `
 
-var (
-	showCmd = &cobra.Command{
+func newShowCmd(rootCmd *TaskCtlCmd) {
+
+	showCmd := &cobra.Command{
 		Use:     "show",
 		Aliases: []string{},
 		Short:   `shows task's details`,
 		Args:    cobra.RangeArgs(1, 1),
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return initConfig()
-		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			conf, err := rootCmd.initConfig()
+			if err != nil {
+				return err
+			}
+
 			t := conf.Tasks[args[0]]
 			if t != nil {
 				tmpl := template.Must(template.New("show").Parse(showTmpl))
@@ -43,12 +46,6 @@ var (
 			}
 			return fmt.Errorf("%s. %w", args[0], ErrIncorrectPipelineTaskArg)
 		},
-		PostRunE: func(cmd *cobra.Command, args []string) error {
-			return postRunReset()
-		},
 	}
-)
-
-func init() {
-	TaskCtlCmd.AddCommand(showCmd)
+	rootCmd.Cmd.AddCommand(showCmd)
 }

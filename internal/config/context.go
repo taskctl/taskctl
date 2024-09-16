@@ -15,6 +15,16 @@ func buildContext(def *ContextDefinition) (*runner.ExecutionContext, error) {
 		dir = utils.MustGetwd()
 	}
 	if def.Envfile != nil {
+		def.Envfile = utils.NewEnvFile(func(e *utils.Envfile) {
+			e.Generate = def.Envfile.Generate
+			e.Delay = def.Envfile.Delay
+			e.Exclude = def.Envfile.Exclude
+			e.Include = def.Envfile.Include
+			// e.Path = def.Envfile.Path
+			e.Modify = def.Envfile.Modify
+			e.Quote = def.Envfile.Quote
+			e.ReplaceChar = def.Envfile.ReplaceChar
+		})
 		if err := def.Envfile.Validate(); err != nil {
 			return nil, err
 		}

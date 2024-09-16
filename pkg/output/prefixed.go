@@ -20,7 +20,7 @@ type prefixedOutputDecorator struct {
 	w *bufio.Writer
 }
 
-func newPrefixedOutputWriter(t *task.Task, w io.Writer) *prefixedOutputDecorator {
+func NewPrefixedOutputWriter(t *task.Task, w io.Writer) *prefixedOutputDecorator {
 	return &prefixedOutputDecorator{
 		t: t,
 		w: bufio.NewWriter(&lineWriter{t: t, dst: w}),

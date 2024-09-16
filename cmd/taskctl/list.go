@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"html/template"
 	"slices"
-	"text/template"
 
 	"github.com/Ensono/taskctl/pkg/utils"
 	"github.com/spf13/cobra"
@@ -28,15 +28,16 @@ Watchers:
 {{end}}
 `
 
-var (
-	listCmd = &cobra.Command{
+func newListCmd(rootCmd *TaskCtlCmd) {
+	listAllCmd := &cobra.Command{
 		Use:     "list",
 		Aliases: []string{},
 		Short:   `lists contexts, pipelines, tasks and watchers`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return initConfig()
-		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			conf, err := rootCmd.initConfig()
+			if err != nil {
+				return err
+			}
 			t := template.Must(template.New("list").Parse(listTmpl))
 
 			contexts := utils.MapKeys(conf.Contexts)
@@ -58,63 +59,55 @@ var (
 				Watchers:  watchers,
 			})
 		},
-		PostRunE: func(cmd *cobra.Command, args []string) error {
-			return postRunReset()
-		},
 	}
-	listPipelines = &cobra.Command{
+	listPipelines := &cobra.Command{
 		Use:   "pipelines",
 		Short: `lists pipelines`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return initConfig()
-		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			conf, err := rootCmd.initConfig()
+			if err != nil {
+				return err
+			}
 			for _, name := range utils.MapKeys(conf.Pipelines) {
 				fmt.Fprintln(ChannelOut, name)
 			}
 			return nil
 		},
-		PostRunE: func(cmd *cobra.Command, args []string) error {
-			return postRunReset()
-		},
 	}
-	listTasks = &cobra.Command{
+	listTasks := &cobra.Command{
 		Use:   "tasks",
 		Short: `lists tasks`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return initConfig()
-		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			conf, err := rootCmd.initConfig()
+			if err != nil {
+				return err
+			}
 			for _, name := range utils.MapKeys(conf.Tasks) {
 				fmt.Fprintln(ChannelOut, name)
 			}
 			return nil
 		},
-		PostRunE: func(cmd *cobra.Command, args []string) error {
-			return postRunReset()
-		},
 	}
-	listWatchers = &cobra.Command{
+	listWatchers := &cobra.Command{
 		Use:   "watchers",
 		Short: `lists watchers`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return initConfig()
-		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			conf, err := rootCmd.initConfig()
+			if err != nil {
+				return err
+			}
 			for _, name := range utils.MapKeys(conf.Watchers) {
 				fmt.Fprintln(ChannelOut, name)
 			}
 			return nil
 		},
 		PostRunE: func(cmd *cobra.Command, args []string) error {
-			return postRunReset()
+			return nil // postRunReset()
 		},
 	}
-)
 
-func init() {
-	listCmd.AddCommand(listPipelines)
-	listCmd.AddCommand(listTasks)
-	listCmd.AddCommand(listWatchers)
-	TaskCtlCmd.AddCommand(listCmd)
+	listAllCmd.AddCommand(listPipelines)
+	listAllCmd.AddCommand(listTasks)
+	listAllCmd.AddCommand(listWatchers)
+	rootCmd.Cmd.AddCommand(listAllCmd)
 }

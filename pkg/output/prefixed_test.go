@@ -1,4 +1,4 @@
-package output
+package output_test
 
 import (
 	"bytes"
@@ -7,6 +7,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/Ensono/taskctl/pkg/output"
 	"github.com/Ensono/taskctl/pkg/task"
 )
 
@@ -14,7 +15,7 @@ func Test_prefixedOutputDecorator(t *testing.T) {
 	var l, b bytes.Buffer
 	logrus.SetOutput(&l)
 
-	dec := newPrefixedOutputWriter(&task.Task{Name: "task1"}, &b)
+	dec := output.NewPrefixedOutputWriter(&task.Task{Name: "task1"}, &b)
 	err := dec.WriteHeader()
 	if err != nil {
 		t.Fatal(err)

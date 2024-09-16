@@ -56,6 +56,7 @@ func NewWatcher(name string, events, watch, exclude []string, t *task.Task) (w *
 		closed:   make(chan struct{}),
 		task:     t,
 		events:   make(map[string]bool),
+		eventsWg: sync.WaitGroup{},
 	}
 
 	w.fsw, err = fsnotify.NewWatcher()

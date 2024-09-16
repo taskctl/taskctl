@@ -1,14 +1,13 @@
 package output
 
-import (
-	"io"
-)
-
+// rawOutputDecorator sets up the writer
+// most commonly this will be a bytes.Buffer which is not concurrency safe
+// mu property locks it from multiple writes
 type rawOutputDecorator struct {
-	w io.Writer
+	w *SafeWriter
 }
 
-func newRawOutputWriter(w io.Writer) *rawOutputDecorator {
+func newRawOutputWriter(w *SafeWriter) *rawOutputDecorator {
 	return &rawOutputDecorator{w: w}
 }
 

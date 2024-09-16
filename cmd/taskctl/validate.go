@@ -6,25 +6,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	validateCmd = &cobra.Command{
+func newValidateCmd(rootCmd *TaskCtlCmd) {
+	c := &cobra.Command{
 		Use:   "validate",
 		Short: `validates config file`,
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfgFilePath = args[0]
-			if err := initConfig(); err != nil {
+			_, err := rootCmd.initConfig()
+			if err != nil {
 				return err
 			}
 			fmt.Fprintln(ChannelOut, "file is valid")
 			return nil
 		},
 		PostRunE: func(cmd *cobra.Command, args []string) error {
-			return postRunReset()
+			return nil // postRunReset()
 		},
 	}
-)
-
-func init() {
-	TaskCtlCmd.AddCommand(validateCmd)
+	rootCmd.Cmd.AddCommand(c)
 }

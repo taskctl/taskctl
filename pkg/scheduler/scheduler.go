@@ -36,7 +36,7 @@ func (s *Scheduler) Schedule(g *ExecutionGraph) error {
 	g.start = time.Now()
 	defer func() { g.end = time.Now() }()
 
-	var wg = sync.WaitGroup{}
+	wg := sync.WaitGroup{}
 
 	for !s.isDone(g) {
 		if atomic.LoadInt32(&s.cancelled) == 1 {

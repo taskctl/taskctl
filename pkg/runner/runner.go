@@ -55,7 +55,7 @@ type TaskRunner struct {
 func NewTaskRunner(opts ...Opts) (*TaskRunner, error) {
 	r := &TaskRunner{
 		compiler:     NewTaskCompiler(),
-		OutputFormat: output.FormatRaw,
+		OutputFormat: string(output.RawOutput),
 		Stdin:        os.Stdin,
 		Stdout:       os.Stdout,
 		Stderr:       os.Stderr,
@@ -78,7 +78,6 @@ func NewTaskRunner(opts ...Opts) (*TaskRunner, error) {
 // SetContexts sets task runner's contexts
 func (r *TaskRunner) SetContexts(contexts map[string]*ExecutionContext) *TaskRunner {
 	r.contexts = contexts
-
 	return r
 }
 
@@ -113,7 +112,7 @@ func (r *TaskRunner) Run(t *task.Task) error {
 
 	var stdin io.Reader
 	if t.Interactive {
-		outputFormat = output.FormatRaw
+		outputFormat = string(output.RawOutput)
 		stdin = r.Stdin
 	}
 
@@ -127,6 +126,7 @@ func (r *TaskRunner) Run(t *task.Task) error {
 		if err != nil {
 			logrus.Error(err)
 		}
+		taskOutput.Close()
 
 		err = execContext.After()
 		if err != nil {
@@ -197,7 +197,6 @@ func (r *TaskRunner) Finish() {
 		value.(*ExecutionContext).Down()
 		return true
 	})
-	output.Close()
 }
 
 // WithVariable adds variable to task runner's variables list.

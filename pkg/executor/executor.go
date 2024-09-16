@@ -20,6 +20,7 @@ import (
 	"mvdan.cc/sh/v3/interp"
 	"mvdan.cc/sh/v3/syntax"
 
+	"github.com/Ensono/taskctl/pkg/output"
 	"github.com/Ensono/taskctl/pkg/utils"
 )
 
@@ -34,7 +35,8 @@ type DefaultExecutor struct {
 	dir    string
 	env    []string
 	interp *interp.Runner
-	buf    bytes.Buffer
+	outBuf *bytes.Buffer
+	errBuf *bytes.Buffer
 	// doReset resets the execution environment after each run
 	doReset bool
 }
@@ -51,16 +53,24 @@ func NewDefaultExecutor(stdin io.Reader, stdout, stderr io.Writer) (*DefaultExec
 		return nil, err
 	}
 
+	e.outBuf = &bytes.Buffer{}
+	e.errBuf = &bytes.Buffer{}
 	if stdout == nil {
 		stdout = io.Discard
 	}
-
 	if stderr == nil {
 		stderr = io.Discard
 	}
+	if _, ok := stdout.(*output.SafeWriter); !ok {
+		stdout = output.NewSafeWriter(stdout)
+	}
+
+	if _, ok := stderr.(*output.SafeWriter); !ok {
+		stderr = output.NewSafeWriter(stderr)
+	}
 
 	e.interp, err = interp.New(
-		interp.StdIO(stdin, io.MultiWriter(&e.buf, stdout), io.MultiWriter(&e.buf, stderr)),
+		interp.StdIO(stdin, io.MultiWriter(output.NewSafeWriter(e.outBuf), stdout), io.MultiWriter(output.NewSafeWriter(e.errBuf), stderr)),
 	)
 	if err != nil {
 		return nil, err
@@ -110,18 +120,20 @@ func (e *DefaultExecutor) Execute(ctx context.Context, job *Job) ([]byte, error)
 		}
 	}()
 
-	offset := e.buf.Len()
+	// TODO: come back to this
+	// offset := e.buf.Len()
+
 	// Reset needs to be called before Run
 	// even the first time around else the vars won't be cleared correctly
 	// and re-injected by the mvdan shell
 	if e.doReset {
 		e.interp.Reset()
 	}
-	err = e.interp.Run(ctx, cmd)
-	if err != nil {
-		return e.buf.Bytes()[offset:], err
+
+	if err := e.interp.Run(ctx, cmd); err != nil {
+		return e.outBuf.Bytes(), err
 	}
-	return e.buf.Bytes()[offset:], nil
+	return e.outBuf.Bytes(), nil
 }
 
 // IsExitStatus checks if given `err` is an exit status

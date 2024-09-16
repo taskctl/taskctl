@@ -8,10 +8,19 @@ on:
     branches:
       - main
       - master
+
+permissions:
+  contents: write
+  statuses: write
+  checks: write
+  pull-requests: write
+
 jobs:
   build:
     name: Test
     runs-on: ubuntu-latest
+    # container:
+    #   image: golang:1.23-bullseye
     env:
       TASKCTL_CONFIG_FILE: tasks.yaml
 
@@ -32,6 +41,9 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-go-
     
+    - name: check schema
+      run: CI=true go run cmd/main.go generateschema
+
     - name: go vet
       run: |
         go run cmd/main.go run task govet
@@ -39,12 +51,17 @@ jobs:
     - name: Test
       run: |
         go run cmd/main.go run pipeline test:unit
+        # mkdir -p .coverage
+        # go test ./... -v -race -mod=readonly
     
     - name: Publish Junit style Test Report
       uses: mikepenz/action-junit-report@v3
       if: always() # always run even if the previous step fails
       with:
         report_paths: '.coverage/report-junit.xml'
+        commit: ${{ github.sha }}
+        fail_on_failure: true
+        check_name: Taskctl Unit Tests
 
     - name: Code Coverage Summary Report
       uses: irongut/CodeCoverageSummary@v1.3.0
@@ -53,5 +70,14 @@ jobs:
         filename: '.coverage/report-cobertura.xml'
         badge: true
         format: markdown
+        fail_below_min: true
+        output: both
+        thresholds: '60 80'
 
+    - name: Add Coverage PR Comment
+      uses: marocchino/sticky-pull-request-comment@v2
+      if: github.event_name == 'pull_request'
+      with:
+        recreate: true
+        path: code-coverage-results.md
     # TODO: add sonar cloud

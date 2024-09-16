@@ -1,4 +1,4 @@
-package utils
+package utils_test
 
 import (
 	"fmt"
@@ -9,6 +9,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/Ensono/taskctl/pkg/utils"
 )
 
 func TestConvertEnv(t *testing.T) {
@@ -24,7 +26,7 @@ func TestConvertEnv(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := ConvertEnv(tt.args.env); !reflect.DeepEqual(got, tt.want) {
+			if got := utils.ConvertEnv(tt.args.env); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ConvertEnv() = %v, want %v", got, tt.want)
 			}
 		})
@@ -50,7 +52,7 @@ func TestFileExists(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := FileExists(tt.args.file); got != tt.want {
+			if got := utils.FileExists(tt.args.file); got != tt.want {
 				t.Errorf("FileExists() = %v, want %v", got, tt.want)
 			}
 		})
@@ -72,7 +74,7 @@ func TestIsExitError(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := IsExitError(tt.args.err); got != tt.want {
+			if got := utils.IsExitError(tt.args.err); got != tt.want {
 				t.Errorf("IsExitError() = %v, want %v", got, tt.want)
 			}
 		})
@@ -96,7 +98,7 @@ func TestIsURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := IsURL(tt.args.s); got != tt.want {
+			if got := utils.IsURL(tt.args.s); got != tt.want {
 				t.Errorf("IsURL() = %v, want %v", got, tt.want)
 			}
 		})
@@ -118,7 +120,7 @@ func TestLastLine(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotL := LastLine(tt.args.r); gotL != tt.wantL {
+			if gotL := utils.LastLine(tt.args.r); gotL != tt.wantL {
 				t.Errorf("LastLine() = %v, want %v", gotL, tt.wantL)
 			}
 		})
@@ -139,7 +141,7 @@ func TestMapKeys(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotKeys := MapKeys(tt.args.m)
+			gotKeys := utils.MapKeys(tt.args.m)
 			for _, v := range tt.wantKeys {
 				var found bool
 				for _, vv := range gotKeys {
@@ -174,7 +176,7 @@ func TestRenderString(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := RenderString(tt.args.tmpl, tt.args.variables)
+			got, err := utils.RenderString(tt.args.tmpl, tt.args.variables)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("RenderString() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -188,7 +190,7 @@ func TestRenderString(t *testing.T) {
 
 func TestMustGetwd(t *testing.T) {
 	wd, _ := os.Getwd()
-	if wd != MustGetwd() {
+	if wd != utils.MustGetwd() {
 		t.Error()
 	}
 
@@ -199,9 +201,34 @@ func TestMustGetUserHomeDir(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	hd := MustGetUserHomeDir()
+	hd := utils.MustGetUserHomeDir()
 	if hd != "/test" {
 		t.Error()
+	}
+
+}
+
+// Test envfile
+
+func TestUtils_Envfile(t *testing.T) {
+
+	envfile := utils.NewEnvFile(func(e *utils.Envfile) {
+		// e.Delay =
+		e.Exclude = []string{}
+		e.Include = []string{}
+		// e.Path = def.Envfile.Path
+		e.Modify = []utils.ModifyEnv{
+			{Pattern: "", Operation: "lower"},
+		}
+		e.Quote = false
+	})
+
+	if err := envfile.Validate(); err == nil {
+		t.Error("failed to validate")
+	}
+
+	if envfile.GeneratedDir != ".taskctl" {
+		t.Error("generated dir not set correctly")
 	}
 
 }
