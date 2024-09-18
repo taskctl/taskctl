@@ -36,6 +36,7 @@ jobs:
     needs: set-version-tag
     env:
       SEMVER: ${{ needs.set-version-tag.outputs.semVer }}
+      TASKCTL_CONFIG_FILE: tasks.yaml
     steps:
       - uses: actions/checkout@v4
         with:
