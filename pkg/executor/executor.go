@@ -13,15 +13,12 @@ import (
 	"os"
 	"strings"
 
-	"mvdan.cc/sh/v3/expand"
-
+	"github.com/Ensono/taskctl/internal/utils"
+	"github.com/Ensono/taskctl/pkg/output"
 	"github.com/sirupsen/logrus"
-
+	"mvdan.cc/sh/v3/expand"
 	"mvdan.cc/sh/v3/interp"
 	"mvdan.cc/sh/v3/syntax"
-
-	"github.com/Ensono/taskctl/pkg/output"
-	"github.com/Ensono/taskctl/pkg/utils"
 )
 
 // Executor executes given job
@@ -70,7 +67,7 @@ func NewDefaultExecutor(stdin io.Reader, stdout, stderr io.Writer) (*DefaultExec
 	}
 
 	e.interp, err = interp.New(
-		interp.StdIO(stdin, io.MultiWriter(output.NewSafeWriter(e.outBuf), stdout), io.MultiWriter(output.NewSafeWriter(e.errBuf), stderr)),
+		interp.StdIO(stdin, output.MultiWriter(output.NewSafeWriter(e.outBuf), stdout), output.MultiWriter(output.NewSafeWriter(e.errBuf), stderr)),
 	)
 	if err != nil {
 		return nil, err

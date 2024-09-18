@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/Ensono/taskctl/internal/config"
@@ -230,13 +231,95 @@ func TestLoader_LoadGlobalConfig(t *testing.T) {
 	}
 }
 
-func TestLoader_merging_env_with_user_supplied_envVars(t *testing.T) {
+func TestLoader_contexts(t *testing.T) {
+	dir, _ := os.MkdirTemp(os.TempDir(), "context*")
+	fname := filepath.Join(dir, "context.yaml")
 
-	// loader := config.NewConfigLoader(config.NewConfig())
-	// loader.WithStrictDecoder()
-	// cwd, _ := os.Getwd()
-	// def, err := loader.Load(filepath.Join(cwd, "testdata", "tasks.yaml"))
-	// if err != nil {
-	// 	t.Fatal(err)
-	// }
+	f, _ := os.Create(fname)
+	defer os.RemoveAll(dir)
+	f.Write([]byte(`contexts:
+  docker:context:
+    executable:
+      bin: docker
+      args:
+        - "run"
+        - "--rm"
+        - "alpine"
+        - "sh"
+        - "-c"
+    quote: "'"
+    envfile:
+      generate: true
+      exclude: 
+        - PATH
+  powershell:
+    container:
+      name: ensono/eir-infrastructure:1.1.251
+      shell: pwsh
+      shell_args:
+        - -NonInteractive
+        - -Command
+      container_args: []
+    envfile:
+      exclude:
+        - SOURCEVERSIONMESSAGE
+        - JAVA
+        - GO
+        - HOMEBREW
+  dind:
+    container:
+      name: ensono/eir-infrastructure:1.1.251
+      enable_dind: true
+      entrypoint: "/usr/bin/env"
+      shell: bash
+      shell_args:
+        - -c
+      container_args: []
+    envfile:
+      exclude:
+        - SOURCEVERSIONMESSAGE
+        - JAVA
+        - GO
+        - HOMEBREW
+`))
+	loader := config.NewConfigLoader(config.NewConfig())
+	loader.WithStrictDecoder()
+	def, err := loader.Load(fname)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(def.Contexts) != 3 {
+		t.Errorf("got: %v\nwanted: 3\n", len(def.Contexts))
+	}
+	pwshContainer, ok := def.Contexts["powershell"]
+	if !ok {
+		t.Errorf("powershell context not found")
+	}
+	dindContainer, ok := def.Contexts["dind"]
+	if !ok {
+		t.Errorf("dind context not found")
+	}
+
+	oldDockerContext, ok := def.Contexts["docker:context"]
+	if !ok {
+		t.Errorf("powershell context not found")
+	}
+
+	if !pwshContainer.Executable.IsContainer {
+		t.Errorf("\npwshContainer IsContainer not correctly processed\n\ngot: %v\nwanted: false", pwshContainer.Executable.IsContainer)
+	}
+
+	if !dindContainer.Executable.IsContainer {
+		t.Errorf("\ndindContainer IsContainer not correctly processed\n\ngot: %v\nwanted: false", dindContainer.Executable.IsContainer)
+	}
+
+	if oldDockerContext.Executable.IsContainer {
+		t.Errorf("\noldDockerContext IsContainer not correctly processed\n\ngot: %v\nwanted: false", oldDockerContext.Executable.IsContainer)
+	}
+	dindArgs := dindContainer.Executable.BuildArgsWithEnvFile("some-file.env")
+	wantDindArgs := []string{"run", "--rm", "--env-file", "some-file.env", "-v", "${PWD}:/workspace/.taskctl", "--entrypoint", "/usr/bin/env",
+		"-v", "/var/run/docker.sock:/var/run/docker.sock", "-w", "/workspace/.taskctl", "ensono/eir-infrastructure:1.1.251", "bash", "-c"}
+	if !slices.Equal(dindArgs, wantDindArgs) {
+		t.Errorf("dindContainer incorrectly parsed args: %v", dindArgs)
+	}
 }

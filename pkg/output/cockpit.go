@@ -14,7 +14,6 @@ import (
 )
 
 var frame = 100 * time.Millisecond
-var base *baseCockpit
 
 type baseCockpit struct {
 	w       io.Writer
@@ -40,10 +39,10 @@ func (b *baseCockpit) start() *spinner.Spinner {
 	s.PreUpdate = func(s *spinner.Spinner) {
 		tasks := make([]string, 0)
 		b.mu.Lock()
+		defer b.mu.Unlock()
 		for _, v := range b.tasks {
 			tasks = append(tasks, v.Name)
 		}
-		defer b.mu.Unlock()
 		sort.Strings(tasks)
 		s.Suffix = " Running: " + strings.Join(tasks, ", ")
 	}
@@ -87,18 +86,14 @@ func (b *baseCockpit) remove(t *task.Task) {
 }
 
 func NewCockpitOutputWriter(t *task.Task, w io.Writer, close chan bool) *cockpitOutputDecorator {
-	if base == nil {
-		base = &baseCockpit{
-			charSet: 14,
-			w:       w,
-			tasks:   make([]*task.Task, 0),
-			closeCh: close,
-		}
-	}
-
 	return &cockpitOutputDecorator{
 		t: t,
-		b: base,
+		b: &baseCockpit{
+			charSet: 14,
+			w:       NewSafeWriter(w),
+			tasks:   make([]*task.Task, 0),
+			closeCh: close,
+		},
 	}
 }
 

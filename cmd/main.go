@@ -14,6 +14,7 @@ func subCommands(cmd *cobra.Command) (commandNames []string) {
 	for _, command := range cmd.Commands() {
 		commandNames = append(commandNames, append(command.Aliases, command.Name())...)
 	}
+	commandNames = append(commandNames, "completion")
 	return
 }
 

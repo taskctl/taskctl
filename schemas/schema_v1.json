@@ -3,6 +3,34 @@
   "$id": "https://github.com/Ensono/taskctl/internal/config/config-definition",
   "$ref": "#/$defs/ConfigDefinition",
   "$defs": {
+    "Artifact": {
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name is the key under which the artifacts will be stored\n\nCurrently this is unused"
+        },
+        "path": {
+          "type": "string",
+          "description": "Path is the glob like pattern to the\nsource of the file(s) to store as an output"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "dotenv",
+            "file"
+          ],
+          "description": "Type is the artifact type\nvalid values are `file`|`dotenv`",
+          "default": "file"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "path",
+        "type"
+      ],
+      "description": "Artifact holds the information about the artifact to produce for the specific task."
+    },
     "Binary": {
       "properties": {
         "bin": {
@@ -90,9 +118,6 @@
       },
       "additionalProperties": false,
       "type": "object",
-      "required": [
-        "tasks"
-      ],
       "description": "ConfigDefinition holds the top most config definition this can be parsed from a yaml, json, toml files/mediaTypes"
     },
     "ContextDefinition": {
@@ -133,7 +158,7 @@
         },
         "envfile": {
           "$ref": "#/$defs/Envfile",
-          "description": "Envfile is a special block for use in executables that support file mapping\ne.g. podman or docker\n\nthe generated outputs will be merged with existing os.Environ()"
+          "description": "Envfile is a special block for use in executables that support file mapping\ne.g. podman or docker\n\nNote: Envfile in the container context will ignore the generate flag\nit will however respect all the other directives of include/exclude and modify operations"
         },
         "variables": {
           "additionalProperties": {
@@ -148,7 +173,11 @@
         },
         "quote": {
           "type": "string",
-          "description": "Quote is the quote char to use when parsing commands into non-mvdan shells"
+          "description": "Quote is the quote char to use when parsing commands into executables like docker"
+        },
+        "container": {
+          "$ref": "#/$defs/Image",
+          "description": "Container is the specific context for containers\nonly available to docker API compliant implementations\n\ne.g. docker and podman\n\nThe aim is to remove some of the boilerplate away from the existing more\ngeneric context and introduce a specific context for tasks run in containers.\n\nExample:\n\n```yaml\ncontainer:\n  image:\n    name: alpine\n    # entrypoint: \"\"\n    # shell: sh # default sh\n    # args: nil\n```"
         }
       },
       "additionalProperties": false,
@@ -183,10 +212,6 @@
         "quote": {
           "type": "boolean"
         },
-        "delay": {
-          "type": "integer",
-          "description": "Delay can be removed"
-        },
         "modify": {
           "items": {
             "$ref": "#/$defs/ModifyEnv"
@@ -202,6 +227,45 @@
       "additionalProperties": false,
       "type": "object",
       "description": "Envile is a structure for storing the information required to generate an envfile which can be consumed by the specified binary"
+    },
+    "Image": {
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name is the name of the container\n\ncan be specified in the following formats\n\n- \u003cimage-name\u003e (Same as using \u003cimage-name\u003e with the latest tag)\n\n- \u003cimage-name\u003e:\u003ctag\u003e\n\n- \u003cimage-name\u003e@\u003cdigest\u003e\n\nIf the known runtime is podman it should include the registry domain\ne.g. `docker.io/alpine:latest`"
+        },
+        "entrypoint": {
+          "type": "string",
+          "description": "Entrypoint Overwrites the default ENTRYPOINT of the image"
+        },
+        "enable_dind": {
+          "type": "boolean",
+          "description": "EnableDinD mounts the docker sock...\n\nhighly discouraged"
+        },
+        "container_args": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "ContainerArgs are additional args used for the container supplied by the user\n\ne.g. dcoker run (TASKCTL_ARGS...) (CONTAINER_ARGS...) image (command)\n\n@DEPRECATED"
+        },
+        "shell": {
+          "type": "string",
+          "description": "Shell will be used to run the command in a specific shell on the container\n\nMust exist in the container"
+        },
+        "shell_args": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "Args are additional args to pass to the shell if provided\n\n// e.g. dcoker run (TASKCTL_ARGS...) (CONTAINER_ARGS...) image (shell) (SHELL_ARGS...) (command)"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "name"
+      ]
     },
     "ModifyEnv": {
       "properties": {
@@ -359,8 +423,8 @@
         "interactive": {
           "type": "boolean"
         },
-        "export_as": {
-          "type": "string"
+        "artifacts": {
+          "$ref": "#/$defs/Artifact"
         },
         "env": {
           "additionalProperties": {
@@ -368,8 +432,8 @@
           },
           "type": "object"
         },
-        "env_file": {
-          "type": "string",
+        "envfile": {
+          "$ref": "#/$defs/Envfile",
           "description": "EnvFile string pointing to the file that could be read in as an envFile\ncontents will be merged with the Env (os.Environ())"
         },
         "variables": {

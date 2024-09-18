@@ -1,15 +1,10 @@
 # yaml-language-server: $schema=schemas/schema_v1.json
 
 debug: true
-output: cockpit
+output: prefixed
 # TODO: top level variables are not being munged int
-variables:
-  foo: 1
-
 # variables:
-#   RepoOwner: Ensono
-#   BinName: taskctl
-#   LDFLAGS: -ldflags="-s -w -X \"github.com/{{.RepoOwner}})/{{.BinName}})/cmd/taskctl.Version={{.Version}}\" -X \"github.com/{{.RepoOwner}}/{{.BinName}})/cmd/taskctl.Revision={{.Revision}}\" -extldflags -static"
+#   foo: 1
 
 pipelines:
   fixcs:

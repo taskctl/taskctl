@@ -6,8 +6,34 @@ import (
 
 	"github.com/Ensono/taskctl/pkg/variables"
 
-	"github.com/Ensono/taskctl/pkg/utils"
+	"github.com/Ensono/taskctl/internal/utils"
 )
+
+type ArtifactType string
+
+const (
+	FileArtifactType   ArtifactType = "file"
+	DotEnvArtifactType ArtifactType = "dotenv"
+)
+
+// Artifact holds the information about the artifact to produce
+// for the specific task.
+//
+// NB: it is run at the end of the task so any after commands
+// that mutate the output files/dotenv file will essentially
+// overwrite anything set/outputted as part of the main command
+type Artifact struct {
+	// Name is the key under which the artifacts will be stored
+	//
+	// Currently this is unused
+	Name string `mapstructure:"name" yaml:"name,omitempty" json:"name,omitempty"`
+	// Path is the glob like pattern to the
+	// source of the file(s) to store as an output
+	Path string `mapstructure:"path" yaml:"path" json:"path"`
+	// Type is the artifact type
+	// valid values are `file`|`dotenv`
+	Type ArtifactType `mapstructure:"type" yaml:"type" json:"type" jsonschema:"enum=dotenv,enum=file,default=file"`
+}
 
 // Task is a structure that describes task, its commands, environment, working directory etc.
 // After task completes it provides task's execution status, exit code, stdout and stderr
@@ -34,7 +60,7 @@ type Task struct {
 	Start time.Time
 	End   time.Time
 
-	ExportAs string
+	Artifacts *Artifact
 
 	ExitCode int16
 	Errored  bool
@@ -99,6 +125,7 @@ func (t *Task) WithEnv(key, value string) *Task {
 }
 
 // GetVariations returns array of maps which are task's variations
+// if no variations exist one is returned to create the default job
 func (t *Task) GetVariations() []map[string]string {
 	variations := make([]map[string]string, 1)
 	if t.Variations != nil {

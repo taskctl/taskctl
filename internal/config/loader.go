@@ -14,7 +14,7 @@ import (
 	"strings"
 
 	"dario.cat/mergo"
-	"github.com/Ensono/taskctl/pkg/utils"
+	"github.com/Ensono/taskctl/internal/utils"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
@@ -100,7 +100,8 @@ func (cl *Loader) Load(file string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	// Overwrite globally loaded config with
+	// locally set config file
 	err = cl.dst.merge(localCfg)
 	if err != nil {
 		return nil, err
@@ -242,15 +243,11 @@ func (cl *Loader) readURL(urlStr string) (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
 		return nil, fmt.Errorf("%d: config request failed - %s", resp.StatusCode, urlStr)
 	}
-
-	// data, err := io.ReadAll(resp.Body)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("%s: %v", urlStr, err)
-	// }
 
 	ext := ""
 	ct := resp.Header.Get("Content-Type")

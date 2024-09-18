@@ -16,13 +16,12 @@
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Ensono_taskctl&metric=coverage)](https://sonarcloud.io/summary/new_code?id=Ensono_taskctl)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Ensono_taskctl&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=Ensono_taskctl)
 
-## 
-
 Simple modern alternative to GNU Make. *taskctl* is concurrent task runner that allows you to design you routine tasks and development pipelines in nice and neat way in human-readable format (YAML, JSON or TOML). 
 Given a pipeline (composed of tasks or other pipelines) it builds a graph that outlines the execution plan. Each task my run concurrently or cascade.
 Beside pipelines, each single task can be started manually or triggered by built-in filesystem watcher.
 
 ## Features
+
 - human-readable configuration format (YAML, JSON or TOML)
 - concurrent tasks execution
 - highly customizable execution plan
@@ -61,32 +60,33 @@ pipelines:
     - task: build
       depends_on: [lint, test]
 ```
-According to this plan `lint` and `test` will run concurrently, `build` will start only when both `lint` and `test` finished.
 
+According to this plan `lint` and `test` will run concurrently, `build` will start only when both `lint` and `test` finished.
 
 [![asciicast](https://asciinema.org/a/326726.svg)](https://asciinema.org/a/326726)
 
 ## Contents  
+
 - [Getting started](#getting-started)
   - [Installation](#install)
   - [Usage](#usage)
 - [Configuration](#configuration)
-    - [Global configuration](#global-configuration)
-    - [Example](#example)
+  - [Global configuration](#global-configuration)
+  - [Example](#example)
 - [Tasks](#tasks)
-    - [Pass CLI arguments to task](#pass-cli-arguments-to-task)
-    - [Task's variations](#tasks-variations)
-    - [Task's variables](#tasks-variables)
-    - [Storing task's output](#storing-tasks-output) 
-    - [Conditional execution](#task-conditional-execution) 
+  - [Pass CLI arguments to task](#pass-cli-arguments-to-task)
+  - [Task's variations](#tasks-variations)
+  - [Task's variables](#tasks-variables)
+  - [Storing task's output](#storing-tasks-output) 
+  - [Conditional execution](#task-conditional-execution) 
 - [Pipelines](#pipelines)
 - [Filesystem watchers](#filesystem-watchers)
-    - [Patterns](#patterns)
+  - [Patterns](#patterns)
 - [Contexts](#contexts)
 - [Output formats](#taskctl-output-formats)
 - [Embeddable task runner](#embeddable-task-runner)
-    - [Runner](#runner)
-    - [Scheduler](#scheduler)
+  - [Runner](#runner)
+  - [Scheduler](#scheduler)
 - [FAQ](#faq)
   - [How does it differ from go-task/task?](#how-does-it-differ-from-go-tasktask)
 - [Autocomplete](#autocomplete)
@@ -103,7 +103,7 @@ brew install taskctl
 ```
 #### Linux
 ```
-sudo wget https://github.com/taskctl/taskctl/releases/latest/download/taskctl_linux_amd64 -O /usr/local/bin/taskctl
+sudo wget https://github.com/Ensono/taskctl/releases/latest/download/taskctl_linux_amd64 -O /usr/local/bin/taskctl
 sudo chmod +x /usr/local/bin/taskctl
 ```
 #### Ubuntu Linux
@@ -112,7 +112,7 @@ sudo snap install --classic taskctl
 ```
 
 #### deb/rpm:
-Download the .deb or .rpm from the [releases](https://github.com/taskctl/taskctl/releases) page and install with `dpkg -i` 
+Download the .deb or .rpm from the [releases](https://github.com/Ensono/taskctl/releases) page and install with `dpkg -i` 
 and `rpm -i` respectively.
 
 #### Windows
@@ -126,7 +126,7 @@ curl -sL https://raw.githubusercontent.com/taskctl/taskctl/master/install.sh | s
 ```
 #### From sources
 ```
-git clone https://github.com/taskctl/taskctl
+git clone https://github.com/Ensono/taskctl
 cd taskctl
 go build -o taskctl .
 ```
@@ -158,7 +158,7 @@ import:
 ```
 
 ### Example
-Config file [example](https://github.com/taskctl/taskctl/blob/master/docs/example.yaml)
+Config file [example](https://github.com/Ensono/taskctl/blob/master/docs/example.yaml)
 
 ### Global configuration
 *taskctl* has global configuration stored in ``$HOME/.taskctl/config.yaml`` file. It is handy to store system-wide tasks, reusable contexts, defaults etc. 
@@ -185,12 +185,13 @@ tasks:
           - GOARCH: arm
             GOARM: 7
 ```
+
 Task definition takes following parameters:
 - `command` - one or more commands to run
 - `variations` - list of variations (env variables) to apply to command
 - `context` - execution context's name
 - `env` - environment variables. All existing environment variables will be passed automatically
-- `env_file` - env file in `k=v` format to read variables from
+- `envfile` - see [envfile]()
 - `dir` - working directory. Current working directory by default
 - `timeout` - command execution timeout (default: none)
 - `allow_failure` - if set to `true` failed commands will not interrupt execution (default: `false`)
@@ -306,10 +307,11 @@ pipelines:
         - task: finish
           depends_on: ["task E"]    
 ```
-will result in an execution plan like this:
-![execution plan](https://raw.githubusercontent.com/taskctl/taskctl/master/docs/pipeline.svg)
+
+will result in an execution plan like this: ![execution plan](https://raw.githubusercontent.com/Ensono/taskctl/master/docs/pipeline.svg)
 
 Stage definition takes following parameters:
+
 - `name` - stage name. If not set - referenced task or pipeline name will be used.
 - `task` - task to execute on this stage
 - `pipeline` - pipeline to execute on this stage
@@ -320,12 +322,15 @@ Stage definition takes following parameters:
 - `variables` - stage's variables
 
 ## Taskctl output formats
+
 Taskctl has several output formats:
+
 - `raw` - prints raw commands output
 - `prefixed` - strips ANSI escape sequences where possible, prefixes command output with task's name
 - `cockpit` - tasks dashboard
 
 ## Filesystem watchers
+
 Watcher watches for changes in files selected by provided patterns and triggers task anytime an event has occurred.
 ```yaml
 watchers:
@@ -335,7 +340,9 @@ watchers:
     events: [create, write, remove, rename, chmod] # Filesystem events to listen to
     task: task1 # Task to run when event occurs
 ```
+
 ### Patterns
+
 Thanks to [doublestar](https://github.com/bmatcuk/doublestar) *taskctl* supports the following special terms within include and exclude patterns:
 
 Special Terms | Meaning
@@ -349,6 +356,7 @@ Special Terms | Meaning
 Any character with a special meaning can be escaped with a backslash (`\`).
 
 ## Contexts
+
 Contexts allow you to set up execution environment, variables, binary which will run your task, up/down commands etc.
 ```yaml
 contexts:
@@ -367,6 +375,7 @@ contexts:
 ```
 
 Context has hooks which may be triggered once before first context usage or every time before task with this context will run.
+
 ```yaml
 context:
     docker-compose:
@@ -381,6 +390,7 @@ context:
 ```
 
 ### Docker context
+
 ```yaml
   alpine:
     executable:
@@ -403,10 +413,12 @@ tasks:
 Being able to pass environment variables to a Docker container is crucial for many build scenarios.
 
 ## Embeddable task runner
-*taskctl* may be embedded into any go program. 
-Additional information may be found on taskctl's [pkg.go.dev](https://pkg.go.dev/github.com/taskctl/taskctl?tab=overview) page
+
+*taskctl* may be embedded into any go program.
+Additional information may be found on taskctl's [pkg.go.dev](https://pkg.go.dev/github.com/Ensono/taskctl?tab=overview) page
 
 ### Runner
+
 ```go
 t := task.FromCommands("go fmt ./...", "go build ./..")
 r, err := NewTaskRunner()
@@ -421,6 +433,7 @@ fmt.Println(t.Output())
 ```
 
 ### Scheduler
+
 ```go
 format := task.FromCommands("go fmt ./...")
 build := task.FromCommands("go build ./..")
@@ -442,24 +455,34 @@ if err != nil {
 ```
 
 ## FAQ
+
 ### How does it differ from go-task/task?
-It's amazing how solving same problems lead to same solutions. *taskctl* and go-task have a lot of concepts in common but also have some differences. 
+
+It's amazing how solving same problems lead to same solutions. *taskctl* and go-task have a lot of concepts in common but also have some differences.
+
 1. Main is pipelines. Pipelines and stages allows more precise workflow design because same tasks may have different dependencies (or no dependencies) in different scenarios.
 2. Contexts allow you to set up execution environment and binary which will run your task.
 
 ## Autocomplete
+
 ### Bash
+
 Add to  ~/.bashrc or ~/.profile
-```
+
+```bash
 . <(taskctl completion bash)
 ```
 
 ### ZSH
+
 Add to  ~/.zshrc
-```
+
+```zsh
 . <(taskctl completion zsh)
 ```
+
 ### Similar projects
+
 - [GNU Make](https://github.com/mirror/make)
 - [go-task/task](https://github.com/go-task/task)
 - [mage](https://github.com/magefile/mage)
@@ -469,13 +492,17 @@ Add to  ~/.zshrc
 - [realize](https://github.com/oxequa/realize)
 
 ## How to contribute?
+
 Feel free to contribute in any way you want. Share ideas, submit issues, create pull requests. 
-You can start by improving this [README.md](https://github.com/taskctl/taskctl/blob/master/README.md) or suggesting new [features](https://github.com/taskctl/taskctl/issues)
-Thank you! 
+You can start by improving this [README.md](https://github.com/Ensono/taskctl/blob/master/README.md) or suggesting new [features](https://github.com/Ensono/taskctl/issues)
+Thank you!
 
 ## License
+
 This project is licensed under the GNU GPLv3 - see the [LICENSE.md](LICENSE.md) file for details
 
 ## Authors
- - Yevhen Terentiev - [trntv](https://github.com/trntv)
-See also the list of [contributors](https://github.com/taskctl/taskctl/contributors) who participated in this project.
+
+- Yevhen Terentiev - [trntv](https://github.com/trntv)
+
+See also the list of [contributors](https://github.com/Ensono/taskctl/contributors) who participated in this project.

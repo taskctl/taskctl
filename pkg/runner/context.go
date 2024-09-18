@@ -11,8 +11,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/Ensono/taskctl/internal/utils"
 	"github.com/Ensono/taskctl/pkg/executor"
-	"github.com/Ensono/taskctl/pkg/utils"
 	"github.com/Ensono/taskctl/pkg/variables"
 	"github.com/sirupsen/logrus"
 )
@@ -32,7 +32,9 @@ type ExecutionContext struct {
 	Env        variables.Container
 	Envfile    *utils.Envfile
 	Variables  variables.Container
-	Quote      string
+	// Quote character to use around a command
+	// when passed to another executable, e.g. docker
+	Quote string
 
 	up     []string
 	down   []string
@@ -135,7 +137,7 @@ var ErrMutuallyExclusiveVarSet = errors.New("mutually exclusive vars have been s
 // the file names are generated using the `generated_{Task_Name}_{UNIX_timestamp}.env`.
 //
 // Note: it will create the directory
-func (c *ExecutionContext) GenerateEnvfile() error {
+func (c *ExecutionContext) GenerateEnvfile(env variables.Container) error {
 	// return an error if the include and exclude have both been specified
 	if len(c.Envfile.Exclude) > 0 && len(c.Envfile.Include) > 0 {
 		return fmt.Errorf("include and exclude lists are mutually exclusive, %w", ErrMutuallyExclusiveVarSet)
@@ -146,7 +148,7 @@ func (c *ExecutionContext) GenerateEnvfile() error {
 	builder := []string{}
 
 	// iterate around all of the environment variables and add the selected ones to the builder
-	for varName, varValue := range c.Env.Map() {
+	for varName, varValue := range env.Map() {
 		// check to see if the env matches an invalid variable, if it does
 		// move onto the next item in the  loop
 		if slices.Contains(invalidEnvVarKeys, varName) {
@@ -154,60 +156,15 @@ func (c *ExecutionContext) GenerateEnvfile() error {
 			continue
 		}
 
-		// iterate around the modify options to see if the name needs to be
-		// modified at all
-		for _, modify := range c.Envfile.Modify {
-
-			// use the pattern to determine if the string has been identified
-			// this assumes 1 capture group so this will be used as the name to transform
-			re := regexp.MustCompile(modify.Pattern)
-			match := re.FindStringSubmatch(varName)
-			if len(match) > 0 {
-
-				keyword := match[re.SubexpIndex("keyword")]
-				varname := match[re.SubexpIndex("varname")]
-
-				// perform the operation on the varname
-				switch modify.Operation {
-				case "lower":
-					varname = strings.ToLower(varname)
-				case "upper":
-					varname = strings.ToUpper(varname)
-				}
-
-				// Build up the name
-				varName = fmt.Sprintf("%s%s", keyword, varname)
-
-				break
-			}
-		}
-
+		varName = c.modifyName(varName)
 		// determine if the variable should be included or excluded
-		// ShouldExclude will be true if any varName
-		shouldExclude := slices.ContainsFunc(c.Envfile.Exclude, func(v string) bool {
-			return strings.HasPrefix(varName, v)
-		})
-
-		shouldInclude := true
-		if len(c.Envfile.Include) > 0 {
-			shouldInclude = slices.ContainsFunc(c.Envfile.Include, func(v string) bool {
-				return strings.HasPrefix(varName, v)
-			})
-		}
-
-		// if the variable should excluded or not explicitly included then move onto the next variable
-		if shouldExclude || !shouldInclude {
+		if c.includeExcludeSkip(varName) {
 			continue
 		}
 
 		// sanitize variable values from newline and space characters
 		// replace any newline characters with a space, this is to prevent multiline variables being passed in
 		// quote the value if it has spaces in it
-		// TODO: this should be discussed? why?
-		// supplied values should be left in-tact?
-		//
-		// value := strings.NewReplacer("\n", c.Envfile.ReplaceChar, `\s`, "").Replace(varValue)
-
 		// Add the name and the value to the string builder
 		envstr := fmt.Sprintf("%s=%s", varName, varValue)
 		builder = append(builder, envstr)
@@ -221,6 +178,51 @@ func (c *ExecutionContext) GenerateEnvfile() error {
 	}
 
 	return os.WriteFile(c.Envfile.Path, []byte(strings.Join(builder, "\n")), 0700)
+}
+
+func (c *ExecutionContext) includeExcludeSkip(varName string) bool {
+	// ShouldExclude will be true if any varName
+	shouldExclude := slices.ContainsFunc(c.Envfile.Exclude, func(v string) bool {
+		return strings.HasPrefix(varName, v)
+	})
+
+	shouldInclude := true
+	if len(c.Envfile.Include) > 0 {
+		shouldInclude = slices.ContainsFunc(c.Envfile.Include, func(v string) bool {
+			return strings.HasPrefix(varName, v)
+		})
+	}
+
+	// if the variable should excluded or not explicitly included then move onto the next variable
+	return shouldExclude || !shouldInclude
+}
+
+func (c *ExecutionContext) modifyName(varName string) string {
+	// iterate around the modify options to see if the name needs to be
+	// modified at all
+	for _, modify := range c.Envfile.Modify {
+
+		// use the pattern to determine if the string has been identified
+		// this assumes 1 capture group so this will be used as the name to transform
+		re := regexp.MustCompile(modify.Pattern)
+		match := re.FindStringSubmatch(varName)
+		if len(match) > 0 {
+
+			keyword := match[re.SubexpIndex("keyword")]
+			matchedVarName := match[re.SubexpIndex("varname")]
+
+			// perform the operation on the varname
+			switch modify.Operation {
+			case "lower":
+				matchedVarName = strings.ToLower(matchedVarName)
+			case "upper":
+				matchedVarName = strings.ToUpper(matchedVarName)
+			}
+			// Build up the name
+			return fmt.Sprintf("%s%s", keyword, matchedVarName)
+		}
+	}
+	return varName
 }
 
 func (c *ExecutionContext) runServiceCommand(command string) (err error) {
@@ -263,6 +265,9 @@ func DefaultContext() *ExecutionContext {
 // WithQuote is functional option to set Quote for ExecutionContext
 func WithQuote(quote string) ExecutionContextOption {
 	return func(c *ExecutionContext) {
-		c.Quote = quote
+		c.Quote = "'"
+		if quote != "" {
+			c.Quote = quote
+		}
 	}
 }

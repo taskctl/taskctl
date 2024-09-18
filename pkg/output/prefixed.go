@@ -1,7 +1,6 @@
 package output
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"regexp"
@@ -17,47 +16,28 @@ var ansiRegexp = regexp.MustCompile(ansi)
 
 type prefixedOutputDecorator struct {
 	t *task.Task
-	w *bufio.Writer
+	w *SafeWriter
 }
 
 func NewPrefixedOutputWriter(t *task.Task, w io.Writer) *prefixedOutputDecorator {
 	return &prefixedOutputDecorator{
 		t: t,
-		w: bufio.NewWriter(&lineWriter{t: t, dst: w}),
+		w: NewSafeWriter(w),
 	}
 }
 
+// TODO: implement a chunked writer
+// for when the output is too large all of a sudden
+// func chunkByteSlice(items []byte, chunkSize int) (chunks [][]byte) {
+// 	for chunkSize < len(items) {
+// 		items, chunks = items[chunkSize:], append(chunks, items[0:chunkSize:chunkSize])
+// 	}
+// 	return append(chunks, items)
+// }
+
 func (d *prefixedOutputDecorator) Write(p []byte) (int, error) {
-	n := len(p)
-	for {
-		advance, line, err := bufio.ScanLines(p, true)
-		if err != nil {
-			return 0, err
-		}
-
-		if advance == 0 {
-			break
-		}
-
-		_, err = d.w.Write(line)
-		if err != nil {
-			return 0, err
-		}
-
-		err = d.w.Flush()
-		if err != nil {
-			return 0, err
-		}
-
-		p = p[advance:]
-	}
-
-	_, err := d.w.Write(p)
-	if err != nil {
-		return 0, err
-	}
-
-	return n, nil
+	p = ansiRegexp.ReplaceAllLiteral(p, []byte{})
+	return d.w.Write([]byte(fmt.Sprintf("\x1b[18m%s\x1b[0m: %s\r\n", d.t.Name, p)))
 }
 
 func (d *prefixedOutputDecorator) WriteHeader() error {
@@ -66,24 +46,6 @@ func (d *prefixedOutputDecorator) WriteHeader() error {
 }
 
 func (d *prefixedOutputDecorator) WriteFooter() error {
-	err := d.w.Flush()
-	if err != nil {
-		logrus.Warning(err)
-	}
-
 	logrus.Infof("%s finished. Duration %s", d.t.Name, d.t.Duration())
 	return nil
-}
-
-type lineWriter struct {
-	t   *task.Task
-	dst io.Writer
-}
-
-func (l lineWriter) Write(p []byte) (n int, err error) {
-	n = len(p)
-	p = ansiRegexp.ReplaceAllLiteral(p, []byte{})
-	_, err = fmt.Fprintf(l.dst, "\x1b[18m%s\x1b[0m: %s\r\n", l.t.Name, p)
-
-	return n, err
 }

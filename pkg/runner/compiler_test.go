@@ -1,11 +1,12 @@
-package runner
+package runner_test
 
 import (
 	"bytes"
 	"testing"
 
+	"github.com/Ensono/taskctl/internal/utils"
+	"github.com/Ensono/taskctl/pkg/runner"
 	"github.com/Ensono/taskctl/pkg/task"
-	"github.com/Ensono/taskctl/pkg/utils"
 	"github.com/Ensono/taskctl/pkg/variables"
 )
 
@@ -19,12 +20,12 @@ var envFile = utils.Envfile{
 }
 
 func TestTaskCompiler_CompileCommand(t *testing.T) {
-	tc := NewTaskCompiler()
+	tc := runner.NewTaskCompiler()
 
 	job, err := tc.CompileCommand(
 		"test1",
 		"echo 1",
-		NewExecutionContext(&shBin, "/tmp", variables.FromMap(map[string]string{"HOME": "/root"}), &envFile, nil, nil, nil, nil),
+		runner.NewExecutionContext(&shBin, "/tmp", variables.FromMap(map[string]string{"HOME": "/root"}), &envFile, nil, nil, nil, nil),
 		"/root", nil,
 		&bytes.Buffer{},
 		&bytes.Buffer{},
@@ -44,7 +45,7 @@ func TestTaskCompiler_CompileCommand(t *testing.T) {
 		t.Error()
 	}
 
-	quotedContext := NewExecutionContext(&shBin, "/", variables.NewVariables(), &envFile, []string{"false"}, []string{"false"}, []string{"false"}, []string{"false"}, WithQuote("\""))
+	quotedContext := runner.NewExecutionContext(&shBin, "/", variables.NewVariables(), &envFile, []string{"false"}, []string{"false"}, []string{"false"}, []string{"false"}, runner.WithQuote("\""))
 	job, err = tc.CompileCommand(
 		"test1",
 		"echo 1",
@@ -66,12 +67,12 @@ func TestTaskCompiler_CompileCommand(t *testing.T) {
 }
 
 func TestTaskCompiler_CompileTask(t *testing.T) {
-	tc := NewTaskCompiler()
+	tc := runner.NewTaskCompiler()
 	j, err := tc.CompileTask(&task.Task{
 		Commands:  []string{"echo 1"},
 		Variables: variables.FromMap(map[string]string{"TestInterpolatedVar": "TestVar={{.TestVar}}"}),
 	},
-		NewExecutionContext(&shBin, "/tmp", variables.FromMap(map[string]string{"HOME": "/root"}), &envFile, nil, nil, nil, nil),
+		runner.NewExecutionContext(&shBin, "/tmp", variables.FromMap(map[string]string{"HOME": "/root"}), &envFile, nil, nil, nil, nil),
 		&bytes.Buffer{},
 		&bytes.Buffer{},
 		&bytes.Buffer{},
