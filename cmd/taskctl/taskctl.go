@@ -162,6 +162,10 @@ func (tc *TaskCtlCmd) initConfig() (*config.Config, error) {
 		conf.Debug = tc.viperConf.GetBool("debug") // this is bound to viper env flag
 	}
 
+	if conf.Debug {
+		logrus.SetLevel(logrus.DebugLevel)
+	}
+
 	if !conf.Quiet {
 		conf.Quiet = tc.rootFlags.Quiet
 	}

@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=schemas/schema_v1.json
 
-debug: true
+debug: false
 output: prefixed
 # TODO: top level variables are not being munged int
 # variables:
