@@ -109,10 +109,7 @@
           "description": "Output sets globally the output type for all tasks and pipelines"
         },
         "variables": {
-          "additionalProperties": {
-            "type": "string"
-          },
-          "type": "object",
+          "$ref": "#/$defs/EnvVarMapType",
           "description": "Variables are the top most variables and will be merged and overwritten with lower level\nspecifications.\ne.g. variable of Version=123\nwill be overwritten by a variables specified in this order, lowest takes the highest precedence\n- context\n- pipeline\n- task\n- commandline.\nVariables can be used inside templating using the text/template go package"
         }
       },
@@ -150,10 +147,7 @@
           "type": "array"
         },
         "env": {
-          "additionalProperties": {
-            "type": "string"
-          },
-          "type": "object",
+          "$ref": "#/$defs/EnvVarMapType",
           "description": "Env is supplied from config file definition and is merged with the\ncurrent process environment variables list\n\nUser supplied env map will overwrite any keys inside the process env\nTODO: check this is desired behaviour"
         },
         "envfile": {
@@ -161,10 +155,7 @@
           "description": "Envfile is a special block for use in executables that support file mapping\ne.g. podman or docker\n\nNote: Envfile in the container context will ignore the generate flag\nit will however respect all the other directives of include/exclude and modify operations"
         },
         "variables": {
-          "additionalProperties": {
-            "type": "string"
-          },
-          "type": "object",
+          "$ref": "#/$defs/EnvVarMapType",
           "description": "Variables"
         },
         "executable": {
@@ -181,6 +172,22 @@
         }
       },
       "additionalProperties": false,
+      "type": "object"
+    },
+    "EnvVarMapType": {
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "boolean"
+          }
+        ]
+      },
       "type": "object"
     },
     "Envfile": {
@@ -342,17 +349,11 @@
           "description": "Dir is the place where to run the task(s) in.\nIf empty - currentDir is used"
         },
         "env": {
-          "additionalProperties": {
-            "type": "string"
-          },
-          "type": "object",
+          "$ref": "#/$defs/EnvVarMapType",
           "description": "Env is the Key: Value map of env vars to inject into the tasks"
         },
         "variables": {
-          "additionalProperties": {
-            "type": "string"
-          },
-          "type": "object",
+          "$ref": "#/$defs/EnvVarMapType",
           "description": "Variables is the Key: Value map of vars vars to inject into the tasks"
         }
       },
@@ -427,16 +428,14 @@
           "$ref": "#/$defs/Artifact"
         },
         "env": {
-          "additionalProperties": {
-            "type": "string"
-          },
-          "type": "object"
+          "$ref": "#/$defs/EnvVarMapType"
         },
         "envfile": {
           "$ref": "#/$defs/Envfile",
           "description": "EnvFile string pointing to the file that could be read in as an envFile\ncontents will be merged with the Env (os.Environ())"
         },
         "variables": {
+          "$ref": "#/$defs/EnvVarMapType",
           "oneOf": [
             {
               "type": "string"
@@ -445,9 +444,6 @@
               "type": "integer"
             }
           ],
-          "additionalProperties": {
-            "type": "string"
-          },
           "description": "Variables merged with others if any already priovided\nThese will overwrite any previously set keys"
         },
         "reset_context": {

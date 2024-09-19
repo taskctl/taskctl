@@ -12,6 +12,7 @@ import (
 	"github.com/Ensono/taskctl/pkg/executor"
 	"github.com/Ensono/taskctl/pkg/task"
 	"github.com/Ensono/taskctl/pkg/variables"
+	"github.com/sirupsen/logrus"
 )
 
 // TaskCompiler compiles tasks into jobs for executor
@@ -98,6 +99,11 @@ func (tc *TaskCompiler) CompileCommand(
 		Vars:    tc.variables.Merge(vars),
 	}
 
+	commandArgs := []string{}
+
+	if executionCtx.Executable != nil {
+		commandArgs = executionCtx.Executable.GetArgs()
+	}
 	// Look at the executable details and check if the command is running `docker` determine if an Envfile is being generated
 	// If it has then check to see if the args contains the --env-file flag and if does modify the path to the envfile
 	// if it does not then add the --env-file flag to the args array
@@ -111,7 +117,7 @@ func (tc *TaskCompiler) CompileCommand(
 				fmt.Sprintf("generated_%s_%v.env", utils.ConvertStringToMachineFriendly(taskName), time.Now().UnixNano()),
 			))
 
-		executionCtx.Executable.BuildArgsWithEnvFile(filename)
+		commandArgs = executionCtx.Executable.BuildArgsWithEnvFile(filename)
 		// set the path to the generated envfile
 		executionCtx.Envfile.Path = filename
 		// generate the envfile with supplied env only
@@ -124,11 +130,13 @@ func (tc *TaskCompiler) CompileCommand(
 	c := []string{command}
 	if executionCtx.Executable != nil {
 		c = []string{executionCtx.Executable.Bin}
-		c = append(c, executionCtx.Executable.Args...)
+		c = append(c, commandArgs...)
 		c = append(c, fmt.Sprintf("%s%s%s", executionCtx.Quote, command, executionCtx.Quote))
 	}
 
 	j.Command = strings.Join(c, " ")
+
+	logrus.Debugf("command: %s", j.Command)
 
 	var err error
 	if dir != "" {
