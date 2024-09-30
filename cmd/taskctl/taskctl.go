@@ -23,13 +23,6 @@ var (
 	Revision = "aaaa1234"
 )
 
-var (
-	// Keep public for test overwrites
-	// TODO: Wither these 2 params
-	ChannelOut io.Writer
-	ChannelErr io.Writer
-)
-
 var cancel = make(chan struct{})
 
 type rootCmdFlags struct {
@@ -49,13 +42,17 @@ type rootCmdFlags struct {
 }
 
 type TaskCtlCmd struct {
-	Cmd       *cobra.Command
-	viperConf *viper.Viper
-	rootFlags *rootCmdFlags
+	Cmd        *cobra.Command
+	ChannelOut io.Writer
+	ChannelErr io.Writer
+	viperConf  *viper.Viper
+	rootFlags  *rootCmdFlags
 }
 
-func NewTaskCtlCmd() *TaskCtlCmd {
+func NewTaskCtlCmd(channelOut, channelErr io.Writer) *TaskCtlCmd {
 	tc := &TaskCtlCmd{
+		ChannelOut: channelOut,
+		ChannelErr: channelErr,
 		Cmd: &cobra.Command{
 			Use:     "taskctl",
 			Version: fmt.Sprintf("%s-%s", Version, Revision),
@@ -80,7 +77,7 @@ func NewTaskCtlCmd() *TaskCtlCmd {
 		log.Fatal(err)
 	}
 
-	tc.Cmd.PersistentFlags().StringVarP(&tc.rootFlags.Output, "output", "o", string(outputpkg.RawOutput), "output format (raw, prefixed or cockpit)")
+	tc.Cmd.PersistentFlags().StringVarP(&tc.rootFlags.Output, "output", "o", string(outputpkg.PrefixedOutput), "output format (raw, prefixed or cockpit)")
 	_ = tc.viperConf.BindEnv("output", "TASKCTL_OUTPUT_FORMAT")
 	_ = tc.viperConf.BindPFlag("output", tc.Cmd.PersistentFlags().Lookup("output"))
 
@@ -133,7 +130,7 @@ func (tc *TaskCtlCmd) Execute(ctx context.Context) error {
 		TimestampFormat: "2006-01-02 15:04:05",
 		FullTimestamp:   false,
 	})
-	logrus.SetOutput(ChannelErr)
+	logrus.SetOutput(tc.ChannelErr)
 
 	return tc.Cmd.ExecuteContext(ctx)
 }
@@ -160,6 +157,10 @@ func (tc *TaskCtlCmd) initConfig() (*config.Config, error) {
 	// parsed from theconfig file
 	if !conf.Debug {
 		conf.Debug = tc.viperConf.GetBool("debug") // this is bound to viper env flag
+	}
+
+	if conf.Debug {
+		logrus.SetLevel(logrus.DebugLevel)
 	}
 
 	if !conf.Quiet {
@@ -208,8 +209,8 @@ func (tc *TaskCtlCmd) buildTaskRunner(args []string, conf *config.Config) (*runn
 	vars.Set("ArgsList", argsStringer.argsList)
 	vars.Set("Args", strings.Join(argsStringer.argsList, " "))
 	tr, err := runner.NewTaskRunner(runner.WithContexts(conf.Contexts), runner.WithVariables(vars), func(runner *runner.TaskRunner) {
-		runner.Stdout = ChannelOut
-		runner.Stderr = ChannelErr
+		runner.Stdout = tc.ChannelOut
+		runner.Stderr = tc.ChannelErr
 	})
 
 	if err != nil {

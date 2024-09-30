@@ -42,7 +42,7 @@ func newShowCmd(rootCmd *TaskCtlCmd) {
 			t := conf.Tasks[args[0]]
 			if t != nil {
 				tmpl := template.Must(template.New("show").Parse(showTmpl))
-				return tmpl.Execute(ChannelOut, t)
+				return tmpl.Execute(rootCmd.ChannelOut, t)
 			}
 			return fmt.Errorf("%s. %w", args[0], ErrIncorrectPipelineTaskArg)
 		},

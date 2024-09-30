@@ -16,7 +16,7 @@ func newValidateCmd(rootCmd *TaskCtlCmd) {
 			if err != nil {
 				return err
 			}
-			fmt.Fprintln(ChannelOut, "file is valid")
+			fmt.Fprintln(rootCmd.ChannelOut, "file is valid")
 			return nil
 		},
 		PostRunE: func(cmd *cobra.Command, args []string) error {

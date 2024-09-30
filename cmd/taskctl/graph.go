@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/Ensono/taskctl/internal/config"
 	"github.com/Ensono/taskctl/pkg/scheduler"
@@ -13,14 +14,16 @@ type graphFlags struct {
 	leftToRight bool
 }
 
-// type graphCmd struct {
-// 	configFunc func() (*config.Config, error)
-// 	conf       *config.Config
-// }
+type graphCmd struct {
+	channelOut, channelErr io.Writer
+}
 
 func newGraphCmd(rootCmd *TaskCtlCmd) {
 	f := &graphFlags{}
-
+	gc := &graphCmd{
+		channelOut: rootCmd.ChannelOut,
+		channelErr: rootCmd.ChannelErr,
+	}
 	graphCmd := &cobra.Command{
 		Use:     "graph",
 		Aliases: []string{"g"},
@@ -34,7 +37,7 @@ The output is in the DOT format, which can be used by GraphViz to generate chart
 				return err
 			}
 			pipelineName := args[0]
-			return graphCmdRun(pipelineName, conf)
+			return gc.graphCmdRun(pipelineName, conf)
 		},
 	}
 
@@ -44,7 +47,7 @@ The output is in the DOT format, which can be used by GraphViz to generate chart
 	rootCmd.Cmd.AddCommand(graphCmd)
 }
 
-func graphCmdRun(name string, conf *config.Config) error {
+func (gc *graphCmd) graphCmdRun(name string, conf *config.Config) error {
 
 	p := conf.Pipelines[name]
 	if p == nil {
@@ -60,7 +63,7 @@ func graphCmdRun(name string, conf *config.Config) error {
 
 	draw(g, p)
 
-	fmt.Fprintln(ChannelOut, g.String())
+	fmt.Fprintln(gc.channelOut, g.String())
 
 	return nil
 }

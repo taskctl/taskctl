@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"html/template"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -41,9 +42,16 @@ type initFlags struct {
 	noPrompt bool
 }
 
+type runnerInit struct {
+	channelOut, channelErr io.Writer
+}
+
 func newInitCmd(rootCmd *TaskCtlCmd) {
 	f := initFlags{}
-
+	ri := &runnerInit{
+		channelOut: rootCmd.ChannelOut,
+		channelErr: rootCmd.ChannelErr,
+	}
 	initCmd := &cobra.Command{
 		Use:   "init",
 		Short: `initializes the directory with a sample config file`,
@@ -51,7 +59,7 @@ func newInitCmd(rootCmd *TaskCtlCmd) {
 			if rootCmd.viperConf.GetBool("no-prompt") && len(args) == 0 {
 				return fmt.Errorf("file name must be supplied when running in non-interactive mode")
 			}
-			return runInit(args, rootCmd.viperConf.GetString("dir"), rootCmd.viperConf.GetBool("no-prompt"))
+			return ri.runInit(args, rootCmd.viperConf.GetString("dir"), rootCmd.viperConf.GetBool("no-prompt"))
 		},
 	}
 
@@ -64,7 +72,7 @@ func newInitCmd(rootCmd *TaskCtlCmd) {
 	rootCmd.Cmd.AddCommand(initCmd)
 }
 
-func runInit(args []string, initDir string, noPrompt bool) error {
+func (r *runnerInit) runInit(args []string, initDir string, noPrompt bool) error {
 	var file string
 	var accepted bool
 	if initDir == "" {
@@ -78,7 +86,7 @@ func runInit(args []string, initDir string, noPrompt bool) error {
 	// if no prompt and file names were supplied
 	if len(args) > 0 && noPrompt {
 		file = args[0]
-		return writeConfig(filepath.Join(initDir, file))
+		return r.writeConfig(filepath.Join(initDir, file))
 	}
 
 	selectedFile := huh.NewForm(
@@ -99,14 +107,14 @@ func runInit(args []string, initDir string, noPrompt bool) error {
 		return err
 	}
 	if accepted {
-		return writeConfig(filepath.Join(initDir, file))
+		return r.writeConfig(filepath.Join(initDir, file))
 	}
 	return nil
 }
 
 // type OpenFile func(name string, flag int, perm fs.FileMode) (*os.File, error)
 
-func writeConfig(file string) error {
+func (r *runnerInit) writeConfig(file string) error {
 	fw, err := os.OpenFile(file, os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
@@ -119,7 +127,7 @@ func writeConfig(file string) error {
 		return err
 	}
 
-	fmt.Fprintf(ChannelOut, "%s %s\n", fmt.Sprintf(cmdutils.GREEN_TERMINAL, file), fmt.Sprintf(cmdutils.MAGENTA_TERMINAL, "was created. Edit it accordingly to your needs"))
-	fmt.Fprintf(ChannelOut, cmdutils.CYAN_TERMINAL, "To run example pipeline - taskctl run pipeline1")
+	fmt.Fprintf(r.channelOut, "%s %s\n", fmt.Sprintf(cmdutils.GREEN_TERMINAL, file), fmt.Sprintf(cmdutils.MAGENTA_TERMINAL, "was created. Edit it accordingly to your needs"))
+	fmt.Fprintf(r.channelOut, cmdutils.CYAN_TERMINAL, "To run example pipeline - taskctl run pipeline1")
 	return nil
 }

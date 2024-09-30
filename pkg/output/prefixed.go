@@ -37,7 +37,7 @@ func NewPrefixedOutputWriter(t *task.Task, w io.Writer) *prefixedOutputDecorator
 
 func (d *prefixedOutputDecorator) Write(p []byte) (int, error) {
 	p = ansiRegexp.ReplaceAllLiteral(p, []byte{})
-	return d.w.Write([]byte(fmt.Sprintf("\x1b[18m%s\x1b[0m: %s\r\n", d.t.Name, p)))
+	return d.w.Write([]byte(fmt.Sprintf("\x1b[36m%s\x1b[0m: %s", d.t.Name, p)))
 }
 
 func (d *prefixedOutputDecorator) WriteHeader() error {

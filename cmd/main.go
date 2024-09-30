@@ -51,14 +51,12 @@ func setDefaultCommandIfNonePresent(cmd *cobra.Command) {
 }
 
 func main() {
-	taskctlRootCmd := taskctlcmd.NewTaskCtlCmd()
+	taskctlRootCmd := taskctlcmd.NewTaskCtlCmd(os.Stdout, os.Stderr)
 
 	if err := taskctlRootCmd.InitCommand(); err != nil {
 		logrus.Fatal(err)
 	}
 
-	taskctlcmd.ChannelOut = os.Stdout
-	taskctlcmd.ChannelErr = os.Stderr
 	setDefaultCommandIfNonePresent(taskctlRootCmd.Cmd)
 	if err := taskctlRootCmd.Execute(context.Background()); err != nil {
 		logrus.Fatal(err)

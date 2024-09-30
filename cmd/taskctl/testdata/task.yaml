@@ -1,7 +1,14 @@
+# yaml-language-server: $schema=../../../schemas/schema_v1.json
+
 tasks:
   task:task1:
     command: "echo 'This is {{index .ArgsList 0}} argument'"
-
+    env:
+      string: this is a string
+      number: 123.12
+      int: 123
+      bool: true
+    
   task:task2:
     command: "echo 'This is {{index .ArgsList 1}} argument'"
     

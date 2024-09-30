@@ -12,12 +12,12 @@ import (
 )
 
 const (
-	MAGENTA_TERMINAL = "\x1b[35m%s\x1b[0m"
-	GREEN_TERMINAL   = "\x1b[32m%s\x1b[0m"
-	CYAN_TERMINAL    = "\x1b[36m%s\x1b[0m"
-	RED_TERMINAL     = "\x1b[31m%s\x1b[0m"
-	GREY_TERMINAL    = "\x1b[18m%s\x1b[0m"
-	BOLD_TERMINAL    = "\x1b[1m%s"
+	MAGENTA_TERMINAL string = "\x1b[35m%s\x1b[0m"
+	GREEN_TERMINAL   string = "\x1b[32m%s\x1b[0m"
+	CYAN_TERMINAL    string = "\x1b[36m%s\x1b[0m"
+	RED_TERMINAL     string = "\x1b[31m%s\x1b[0m"
+	GREY_TERMINAL    string = "\x1b[18m%s\x1b[0m"
+	BOLD_TERMINAL    string = "\x1b[1m%s"
 )
 
 func DisplayTaskSelection(conf *config.Config) (taskOrPipelineSelected string, err error) {

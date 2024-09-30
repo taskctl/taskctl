@@ -5,6 +5,7 @@ import (
 
 	"github.com/Ensono/taskctl/internal/utils"
 	"github.com/Ensono/taskctl/pkg/task"
+	"github.com/invopop/jsonschema"
 )
 
 //go:generate go run ../../tools/schemagenerator/main.go -dir ../../
@@ -43,7 +44,7 @@ type ConfigDefinition struct {
 	// - task
 	// - commandline.
 	// Variables can be used inside templating using the text/template go package
-	Variables map[string]string `mapstructure:"variables" yaml:"variables" json:"variables,omitempty"` // jsonschema:"additional_properties_type=string;integer"`
+	Variables EnvVarMapType `mapstructure:"variables" yaml:"variables" json:"variables,omitempty"` // jsonschema:"additional_properties_type=string;integer"`
 }
 
 type ContextDefinition struct {
@@ -57,7 +58,7 @@ type ContextDefinition struct {
 	//
 	// User supplied env map will overwrite any keys inside the process env
 	// TODO: check this is desired behaviour
-	Env map[string]string `mapstructure:"env" yaml:"env" json:"env,omitempty"`
+	Env EnvVarMapType `mapstructure:"env" yaml:"env" json:"env,omitempty"` // jsonschema:"anyof_type=string;integer;number;bool"
 	// Envfile is a special block for use in executables that support file mapping
 	// e.g. podman or docker
 	//
@@ -65,7 +66,7 @@ type ContextDefinition struct {
 	// it will however respect all the other directives of include/exclude and modify operations
 	Envfile *utils.Envfile `mapstructure:"envfile" yaml:"envfile,omitempty" json:"envfile,omitempty"`
 	// Variables
-	Variables map[string]string `mapstructure:"variables" yaml:"variables" json:"variables,omitempty"`
+	Variables EnvVarMapType `mapstructure:"variables" yaml:"variables" json:"variables,omitempty"`
 	// Executable block holds the exec info
 	Executable *utils.Binary `mapstructure:"executable" yaml:"executable" json:"executable,omitempty"`
 	// Quote is the quote char to use when parsing commands into executables like docker
@@ -159,9 +160,9 @@ type PipelineDefinition struct {
 	// If empty - currentDir is used
 	Dir string `mapstructure:"dir" yaml:"dir,omitempty" json:"dir,omitempty"`
 	// Env is the Key: Value map of env vars to inject into the tasks
-	Env map[string]string `mapstructure:"env" yaml:"env,omitempty" json:"env,omitempty"`
+	Env EnvVarMapType `mapstructure:"env" yaml:"env,omitempty" json:"env,omitempty"`
 	// Variables is the Key: Value map of vars vars to inject into the tasks
-	Variables map[string]string `mapstructure:"variables" yaml:"variables,omitempty" json:"variables,omitempty"`
+	Variables EnvVarMapType `mapstructure:"variables" yaml:"variables,omitempty" json:"variables,omitempty"`
 }
 
 type TaskDefinition struct {
@@ -182,18 +183,18 @@ type TaskDefinition struct {
 	Variations []map[string]string `mapstructure:"variations" yaml:"variations,omitempty" json:"variations,omitempty"`
 	// Dir to run the command from
 	// If empty defaults to current directory
-	Dir          string            `mapstructure:"dir" yaml:"dir,omitempty" json:"dir,omitempty"`
-	Timeout      *time.Duration    `mapstructure:"timeout" yaml:"timeout,omitempty" json:"timeout,omitempty"`
-	AllowFailure bool              `mapstructure:"allow_failure" yaml:"allow_failure,omitempty" json:"allow_failure,omitempty"`
-	Interactive  bool              `mapstructure:"interactive" yaml:"interactive,omitempty" json:"interactive,omitempty"`
-	Artifacts    *task.Artifact    `mapstructure:"artifacts" yaml:"artifacts,omitempty" json:"artifacts,omitempty"`
-	Env          map[string]string `mapstructure:"env" yaml:"env,omitempty" json:"env,omitempty"`
+	Dir          string         `mapstructure:"dir" yaml:"dir,omitempty" json:"dir,omitempty"`
+	Timeout      *time.Duration `mapstructure:"timeout" yaml:"timeout,omitempty" json:"timeout,omitempty"`
+	AllowFailure bool           `mapstructure:"allow_failure" yaml:"allow_failure,omitempty" json:"allow_failure,omitempty"`
+	Interactive  bool           `mapstructure:"interactive" yaml:"interactive,omitempty" json:"interactive,omitempty"`
+	Artifacts    *task.Artifact `mapstructure:"artifacts" yaml:"artifacts,omitempty" json:"artifacts,omitempty"`
+	Env          EnvVarMapType  `mapstructure:"env" yaml:"env,omitempty" json:"env,omitempty"`
 	// EnvFile string pointing to the file that could be read in as an envFile
 	// contents will be merged with the Env (os.Environ())
 	Envfile *utils.Envfile `mapstructure:"envfile" yaml:"envfile,omitempty" json:"envfile,omitempty"`
 	// Variables merged with others if any already priovided
 	// These will overwrite any previously set keys
-	Variables map[string]string `mapstructure:"variables" yaml:"variables,omitempty" json:"variables,omitempty" jsonschema:"oneof_type=string;integer"`
+	Variables EnvVarMapType `mapstructure:"variables" yaml:"variables,omitempty" json:"variables,omitempty" jsonschema:"oneof_type=string;integer"`
 	// ResetContext ensures each invocation of the variation is runs a Reset on the executor.
 	// Currently only applies to a default executor.
 	ResetContext bool `mapstructure:"reset_context" yaml:"reset_context,omitempty" json:"reset_context,omitempty" jsonschema:"default=false"`
@@ -205,4 +206,20 @@ type WatcherDefinition struct {
 	Exclude   []string          `mapstructure:"exclude" yaml:"exclude,omitempty" json:"exclude,omitempty"`
 	Task      string            `mapstructure:"task" yaml:"task" json:"task"`
 	Variables map[string]string `mapstructure:"variables" yaml:"variables,omitempty" json:"variables,omitempty"`
+}
+
+// EnvVarMapType is the custom reflection type for schema generation
+type EnvVarMapType map[string]string
+
+func (EnvVarMapType) JSONSchema() *jsonschema.Schema {
+	return &jsonschema.Schema{
+		Type: "object",
+		AdditionalProperties: &jsonschema.Schema{
+			AnyOf: []*jsonschema.Schema{
+				{Type: "string"},
+				{Type: "number"},
+				{Type: "boolean"},
+			},
+		},
+	}
 }

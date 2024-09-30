@@ -50,7 +50,7 @@ func newListCmd(rootCmd *TaskCtlCmd) {
 			slices.Sort(tasks)
 			slices.Sort(watchers)
 
-			return t.Execute(ChannelOut, struct {
+			return t.Execute(rootCmd.ChannelOut, struct {
 				Contexts, Pipelines, Tasks, Watchers []string
 			}{
 				Contexts:  contexts,
@@ -69,7 +69,7 @@ func newListCmd(rootCmd *TaskCtlCmd) {
 				return err
 			}
 			for _, name := range utils.MapKeys(conf.Pipelines) {
-				fmt.Fprintln(ChannelOut, name)
+				fmt.Fprintln(rootCmd.ChannelOut, name)
 			}
 			return nil
 		},
@@ -83,7 +83,7 @@ func newListCmd(rootCmd *TaskCtlCmd) {
 				return err
 			}
 			for _, name := range utils.MapKeys(conf.Tasks) {
-				fmt.Fprintln(ChannelOut, name)
+				fmt.Fprintln(rootCmd.ChannelOut, name)
 			}
 			return nil
 		},
@@ -97,7 +97,7 @@ func newListCmd(rootCmd *TaskCtlCmd) {
 				return err
 			}
 			for _, name := range utils.MapKeys(conf.Watchers) {
-				fmt.Fprintln(ChannelOut, name)
+				fmt.Fprintln(rootCmd.ChannelOut, name)
 			}
 			return nil
 		},

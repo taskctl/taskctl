@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"io"
 
 	"github.com/Ensono/taskctl/internal/cmdutils"
 	"github.com/Ensono/taskctl/internal/config"
@@ -12,8 +13,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type runCmd struct {
+	cmd                    *cobra.Command
+	channelOut, channelErr io.Writer
+}
+
 func newRunCmd(rootCmd *TaskCtlCmd) {
-	runCmd := &cobra.Command{
+	runner := &runCmd{
+		channelOut: rootCmd.ChannelOut,
+		channelErr: rootCmd.ChannelErr,
+	}
+
+	rc := &cobra.Command{
 		Use:     "run",
 		Aliases: []string{},
 		Short:   `runs <pipeline or task>`,
@@ -39,11 +50,11 @@ func newRunCmd(rootCmd *TaskCtlCmd) {
 			if err != nil {
 				return err
 			}
-			return runTarget(taskRunner, conf, argsStringer)
+			return runner.runTarget(taskRunner, conf, argsStringer)
 		},
 	}
 
-	runCmd.AddCommand(&cobra.Command{
+	rc.AddCommand(&cobra.Command{
 		Use:          "pipeline",
 		Short:        `runs pipeline <task>`,
 		Example:      `taskctl run pipeline pipeline:name`,
@@ -58,11 +69,11 @@ func newRunCmd(rootCmd *TaskCtlCmd) {
 			if err != nil {
 				return err
 			}
-			return runPipeline(argsStringer.pipelineName, taskRunner, conf.Summary)
+			return runner.runPipeline(argsStringer.pipelineName, taskRunner, conf.Summary)
 		},
 	})
 
-	runCmd.AddCommand(&cobra.Command{
+	rc.AddCommand(&cobra.Command{
 		Use:          "task",
 		Aliases:      []string{},
 		Short:        `runs task <task>`,
@@ -78,23 +89,26 @@ func newRunCmd(rootCmd *TaskCtlCmd) {
 			if err != nil {
 				return err
 			}
-			return runTask(argsStringer.taskName, taskRunner)
+			return runner.runTask(argsStringer.taskName, taskRunner)
 		},
 	})
-	rootCmd.Cmd.AddCommand(runCmd)
+
+	runner.cmd = rc
+
+	rootCmd.Cmd.AddCommand(runner.cmd)
 }
 
-func runTarget(taskRunner *runner.TaskRunner, conf *config.Config, argsStringer *argsToStringsMapper) (err error) {
+func (r *runCmd) runTarget(taskRunner *runner.TaskRunner, conf *config.Config, argsStringer *argsToStringsMapper) (err error) {
 
 	if argsStringer.pipelineName != nil {
-		if err := runPipeline(argsStringer.pipelineName, taskRunner, conf.Summary); err != nil {
+		if err := r.runPipeline(argsStringer.pipelineName, taskRunner, conf.Summary); err != nil {
 			return fmt.Errorf("pipeline %s failed: %w", argsStringer.taskOrPipelineName, err)
 		}
 		return nil
 	}
 
 	if argsStringer.taskName != nil {
-		if err := runTask(argsStringer.taskName, taskRunner); err != nil {
+		if err := r.runTask(argsStringer.taskName, taskRunner); err != nil {
 			return fmt.Errorf("task %s failed: %w", argsStringer.taskOrPipelineName, err)
 		}
 	}
@@ -102,7 +116,7 @@ func runTarget(taskRunner *runner.TaskRunner, conf *config.Config, argsStringer 
 	return nil
 }
 
-func runPipeline(g *scheduler.ExecutionGraph, taskRunner *runner.TaskRunner, summary bool) error {
+func (r *runCmd) runPipeline(g *scheduler.ExecutionGraph, taskRunner *runner.TaskRunner, summary bool) error {
 	sd := scheduler.NewScheduler(taskRunner)
 	go func() {
 		<-cancel
@@ -115,16 +129,16 @@ func runPipeline(g *scheduler.ExecutionGraph, taskRunner *runner.TaskRunner, sum
 	}
 	sd.Finish()
 
-	fmt.Fprint(ChannelOut, "\r\n")
+	fmt.Fprint(r.channelOut, "\r\n")
 
 	if summary {
-		cmdutils.PrintSummary(g, ChannelOut)
+		cmdutils.PrintSummary(g, r.channelOut)
 	}
 
 	return nil
 }
 
-func runTask(t *task.Task, taskRunner *runner.TaskRunner) error {
+func (r *runCmd) runTask(t *task.Task, taskRunner *runner.TaskRunner) error {
 	err := taskRunner.Run(t)
 	if err != nil {
 		return err

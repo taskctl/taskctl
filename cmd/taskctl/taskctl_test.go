@@ -21,9 +21,10 @@ type cmdRunTestInput struct {
 func cmdRunTestHelper(t *testing.T, testInput *cmdRunTestInput) {
 	t.Helper()
 
-	// taskctlCmd.ChannelOut = nil
-	// taskctlCmd.ChannelErr = nil
-	cmd := taskctlCmd.NewTaskCtlCmd()
+	logOut := output.NewSafeWriter(&bytes.Buffer{})
+	logErr := output.NewSafeWriter(&bytes.Buffer{})
+
+	cmd := taskctlCmd.NewTaskCtlCmd(logOut, logErr)
 	os.Args = append([]string{os.Args[0]}, testInput.args...)
 
 	cmd.Cmd.SetArgs(testInput.args)
@@ -35,21 +36,6 @@ func cmdRunTestHelper(t *testing.T, testInput *cmdRunTestInput) {
 	if err := cmd.InitCommand(); err != nil {
 		t.Fatal(err)
 	}
-
-	logOut := output.NewSafeWriter(&bytes.Buffer{})
-	logErr := output.NewSafeWriter(&bytes.Buffer{})
-
-	// silence output
-	taskctlCmd.ChannelOut = logOut
-	taskctlCmd.ChannelErr = logErr
-
-	// fmt.Printf("input args: %v\n", cmdArgs)
-
-	defer func() {
-		cmd = nil
-		taskctlCmd.ChannelErr = nil
-		taskctlCmd.ChannelOut = nil
-	}()
 
 	if err := cmd.Execute(context.TODO()); err != nil {
 		if testInput.errored {
