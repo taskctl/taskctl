@@ -29,6 +29,10 @@ func buildContext(def *ContextDefinition) (*runner.ExecutionContext, error) {
 		return nil, fmt.Errorf("executable binary must be specified, %w", ErrBuildContextIncorrect)
 	}
 
+	if def.Envfile == nil {
+		def.Envfile = &utils.Envfile{}
+	}
+
 	osEnvVars := variables.FromMap(utils.ConvertFromEnv(os.Environ()))
 	userEnvVars := variables.FromMap(def.Env)
 	// build an env order is _IMPORTANT_

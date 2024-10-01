@@ -8,7 +8,7 @@ import (
 // Taken from stdlib
 // package io multiwriter.go
 //
-// NOTE:
+// NOTE: https://groups.google.com/g/golang-nuts/c/WoEP93-Bzn8/m/5Ij2VTraAgAJ
 //
 // removed short write check as we want differently
 //

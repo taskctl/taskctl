@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=../../schemas/schema_v1.json
+
+contexts:
+  echo:container:
+    container:
+      name: alpine:latest
+
+  docker:build:
+    container:
+      # some container with the executor from kaniko in it
+      name: dnitsch/kaniko-test:0.0.3
+    env:
+      # /workspace/.taskctl is the default path where the current working directory gets mounted to
+      # ensure you have a step before that runs relevant credential generation
+      # Depending on your use case the auth credentials need to look in a certain way
+      # https://github.com/GoogleContainerTools/kaniko?tab=readme-ov-file#pushing-to-different-registries
+      # 
+      DOCKER_CONFIG: /workspace/.taskctl/.docker
+
+tasks:
+  registry:auth:
+    context: echo:container
+    command:
+      - echo "run some stuff to generate an auth file"
+      - echo "{"auths":...}" > .docker/config.json
+  build:push:image:
+    description: Pushes an image to registry
+    context: docker:build
+    command:
+      - executor --context . --dockerfile Dockerfile --destination dnitsch/app-kaniko-test:0.0.6 

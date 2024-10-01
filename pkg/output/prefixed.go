@@ -1,6 +1,7 @@
 package output
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"regexp"
@@ -35,9 +36,26 @@ func NewPrefixedOutputWriter(t *task.Task, w io.Writer) *prefixedOutputDecorator
 // 	return append(chunks, items)
 // }
 
+const newLine byte = '\n'
+
 func (d *prefixedOutputDecorator) Write(p []byte) (int, error) {
 	p = ansiRegexp.ReplaceAllLiteral(p, []byte{})
-	return d.w.Write([]byte(fmt.Sprintf("\x1b[36m%s\x1b[0m: %s", d.t.Name, p)))
+	bytesWritten := 0
+	byteSlice := bytes.Split(p, []byte{newLine})
+	if len(byteSlice) == 1 {
+		return d.w.Write([]byte(fmt.Sprintf("\x1b[36m%s\x1b[0m: %s\n", d.t.Name, p)))
+	}
+	for _, seq := range bytes.Split(p, []byte{newLine}) {
+		if len(seq) == 0 {
+			return bytesWritten, nil
+		}
+		o, err := d.w.Write([]byte(fmt.Sprintf("\x1b[36m%s\x1b[0m: %s\n", d.t.Name, seq)))
+		if err != nil {
+			return bytesWritten, err
+		}
+		bytesWritten += o
+	}
+	return bytesWritten, nil
 }
 
 func (d *prefixedOutputDecorator) WriteHeader() error {
