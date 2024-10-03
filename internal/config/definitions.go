@@ -127,8 +127,10 @@ type Image struct {
 	// ContainerArgs are additional args used for the container supplied by the user
 	//
 	// e.g. dcoker run (TASKCTL_ARGS...) (CONTAINER_ARGS...) image (command)
+	// The internals will strip out any unwanted/forbidden args
 	//
-	// @DEPRECATED
+	// Args like the switch --privileged and the --volume|-v flag with the value of /var/run/docker.sock:/var/run/docker.sock
+	// will be removed.
 	ContainerArgs []string `mapstructure:"container_args" yaml:"container_args,omitempty" json:"container_args,omitempty"`
 	// Shell will be used to run the command in a specific shell on the container
 	//
@@ -195,8 +197,8 @@ type TaskDefinition struct {
 	// Variables merged with others if any already priovided
 	// These will overwrite any previously set keys
 	Variables EnvVarMapType `mapstructure:"variables" yaml:"variables,omitempty" json:"variables,omitempty" jsonschema:"oneof_type=string;integer"`
-	// ResetContext ensures each invocation of the variation is runs a Reset on the executor.
-	// Currently only applies to a default executor.
+	// ResetContext ensures each invocation of the variation is run with a Reset on the executor.
+	// Currently only applies to a default executor and when run in variations.
 	ResetContext bool `mapstructure:"reset_context" yaml:"reset_context,omitempty" json:"reset_context,omitempty" jsonschema:"default=false"`
 }
 

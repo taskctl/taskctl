@@ -5,6 +5,9 @@ on:
     workflows: ['Test']
     types:
       - completed
+    branches: 
+      - master 
+      - main
 
 permissions:
   contents: write

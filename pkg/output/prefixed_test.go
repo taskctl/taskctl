@@ -5,10 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/Ensono/taskctl/pkg/output"
 	"github.com/Ensono/taskctl/pkg/task"
+	"github.com/sirupsen/logrus"
 )
 
 func TestOutput_prefixedOutputDecorator(t *testing.T) {
@@ -18,11 +17,17 @@ func TestOutput_prefixedOutputDecorator(t *testing.T) {
 	}{
 		"new line added": {
 			input:  []byte("lorem ipsum"),
-			expect: "\x1b[36mtask1\x1b[0m: lorem ipsum\n",
+			expect: "\x1b[36mtask1\x1b[0m: lorem ipsum",
 		},
-		"contains new line": {
+		"contains new lines": {
 			input: []byte(`lorem ipsum
 multiline stuff`),
+			expect: "\x1b[36mtask1\x1b[0m: lorem ipsum\n\x1b[36mtask1\x1b[0m: multiline stuff",
+		},
+		"contains new lines with trailing newline": {
+			input: []byte(`lorem ipsum
+multiline stuff
+`),
 			expect: "\x1b[36mtask1\x1b[0m: lorem ipsum\n\x1b[36mtask1\x1b[0m: multiline stuff\n",
 		},
 	}

@@ -5,6 +5,20 @@ contexts:
     container:
       name: alpine:latest
 
+  # Example: using podman inside a container to build images
+  # 
+  podman:container:
+    container:
+      name: quay.io/podman/stable
+      container_args:
+        - --cap-add=sys_admin 
+        - --cap-add mknod 
+        - --device=/dev/fuse 
+        - --security-opt seccomp=unconfined 
+        - --security-opt label=disable
+    env:
+      DOCKER_CONFIG: /workspace/.taskctl/.docker
+  
   docker:build:
     container:
       # some container with the executor from kaniko in it
@@ -17,14 +31,44 @@ contexts:
       # 
       DOCKER_CONFIG: /workspace/.taskctl/.docker
 
+pipelines:
+  tag:push:image:
+    - task: registry:auth
+    - task: build:push:image
+      depends_on:
+        - registry:auth
+
 tasks:
   registry:auth:
     context: echo:container
     command:
       - echo "run some stuff to generate an auth file"
-      - echo "{"auths":...}" > .docker/config.json
+      - echo "copying auth file to .docker/config.json"
   build:push:image:
-    description: Pushes an image to registry
+    description: | 
+      Pushes an image to registry
+      
+      Example: taskctl run build:push:image -c docs/samples/docker.build.yaml
     context: docker:build
     command:
-      - executor --context . --dockerfile Dockerfile --destination dnitsch/app-kaniko-test:0.0.6 
+      - executor --context . --dockerfile Dockerfile --destination dnitsch/app-kaniko-test:0.0.7
+  
+
+  podman:build:push:
+    context: podman:container
+    description: |
+      builds multi arch images and pushes them to registry
+
+      Example: taskctl run podman:build:push -c docs/samples/docker.build.yaml
+    command:
+      - |
+        podman build --platform=linux/amd64 -f Dockerfile -t dnitsch/app-kaniko-test:${BUILD_VERSION}-linux-amd64 .
+        podman build --platform=linux/arm64 -f Dockerfile -t dnitsch/app-kaniko-test:${BUILD_VERSION}-linux-arm64 .
+        podman manifest create dnitsch/app-kaniko-test:${BUILD_VERSION} \
+          dnitsch/app-kaniko-test:${BUILD_VERSION}-linux-amd64 \
+          dnitsch/app-kaniko-test:${BUILD_VERSION}-linux-arm64
+        podman manifest push dnitsch/app-kaniko-test:${BUILD_VERSION} docker://dnitsch/app-kaniko-test:${BUILD_VERSION}
+        podman manifest rm dnitsch/app-kaniko-test:${BUILD_VERSION}
+    reset_context: true
+    env:
+      BUILD_VERSION: 0.0.14

@@ -254,7 +254,7 @@
             "type": "string"
           },
           "type": "array",
-          "description": "ContainerArgs are additional args used for the container supplied by the user\n\ne.g. dcoker run (TASKCTL_ARGS...) (CONTAINER_ARGS...) image (command)\n\n@DEPRECATED"
+          "description": "ContainerArgs are additional args used for the container supplied by the user\n\ne.g. dcoker run (TASKCTL_ARGS...) (CONTAINER_ARGS...) image (command)\nThe internals will strip out any unwanted/forbidden args\n\nArgs like the switch --privileged and the --volume|-v flag with the value of /var/run/docker.sock:/var/run/docker.sock\nwill be removed."
         },
         "shell": {
           "type": "string",
@@ -448,7 +448,7 @@
         },
         "reset_context": {
           "type": "boolean",
-          "description": "ResetContext ensures each invocation of the variation is runs a Reset on the executor.\nCurrently only applies to a default executor.",
+          "description": "ResetContext ensures each invocation of the variation is run with a Reset on the executor.\nCurrently only applies to a default executor and when run in variations.",
           "default": false
         }
       },

@@ -323,3 +323,105 @@ func TestLoader_contexts(t *testing.T) {
 		t.Errorf("dindContainer incorrectly parsed args: %v", dindArgs)
 	}
 }
+
+func TestLoader_contexts_with_containerArgs(t *testing.T) {
+	ttests := map[string]struct {
+		contexts []byte
+		expect   []string
+	}{
+		"includes forbidden args": {
+			contexts: []byte(`contexts:
+  test:args:
+    container:
+      name: ensono/eir-infrastructure:1.1.251
+      shell: pwsh
+      shell_args:
+        - -NonInteractive
+        - -Command
+      container_args: ["--some","-f","-v","/var/run/docker.sock:/var/run/docker.sock","-other","--safe"]
+    envfile:
+      exclude:
+        - SOURCEVERSIONMESSAGE
+        - JAVA
+        - GO
+        - HOMEBREW`),
+			expect: []string{"run", "--rm", "--env-file", "envfile", "-v",
+				"${PWD}:/workspace/.taskctl", "--some", "-f", "-other", "--safe", "-w",
+				"/workspace/.taskctl", "ensono/eir-infrastructure:1.1.251", "pwsh",
+				"-NonInteractive", "-Command"},
+		},
+		"includes NO forbidden args": {
+			contexts: []byte(`contexts:
+  test:args:
+    container:
+      name: ensono/eir-infrastructure:1.1.251
+      shell: pwsh
+      shell_args:
+        - -NonInteractive
+        - -Command
+      container_args: ["--some","-f","-other","--safe"]
+    envfile:
+      exclude:
+        - SOURCEVERSIONMESSAGE
+        - JAVA
+        - GO
+        - HOMEBREW`),
+			expect: []string{"run", "--rm", "--env-file", "envfile", "-v",
+				"${PWD}:/workspace/.taskctl", "--some", "-f", "-other", "--safe", "-w",
+				"/workspace/.taskctl", "ensono/eir-infrastructure:1.1.251", "pwsh",
+				"-NonInteractive", "-Command"},
+		},
+		"includes ONLY forbidden args": {
+			contexts: []byte(`contexts:
+  test:args:
+    container:
+      name: ensono/eir-infrastructure:1.1.251
+      shell: pwsh
+      shell_args:
+        - -NonInteractive
+        - -Command
+      container_args: ["--privileged","-v","/var/run/docker.sock:/var/run/docker.sock"]
+    envfile:
+      exclude:
+        - SOURCEVERSIONMESSAGE
+        - JAVA
+        - GO
+        - HOMEBREW`),
+			expect: []string{"run", "--rm", "--env-file", "envfile", "-v",
+				"${PWD}:/workspace/.taskctl", "-w",
+				"/workspace/.taskctl", "ensono/eir-infrastructure:1.1.251", "pwsh",
+				"-NonInteractive", "-Command"},
+		},
+	}
+	for name, tt := range ttests {
+		t.Run(name, func(t *testing.T) {
+			dir, _ := os.MkdirTemp(os.TempDir(), "context*")
+			fname := filepath.Join(dir, "context.yaml")
+
+			f, _ := os.Create(fname)
+			defer os.RemoveAll(dir)
+			f.Write(tt.contexts)
+			loader := config.NewConfigLoader(config.NewConfig())
+			loader.WithStrictDecoder()
+			def, err := loader.Load(fname)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			testArgsContainer, ok := def.Contexts["test:args"]
+			if !ok {
+				t.Errorf("test:args context not found")
+			}
+
+			if !testArgsContainer.Executable.IsContainer {
+				t.Errorf("\ntest:args IsContainer not correctly processed\n\ngot: %v\nwanted: false", testArgsContainer.Executable.IsContainer)
+			}
+
+			gotArgs := testArgsContainer.Executable.BuildArgsWithEnvFile("envfile")
+
+			if !slices.Equal(gotArgs, tt.expect) {
+				t.Errorf("test:args incorrectly parsed args: %v\nwanted: %v", gotArgs, tt.expect)
+			}
+		})
+	}
+}
