@@ -2,7 +2,7 @@ name: Release
 
 on:
   workflow_run:
-    workflows: ['Test']
+    workflows: ['Lint and Test']
     types:
       - completed
     branches: 
@@ -15,7 +15,7 @@ permissions:
 jobs:
   set-version-tag:
     if: ${{ github.event.workflow_run.head_branch == 'master' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       semVer: ${{ steps.gitversion.outputs.semVer }}
     steps:
@@ -33,7 +33,7 @@ jobs:
         id: gitversion
 
   release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container:
       image: golang:1.23-bullseye
     needs: set-version-tag

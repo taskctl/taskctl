@@ -1,4 +1,4 @@
-name: Test
+name: Lint and Test
 on: 
   pull_request:
     branches: 
@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   set-version-tag:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       semVer: ${{ steps.gitversion.outputs.semVer }}
     steps:
@@ -33,12 +33,25 @@ jobs:
       - name: Set SemVer Version
         uses: gittools/actions/gitversion/execute@v3.0
         id: gitversion
-  build:
+  # Runs in parallel
+  lint:
+    name: Lint
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6.1.0
+        with:
+          version: v1.61.0
+          install-mode: binary
+  test:
     name: Test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # container:
     #   image: golang:1.23-bullseye
-    needs: set-version-tag
+    needs: 
+      - set-version-tag
+      - lint
     env:
       TASKCTL_CONFIG_FILE: tasks.yaml
       SEMVER: ${{ needs.set-version-tag.outputs.semVer }}
@@ -69,8 +82,6 @@ jobs:
     - name: Test
       run: |
         go run cmd/main.go run pipeline test:unit
-        # mkdir -p .coverage
-        # go test ./... -v -race -mod=readonly
     
     - name: Publish Junit style Test Report
       uses: mikepenz/action-junit-report@v3
