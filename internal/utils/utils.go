@@ -242,17 +242,19 @@ func MustGetUserHomeDir() string {
 }
 
 // ReadEnvFile reads env file inv `k=v` format
-func ReadEnvFile(filename string) (map[string]string, error) {
-	f, err := os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-
+func ReadEnvFile(r io.ReadCloser) (map[string]string, error) {
 	envs := make(map[string]string)
-	envscanner := bufio.NewScanner(f)
+	envscanner := bufio.NewScanner(r)
+	defer r.Close()
 	for envscanner.Scan() {
 		kv := strings.Split(envscanner.Text(), "=")
-		envs[kv[0]] = kv[1]
+		// ensure an unset variable gets passed
+		// through as zerolength string
+		if len(kv) >= 2 {
+			// ensure EnvVar values which themselves include
+			// an `=` equals are correctly set
+			envs[kv[0]] = strings.Join(kv[1:], "=")
+		}
 	}
 
 	if err := envscanner.Err(); err != nil {

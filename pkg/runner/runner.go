@@ -5,6 +5,7 @@ package runner
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -18,6 +19,8 @@ import (
 	"github.com/Ensono/taskctl/pkg/variables"
 	"github.com/sirupsen/logrus"
 )
+
+var ErrArtifactFailed = errors.New("artifact not processed")
 
 // Runner describes tasks runner interface
 type Runner interface {
@@ -335,7 +338,11 @@ func (r *TaskRunner) storeTaskOutput(t *task.Task) error {
 		return nil
 	}
 	if t.Artifacts.Type == task.DotEnvArtifactType {
-		dotEnvVars, err := utils.ReadEnvFile(t.Artifacts.Path)
+		b, err := os.Open(t.Artifacts.Path)
+		if err != nil {
+			return fmt.Errorf("failed to open, %v\n%w", err, ErrArtifactFailed)
+		}
+		dotEnvVars, err := utils.ReadEnvFile(b)
 		if err != nil {
 			return err
 		}

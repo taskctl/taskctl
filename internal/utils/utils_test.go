@@ -1,6 +1,7 @@
 package utils_test
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -401,4 +402,71 @@ func TestUtils_Binary(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Borrow from stdlib
+type alwaysError struct{}
+
+func (alwaysError) Read(p []byte) (int, error) {
+	return 0, io.ErrUnexpectedEOF
+}
+
+type closerWrapper struct {
+	io.Reader
+}
+
+func (closerWrapper) Close() error {
+	return nil
+}
+func TestReadEvnFile(t *testing.T) {
+	t.Parallel()
+	ttests := map[string]struct {
+		readCloser io.ReadCloser
+		expectKeys []string
+		expectVals []string
+	}{
+		"no unset vars": {
+			closerWrapper{bytes.NewReader([]byte(`FOO=bar
+BAZ=qux`))},
+			[]string{"FOO", "BAZ"},
+			[]string{"bar", "qux"},
+		},
+		"with unset vars": {
+			closerWrapper{bytes.NewReader([]byte(`FOO=bar
+BAZ=`))},
+			[]string{"FOO", "BAZ"},
+			[]string{"bar", ""},
+		},
+		"with vars that include =": {
+			closerWrapper{bytes.NewReader([]byte(`FOO=bar
+BAZ=
+MULTI=somekey=someval
+ANOTHER=region=123,foo=bar;colon=true|pipe=fhass`))},
+			[]string{"FOO", "BAZ", "MULTI", "ANOTHER"},
+			[]string{"bar", "", "somekey=someval", "region=123,foo=bar;colon=true|pipe=fhass"},
+		},
+	}
+	for name, tt := range ttests {
+		t.Run(name, func(t *testing.T) {
+			got, err := utils.ReadEnvFile(tt.readCloser)
+			if err != nil {
+				t.Fatal("unable to read file for env")
+			}
+			for _, k := range tt.expectKeys {
+				val, found := got[k]
+				if !found {
+					t.Errorf("key (%s) not found in map (%v)\n", k, got)
+				}
+				if !slices.Contains(tt.expectVals, val) {
+					t.Errorf("val (%s) not found in map (%v)\n", val, got)
+				}
+			}
+		})
+	}
+
+	t.Run("errors on bad input", func(t *testing.T) {
+		if _, err := utils.ReadEnvFile(closerWrapper{alwaysError{}}); err == nil {
+			t.Fatal("got nil, expected error")
+		}
+	})
 }

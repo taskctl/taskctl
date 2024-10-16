@@ -18,7 +18,10 @@ contexts:
         - --security-opt label=disable
     env:
       DOCKER_CONFIG: /workspace/.taskctl/.docker
-  
+    envfile:
+      exclude:
+        - HOME
+
   docker:build:
     container:
       # some container with the executor from kaniko in it
@@ -44,6 +47,12 @@ tasks:
     command:
       - echo "run some stuff to generate an auth file"
       - echo "copying auth file to .docker/config.json"
+      - echo "FOO=bar" > .env
+    artifacts:
+      path: .env
+      type: file
+
+
   build:push:image:
     description: | 
       Pushes an image to registry
@@ -53,7 +62,6 @@ tasks:
     command:
       - executor --context . --dockerfile Dockerfile --destination dnitsch/app-kaniko-test:0.0.7
   
-
   podman:build:push:
     context: podman:container
     description: |
@@ -62,13 +70,13 @@ tasks:
       Example: taskctl run podman:build:push -c docs/samples/docker.build.yaml
     command:
       - |
-        podman build --platform=linux/amd64 -f Dockerfile -t dnitsch/app-kaniko-test:${BUILD_VERSION}-linux-amd64 .
-        podman build --platform=linux/arm64 -f Dockerfile -t dnitsch/app-kaniko-test:${BUILD_VERSION}-linux-arm64 .
-        podman manifest create dnitsch/app-kaniko-test:${BUILD_VERSION} \
-          dnitsch/app-kaniko-test:${BUILD_VERSION}-linux-amd64 \
-          dnitsch/app-kaniko-test:${BUILD_VERSION}-linux-arm64
-        podman manifest push dnitsch/app-kaniko-test:${BUILD_VERSION} docker://dnitsch/app-kaniko-test:${BUILD_VERSION}
-        podman manifest rm dnitsch/app-kaniko-test:${BUILD_VERSION}
+        podman build --platform=linux/amd64 -f Dockerfile -t dnitsch/app-podman-test:${BUILD_VERSION}-linux-amd64 .
+        podman build --platform=linux/arm64 -f Dockerfile -t dnitsch/app-podman-test:${BUILD_VERSION}-linux-arm64 .
+        podman manifest create dnitsch/app-podman-test:${BUILD_VERSION} \
+          dnitsch/app-podman-test:${BUILD_VERSION}-linux-amd64 \
+          dnitsch/app-podman-test:${BUILD_VERSION}-linux-arm64
+        podman manifest push dnitsch/app-podman-test:${BUILD_VERSION} docker://dnitsch/app-podman-test:${BUILD_VERSION}
+        podman manifest rm dnitsch/app-podman-test:${BUILD_VERSION}
     reset_context: true
     env:
       BUILD_VERSION: 0.0.14
