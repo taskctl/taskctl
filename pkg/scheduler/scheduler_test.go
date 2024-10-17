@@ -31,25 +31,28 @@ func (t2 TestTaskRunner) Cancel() {}
 func (t2 TestTaskRunner) Finish() {}
 
 func TestExecutionGraph_Scheduler(t *testing.T) {
-	stage1 := &scheduler.Stage{
-		Name: "stage1",
-		Task: task.FromCommands("t1", "/usr/bin/true"),
-	}
-	stage2 := &scheduler.Stage{
-		Name:      "stage2",
-		Task:      task.FromCommands("t2", "/usr/bin/false"),
-		DependsOn: []string{"stage1"},
-	}
-	stage3 := &scheduler.Stage{
-		Name:      "stage3",
-		Task:      task.FromCommands("t2", "/usr/bin/false"),
-		DependsOn: []string{"stage2"},
-	}
-	stage4 := &scheduler.Stage{
-		Name:      "stage4",
-		Task:      task.FromCommands("t3", "true"),
-		DependsOn: []string{"stage3"},
-	}
+	stage1 := scheduler.NewStage(func(s *scheduler.Stage) {
+		s.Name = "stage1"
+		s.Task = task.FromCommands("t1", "/usr/bin/true")
+	})
+	stage2 := scheduler.NewStage(func(s *scheduler.Stage) {
+		s.Name = "stage2"
+		s.Task = task.FromCommands("t2", "/usr/bin/false")
+		s.DependsOn = []string{"stage1"}
+	})
+
+	stage3 := scheduler.NewStage(func(s *scheduler.Stage) {
+		s.Name = "stage3"
+		s.Task = task.FromCommands("t2", "/usr/bin/false")
+		s.DependsOn = []string{"stage2"}
+	})
+
+	stage4 := scheduler.NewStage(func(s *scheduler.Stage) {
+		s.Name = "stage4"
+		s.Task = task.FromCommands("t3", "true")
+		s.DependsOn = []string{"stage3"}
+
+	})
 
 	graph, err := scheduler.NewExecutionGraph(stage1, stage2, stage3, stage4)
 	if err != nil {
@@ -68,29 +71,31 @@ func TestExecutionGraph_Scheduler(t *testing.T) {
 		t.Fatal()
 	}
 
-	if stage3.Status != scheduler.StatusCanceled || stage4.Status != scheduler.StatusCanceled {
+	if stage3.Status.Load() != scheduler.StatusCanceled || stage4.Status.Load() != scheduler.StatusCanceled {
 		t.Fatal("stage3 was not cancelled")
 	}
 }
 
 func TestExecutionGraph_Scheduler_AllowFailure(t *testing.T) {
-	stage1 := &scheduler.Stage{
-		Name: "stage1",
-		Task: task.FromCommands("t1", "true"),
-	}
-	stage2 := &scheduler.Stage{
-		Name:         "stage2",
-		Task:         task.FromCommands("t2", "false"),
-		AllowFailure: true,
-		DependsOn:    []string{"stage1"},
-	}
-	stage3 := &scheduler.Stage{
-		Name:      "stage3",
-		Task:      task.FromCommands("t3", "{{.command}}"),
-		DependsOn: []string{"stage2"},
-		Variables: variables.FromMap(map[string]string{"command": "true"}),
-		Env:       variables.NewVariables(),
-	}
+	stage1 := scheduler.NewStage(func(s *scheduler.Stage) {
+		s.Name = "stage1"
+		s.Task = task.FromCommands("t1", "true")
+
+	})
+	stage2 := scheduler.NewStage(func(s *scheduler.Stage) {
+		s.Name = "stage2"
+		s.Task = task.FromCommands("t2", "false")
+		s.AllowFailure = true
+		s.DependsOn = []string{"stage1"}
+
+	})
+	stage3 := scheduler.NewStage(func(s *scheduler.Stage) {
+		s.Name = "stage3"
+		s.Task = task.FromCommands("t3", "{{.command}}")
+		s.DependsOn = []string{"stage2"}
+		s.Variables = variables.FromMap(map[string]string{"command": "true"})
+		s.Env = variables.NewVariables()
+	})
 
 	graph, err := scheduler.NewExecutionGraph(stage1, stage2, stage3)
 	if err != nil {
@@ -105,7 +110,7 @@ func TestExecutionGraph_Scheduler_AllowFailure(t *testing.T) {
 		t.Fatalf("unexpected error %v", err)
 	}
 
-	if stage3.Status == scheduler.StatusCanceled {
+	if stage3.Status.Load() == scheduler.StatusCanceled {
 		t.Fatal("stage3 was cancelled")
 	}
 
@@ -117,18 +122,19 @@ func TestExecutionGraph_Scheduler_AllowFailure(t *testing.T) {
 }
 
 func TestSkippedStage(t *testing.T) {
-	stage1 := &scheduler.Stage{
-		Name:      "stage1",
-		Task:      task.FromCommands("t1", "true"),
-		Condition: "true",
-	}
-	stage2 := &scheduler.Stage{
-		Name:         "stage2",
-		Task:         task.FromCommands("t2", "false"),
-		AllowFailure: true,
-		DependsOn:    []string{"stage1"},
-		Condition:    "false",
-	}
+	stage1 := scheduler.NewStage(func(s *scheduler.Stage) {
+		s.Name = "stage1"
+		s.Task = task.FromCommands("t1", "true")
+		s.Condition = "true"
+
+	})
+	stage2 := scheduler.NewStage(func(s *scheduler.Stage) {
+		s.Name = "stage2"
+		s.Task = task.FromCommands("t2", "false")
+		s.AllowFailure = true
+		s.DependsOn = []string{"stage1"}
+		s.Condition = "false"
+	})
 
 	graph, err := scheduler.NewExecutionGraph(stage1, stage2)
 	if err != nil {
@@ -143,16 +149,17 @@ func TestSkippedStage(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if stage1.Status != scheduler.StatusDone || stage2.Status != scheduler.StatusSkipped {
+	if stage1.Status.Load() != scheduler.StatusDone || stage2.Status.Load() != scheduler.StatusSkipped {
 		t.Error()
 	}
 }
 
 func TestScheduler_Cancel(t *testing.T) {
-	stage1 := &scheduler.Stage{
-		Name: "stage1",
-		Task: task.FromCommands("t1", "sleep 60"),
-	}
+	stage1 := scheduler.NewStage(func(s *scheduler.Stage) {
+		s.Name = "stage1"
+		s.Task = task.FromCommands("t1", "sleep 60")
+
+	})
 
 	graph, err := scheduler.NewExecutionGraph(stage1)
 	if err != nil {
@@ -177,18 +184,19 @@ func TestScheduler_Cancel(t *testing.T) {
 }
 
 func TestConditionErroredStage(t *testing.T) {
-	stage1 := &scheduler.Stage{
-		Name:      "stage1",
-		Task:      task.FromCommands("t1", "true"),
-		Condition: "true",
-	}
-	stage2 := &scheduler.Stage{
-		Name:         "stage2",
-		Task:         task.FromCommands("t2", "false"),
-		AllowFailure: true,
-		DependsOn:    []string{"stage1"},
-		Condition:    "/unknown-bin",
-	}
+	stage1 := scheduler.NewStage(func(s *scheduler.Stage) {
+		s.Name = "stage1"
+		s.Task = task.FromCommands("t1", "true")
+		s.Condition = "true"
+	})
+
+	stage2 := scheduler.NewStage(func(s *scheduler.Stage) {
+		s.Name = "stage2"
+		s.Task = task.FromCommands("t2", "false")
+		s.AllowFailure = true
+		s.DependsOn = []string{"stage1"}
+		s.Condition = "/unknown-bin"
+	})
 
 	graph, err := scheduler.NewExecutionGraph(stage1, stage2)
 	if err != nil {
@@ -203,7 +211,7 @@ func TestConditionErroredStage(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if stage1.Status != scheduler.StatusDone || stage2.Status != scheduler.StatusError {
+	if stage1.Status.Load() != scheduler.StatusDone || stage2.Status.Load() != scheduler.StatusError {
 		t.Error()
 	}
 }
@@ -215,8 +223,15 @@ func ExampleScheduler_Schedule() {
 	s := scheduler.NewScheduler(r)
 
 	graph, err := scheduler.NewExecutionGraph(
-		&scheduler.Stage{Name: "format", Task: format},
-		&scheduler.Stage{Name: "build", Task: build, DependsOn: []string{"format"}},
+		scheduler.NewStage(func(s *scheduler.Stage) {
+			s.Name = "format"
+			s.Task = format
+		}),
+		scheduler.NewStage(func(s *scheduler.Stage) {
+			s.Name = "build"
+			s.Task = build
+			s.DependsOn = []string{"format"}
+		}),
 	)
 	if err != nil {
 		return

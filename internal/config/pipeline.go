@@ -26,17 +26,17 @@ func buildPipeline(g *scheduler.ExecutionGraph, stages []*PipelineDefinition, cf
 			}
 		}
 
-		stage := &scheduler.Stage{
-			Name:         def.Name,
-			Condition:    def.Condition,
-			Task:         stageTask,
-			Pipeline:     stagePipeline,
-			DependsOn:    def.DependsOn,
-			Dir:          def.Dir,
-			AllowFailure: def.AllowFailure,
-			Env:          variables.FromMap(def.Env),
-			Variables:    variables.FromMap(def.Variables),
-		}
+		stage := scheduler.NewStage(func(s *scheduler.Stage) {
+			s.Name = def.Name
+			s.Condition = def.Condition
+			s.Task = stageTask
+			s.Pipeline = stagePipeline
+			s.DependsOn = def.DependsOn
+			s.Dir = def.Dir
+			s.AllowFailure = def.AllowFailure
+			s.Env = variables.FromMap(def.Env)
+			s.Variables = variables.FromMap(def.Variables)
+		})
 
 		if stage.Dir != "" {
 			stage.Task.Dir = stage.Dir

@@ -22,6 +22,7 @@ type ExecutionGraph struct {
 // NewExecutionGraph creates new ExecutionGraph instance.
 // It accepts zero or more stages and adds them to resulted graph
 func NewExecutionGraph(stages ...*Stage) (*ExecutionGraph, error) {
+
 	graph := &ExecutionGraph{
 		nodes: make(map[string]*Stage),
 		from:  make(map[string][]string),
@@ -70,9 +71,25 @@ func (g *ExecutionGraph) addEdge(from string, to string) error {
 	return nil
 }
 
-// Nodes returns ExecutionGraph stages
+// Nodes returns ExecutionGraph stages - unary tree itself
+// Node names are used
 func (g *ExecutionGraph) Nodes() map[string]*Stage {
 	return g.nodes
+}
+
+// NodesList returns a flattened list of top level tasks/pipelines
+func (g *ExecutionGraph) NodesList() []Stage {
+	nl := []Stage{}
+	for _, node := range g.Nodes() {
+		nl = append(nl, *node)
+	}
+	return nl
+}
+
+// Generate walks the graph for the purposes of creating
+// a generated file(s) for CI yaml definition purposes
+func (g *ExecutionGraph) Generate() string {
+	return fmt.Sprintf("%v", g.nodes)
 }
 
 // Node returns stage by its name
@@ -95,6 +112,8 @@ func (g *ExecutionGraph) To(name string) []string {
 	return g.to[name]
 }
 
+// cycleDefs checks the import cycle definition
+// Returns an error when a task or pipeline depends on itself
 func (g *ExecutionGraph) cycleDfs(t string, visited map[string]bool) error {
 	if visited[t] {
 		return ErrCycleDetected

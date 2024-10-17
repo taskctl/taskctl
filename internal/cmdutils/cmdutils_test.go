@@ -16,13 +16,16 @@ func TestPrintSummary(t *testing.T) {
 			t.Fatal("got 0, wanted bytes written")
 		}
 	})
+
 	t.Run("one stage run", func(t *testing.T) {
 		out := bytes.Buffer{}
 		graph, _ := scheduler.NewExecutionGraph()
-		graph.AddStage(&scheduler.Stage{
-			Name:   "foo",
-			Status: scheduler.StatusDone,
+		stage := scheduler.NewStage(func(s *scheduler.Stage) {
+			s.Name = "foo"
 		})
+
+		stage.UpdateStatus(scheduler.StatusDone)
+		graph.AddStage(stage)
 		cmdutils.PrintSummary(graph, &out)
 		if len(out.Bytes()) == 0 {
 			t.Fatal("got 0, wanted bytes written")

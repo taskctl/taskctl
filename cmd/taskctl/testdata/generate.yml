@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=../../../schemas/schema_v1.json
+
+contexts:
+  podman:
+    container:
+      name: alpine:latest
+    env: 
+      GLOBAL_VAR: this is it
+    envfile:
+      exclude:
+        - HOME
+
+pipelines:
+  graph:pipeline1:
+    - task: graph:task1 # => graph:pipeline1__graph:task1__executionOrder
+    - task: graph:task2
+      depends_on: [graph:task1]
+    - task: graph:task3
+      depends_on: [graph:task1]
+    - pipeline: graph:pipeline2 # pipeline: graph:pipeline2 - fix cycle detection
+      depends_on: [graph:task3]
+
+  graph:pipeline2:
+    - task: graph:task1
+
+tasks:
+  graph:task1:
+    command: "echo 'hello, task 1!'"
+    context: podman
+
+  graph:task2:
+    command: "echo 'hello, task 2!'"
+
+  graph:task3:
+    command: "echo 'hello, task3!'"
+    env:
+      FOO: bar
+

@@ -119,6 +119,7 @@ func (tc *TaskCtlCmd) InitCommand() error {
 	newInitCmd(tc)
 	newValidateCmd(tc)
 	newWatchCmd(tc)
+	newGenerateCmd(tc)
 	return nil
 }
 

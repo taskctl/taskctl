@@ -1,3 +1,4 @@
+// package Cmdutils provides testable helpers to commands only
 package cmdutils
 
 import (
@@ -46,14 +47,9 @@ func DisplayTaskSelection(conf *config.Config) (taskOrPipelineSelected string, e
 
 // printSummary is a TUI helper
 func PrintSummary(g *scheduler.ExecutionGraph, chanOut io.Writer) {
-	var stages = make([]*scheduler.Stage, 0)
-	for _, stage := range g.Nodes() {
-		stages = append(stages, stage)
-	}
+	stages := g.NodesList()
 
-	sort.Slice(stages, func(i, j int) bool {
-		return stages[j].Start.Nanosecond() > stages[i].Start.Nanosecond()
-	})
+	sort.Sort(scheduler.StageByStartTime(stages))
 
 	fmt.Fprintf(chanOut, BOLD_TERMINAL, "Summary: \n")
 
