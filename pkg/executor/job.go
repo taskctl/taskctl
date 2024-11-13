@@ -11,8 +11,8 @@ import (
 type Job struct {
 	Command string
 	Dir     string
-	Env     variables.Container
-	Vars    variables.Container
+	Env     *variables.Variables
+	Vars    *variables.Variables
 	Timeout *time.Duration
 
 	Stdout, Stderr io.Writer

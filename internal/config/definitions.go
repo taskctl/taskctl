@@ -44,7 +44,11 @@ type ConfigDefinition struct {
 	// - task
 	// - commandline.
 	// Variables can be used inside templating using the text/template go package
-	Variables EnvVarMapType `mapstructure:"variables" yaml:"variables" json:"variables,omitempty"` // jsonschema:"additional_properties_type=string;integer"`
+	Variables EnvVarMapType `mapstructure:"variables" yaml:"variables" json:"variables,omitempty"`
+	// Generator defines the options for the desired CI yaml generation
+	// Currently these are just map[string]any so that the user can specify the desired behaviour
+	// NOTE: will provide no build time safety
+	Generator *Generator `mapstructure:"ci_meta,omitempty" yaml:"ci_meta,omitempty" json:"ci_meta,omitempty"`
 }
 
 type ContextDefinition struct {
@@ -89,57 +93,7 @@ type ContextDefinition struct {
 	//     # shell: sh # default sh
 	//     # args: nil
 	// ```
-	Container *Image `mapstructure:"container" yaml:"container,omitempty" json:"container,omitempty"`
-}
-
-// Container is the specific context for containers
-// only available to docker API compliant implementations
-//
-// e.g. docker and podman
-//
-// The aim is to remove some of the boilerplate away from the existing more
-// generic context and introduce a specific context for tasks run in containers.
-type Container struct {
-	// Image
-	Image *Image `mapstructure:"image" yaml:"image,omitempty" json:"image,omitempty"`
-}
-
-type Image struct {
-	// Name is the name of the container
-	//
-	// can be specified in the following formats
-	//
-	// - <image-name> (Same as using <image-name> with the latest tag)
-	//
-	// - <image-name>:<tag>
-	//
-	// - <image-name>@<digest>
-	//
-	// If the known runtime is podman it should include the registry domain
-	// e.g. `docker.io/alpine:latest`
-	Name string `mapstructure:"name" yaml:"name" json:"name"`
-	// Entrypoint Overwrites the default ENTRYPOINT of the image
-	Entrypoint string `mapstructure:"entrypoint" yaml:"entrypoint,omitempty" json:"entrypoint,omitempty"`
-	// EnableDinD mounts the docker sock...
-	//
-	// highly discouraged
-	EnableDinD bool `mapstructure:"enable_dind" yaml:"enable_dind,omitempty" json:"enable_dind,omitempty"`
-	// ContainerArgs are additional args used for the container supplied by the user
-	//
-	// e.g. dcoker run (TASKCTL_ARGS...) (CONTAINER_ARGS...) image (command)
-	// The internals will strip out any unwanted/forbidden args
-	//
-	// Args like the switch --privileged and the --volume|-v flag with the value of /var/run/docker.sock:/var/run/docker.sock
-	// will be removed.
-	ContainerArgs []string `mapstructure:"container_args" yaml:"container_args,omitempty" json:"container_args,omitempty"`
-	// Shell will be used to run the command in a specific shell on the container
-	//
-	// Must exist in the container
-	Shell string `mapstructure:"shell" yaml:"shell,omitempty" json:"shell,omitempty"`
-	// Args are additional args to pass to the shell if provided
-	//
-	// // e.g. dcoker run (TASKCTL_ARGS...) (CONTAINER_ARGS...) image (shell) (SHELL_ARGS...) (command)
-	ShellArgs []string `mapstructure:"shell_args" yaml:"shell_args,omitempty" json:"shell_args,omitempty"`
+	Container *utils.Container `mapstructure:"container" yaml:"container,omitempty" json:"container,omitempty"`
 }
 
 type PipelineDefinition struct {
@@ -161,10 +115,20 @@ type PipelineDefinition struct {
 	// Dir is the place where to run the task(s) in.
 	// If empty - currentDir is used
 	Dir string `mapstructure:"dir" yaml:"dir,omitempty" json:"dir,omitempty"`
-	// Env is the Key: Value map of env vars to inject into the tasks
+	// Envfile will overwrite keys set in env
+	Envfile *utils.Envfile `mapstructure:"envfile" yaml:"envfile,omitempty" json:"envfile,omitempty"`
+	// Env is the Key: Value map of env vars to inject into the tasks within this pipeline
 	Env EnvVarMapType `mapstructure:"env" yaml:"env,omitempty" json:"env,omitempty"`
 	// Variables is the Key: Value map of vars vars to inject into the tasks
 	Variables EnvVarMapType `mapstructure:"variables" yaml:"variables,omitempty" json:"variables,omitempty"`
+	// Generator PipelineLevel
+	Generator map[string]any `mapstructure:"ci_meta,omitempty" yaml:"ci_meta,omitempty" json:"ci_meta,omitempty"`
+}
+
+type Generator struct {
+	// Version sets the version of taskctl to use for generation of default tasks, defaults to the current version of the binary
+	Version       string         `mapstructure:"version" yaml:"version,omitempty" json:"version,omitempty"`
+	TargetOptions map[string]any `mapstructure:"targetOpts" yaml:"targetOpts,omitempty" json:"targetOpts,omitempty"`
 }
 
 type TaskDefinition struct {
@@ -190,16 +154,19 @@ type TaskDefinition struct {
 	AllowFailure bool           `mapstructure:"allow_failure" yaml:"allow_failure,omitempty" json:"allow_failure,omitempty"`
 	Interactive  bool           `mapstructure:"interactive" yaml:"interactive,omitempty" json:"interactive,omitempty"`
 	Artifacts    *task.Artifact `mapstructure:"artifacts" yaml:"artifacts,omitempty" json:"artifacts,omitempty"`
-	Env          EnvVarMapType  `mapstructure:"env" yaml:"env,omitempty" json:"env,omitempty"`
+	// Env key=value map that will overwrite everything set at a higher level
+	Env EnvVarMapType `mapstructure:"env" yaml:"env,omitempty" json:"env,omitempty"`
 	// EnvFile string pointing to the file that could be read in as an envFile
 	// contents will be merged with the Env (os.Environ())
 	Envfile *utils.Envfile `mapstructure:"envfile" yaml:"envfile,omitempty" json:"envfile,omitempty"`
 	// Variables merged with others if any already priovided
 	// These will overwrite any previously set keys
-	Variables EnvVarMapType `mapstructure:"variables" yaml:"variables,omitempty" json:"variables,omitempty" jsonschema:"oneof_type=string;integer"`
+	Variables EnvVarMapType `mapstructure:"variables" yaml:"variables,omitempty" json:"variables,omitempty"`
 	// ResetContext ensures each invocation of the variation is run with a Reset on the executor.
 	// Currently only applies to a default executor and when run in variations.
 	ResetContext bool `mapstructure:"reset_context" yaml:"reset_context,omitempty" json:"reset_context,omitempty" jsonschema:"default=false"`
+	// Generator is the CI meta properties that will only be used during a generate process
+	Generator map[string]any `mapstructure:"ci_meta,omitempty" yaml:"ci_meta,omitempty" json:"ci_meta,omitempty"`
 }
 
 type WatcherDefinition struct {

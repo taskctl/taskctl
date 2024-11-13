@@ -1,19 +1,13 @@
+// Package variables is a thin wrapper over the sync.Map package
+//
+// TODO: The sync.Map implementation may not really be necessary anymore since we denormalize the graph
+// any/all vars and env vars will have their own address space so collision _will_ not occur.
+// "¯\_(ツ)_/¯"
 package variables
 
 import (
 	"sync"
 )
-
-// Container is an interface of variables container.
-// Is is simple key-value structure.
-type Container interface {
-	Set(string, interface{})
-	Get(string) interface{}
-	Has(string) bool
-	Map() map[string]interface{}
-	Merge(Container) Container
-	With(string, interface{}) Container
-}
 
 // Variables is struct containing simple key-value string values
 type Variables struct {
@@ -22,11 +16,12 @@ type Variables struct {
 
 // NewVariables creates new Variables instance
 func NewVariables() *Variables {
+	// sync.Map is lazy initialized
 	return &Variables{}
 }
 
 // FromMap creates new Variables instance from given map
-func FromMap(values map[string]string) Container {
+func FromMap(values map[string]string) *Variables {
 	vars := &Variables{}
 	for k, v := range values {
 		vars.m.Store(k, v)
@@ -36,12 +31,12 @@ func FromMap(values map[string]string) Container {
 }
 
 // Set stores value with given key
-func (vars *Variables) Set(key string, value interface{}) {
+func (vars *Variables) Set(key string, value any) {
 	vars.m.Store(key, value)
 }
 
 // Get returns value by given key
-func (vars *Variables) Get(key string) interface{} {
+func (vars *Variables) Get(key string) any {
 	v, ok := vars.m.Load(key)
 	if !ok {
 		return ""
@@ -66,8 +61,13 @@ func (vars *Variables) Map() map[string]interface{} {
 	return m
 }
 
-// Merge merges two Containers into new one
-func (vars *Variables) Merge(src Container) Container {
+// Merge merges into current container with the src Container
+// src will overwrite the existing keys if exists
+// returns a the merged Container
+//
+// TODO: since we are dealing with pointers this does not need to return anything
+// instead update only the underlying reference, create new story for this.
+func (vars *Variables) Merge(src *Variables) *Variables {
 	dst := &Variables{}
 
 	if vars != nil {
@@ -83,11 +83,17 @@ func (vars *Variables) Merge(src Container) Container {
 	return dst
 }
 
-// With creates new container and sets key to given value
-func (vars *Variables) With(key string, value interface{}) Container {
-	dst := &Variables{}
-	dst = dst.Merge(vars).(*Variables)
-	dst.Set(key, value)
+func (vars *Variables) MergeV2(src *Variables) *Variables {
+	for k, v := range src.Map() {
+		vars.Set(k, v)
+	}
+	return vars
+}
 
+// With creates new container and sets key to given value
+func (vars *Variables) With(key string, value interface{}) *Variables {
+	dst := &Variables{}
+	dst = dst.Merge(vars)
+	dst.Set(key, value)
 	return dst
 }

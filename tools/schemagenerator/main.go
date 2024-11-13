@@ -1,4 +1,6 @@
-// package schemagenerator
+//go:build ignore
+
+// Package schemagenerator
 //
 // Generates the schema for the config file
 // Accepts the dir to generate the output in
@@ -19,6 +21,10 @@ func main() {
 	var dir string
 	flag.StringVar(&dir, "dir", ".", "Directory to use as base")
 	flag.Parse()
+	generateSchemaForTaskCtl(dir)
+}
+
+func generateSchemaForTaskCtl(dir string) {
 
 	r := new(jsonschema.Reflector)
 	if err := r.AddGoComments("github.com/Ensono/taskctl", "./"); err != nil {

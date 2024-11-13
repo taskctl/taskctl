@@ -4,12 +4,18 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/Ensono/taskctl/pkg/output"
 )
 
 func TestDefaultExecutor_Execute(t *testing.T) {
-	e, err := NewDefaultExecutor(nil, io.Discard, io.Discard)
+	t.Parallel()
+	b := &bytes.Buffer{}
+	output := output.NewSafeWriter(b)
+	e, err := NewDefaultExecutor(nil, output, io.Discard)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -18,12 +24,11 @@ func TestDefaultExecutor_Execute(t *testing.T) {
 	to := 1 * time.Minute
 	job1.Timeout = &to
 
-	output, err := e.Execute(context.Background(), job1)
-	if err != nil {
+	if _, err := e.Execute(context.Background(), job1); err != nil {
 		t.Fatal(err)
 	}
 
-	if !bytes.Contains(output, []byte("success")) {
+	if !strings.Contains(output.String(), "success") {
 		t.Error()
 	}
 

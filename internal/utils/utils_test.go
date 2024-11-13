@@ -279,6 +279,7 @@ fdsggfd gdf`},
 }
 
 func TestUtils_ConvertToMapOfStrings(t *testing.T) {
+	t.Parallel()
 	in := make(map[string]any)
 	in["str"] = "string"
 	in["int"] = 123
@@ -297,7 +298,44 @@ func TestUtils_ConvertToMapOfStrings(t *testing.T) {
 	}
 }
 
-func TestUtils_ConvertStringToMachineFriendly(t *testing.T) {
+func TestUtils_ConvertToMachineFriendly(t *testing.T) {
+	ttests := map[string]struct {
+		input  string
+		expect string
+	}{
+		"with :": {
+			"task:123",
+			"task__e__123",
+		},
+		"with space": {
+			"task name with space",
+			"task__f__name__f__with__f__space",
+		},
+		"with existing _": {
+			"task123:with space and _",
+			"task123__e__with__f__space__f__and__f___",
+		},
+		"with existing _ -> pipeline pointer": {
+			"pipeline1->task123:with space and _",
+			"pipeline1__a__task123__e__with__f__space__f__and__f___",
+		},
+		"with existing _ -> pipeline pointer in the middle": {
+			"pipeline1->task123:with space and _->task:567",
+			"pipeline1__a__task123__e__with__f__space__f__and__f_____a__task__e__567",
+		},
+	}
+	for name, tt := range ttests {
+		t.Run(name, func(t *testing.T) {
+			got := utils.ConvertToMachineFriendly(tt.input)
+			if got != tt.expect {
+				t.Errorf("got %s\nwanted %q\n", got, tt.expect)
+			}
+		})
+	}
+}
+
+func TestUtils_B62Encode_Decode(t *testing.T) {
+	t.Parallel()
 	ttests := map[string]struct {
 		input string
 	}{
@@ -310,11 +348,17 @@ func TestUtils_ConvertStringToMachineFriendly(t *testing.T) {
 		"with existing _": {
 			"task123:with space and _",
 		},
+		"with existing _ -> pipeline pointer": {
+			"pipeline1->task123:with space and _",
+		},
+		"with existing _ -> pipeline pointer in the middle": {
+			"pipeline1->task123:with space and _->task:567",
+		},
 	}
 	for name, tt := range ttests {
 		t.Run(name, func(t *testing.T) {
-			got := utils.ConvertStringToMachineFriendly(tt.input)
-			inverseGot := utils.ConvertStringToHumanFriendly(got)
+			got := utils.EncodeBase62(tt.input)
+			inverseGot := utils.DecodeBase62(got)
 			if inverseGot != tt.input {
 				t.Errorf("got: %s\nwanted: %s", inverseGot, tt.input)
 			}

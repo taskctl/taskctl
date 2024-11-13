@@ -1,9 +1,9 @@
+// package Cmdutils provides testable helpers to commands only
 package cmdutils
 
 import (
 	"fmt"
 	"io"
-	"sort"
 	"strings"
 
 	"github.com/Ensono/taskctl/internal/config"
@@ -20,15 +20,16 @@ const (
 	BOLD_TERMINAL    string = "\x1b[1m%s"
 )
 
-func DisplayTaskSelection(conf *config.Config) (taskOrPipelineSelected string, err error) {
+func DisplayTaskSelection(conf *config.Config, showPipelineOnly bool) (taskOrPipelineSelected string, err error) {
 	optionMap := []huh.Option[string]{}
 
 	for pipeline := range conf.Pipelines {
 		optionMap = append(optionMap, huh.NewOption(fmt.Sprintf("%s - %s", pipeline, fmt.Sprintf(GREY_TERMINAL, "pipeline")), pipeline))
 	}
-
-	for _, task := range conf.Tasks {
-		optionMap = append(optionMap, huh.NewOption(fmt.Sprintf("%s - %s", task.Name, fmt.Sprintf(GREY_TERMINAL, task.Description)), task.Name)) // fmt.Sprintf("Task: %s", task.Name)
+	if !showPipelineOnly {
+		for _, task := range conf.Tasks {
+			optionMap = append(optionMap, huh.NewOption(fmt.Sprintf("%s - %s", task.Name, fmt.Sprintf(GREY_TERMINAL, task.Description)), task.Name))
+		}
 	}
 
 	taskOrPipelineName := huh.NewForm(
@@ -45,20 +46,14 @@ func DisplayTaskSelection(conf *config.Config) (taskOrPipelineSelected string, e
 }
 
 // printSummary is a TUI helper
-func PrintSummary(g *scheduler.ExecutionGraph, chanOut io.Writer) {
-	var stages = make([]*scheduler.Stage, 0)
-	for _, stage := range g.Nodes() {
-		stages = append(stages, stage)
-	}
-
-	sort.Slice(stages, func(i, j int) bool {
-		return stages[j].Start.Nanosecond() > stages[i].Start.Nanosecond()
-	})
+func PrintSummary(g *scheduler.ExecutionGraph, chanOut io.Writer, detailedSummary bool) {
+	stages := g.BFSNodesFlattened(scheduler.RootNodeName)
 
 	fmt.Fprintf(chanOut, BOLD_TERMINAL, "Summary: \n")
 
 	var log string
 	for _, stage := range stages {
+		stage.Name = stageNameHelper(g.Name(), stage.Name)
 		switch stage.ReadStatus() {
 		case scheduler.StatusDone:
 			fmt.Fprintf(chanOut, GREEN_TERMINAL, fmt.Sprintf("- Stage %s was completed in %s\n", stage.Name, stage.Duration()))
@@ -73,9 +68,14 @@ func PrintSummary(g *scheduler.ExecutionGraph, chanOut io.Writer) {
 		case scheduler.StatusCanceled:
 			fmt.Fprintf(chanOut, GREY_TERMINAL, fmt.Sprintf("- Stage %s was cancelled\n", stage.Name))
 		default:
-			fmt.Fprintf(chanOut, RED_TERMINAL, fmt.Sprintf("- Unexpected status %d for stage %s\n", stage.Status, stage.Name))
+			fmt.Fprintf(chanOut, RED_TERMINAL, fmt.Sprintf("- Unexpected status %d for stage %s\n", stage.ReadStatus(), stage.Name))
 		}
 	}
 
 	fmt.Fprintf(chanOut, "%s: %s\n", fmt.Sprintf(BOLD_TERMINAL, "Total duration"), fmt.Sprintf(GREEN_TERMINAL, g.Duration()))
+}
+
+// stageNameHelper strips out the root pipeline name
+func stageNameHelper(prefix, stage string) string {
+	return strings.Replace(stage, prefix+"->", "", 1)
 }

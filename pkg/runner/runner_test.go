@@ -19,8 +19,14 @@ import (
 
 func TestTaskRunner(t *testing.T) {
 	c := runner.NewExecutionContext(nil, "/", variables.NewVariables(), &utils.Envfile{}, []string{"true"}, []string{"false"}, []string{"echo 1"}, []string{"echo 2"})
+	ob, eb := output.NewSafeWriter(&bytes.Buffer{}), output.NewSafeWriter(&bytes.Buffer{})
 
-	rnr, err := runner.NewTaskRunner(runner.WithContexts(map[string]*runner.ExecutionContext{"local": c}))
+	rnr, err := runner.NewTaskRunner(
+		runner.WithContexts(map[string]*runner.ExecutionContext{"local": c}),
+		func(tr *runner.TaskRunner) {
+			tr.Stdout, tr.Stderr = ob, eb
+
+		})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -29,7 +35,6 @@ func TestTaskRunner(t *testing.T) {
 		"local":   c,
 	})
 
-	rnr.Stdout, rnr.Stderr = &bytes.Buffer{}, &bytes.Buffer{}
 	rnr.SetVariables(variables.FromMap(map[string]string{"Root": "/tmp"}))
 	rnr.WithVariable("Root", "/")
 
@@ -75,23 +80,23 @@ func TestTaskRunner(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if !testCase.skipped && testCase.t.Start.IsZero() {
+		if !testCase.skipped && testCase.t.Start().IsZero() {
 			t.Error()
 		}
 
-		if !strings.Contains(testCase.t.Output(), testCase.output) {
+		if !strings.Contains(ob.String(), testCase.output) {
 			t.Error()
 		}
 
-		if testCase.errored && !testCase.t.Errored {
+		if testCase.errored && !testCase.t.Errored() {
 			t.Error()
 		}
 
-		if !testCase.errored && testCase.t.Errored {
+		if !testCase.errored && testCase.t.Errored() {
 			t.Error()
 		}
 
-		if testCase.t.ExitCode != testCase.status {
+		if testCase.t.ExitCode() != testCase.status {
 			t.Error()
 		}
 	}
@@ -158,7 +163,7 @@ func ExampleTaskRunner_Run() {
 	}
 	err = r.Run(t)
 	if err != nil {
-		fmt.Println(err, t.ExitCode, t.ErrorMessage())
+		fmt.Println(err, t.ExitCode(), t.ErrorMessage())
 	}
 	fmt.Println(ob.String())
 	// indentation is important with the matched output here
@@ -173,7 +178,7 @@ func ExampleTaskRunner_Run() {
 }
 
 func TestTaskRunner_ResetContext_WithVariations(t *testing.T) {
-
+	t.Parallel()
 	ttests := map[string]struct {
 		resetContext bool
 		want         string
@@ -204,24 +209,25 @@ func TestTaskRunner_ResetContext_WithVariations(t *testing.T) {
 			task.ResetContext = tt.resetContext // this is set by default but setting here for clarity
 			task.Variations = tt.variations
 
-			r, err := runner.NewTaskRunner()
+			ob, eb := output.NewSafeWriter(&bytes.Buffer{}), output.NewSafeWriter(&bytes.Buffer{})
+			r, err := runner.NewTaskRunner(func(tr *runner.TaskRunner) {
+				tr.Stdout = ob
+				tr.Stderr = eb
+			})
+
 			if err != nil {
 				t.Fatal(err)
 			}
-
-			ob, eb := &bytes.Buffer{}, &bytes.Buffer{}
-			r.Stderr = eb
-			r.Stdout = ob
 
 			if err := r.Run(task); err != nil {
 				t.Fatal(err)
 			}
 
-			if len(task.Output()) < 1 {
+			if len(ob.String()) < 1 {
 				t.Error("nothing written")
 			}
-			if string(task.Output()) != tt.want {
-				t.Errorf("\ngot:\n%s\nwant:\n%s", task.Output(), tt.want)
+			if ob.String() != tt.want {
+				t.Errorf("\ngot:\n%s\nwant:\n%s", ob.String(), tt.want)
 			}
 		})
 	}

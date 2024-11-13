@@ -34,5 +34,8 @@ func buildTask(def *TaskDefinition, lc *loaderContext) (*task.Task, error) {
 	t.Variables.Set("Context.Name", t.Context)
 	t.Variables.Set("Task.Name", t.Name)
 
+	// Generator CI YAML
+	t.Generator = def.Generator
+
 	return t, nil
 }

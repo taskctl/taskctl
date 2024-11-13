@@ -37,8 +37,14 @@ func (s *Scheduler) Cancelled() int32 {
 
 // Schedule starts execution of the given ExecutionGraph
 func (s *Scheduler) Schedule(g *ExecutionGraph) error {
+	g.mu.Lock()
 	g.start = time.Now()
-	defer func() { g.end = time.Now() }()
+	g.mu.Unlock()
+	defer func() {
+		g.mu.Lock()
+		g.end = time.Now()
+		g.mu.Unlock()
+	}()
 
 	wg := sync.WaitGroup{}
 
@@ -74,13 +80,13 @@ func (s *Scheduler) Schedule(g *ExecutionGraph) error {
 
 			wg.Add(1)
 			stage.UpdateStatus(StatusRunning)
-			go func(stage *Stage) {
+			go func(stage *Stage, wg *sync.WaitGroup) {
 				defer func() {
-					stage.End = time.Now()
+					stage.WithEnd(time.Now())
 					wg.Done()
 				}()
 
-				stage.Start = time.Now()
+				stage.WithStart(time.Now())
 
 				err := s.runStage(stage)
 				if err != nil {
@@ -93,7 +99,7 @@ func (s *Scheduler) Schedule(g *ExecutionGraph) error {
 				}
 
 				stage.UpdateStatus(StatusDone)
-			}(stage)
+			}(stage, &wg)
 		}
 
 		time.Sleep(s.pause)
@@ -133,49 +139,33 @@ func (s *Scheduler) runStage(stage *Stage) error {
 	}
 
 	t := stage.Task
-	if stage.Env != nil {
-		if t.Env == nil {
-			t.Env = stage.Env
-		} else {
-			t.Env = t.Env.Merge(stage.Env)
-		}
-	}
+	// Precedence setter of env and vars
+	// Context > Pipeline > Task
+	t.Env = t.Env.Merge(stage.Env())
+	t.Variables = t.Variables.Merge(stage.Variables())
 
-	if stage.Variables != nil {
-		if t.Variables == nil {
-			t.Variables = stage.Variables
-		} else {
-			t.Variables = t.Env.Merge(stage.Variables)
-		}
-	}
-
-	return s.taskRunner.Run(stage.Task)
+	return s.taskRunner.Run(t)
 }
 
-func checkStatus(p *ExecutionGraph, stage *Stage) (ready bool) {
-	ready = true
-	for _, dep := range p.To(stage.Name) {
-		depStage, err := p.Node(dep)
-		if err != nil {
-			logrus.Fatal(err)
-		}
-
-		switch depStage.ReadStatus() {
+// checkStatus checks the parents of the stage
+// when they are all completed or skipped
+// the task is marked as ready for execution
+func checkStatus(p *ExecutionGraph, stage *Stage) bool {
+	ready := false
+	for _, parentStage := range p.Parents(stage.Name) {
+		switch parentStage.ReadStatus() {
 		case StatusDone, StatusSkipped:
+			// status remains as ready
+			ready = true
 			continue
 		case StatusError:
-			if !depStage.AllowFailure {
-				ready = false
+			if !parentStage.AllowFailure {
 				stage.UpdateStatus(StatusCanceled)
 			}
 		case StatusCanceled:
-			ready = false
 			stage.UpdateStatus(StatusCanceled)
-		default:
-			ready = false
 		}
 	}
-
 	return ready
 }
 

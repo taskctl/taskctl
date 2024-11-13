@@ -17,18 +17,18 @@ func TestOutput_prefixedOutputDecorator(t *testing.T) {
 	}{
 		"new line added": {
 			input:  []byte("lorem ipsum"),
-			expect: "\x1b[36mtask1\x1b[0m: lorem ipsum",
+			expect: "\x1b[36mtask1\x1b[0m: lorem ipsum\r\n",
 		},
 		"contains new lines": {
 			input: []byte(`lorem ipsum
 multiline stuff`),
-			expect: "\x1b[36mtask1\x1b[0m: lorem ipsum\n\x1b[36mtask1\x1b[0m: multiline stuff",
+			expect: "\x1b[36mtask1\x1b[0m: lorem ipsum\r\n\x1b[36mtask1\x1b[0m: multiline stuff\r\n",
 		},
 		"contains new lines with trailing newline": {
 			input: []byte(`lorem ipsum
 multiline stuff
 `),
-			expect: "\x1b[36mtask1\x1b[0m: lorem ipsum\n\x1b[36mtask1\x1b[0m: multiline stuff\n",
+			expect: "\x1b[36mtask1\x1b[0m: lorem ipsum\r\n\x1b[36mtask1\x1b[0m: multiline stuff\r\n",
 		},
 	}
 	for name, tt := range ttests {

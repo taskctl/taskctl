@@ -1,0 +1,105 @@
+# yaml-language-server: $schema=../../../schemas/schema_v1.json
+
+output: prefixed
+contexts:
+  podman:
+    container:
+      name: alpine:latest
+    env: 
+      GLOBAL_VAR: this is it
+      TF_VAR_name_company: ${{ env.COMPANY }}
+      TF_VAR_name_project: ${{ env.PROJECT }}
+      TF_VAR_name_component: ${{ env.COMPONENT }}
+      TF_VAR_region: ${{ env.REGION }}
+    envfile:
+      exclude:
+        - HOME
+
+ci_meta:
+  targetOpts:
+    github:
+      "on": 
+        push:
+          branches:
+            - gfooo
+
+pipelines:
+  prod:
+    - pipeline: graph:pipeline2
+      env:
+        ENV_NAME: prod
+  graph:pipeline1:
+    - task: graph:task2
+      depends_on: 
+        - graph:task1
+    - task: graph:task3
+      depends_on: [graph:task1]
+    - name: dev
+      pipeline: graph:pipeline2
+      depends_on: [graph:task3]
+      env:
+        ENV_NAME: dev
+    - pipeline: prod
+      depends_on: [graph:task3]
+    - task: graph:task4
+      depends_on:
+        - graph:task2
+    - task: graph:task1
+    - pipeline: graph:pipeline3
+      depends_on:
+        - graph:task4
+
+  graph:pipeline2:
+    - task: task-p2:2
+    - task: task-p2:1
+      depends_on:
+        - task-p2:2
+
+  graph:pipeline3:
+    - task: graph:task2
+    - task: graph:task3
+
+tasks:
+  graph:task1:
+    command: |
+      for i in $(seq 1 5); do
+        echo "hello task 1 in env ${ENV_NAME} - iteration $i"
+        sleep 0
+      done
+    context: podman
+
+  graph:task2:
+    command: |
+      echo "hello task 2"
+    context: podman
+
+  graph:task3:
+    command: 
+      - echo "hello, task3 in env ${ENV_NAME}"
+    env:
+      FOO: bar
+
+  graph:task4:
+    command: | 
+      echo "hello, task4 in env ${ENV_NAME}"
+    context: podman
+    env:
+      FOO: bar
+
+  task-p2:1:
+    command:
+      - |
+        echo "hello, p2 ${FOO} env: ${ENV_NAME:-unknown}"
+    context: podman
+    env:
+      FOO: task1
+
+  task-p2:2:
+    command:
+      - |
+        for i in $(seq 1 5); do
+          echo "hello, p2 ${FOO} - env: ${ENV_NAME:-unknown} - iteration $i"
+          sleep 0
+        done
+    env:
+      FOO: task2

@@ -74,3 +74,4 @@ jobs:
           generate_release_notes: true
           token: ${{ secrets.GITHUB_TOKEN }}
           files: ./bin/*
+          prerelease: true

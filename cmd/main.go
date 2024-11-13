@@ -56,9 +56,10 @@ func main() {
 	if err := taskctlRootCmd.InitCommand(); err != nil {
 		logrus.Fatal(err)
 	}
-
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	setDefaultCommandIfNonePresent(taskctlRootCmd.Cmd)
-	if err := taskctlRootCmd.Execute(context.Background()); err != nil {
+	if err := taskctlRootCmd.Execute(ctx); err != nil {
 		logrus.Fatal(err)
 	}
 }

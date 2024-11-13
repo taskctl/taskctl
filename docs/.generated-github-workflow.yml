@@ -1,0 +1,17 @@
+name: PipelineName #{{ .PipelineName }}
+
+###_BEGIN_TASKCTL_SKIP_###
+on: 
+  push:
+    branches:
+      - master
+###_END_TASKCTL_SKIP_###
+
+jobs:
+  job-1: 
+    runs-on: ubuntu-24.04 # if 
+
+
+###_BEGIN_TASKCTL_SKIP_###
+
+###_END_TASKCTL_SKIP_###

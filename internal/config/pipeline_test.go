@@ -1,12 +1,14 @@
 package config_test
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/Ensono/taskctl/internal/config"
+	"github.com/Ensono/taskctl/pkg/scheduler"
 )
 
 func TestBuildPipeline_Cyclical(t *testing.T) {
@@ -48,7 +50,7 @@ tasks:
 
 	cl := config.NewConfigLoader(config.NewConfig())
 	_, err := cl.Load(file)
-	if err == nil || err.Error() != "cycle detected" {
+	if !errors.Is(err, scheduler.ErrCycleDetected) {
 		t.Errorf("cycles detection failed")
 	}
 }

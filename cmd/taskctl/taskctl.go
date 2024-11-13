@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"strings"
 
@@ -70,28 +69,8 @@ func NewTaskCtlCmd(channelOut, channelErr io.Writer) *TaskCtlCmd {
 	tc.viperConf.SetConfigName("taskctl_conf")
 
 	tc.Cmd.PersistentFlags().StringVarP(&tc.rootFlags.CfgFilePath, "config", "c", "taskctl.yaml", "config file to use") // tasks.yaml or taskctl.yaml
-	if err := tc.viperConf.BindEnv("config", "TASKCTL_CONFIG_FILE"); err != nil {
-		log.Fatal(err)
-	}
-	if err := tc.viperConf.BindPFlag("config", tc.Cmd.PersistentFlags().Lookup("config")); err != nil {
-		log.Fatal(err)
-	}
-
-	tc.Cmd.PersistentFlags().StringVarP(&tc.rootFlags.Output, "output", "o", string(outputpkg.PrefixedOutput), "output format (raw, prefixed or cockpit)")
-	_ = tc.viperConf.BindEnv("output", "TASKCTL_OUTPUT_FORMAT")
-	_ = tc.viperConf.BindPFlag("output", tc.Cmd.PersistentFlags().Lookup("output"))
-
-	// Shortcut flags
-	tc.Cmd.PersistentFlags().BoolVarP(&tc.rootFlags.Raw, "raw", "r", false, "shortcut for --output=raw")
-	_ = tc.viperConf.BindPFlag("raw", tc.Cmd.PersistentFlags().Lookup("raw")) // TASKCTL_DEBUG
-
-	tc.Cmd.PersistentFlags().BoolVarP(&tc.rootFlags.Cockpit, "cockpit", "", false, "shortcut for --output=cockpit")
-	_ = tc.viperConf.BindPFlag("cockpit", tc.Cmd.PersistentFlags().Lookup("cockpit")) // TASKCTL_DEBUG
-
-	// Key=Value pairs
-	// can be supplied numerous times
-	tc.Cmd.PersistentFlags().StringToStringVarP(&tc.rootFlags.VariableSet, "set", "", nil, "set global variable value")
-	_ = tc.viperConf.BindPFlag("set", tc.Cmd.PersistentFlags().Lookup("set")) // TASKCTL_DEBUG
+	_ = tc.viperConf.BindEnv("config", "TASKCTL_CONFIG_FILE")
+	_ = tc.viperConf.BindPFlag("config", tc.Cmd.PersistentFlags().Lookup("config"))
 
 	// flag toggles
 	tc.Cmd.PersistentFlags().BoolVarP(&tc.rootFlags.Debug, "debug", "d", false, "enable debug")
@@ -119,6 +98,7 @@ func (tc *TaskCtlCmd) InitCommand() error {
 	newInitCmd(tc)
 	newValidateCmd(tc)
 	newWatchCmd(tc)
+	newGenerateCmd(tc)
 	return nil
 }
 
@@ -155,25 +135,32 @@ func (tc *TaskCtlCmd) initConfig() (*config.Config, error) {
 	}
 	// if cmd line flags were passed in, they override anything
 	// parsed from theconfig file
-	if !conf.Debug {
+	if tc.viperConf.GetBool("debug") {
 		conf.Debug = tc.viperConf.GetBool("debug") // this is bound to viper env flag
 	}
 
 	if conf.Debug {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
-
+	// if default config keys were set to false
+	// we check the overrides
 	if !conf.Quiet {
 		conf.Quiet = tc.rootFlags.Quiet
 	}
 	if !conf.DryRun {
-		conf.DryRun = tc.rootFlags.Quiet
+		conf.DryRun = tc.rootFlags.DryRun
 	}
 	if !conf.Summary {
 		conf.Summary = tc.rootFlags.Summary
 	}
 
-	if conf.Output == "" {
+	// config output not set - default to cmdline
+	if conf.Output == "" { //tc.viperConf.GetString("output") != ""
+		conf.Output = outputpkg.OutputEnum(tc.viperConf.GetString("output"))
+	}
+
+	// override the yaml set output if set on the cmdline and in config
+	if len(conf.Output) > 0 && len(tc.viperConf.GetString("output")) > 0 {
 		conf.Output = outputpkg.OutputEnum(tc.viperConf.GetString("output"))
 	}
 
@@ -225,7 +212,7 @@ func (tc *TaskCtlCmd) buildTaskRunner(args []string, conf *config.Config) (*runn
 	}
 
 	go func() {
-		<-cancel
+		<-cancel // tc.Cmd.Context().Done()
 		tr.Cancel()
 	}()
 

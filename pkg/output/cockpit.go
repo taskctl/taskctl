@@ -77,7 +77,7 @@ func (b *baseCockpit) remove(t *task.Task) {
 	}
 
 	var mark = fmt.Sprintf("\x1b[32m%s\x1b[0m", "✔")
-	if t.Errored {
+	if t.Errored() {
 		mark = fmt.Sprintf("\x1b[31m%s\x1b[0m", "✗")
 	}
 	b.spinner.FinalMSG = fmt.Sprintf("%s Finished %s in %s\r\n", mark, fmt.Sprintf("\x1b[1m%s", t.Name), t.Duration())

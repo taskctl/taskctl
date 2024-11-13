@@ -30,7 +30,7 @@ func newWatchCmd(rootCmd *TaskCtlCmd) {
 				wg.Add(1)
 
 				go func(w *watch.Watcher) {
-					<-cancel
+					<-cancel //rootCmd.Cmd.Context().Done()
 					w.Close()
 				}(w)
 

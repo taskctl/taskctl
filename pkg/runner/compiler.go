@@ -17,7 +17,7 @@ import (
 
 // TaskCompiler compiles tasks into jobs for executor
 type TaskCompiler struct {
-	variables variables.Container
+	variables *variables.Variables
 }
 
 // NewTaskCompiler create new TaskCompiler instance
@@ -26,7 +26,7 @@ func NewTaskCompiler() *TaskCompiler {
 }
 
 // CompileTask compiles task into Job (linked list of commands) executed by Executor
-func (tc *TaskCompiler) CompileTask(t *task.Task, executionContext *ExecutionContext, stdin io.Reader, stdout, stderr io.Writer, env, vars variables.Container) (*executor.Job, error) {
+func (tc *TaskCompiler) CompileTask(t *task.Task, executionContext *ExecutionContext, stdin io.Reader, stdout, stderr io.Writer, env, vars *variables.Variables) (*executor.Job, error) {
 	vars = t.Variables.Merge(vars)
 
 	var job, prev *executor.Job
@@ -88,7 +88,7 @@ func (tc *TaskCompiler) CompileCommand(
 	timeout *time.Duration,
 	stdin io.Reader,
 	stdout, stderr io.Writer,
-	env, vars variables.Container,
+	env, vars *variables.Variables,
 ) (*executor.Job, error) {
 	j := &executor.Job{
 		Timeout: timeout,
@@ -114,12 +114,14 @@ func (tc *TaskCompiler) CompileCommand(
 		filename := utils.GetFullPath(
 			filepath.Join(
 				executionCtx.Envfile.GeneratedDir,
-				fmt.Sprintf("generated_%s_%v.env", utils.ConvertStringToMachineFriendly(taskName), time.Now().UnixNano()),
+				fmt.Sprintf("generated_%s.env", utils.EncodeBase62(taskName)),
 			))
 
 		commandArgs = executionCtx.Executable.BuildArgsWithEnvFile(filename)
 		// set the path to the generated envfile
+		executionCtx.mu.Lock()
 		executionCtx.Envfile.Path = filename
+		executionCtx.mu.Unlock()
 		// generate the envfile with supplied env only
 		err := executionCtx.GenerateEnvfile(env)
 		if err != nil {

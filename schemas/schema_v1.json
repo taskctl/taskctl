@@ -111,11 +111,55 @@
         "variables": {
           "$ref": "#/$defs/EnvVarMapType",
           "description": "Variables are the top most variables and will be merged and overwritten with lower level\nspecifications.\ne.g. variable of Version=123\nwill be overwritten by a variables specified in this order, lowest takes the highest precedence\n- context\n- pipeline\n- task\n- commandline.\nVariables can be used inside templating using the text/template go package"
+        },
+        "ci_meta": {
+          "$ref": "#/$defs/Generator",
+          "description": "Generator defines the options for the desired CI yaml generation\nCurrently these are just map[string]any so that the user can specify the desired behaviour\nNOTE: will provide no build time safety"
         }
       },
       "additionalProperties": false,
       "type": "object",
       "description": "ConfigDefinition holds the top most config definition this can be parsed from a yaml, json, toml files/mediaTypes"
+    },
+    "Container": {
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name is the name of the container\n\ncan be specified in the following formats\n\n- \u003cimage-name\u003e (Same as using \u003cimage-name\u003e with the latest tag)\n\n- \u003cimage-name\u003e:\u003ctag\u003e\n\n- \u003cimage-name\u003e@\u003cdigest\u003e\n\nIf the known runtime is podman it should include the registry domain\ne.g. `docker.io/alpine:latest`"
+        },
+        "entrypoint": {
+          "type": "string",
+          "description": "Entrypoint Overwrites the default ENTRYPOINT of the image"
+        },
+        "enable_dind": {
+          "type": "boolean",
+          "description": "EnableDinD mounts the docker sock...\n\n\u003ehighly discouraged"
+        },
+        "container_args": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "ContainerArgs are additional args used for the container supplied by the user\n\ne.g. dcoker run (TASKCTL_ARGS...) (CONTAINER_ARGS...) image (command)\nThe internals will strip out any unwanted/forbidden args\n\nArgs like the switch --privileged and the --volume|-v flag with the value of /var/run/docker.sock:/var/run/docker.sock\nwill be removed."
+        },
+        "shell": {
+          "type": "string",
+          "description": "Shell will be used to run the command in a specific shell on the container\n\nMust exist in the container"
+        },
+        "shell_args": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "Args are additional args to pass to the shell if provided\n\n// e.g. dcoker run (TASKCTL_ARGS...) (CONTAINER_ARGS...) image (shell) (SHELL_ARGS...) (command)"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "description": "Container is the specific context for containers only available to docker API compliant implementations"
     },
     "ContextDefinition": {
       "properties": {
@@ -167,7 +211,7 @@
           "description": "Quote is the quote char to use when parsing commands into executables like docker"
         },
         "container": {
-          "$ref": "#/$defs/Image",
+          "$ref": "#/$defs/Container",
           "description": "Container is the specific context for containers\nonly available to docker API compliant implementations\n\ne.g. docker and podman\n\nThe aim is to remove some of the boilerplate away from the existing more\ngeneric context and introduce a specific context for tasks run in containers.\n\nExample:\n\n```yaml\ncontainer:\n  image:\n    name: alpine\n    # entrypoint: \"\"\n    # shell: sh # default sh\n    # args: nil\n```"
         }
       },
@@ -235,44 +279,18 @@
       "type": "object",
       "description": "Envile is a structure for storing the information required to generate an envfile which can be consumed by the specified binary"
     },
-    "Image": {
+    "Generator": {
       "properties": {
-        "name": {
+        "version": {
           "type": "string",
-          "description": "Name is the name of the container\n\ncan be specified in the following formats\n\n- \u003cimage-name\u003e (Same as using \u003cimage-name\u003e with the latest tag)\n\n- \u003cimage-name\u003e:\u003ctag\u003e\n\n- \u003cimage-name\u003e@\u003cdigest\u003e\n\nIf the known runtime is podman it should include the registry domain\ne.g. `docker.io/alpine:latest`"
+          "description": "Version sets the version of taskctl to use for generation of default tasks, defaults to the current version of the binary"
         },
-        "entrypoint": {
-          "type": "string",
-          "description": "Entrypoint Overwrites the default ENTRYPOINT of the image"
-        },
-        "enable_dind": {
-          "type": "boolean",
-          "description": "EnableDinD mounts the docker sock...\n\nhighly discouraged"
-        },
-        "container_args": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array",
-          "description": "ContainerArgs are additional args used for the container supplied by the user\n\ne.g. dcoker run (TASKCTL_ARGS...) (CONTAINER_ARGS...) image (command)\nThe internals will strip out any unwanted/forbidden args\n\nArgs like the switch --privileged and the --volume|-v flag with the value of /var/run/docker.sock:/var/run/docker.sock\nwill be removed."
-        },
-        "shell": {
-          "type": "string",
-          "description": "Shell will be used to run the command in a specific shell on the container\n\nMust exist in the container"
-        },
-        "shell_args": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array",
-          "description": "Args are additional args to pass to the shell if provided\n\n// e.g. dcoker run (TASKCTL_ARGS...) (CONTAINER_ARGS...) image (shell) (SHELL_ARGS...) (command)"
+        "targetOpts": {
+          "type": "object"
         }
       },
       "additionalProperties": false,
-      "type": "object",
-      "required": [
-        "name"
-      ]
+      "type": "object"
     },
     "ModifyEnv": {
       "properties": {
@@ -348,13 +366,21 @@
           "type": "string",
           "description": "Dir is the place where to run the task(s) in.\nIf empty - currentDir is used"
         },
+        "envfile": {
+          "$ref": "#/$defs/Envfile",
+          "description": "Envfile will overwrite keys set in env"
+        },
         "env": {
           "$ref": "#/$defs/EnvVarMapType",
-          "description": "Env is the Key: Value map of env vars to inject into the tasks"
+          "description": "Env is the Key: Value map of env vars to inject into the tasks within this pipeline"
         },
         "variables": {
           "$ref": "#/$defs/EnvVarMapType",
           "description": "Variables is the Key: Value map of vars vars to inject into the tasks"
+        },
+        "ci_meta": {
+          "type": "object",
+          "description": "Generator PipelineLevel"
         }
       },
       "additionalProperties": false,
@@ -428,7 +454,8 @@
           "$ref": "#/$defs/Artifact"
         },
         "env": {
-          "$ref": "#/$defs/EnvVarMapType"
+          "$ref": "#/$defs/EnvVarMapType",
+          "description": "Env key=value map that will overwrite everything set at a higher level"
         },
         "envfile": {
           "$ref": "#/$defs/Envfile",
@@ -436,20 +463,16 @@
         },
         "variables": {
           "$ref": "#/$defs/EnvVarMapType",
-          "oneOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "integer"
-            }
-          ],
           "description": "Variables merged with others if any already priovided\nThese will overwrite any previously set keys"
         },
         "reset_context": {
           "type": "boolean",
           "description": "ResetContext ensures each invocation of the variation is run with a Reset on the executor.\nCurrently only applies to a default executor and when run in variations.",
           "default": false
+        },
+        "ci_meta": {
+          "type": "object",
+          "description": "Generator is the CI meta properties that will only be used during a generate process"
         }
       },
       "additionalProperties": false,

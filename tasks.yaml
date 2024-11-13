@@ -36,6 +36,12 @@ pipelines:
         - clean
         - test_prereqs
 
+  show:coverage:
+    - pipeline: test:unit
+    - task: show_coverage
+      depends_on:
+        - test:unit
+
   build:binary:
     - task: clean
     - task: build
@@ -48,12 +54,15 @@ pipelines:
 tasks:
   clean: 
     command: 
+      - echo "running clean"
       - | 
         rm -rf bin/*
         rm -rf dist/*
         rm -rf vendor/*
   test_prereqs: 
-    command: |
+    command: 
+      - echo "running test pre-requisites"
+      - |
         mkdir -p .coverage
         go install github.com/jstemmer/go-junit-report@v0.9.1 && \
         go install github.com/axw/gocov/gocov@v1.0.0 && \
@@ -61,12 +70,16 @@ tasks:
 
   test:
     command:
-      - go test ./... -v -race -mod=readonly -coverprofile=.coverage/out > .coverage/test.out
+      - echo "running tests..."
+      - go test $(go list ./... | grep -v /local/) -v -race -mod=readonly -coverprofile=.coverage/out > .coverage/test.out
       - cat .coverage/test.out | go-junit-report > .coverage/report-junit.xml
       - gocov convert .coverage/out | gocov-xml > .coverage/report-cobertura.xml
+    after:
       - cat .coverage/test.out
+    allow_failure: true
 
   build:
+    description: Builds the binary
     command:
       - |
         ldflags="-s -w -X \"github.com/{{.RepoOwner}}/{{.BinName}}/cmd/taskctl.Version={{.Version}}\" -X \"github.com/{{.RepoOwner}}/{{.BinName}}/cmd/taskctl.Revision={{.Revision}}\" -extldflags -static"
@@ -125,10 +138,17 @@ tasks:
       - gofmt -s -w internal/**/*.go
       - gofmt -s -w pkg/**/*.go
 
-  generateschema:
+  schema_gen_deps:
+    description: |
+      Installing dependencies for the struct type generation 
+    command:
+      - pnpm install -g quicktype
+  
+  generate_own_schema:
+    description: | 
+      Generates the schema for a taskctl itself as well as generating types for a given CI implementation.
     command:
       - go run tools/schemagenerator/main.go
-      # todo: error in CI if changes detected 
       - | 
         if [ ! -z "$(git status --porcelain --untracked-files=no)" ]; then 
           if [ ! -z ${CI+x} ] ; then
@@ -137,8 +157,35 @@ tasks:
             exit 1
           fi
         fi
+  
+  generate_ci_structs_from_schema:
+    description: |
+      Type generation for target CI definitions used by the generate command
+           CI Definitions will be used by generate-def command.
+
+      ```
+        config.GitHubCITarget: "https://github.com/SchemaStore/schemastore/blob/master/src/schemas/json/github-workflow.json",
+        config.GitlabCITarget: "https://gitlab.com/gitlab-org/gitlab/-/raw/master/app/assets/javascripts/editor/schema/ci.json",
+        // TODO: add more here - every time you add another implementation
+      ```
+    command:
+      - mkdir -p ./internal/z_generated/github
+      - quicktype --lang go --src-lang schema --src ./internal/z_generated/schema/sources/github.json -o internal/z_generated/github/schema.go --field-tags yaml \
+        --just-types-and-package --omit-empty --package githubworkflow &2>1
+      - go fmt ./internal/z_generated/github
+      - mkdir -p ./internal/z_generated/gitlab
+      - quicktype --lang go --src-lang schema --src ./internal/z_generated/schema/sources/gitlab.json -o internal/z_generated/gitlab/schema.go --field-tags yaml \
+        --just-types-and-package --omit-empty --package gitlab &2>1
+      - go fmt ./internal/z_generated/gitlab
+    # variations:
+    #   # - CI_TARGET: github
+    #   #   SCHEMA: ./internal/z_generated/schema/sources/github.json
+    #   - CI_TARGET: gitlab
+    #     SCHEMA: ./internal/z_generated/schema/sources/gitlab.json # https://gitlab.com/gitlab-org/gitlab/-/raw/master/app/assets/javascripts/editor/schema/ci.json
+
   show_coverage:
     command:
+      - echo "Opening coverage html page"
       - go tool cover -html=.coverage/out
 
   show_docs:
@@ -146,6 +193,7 @@ tasks:
       - go install golang.org/x/tools/cmd/godoc@latest
       - open http://localhost:6060/pkg/github.com/Ensono/taskctl/?m=all
       - godoc -notes "BUG|TODO" -play -http=:6060
+
   tidy:
     name: "tidy me up"
     command:

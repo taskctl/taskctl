@@ -35,8 +35,8 @@ type TaskRunner struct {
 	Executor  executor.Executor
 	DryRun    bool
 	contexts  map[string]*ExecutionContext
-	variables variables.Container
-	env       variables.Container
+	variables *variables.Variables
+	env       *variables.Variables
 
 	ctx         context.Context
 	cancelFunc  context.CancelFunc
@@ -84,13 +84,13 @@ func (r *TaskRunner) SetContexts(contexts map[string]*ExecutionContext) *TaskRun
 }
 
 // SetVariables sets task runner's variables
-func (r *TaskRunner) SetVariables(vars variables.Container) *TaskRunner {
+func (r *TaskRunner) SetVariables(vars *variables.Variables) *TaskRunner {
 	r.variables = vars
 
 	return r
 }
 
-// Run run provided task.
+// Run runs provided task.
 // TaskRunner first compiles task into linked list of Jobs, then passes those jobs to Executor
 //
 // Env on the runner is global to all tasks
@@ -126,7 +126,7 @@ func (r *TaskRunner) Run(t *task.Task) error {
 		return err
 	}
 
-	defer func() {
+	defer func(t *task.Task) {
 		err := taskOutput.Finish()
 		if err != nil {
 			logrus.Error(err)
@@ -138,10 +138,10 @@ func (r *TaskRunner) Run(t *task.Task) error {
 			logrus.Error(err)
 		}
 
-		if !t.Errored && !t.Skipped {
-			t.ExitCode = 0
+		if !t.Errored() && !t.Skipped() {
+			t.WithExitCode(0)
 		}
-	}()
+	}(t)
 
 	vars := r.variables.Merge(t.Variables)
 
@@ -156,7 +156,7 @@ func (r *TaskRunner) Run(t *task.Task) error {
 
 	if !meets {
 		logrus.Infof("task %s was skipped", t.Name)
-		t.Skipped = true
+		t.WithSkipped(true)
 		return nil
 	}
 
@@ -214,7 +214,7 @@ func (r *TaskRunner) WithVariable(key, value string) *TaskRunner {
 	return r
 }
 
-func (r *TaskRunner) before(ctx context.Context, t *task.Task, env, vars variables.Container) error {
+func (r *TaskRunner) before(ctx context.Context, t *task.Task, env, vars *variables.Variables) error {
 	if len(t.Before) == 0 {
 		return nil
 	}
@@ -244,7 +244,7 @@ func (r *TaskRunner) before(ctx context.Context, t *task.Task, env, vars variabl
 	return nil
 }
 
-func (r *TaskRunner) after(ctx context.Context, t *task.Task, env, vars variables.Container) error {
+func (r *TaskRunner) after(ctx context.Context, t *task.Task, env, vars *variables.Variables) error {
 	if len(t.After) == 0 {
 		return nil
 	}
@@ -361,7 +361,7 @@ func (r *TaskRunner) execute(ctx context.Context, t *task.Task, job *executor.Jo
 		return err
 	}
 
-	t.Start = time.Now()
+	t.WithStart(time.Now())
 
 	for nextJob := job; nextJob != nil; nextJob = nextJob.Next {
 		var err error
@@ -369,18 +369,17 @@ func (r *TaskRunner) execute(ctx context.Context, t *task.Task, job *executor.Jo
 		if err != nil {
 			logrus.Debug(err.Error())
 			if status, ok := executor.IsExitStatus(err); ok {
-				t.ExitCode = int16(status)
+				t.WithExitCode(int16(status))
 				if t.AllowFailure {
 					continue
 				}
 			}
-			t.Errored = true
-			t.Error = err
-			t.End = time.Now()
-			return t.Error
+			t.WithError(err)
+			t.WithEnd(time.Now())
+			return t.Error()
 		}
 	}
-	t.End = time.Now()
+	t.WithEnd(time.Now())
 
 	return nil
 }
@@ -396,7 +395,7 @@ func WithContexts(contexts map[string]*ExecutionContext) Opts {
 }
 
 // WithVariables adds provided variables to task runner
-func WithVariables(variables variables.Container) Opts {
+func WithVariables(variables *variables.Variables) Opts {
 	return func(runner *TaskRunner) {
 		runner.variables = variables
 		runner.compiler.variables = variables

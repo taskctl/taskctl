@@ -1,12 +1,10 @@
 package task
 
 import (
-	"bytes"
+	"sync"
 	"time"
 
 	"github.com/Ensono/taskctl/pkg/variables"
-
-	"github.com/Ensono/taskctl/internal/utils"
 )
 
 type ArtifactType string
@@ -40,8 +38,8 @@ type Artifact struct {
 type Task struct {
 	Commands     []string // Commands to run
 	Context      string
-	Env          variables.Container
-	Variables    variables.Container
+	Env          *variables.Variables
+	Variables    *variables.Variables
 	Variations   []map[string]string
 	Dir          string
 	Timeout      *time.Duration
@@ -52,23 +50,20 @@ type Task struct {
 	// ResetContext is useful if multiple variations are running in the same task
 	ResetContext bool
 	Condition    string
-	Skipped      bool
+	Artifacts    *Artifact
 
 	Name        string
 	Description string
-
-	Start time.Time
-	End   time.Time
-
-	Artifacts *Artifact
-
-	ExitCode int16
-	Errored  bool
-	Error    error
-	Log      struct {
-		Stderr *bytes.Buffer
-		Stdout *bytes.Buffer
-	}
+	// internal fields updated by a mutex
+	// only used with the single instance of the task
+	mu        sync.Mutex // guards the below private fields
+	start     time.Time
+	end       time.Time
+	skipped   bool
+	exitCode  int16
+	errored   bool
+	errorVal  error
+	Generator map[string]any
 }
 
 // NewTask creates new Task instance
@@ -77,15 +72,105 @@ func NewTask(name string) *Task {
 		Name:      name,
 		Env:       variables.NewVariables(),
 		Variables: variables.NewVariables(),
-		ExitCode:  -1,
-		Log: struct {
-			Stderr *bytes.Buffer
-			Stdout *bytes.Buffer
-		}{
-			Stderr: &bytes.Buffer{},
-			Stdout: &bytes.Buffer{},
-		},
+		exitCode:  -1,
+		errored:   false,
+		mu:        sync.Mutex{},
 	}
+}
+
+func (t *Task) FromTask(task *Task) {
+	t.Commands = task.Commands
+	t.Context = task.Context
+	t.Variations = task.Variations
+	t.Dir = task.Dir
+	t.Timeout = task.Timeout
+	t.AllowFailure = task.AllowFailure
+	t.After = task.After
+	t.Before = task.Before
+	t.Interactive = task.Interactive
+	t.ResetContext = task.ResetContext
+	t.Condition = task.Condition
+	t.Artifacts = task.Artifacts
+	t.Description = task.Description
+	t.Generator = task.Generator
+	// merge vars from preceeding higher contexts
+	t.Env = t.Env.Merge(task.Env)
+	t.Variables = t.Variables.Merge(task.Variables)
+
+}
+
+func (t *Task) WithStart(start time.Time) *Task {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.start = start
+	return t
+}
+
+func (t *Task) Start() time.Time {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.start
+}
+
+func (t *Task) WithEnd(end time.Time) *Task {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.end = end
+	return t
+}
+
+func (t *Task) End() time.Time {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.end
+}
+
+func (t *Task) WithSkipped(val bool) *Task {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.skipped = val
+	return t
+}
+
+func (t *Task) Skipped() bool {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.skipped
+}
+
+// exitCode int16
+func (t *Task) WithExitCode(val int16) *Task {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.exitCode = val
+	return t
+}
+
+func (t *Task) ExitCode() int16 {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.exitCode
+}
+
+// errored  bool
+func (t *Task) WithError(val error) *Task {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.errored = true
+	t.errorVal = val
+	return t
+}
+
+func (t *Task) Errored() bool {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.errored
+}
+
+func (t *Task) Error() error {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.errorVal
 }
 
 // FromCommands creates task new Task instance with given commands
@@ -97,30 +182,24 @@ func FromCommands(name string, commands ...string) *Task {
 
 // Duration returns task's execution duration
 func (t *Task) Duration() time.Duration {
-	if t.End.IsZero() {
-		return time.Since(t.Start)
+	if t.End().IsZero() {
+		return time.Since(t.Start())
 	}
 
-	return t.End.Sub(t.Start)
+	return t.End().Sub(t.Start())
 }
 
 // ErrorMessage returns message of the error occurred during task execution
 func (t *Task) ErrorMessage() string {
-	if !t.Errored {
+	if !t.Errored() {
 		return ""
 	}
-
-	if t.Log.Stderr.Len() > 0 {
-		return utils.LastLine(t.Log.Stderr)
-	}
-
-	return utils.LastLine(t.Log.Stdout)
+	return t.Error().Error()
 }
 
 // WithEnv sets environment variable
 func (t *Task) WithEnv(key, value string) *Task {
 	t.Env = t.Env.With(key, value)
-
 	return t
 }
 
@@ -136,6 +215,8 @@ func (t *Task) GetVariations() []map[string]string {
 }
 
 // Output returns task's stdout as a string
+//
+// This is left as a legacy method for now. will be removed in the stable 2.x versions
 func (t *Task) Output() string {
-	return t.Log.Stdout.String()
+	return ""
 }

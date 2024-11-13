@@ -57,6 +57,7 @@ func buildContext(def *ContextDefinition) (*runner.ExecutionContext, error) {
 		runner.WithQuote(def.Quote), func(c *runner.ExecutionContext) {
 			c.Variables = variables.FromMap(def.Variables)
 		},
+		runner.WithContainerOpts(def.Container),
 	)
 	return c, nil
 }

@@ -60,12 +60,12 @@ func (t *TaskOutput) WithCloseCh(closeCh chan bool) *TaskOutput {
 
 // Stdout returns io.Writer that can be used for Job's STDOUT
 func (o *TaskOutput) Stdout() io.Writer {
-	return MultiWriter(o.decorator, o.t.Log.Stdout)
+	return o.decorator
 }
 
 // Stderr returns io.Writer that can be used for Job's STDERR
 func (o *TaskOutput) Stderr() io.Writer {
-	return MultiWriter(o.decorator, o.t.Log.Stderr)
+	return o.decorator
 }
 
 // Start should be called before task's output starts

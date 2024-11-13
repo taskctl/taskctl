@@ -35,7 +35,7 @@ func TestContext(t *testing.T) {
 	task2.Context = "before_failed"
 
 	err = runner.Run(task1)
-	if err != nil || task1.ExitCode != 0 {
+	if err != nil || task1.ExitCode() != 0 {
 		t.Fatal(err)
 	}
 
@@ -44,7 +44,7 @@ func TestContext(t *testing.T) {
 		t.Error()
 	}
 
-	if c2.StartupError() == nil || task2.ExitCode != -1 {
+	if c2.StartupError() == nil || task2.ExitCode() != -1 {
 		t.Error()
 	}
 
@@ -178,7 +178,7 @@ func Test_Generate_Env_file(t *testing.T) {
 
 }
 
-func genEnvFileHelperTestRunner(t *testing.T, envVars variables.Container, envFile *utils.Envfile) string {
+func genEnvFileHelperTestRunner(t *testing.T, envVars *variables.Variables, envFile *utils.Envfile) string {
 	t.Helper()
 
 	execContext := runner.NewExecutionContext(nil, "", envVars, envFile, []string{}, []string{}, []string{}, []string{})

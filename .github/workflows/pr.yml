@@ -73,7 +73,7 @@ jobs:
           ${{ runner.os }}-go-
     
     - name: check schema
-      run: CI=true go run cmd/main.go generateschema
+      run: CI=true go run cmd/main.go generate_own_schema
 
     - name: go vet
       run: |

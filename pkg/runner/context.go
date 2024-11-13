@@ -20,7 +20,7 @@ import (
 var (
 	// define a list of environment variable names that are not permitted
 	invalidEnvVarKeys = []string{
-		"",                              //skip any empty key names
+		"",                              // skip any empty key names
 		`!::`, `=::`, `::=::`, `::=::\`, // this is found in a cygwin environment
 	}
 )
@@ -28,10 +28,11 @@ var (
 // ExecutionContext allow you to set up execution environment, variables, binary which will run your task, up/down commands etc.
 type ExecutionContext struct {
 	Executable *utils.Binary
+	container  *utils.Container
 	Dir        string
-	Env        variables.Container
+	Env        *variables.Variables
 	Envfile    *utils.Envfile
-	Variables  variables.Container
+	Variables  *variables.Variables
 	// Quote character to use around a command
 	// when passed to another executable, e.g. docker
 	Quote string
@@ -45,31 +46,49 @@ type ExecutionContext struct {
 
 	onceUp   sync.Once
 	onceDown sync.Once
-	mu       sync.Mutex
+	mu       *sync.Mutex
 }
 
 // ExecutionContextOption is a functional option to configure ExecutionContext
 type ExecutionContextOption func(c *ExecutionContext)
 
 // NewExecutionContext creates new ExecutionContext instance
-func NewExecutionContext(executable *utils.Binary, dir string, env variables.Container, envfile *utils.Envfile, up, down, before, after []string, options ...ExecutionContextOption) *ExecutionContext {
+func NewExecutionContext(executable *utils.Binary, dir string,
+	env *variables.Variables, envfile *utils.Envfile, up, down, before, after []string,
+	options ...ExecutionContextOption) *ExecutionContext {
 	c := &ExecutionContext{
-		Executable: executable,
-		Env:        env,
-		Envfile:    envfile,
-		Dir:        dir,
-		up:         up,
-		down:       down,
-		before:     before,
-		after:      after,
-		Variables:  variables.NewVariables(),
+		// mu is a pointer to a mutex
+		// so that it's shared across all
+		// the instances that are using the given ExecutionContext
+		mu:        &sync.Mutex{},
+		Variables: variables.NewVariables(),
 	}
 
 	for _, o := range options {
 		o(c)
 	}
 
+	c.Executable = executable
+	c.Env = env
+	c.Envfile = envfile
+	c.Dir = dir
+	c.up = up
+	c.down = down
+	c.before = before
+	c.after = after
+
 	return c
+}
+
+func WithContainerOpts(containerOpts *utils.Container) ExecutionContextOption {
+	return func(c *ExecutionContext) {
+		c.container = containerOpts
+		// add additional closed properties
+	}
+}
+
+func (c *ExecutionContext) Container() *utils.Container {
+	return c.container
 }
 
 // StartUpError reports whether an error exists on startUp
@@ -137,7 +156,9 @@ var ErrMutuallyExclusiveVarSet = errors.New("mutually exclusive vars have been s
 // the file names are generated using the `generated_{Task_Name}_{UNIX_timestamp}.env`.
 //
 // Note: it will create the directory
-func (c *ExecutionContext) GenerateEnvfile(env variables.Container) error {
+func (c *ExecutionContext) GenerateEnvfile(env *variables.Variables) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	// return an error if the include and exclude have both been specified
 	if len(c.Envfile.Exclude) > 0 && len(c.Envfile.Include) > 0 {
 		return fmt.Errorf("include and exclude lists are mutually exclusive, %w", ErrMutuallyExclusiveVarSet)
@@ -146,8 +167,9 @@ func (c *ExecutionContext) GenerateEnvfile(env variables.Container) error {
 	// create a string builder object to hold all of the lines that need to be written out to
 	// the resultant file
 	builder := []string{}
-
-	// iterate around all of the environment variables and add the selected ones to the builder
+	// iterate through all of the environment variables and add the selected ones to the builder
+	// env container at this point should already include all the merged variables by precedence
+	// TODO: if envfile path was provided we should merge it in with Env and inject as a whole into the container
 	for varName, varValue := range env.Map() {
 		// check to see if the env matches an invalid variable, if it does
 		// move onto the next item in the  loop

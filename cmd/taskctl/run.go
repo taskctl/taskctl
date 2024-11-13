@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -13,15 +14,24 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type runFlags struct {
+	showGraphOnly, detailedSummary bool
+}
+
 type runCmd struct {
-	cmd                    *cobra.Command
 	channelOut, channelErr io.Writer
+	flags                  *runFlags
+	conf                   *config.Config
+	ctx                    context.Context
 }
 
 func newRunCmd(rootCmd *TaskCtlCmd) {
+	f := &runFlags{}
 	runner := &runCmd{
 		channelOut: rootCmd.ChannelOut,
 		channelErr: rootCmd.ChannelErr,
+		flags:      f,
+		ctx:        rootCmd.Cmd.Context(),
 	}
 
 	rc := &cobra.Command{
@@ -37,9 +47,11 @@ func newRunCmd(rootCmd *TaskCtlCmd) {
 			if err != nil {
 				return err
 			}
+			runner.conf = conf
+
 			// display selector if nothing is supplied
 			if len(args) == 0 {
-				selected, err := cmdutils.DisplayTaskSelection(conf)
+				selected, err := cmdutils.DisplayTaskSelection(conf, false)
 				if err != nil {
 					return err
 				}
@@ -85,6 +97,7 @@ func newRunCmd(rootCmd *TaskCtlCmd) {
 			if err != nil {
 				return err
 			}
+			runner.conf = conf
 			taskRunner, argsStringer, err := rootCmd.buildTaskRunner(args, conf)
 			if err != nil {
 				return err
@@ -93,9 +106,26 @@ func newRunCmd(rootCmd *TaskCtlCmd) {
 		},
 	})
 
-	runner.cmd = rc
+	rc.PersistentFlags().StringVarP(&rootCmd.rootFlags.Output, "output", "o", "", "output format (raw, prefixed or cockpit)")
+	_ = rootCmd.viperConf.BindEnv("output", "TASKCTL_OUTPUT_FORMAT")
+	_ = rootCmd.viperConf.BindPFlag("output", rc.PersistentFlags().Lookup("output"))
 
-	rootCmd.Cmd.AddCommand(runner.cmd)
+	// Shortcut flags
+	rc.PersistentFlags().BoolVarP(&rootCmd.rootFlags.Raw, "raw", "r", false, "shortcut for --output=raw")
+	_ = rootCmd.viperConf.BindPFlag("raw", rc.PersistentFlags().Lookup("raw")) // TASKCTL_DEBUG
+
+	rc.PersistentFlags().BoolVarP(&rootCmd.rootFlags.Cockpit, "cockpit", "", false, "shortcut for --output=cockpit")
+	_ = rootCmd.viperConf.BindPFlag("cockpit", rc.PersistentFlags().Lookup("cockpit")) // TASKCTL_DEBUG
+
+	// Key=Value pairs
+	// can be supplied numerous times
+	rc.PersistentFlags().StringToStringVarP(&rootCmd.rootFlags.VariableSet, "set", "", nil, "set global variable value")
+	_ = rootCmd.viperConf.BindPFlag("set", rc.PersistentFlags().Lookup("set")) // TASKCTL_DEBUG
+
+	rc.PersistentFlags().BoolVarP(&f.showGraphOnly, "graph-only", "", false, "Show only the denormalized graph")
+	rc.PersistentFlags().BoolVarP(&f.detailedSummary, "detailed", "", false, "Show detailed summary, otherwise will be summarised by top level stages only")
+
+	rootCmd.Cmd.AddCommand(rc)
 }
 
 func (r *runCmd) runTarget(taskRunner *runner.TaskRunner, conf *config.Config, argsStringer *argsToStringsMapper) (err error) {
@@ -119,20 +149,32 @@ func (r *runCmd) runTarget(taskRunner *runner.TaskRunner, conf *config.Config, a
 func (r *runCmd) runPipeline(g *scheduler.ExecutionGraph, taskRunner *runner.TaskRunner, summary bool) error {
 	sd := scheduler.NewScheduler(taskRunner)
 	go func() {
-		<-cancel
+		<-cancel // r.ctx.Done()
 		sd.Cancel()
 	}()
 
-	err := sd.Schedule(g)
+	// rebuild the tree with deduped nested graphs
+	// when running embedded pipelines in pipelines referencing
+	// creating a new graph ensures no race occurs as
+	// go routine stages all point to a different address space
+	ng, err := g.Denormalize()
 	if err != nil {
 		return err
 	}
+	if r.flags.showGraphOnly {
+		return graphCmdRun(ng, r.channelOut, &graphFlags{})
+	}
+
+	if err := sd.Schedule(ng); err != nil {
+		return err
+	}
+
 	sd.Finish()
 
 	fmt.Fprint(r.channelOut, "\r\n")
 
 	if summary {
-		cmdutils.PrintSummary(g, r.channelOut)
+		cmdutils.PrintSummary(ng, r.channelOut, r.flags.detailedSummary)
 	}
 
 	return nil
@@ -150,14 +192,6 @@ func (r *runCmd) runTask(t *task.Task, taskRunner *runner.TaskRunner) error {
 }
 
 var ErrIncorrectPipelineTaskArg = errors.New("supplied argument does not match any pipelines or tasks")
-
-// // Arg munging
-// var (
-// 	taskOrPipelineName string                    = ""
-// 	pipelineName       *scheduler.ExecutionGraph = nil
-// 	taskName           *task.Task                = nil
-// 	argsList           []string                  = nil
-// )
 
 type argsToStringsMapper struct {
 	taskOrPipelineName string

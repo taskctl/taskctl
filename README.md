@@ -67,9 +67,8 @@ According to this plan `lint` and `test` will run concurrently, `build` will sta
 
 ## Contents  
 
-- [Getting started](#getting-started)
-  - [Installation](#install)
-  - [Usage](#usage)
+- [Getting started](./docs/installation.md)
+
 - [Configuration](#configuration)
   - [Global configuration](#global-configuration)
   - [Example](#example)
@@ -77,11 +76,10 @@ According to this plan `lint` and `test` will run concurrently, `build` will sta
   - [Pass CLI arguments to task](#pass-cli-arguments-to-task)
   - [Task's variations](#tasks-variations)
   - [Task's variables](#tasks-variables)
-  - [Storing task's output](#storing-tasks-output) 
-  - [Conditional execution](#task-conditional-execution) 
+  - [Storing task's output](#storing-tasks-output)
+  - [Conditional execution](#task-conditional-execution)
 - [Pipelines](#pipelines)
-- [Filesystem watchers](#filesystem-watchers)
-  - [Patterns](#patterns)
+- [Filesystem watchers](./docs/watchers.md)
 - [Contexts](#contexts)
 - [Output formats](#taskctl-output-formats)
 - [Embeddable task runner](#embeddable-task-runner)
@@ -93,52 +91,6 @@ According to this plan `lint` and `test` will run concurrently, `build` will sta
 - [Similar projects](#similar-projects)
 - [How to contribute?](#how-to-contribute)
 - [License](#license)
-
-## Getting started
-### Install
-#### MacOS
-```
-brew tap taskctl/taskctl
-brew install taskctl
-```
-#### Linux
-```
-sudo wget https://github.com/Ensono/taskctl/releases/latest/download/taskctl_linux_amd64 -O /usr/local/bin/taskctl
-sudo chmod +x /usr/local/bin/taskctl
-```
-#### Ubuntu Linux
-```
-sudo snap install --classic taskctl
-```
-
-#### deb/rpm:
-Download the .deb or .rpm from the [releases](https://github.com/Ensono/taskctl/releases) page and install with `dpkg -i` 
-and `rpm -i` respectively.
-
-#### Windows
-```
-scoop bucket add taskctl https://github.com/taskctl/scoop-taskctl.git
-scoop install taskctl
-```
-#### Installation script
-```
-curl -sL https://raw.githubusercontent.com/taskctl/taskctl/master/install.sh | sh
-```
-#### From sources
-```
-git clone https://github.com/Ensono/taskctl
-cd taskctl
-go build -o taskctl .
-```
-#### Docker images
-Docker images available on [Docker hub](https://hub.docker.com/repository/docker/taskctl/taskctl)
-
-### Usage
-- `taskctl` - run interactive task prompt
-- `taskctl pipeline1` - run single pipeline
-- `taskctl task1` - run single task
-- `taskctl pipeline1 task1` - run one or more pipelines and/or tasks
-- `taskctl watch watcher1 watcher2` - start one or more watchers
 
 ## Configuration
 *taskctl* uses config file (`tasks.yaml` or `taskctl.yaml`) where your tasks and pipelines stored. 
@@ -308,7 +260,19 @@ pipelines:
           depends_on: ["task E"]    
 ```
 
-will result in an execution plan like this: ![execution plan](https://raw.githubusercontent.com/Ensono/taskctl/master/docs/pipeline.svg)
+will result in an execution plan like this: 
+
+```mermaid
+flowchart TD
+    A(start task) --> B(task A)
+    A --> C(task B)
+    A --> D(task C)
+    B --> E(task E)
+    C --> E(task E)
+    D --> F(task D)
+    F --> E
+    E --> X(Finish pipeline)
+```
 
 Stage definition takes following parameters:
 
@@ -328,32 +292,6 @@ Taskctl has several output formats:
 - `raw` - prints raw commands output
 - `prefixed` - strips ANSI escape sequences where possible, prefixes command output with task's name
 - `cockpit` - tasks dashboard
-
-## Filesystem watchers
-
-Watcher watches for changes in files selected by provided patterns and triggers task anytime an event has occurred.
-```yaml
-watchers:
-  watcher1:
-    watch: ["README.*", "pkg/**/*.go"] # Files to watch
-    exclude: ["pkg/excluded.go", "pkg/excluded-dir/*"] # Exclude patterns
-    events: [create, write, remove, rename, chmod] # Filesystem events to listen to
-    task: task1 # Task to run when event occurs
-```
-
-### Patterns
-
-Thanks to [doublestar](https://github.com/bmatcuk/doublestar) *taskctl* supports the following special terms within include and exclude patterns:
-
-Special Terms | Meaning
-------------- | -------
-`*`           | matches any sequence of non-path-separators
-`**`          | matches any sequence of characters, including path separators
-`?`           | matches any single non-path-separator character
-`[class]`     | matches any single non-path-separator character against a class of characters ([details](https://github.com/bmatcuk/doublestar/blob/master/README.md#character-classes))
-`{alt1,...}`  | matches a sequence of characters if one of the comma-separated alternatives matches
-
-Any character with a special meaning can be escaped with a backslash (`\`).
 
 ## Contexts
 
