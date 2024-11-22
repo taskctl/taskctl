@@ -154,6 +154,65 @@ func Test_Generate_Env_file(t *testing.T) {
 		}
 	})
 
+	// Note about this test case
+	// it will include exclude from the injected env
+	// however the merging of environment variables is still case sensitive
+	t.Run("with case insensitive comparison on exclude", func(t *testing.T) {
+		outputFilePath, cleanUp := helpSetupCleanUp()
+
+		defer cleanUp()
+
+		osEnvVars := variables.FromMap(map[string]string{"var1": "original", "var2": "original222", "!::": "whatever val will never be added", "=::": "whatever val will never be added 2", "incld1": "welcome var", "exclude3": "sadgfddf"})
+		userEnvVars := variables.FromMap(map[string]string{"foo": "bar", "VAR1": "userOverwrittemdd", "userSuppliedButExcluded": `¯\_(ツ)_/¯`})
+
+		contents := genEnvFileHelperTestRunner(t, osEnvVars.Merge(userEnvVars), utils.NewEnvFile(func(e *utils.Envfile) {
+			e.Generate = true
+			e.Path = outputFilePath
+			e.Exclude = append(e.Exclude, []string{"var1", "FOO", "UserSuppliedButEXCLUDED"}...)
+		}))
+
+		got := strings.Split(contents, "\n")
+		for _, checkExcluded := range []string{"var1=original", "VAR1=userOverwrittemdd", "foo=bar", `userSuppliedButExcluded=¯\_(ツ)_/¯`} {
+			if slices.Contains(got, checkExcluded) {
+				t.Fatalf("invalid vars\ngot: %q\nshould have skipped ( %s )\n", got, checkExcluded)
+			}
+		}
+
+		for _, checkIncluded := range []string{"var2=original222", "incld1=welcome var", "exclude3=sadgfddf"} {
+			if !slices.Contains(got, checkIncluded) {
+				t.Fatalf("invalid vars\ngot: %q\nshould have included ( %s )\n", got, checkIncluded)
+			}
+		}
+	})
+
+	t.Run("with case insensitive comparison on include", func(t *testing.T) {
+		outputFilePath, cleanUp := helpSetupCleanUp()
+
+		defer cleanUp()
+
+		osEnvVars := variables.FromMap(map[string]string{"var1": "original", "var2": "original222", "!::": "whatever val will never be added", "=::": "whatever val will never be added 2", "incld1": "welcome var", "exclude3": "sadgfddf"})
+		userEnvVars := variables.FromMap(map[string]string{"foo": "bar", "VAR1": "userOverwrittemdd", "userSuppliedButExcluded": `¯\_(ツ)_/¯`})
+
+		contents := genEnvFileHelperTestRunner(t, osEnvVars.Merge(userEnvVars), utils.NewEnvFile(func(e *utils.Envfile) {
+			e.Generate = true
+			e.Path = outputFilePath
+			e.Include = []string{"var1", "FOO", "UserSuppliedButEXCLUDED"}
+		}))
+
+		got := strings.Split(contents, "\n")
+		for _, checkExcluded := range []string{"var1=original", "VAR1=userOverwrittemdd", "foo=bar", `userSuppliedButExcluded=¯\_(ツ)_/¯`} {
+			if !slices.Contains(got, checkExcluded) {
+				t.Fatalf("invalid vars\ngot: %q\nshould have skipped ( %s )\n", got, checkExcluded)
+			}
+		}
+
+		for _, checkIncluded := range []string{"var2=original222", "incld1=welcome var", "exclude3=sadgfddf"} {
+			if slices.Contains(got, checkIncluded) {
+				t.Fatalf("invalid vars\ngot: %q\nshould have included ( %s )\n", got, checkIncluded)
+			}
+		}
+	})
+
 	t.Run("with include/exclude variable both set return error", func(t *testing.T) {
 		outputFilePath, cleanUp := helpSetupCleanUp()
 

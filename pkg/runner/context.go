@@ -203,15 +203,17 @@ func (c *ExecutionContext) GenerateEnvfile(env *variables.Variables) error {
 }
 
 func (c *ExecutionContext) includeExcludeSkip(varName string) bool {
+	// set var name to lower to ensure case-insensitive comparison
+	varName = strings.ToLower(varName)
 	// ShouldExclude will be true if any varName
 	shouldExclude := slices.ContainsFunc(c.Envfile.Exclude, func(v string) bool {
-		return strings.HasPrefix(varName, v)
+		return strings.HasPrefix(varName, strings.ToLower(v))
 	})
 
 	shouldInclude := true
 	if len(c.Envfile.Include) > 0 {
 		shouldInclude = slices.ContainsFunc(c.Envfile.Include, func(v string) bool {
-			return strings.HasPrefix(varName, v)
+			return strings.HasPrefix(varName, strings.ToLower(v))
 		})
 	}
 
