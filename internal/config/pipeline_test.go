@@ -2,8 +2,8 @@ package config_test
 
 import (
 	"errors"
+	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -39,15 +39,8 @@ tasks:
     name: task3
 `
 
-	tmpDir, _ := os.MkdirTemp(os.TempDir(), "cyclical-pipeline")
-
-	defer func() {
-		os.RemoveAll(tmpDir)
-	}()
-
-	file := filepath.Join(tmpDir, "cyclical.yaml")
-	_ = os.WriteFile(file, []byte(cyclicalYaml), 0777)
-
+	file, cleanUp := configLoaderTestHelper(t, cyclicalYaml)
+	defer cleanUp()
 	cl := config.NewConfigLoader(config.NewConfig())
 	_, err := cl.Load(file)
 	if !errors.Is(err, scheduler.ErrCycleDetected) {
@@ -56,11 +49,6 @@ tasks:
 }
 
 func TestBuildPipeline_Error(t *testing.T) {
-	tmpDir, _ := os.MkdirTemp(os.TempDir(), "error-on-pipeline")
-	defer func() {
-		os.RemoveAll(tmpDir)
-	}()
-
 	t.Run("no such task", func(t *testing.T) {
 		var errorYaml = `pipelines:
   pipeline1:    
@@ -77,9 +65,9 @@ tasks:
   task3:
     name: task3
 `
-		file := filepath.Join(tmpDir, "nosuch-task.yaml")
-		_ = os.WriteFile(file, []byte(errorYaml), 0777)
 
+		file, cleanUp := configLoaderTestHelper(t, errorYaml)
+		defer cleanUp()
 		cl := config.NewConfigLoader(config.NewConfig())
 		_, err := cl.Load(file)
 		if err == nil || !strings.Contains(err.Error(), "no such task") {
@@ -102,9 +90,9 @@ tasks:
   task3:
     name: task3
 `
-		file := filepath.Join(tmpDir, "nosuch-pipeline.yaml")
-		_ = os.WriteFile(file, []byte(errorYaml), 0777)
 
+		file, cleanUp := configLoaderTestHelper(t, errorYaml)
+		defer cleanUp()
 		cl := config.NewConfigLoader(config.NewConfig())
 		_, err := cl.Load(file)
 		if err == nil || !strings.Contains(err.Error(), "no such pipeline") {
@@ -132,13 +120,71 @@ tasks:
   task3:
     name: task3
 `
-		file := filepath.Join(tmpDir, "stage.yaml")
-		_ = os.WriteFile(file, []byte(errorYaml), 0777)
-
+		file, cleanUp := configLoaderTestHelper(t, errorYaml)
+		defer cleanUp()
 		cl := config.NewConfigLoader(config.NewConfig())
 		_, err := cl.Load(file)
 		if err == nil || !strings.Contains(err.Error(), "stage with same name") {
 			t.Error()
 		}
 	})
+}
+
+func TestConfig_TaskLoader(t *testing.T) {
+	t.Run("task correctly built from config using envfile as well as env keys", func(t *testing.T) {
+		tmpEnv, _ := os.CreateTemp("", "*.env")
+		defer os.Remove(tmpEnv.Name())
+		_, _ = tmpEnv.Write([]byte(`FOO=taskX
+ANOTHER_VAR=moo`))
+
+		yamlTasks := fmt.Sprintf(`tasks:
+  task-p2:1:
+    command:
+      - |
+        echo "hello, p2 ${FOO} env: ${ENV_NAME:-unknown}"
+    context: podman
+    env:
+      FOO: task1
+      GLOBAL_VAR: overwritteninTask
+    envfile:
+      path: %s
+
+  task-p2:2:
+    command:
+      - |
+        for i in $(seq 1 5); do
+          echo "hello, p2 ${FOO} - env: ${ENV_NAME:-unknown} - iteration $i"
+          sleep 0
+        done
+    env:
+      FOO: task2`, tmpEnv.Name())
+		file, cleanUp := configLoaderTestHelper(t, yamlTasks)
+		defer cleanUp()
+		cl := config.NewConfigLoader(config.NewConfig())
+		taskctlCfg, err := cl.Load(file)
+		if err != nil {
+			t.Error()
+		}
+		val, ok := taskctlCfg.Tasks["task-p2:1"]
+		if !ok {
+			t.Error("failed to add task to config")
+		}
+		if val.EnvFile == nil {
+			t.Fatal("failed to read the env file")
+		}
+		if val.EnvFile.PathValue != tmpEnv.Name() {
+			t.Error("incorrect env file name")
+		}
+	})
+}
+
+func configLoaderTestHelper(t *testing.T, configInput string) (file string, cleanUp func()) {
+	t.Helper()
+	tmpfile, _ := os.CreateTemp(os.TempDir(), "config-pipeline-*.yml")
+
+	_ = os.WriteFile(tmpfile.Name(), []byte(configInput), 0777)
+
+	return tmpfile.Name(), func() {
+		os.Remove(tmpfile.Name())
+	}
 }

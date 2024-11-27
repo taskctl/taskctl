@@ -154,18 +154,16 @@ func (tc *TaskCtlCmd) initConfig() (*config.Config, error) {
 		conf.Summary = tc.rootFlags.Summary
 	}
 
-	// config output not set - default to cmdline
-	if conf.Output == "" { //tc.viperConf.GetString("output") != ""
-		conf.Output = outputpkg.OutputEnum(tc.viperConf.GetString("output"))
-	}
-
-	// override the yaml set output if set on the cmdline and in config
-	if len(conf.Output) > 0 && len(tc.viperConf.GetString("output")) > 0 {
+	// if output not specified in yaml/CLI/EnvVar
+	// conf.Output comes from the yaml - if not set in yaml
+	if conf.Output == "" {
+		// then compute the cmd line --output flag
+		// can be set via env or as a flag
 		conf.Output = outputpkg.OutputEnum(tc.viperConf.GetString("output"))
 	}
 
 	// if cmdline flags for output shorthand has been provided we
-	// overwrite the output
+	// overwrite the output in config
 	if tc.viperConf.GetBool("raw") {
 		conf.Output = outputpkg.RawOutput
 	}

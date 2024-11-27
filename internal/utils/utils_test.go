@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/Ensono/taskctl/internal/utils"
+	"github.com/Ensono/taskctl/pkg/variables"
 )
 
 func TestConvertEnv(t *testing.T) {
@@ -334,6 +335,142 @@ func TestUtils_ConvertToMachineFriendly(t *testing.T) {
 	}
 }
 
+func TestUtils_TailExtractName(t *testing.T) {
+	t.Parallel()
+	ttests := map[string]struct {
+		input  string
+		expect string
+	}{
+		"one level": {
+			"foo->1l",
+			"1l",
+		},
+		"no level": {
+			"foo",
+			"foo",
+		},
+		"5 level": {
+			"foo->one->-two->three->four->five",
+			"five",
+		},
+	}
+	for name, tt := range ttests {
+		t.Run(name, func(t *testing.T) {
+			got := utils.TailExtract(tt.input)
+			if got != tt.expect {
+				t.Errorf("TailExtract error: got %s, wanted %s\n", got, tt.expect)
+			}
+		})
+	}
+}
+
+func TestUtils_CascadeName(t *testing.T) {
+	t.Parallel()
+	ttests := map[string]struct {
+		parents []string
+		curr    string
+		expect  string
+	}{
+		"one": {
+			[]string{"foo"}, "qux", "foo->qux",
+		},
+		"two": {
+			[]string{"foo", "bar"}, "qux", "foo->bar->qux",
+		},
+		"5": {
+			[]string{"foo", "bar", "bar1", "bar2", "bar3", "bar4"}, "qux", "foo->bar->bar1->bar2->bar3->bar4->qux",
+		},
+	}
+	for name, tt := range ttests {
+		t.Run(name, func(t *testing.T) {
+			got := utils.CascadeName(tt.parents, tt.curr)
+			if got != tt.expect {
+				t.Errorf("CascadeName error: got %s, wanted %s\n", got, tt.expect)
+			}
+		})
+	}
+}
+
+func TestUtils_DefaultTaskctlEnv(t *testing.T) {
+	t.Run("path not exist - returns initialized empty vars", func(t *testing.T) {
+		got := utils.DefaultTaskctlEnv()
+		if got == nil {
+			t.Errorf("got nil, wanted %T", &variables.Variables{})
+		}
+		if len(got.Map()) != 0 {
+			t.Errorf("got %q, wanted %q", got.Map(), (&variables.Variables{}).Map())
+		}
+	})
+	t.Run("path exists and is correctly ingested", func(t *testing.T) {
+		err := os.WriteFile(utils.TASKCTL_ENV_FILE, []byte(`FOO=bar`), 0o777)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer os.Remove(utils.TASKCTL_ENV_FILE)
+		got := utils.DefaultTaskctlEnv()
+		if got == nil {
+			t.Errorf("got nil, wanted %T", &variables.Variables{})
+		}
+		if len(got.Map()) == 0 {
+			t.Errorf("got %q, wanted at least one key\n", got.Map())
+		}
+		if !got.Has("FOO") {
+			t.Errorf("got %q, wanted FOO to be in the map\n", got.Map())
+
+		}
+	})
+}
+
+func TestUtils_ReaderFromPath(t *testing.T) {
+	t.Parallel()
+	tf, _ := os.CreateTemp("", "test-reader-*.env")
+	_, err := tf.Write([]byte(`FOO=bar`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(tf.Name())
+	ef := utils.NewEnvFile()
+	ef.WithPath(tf.Name())
+	r, success := utils.ReaderFromPath(ef)
+	if !success {
+		t.Error("reader failed to create")
+	}
+	if r == nil {
+		t.Fatal("reader empty")
+	}
+	b, err := io.ReadAll(r)
+	if string(b) != `FOO=bar` {
+		t.Error("wrong data written")
+	}
+}
+
+type tRCloser struct {
+	io.Reader
+}
+
+func (trc *tRCloser) Close() error {
+	return nil
+}
+func TestUtils_Generated(t *testing.T) {
+	tf, _ := os.CreateTemp("", "test-generated-*.env")
+	_, err := tf.Write([]byte(`FOO=bar`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(tf.Name())
+	ef := utils.NewEnvFile()
+	ef.WithGeneratedPath(tf.Name())
+
+	b, err := os.ReadFile(ef.GeneratedPath())
+	if err != nil {
+		t.Error(err)
+	}
+	m, _ := utils.ReadEnvFile(&tRCloser{bytes.NewReader(b)})
+
+	if len(m) == 0 {
+		t.Error("nothing written")
+	}
+}
 func TestUtils_B62Encode_Decode(t *testing.T) {
 	t.Parallel()
 	ttests := map[string]struct {

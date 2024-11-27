@@ -5,9 +5,11 @@ import (
 	"sync/atomic"
 	"time"
 
+	"dario.cat/mergo"
 	"github.com/Ensono/taskctl/internal/utils"
 	"github.com/Ensono/taskctl/pkg/task"
 	"github.com/Ensono/taskctl/pkg/variables"
+	"github.com/sirupsen/logrus"
 )
 
 // Stage statuses
@@ -79,8 +81,18 @@ func (s *Stage) FromStage(originalStage *Stage, existingGraph *ExecutionGraph, a
 
 	if originalStage.Task != nil {
 		tsk := task.NewTask(utils.CascadeName(ancestralParents, originalStage.Task.Name))
+
 		tsk.FromTask(originalStage.Task)
+		// Add additional vars from the pipeline
 		tsk.Env = tsk.Env.Merge(variables.FromMap(existingGraph.Env))
+		if originalStage.Task.EnvFile != nil {
+			ef := utils.NewEnvFile()
+			if err := mergo.Merge(ef, originalStage.Task.EnvFile); err != nil {
+				logrus.Error("failed to dereference task")
+			}
+			tsk.EnvFile = ef
+		}
+
 		s.Task = tsk
 	}
 	if originalStage.Pipeline != nil {
@@ -100,7 +112,7 @@ func (s *Stage) FromStage(originalStage *Stage, existingGraph *ExecutionGraph, a
 }
 
 func (s *Stage) WithEnv(v *variables.Variables) {
-	s.env.MergeV2(v)
+	s.env = s.env.Merge(v)
 }
 
 func (s *Stage) Env() *variables.Variables {
@@ -108,7 +120,7 @@ func (s *Stage) Env() *variables.Variables {
 }
 
 func (s *Stage) WithVariables(v *variables.Variables) {
-	s.variables.MergeV2(v)
+	s.variables = s.variables.Merge(v)
 }
 
 func (s *Stage) Variables() *variables.Variables {
@@ -150,4 +162,41 @@ func (s *Stage) ReadStatus() int32 {
 // Duration returns stage's execution duration
 func (s *Stage) Duration() time.Duration {
 	return s.end.Sub(s.start)
+}
+
+type StageList []*Stage
+
+// Len returns the length of the StageList
+func (s StageList) Len() int {
+	return len(s)
+}
+
+// Swap swaps two elements in the StageList
+func (s StageList) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+// Less defines the comparison logic for sorting the StageList
+// It needs to put all parents at the top and children towards the bottom
+func (s StageList) Less(i, j int) bool {
+	// Stage i is a parent of j if j depends on i
+	for _, dep := range s[j].DependsOn {
+		if dep == s[i].Name {
+			return true // i is a parent of j
+		}
+	}
+
+	// Stage j is a parent of i if i depends on j
+	for _, dep := range s[i].DependsOn {
+		if dep == s[j].Name {
+			return false // j is a parent of i
+		}
+	}
+
+	// if has no parents we hoist to the top
+	if len(s[i].DependsOn) > len(s[j].DependsOn) {
+		return false
+	}
+	// If neither is a parent of the other, sort by name as a tiebreaker
+	return s[i].Name < s[j].Name
 }

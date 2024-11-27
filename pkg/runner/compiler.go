@@ -36,11 +36,11 @@ func (tc *TaskCompiler) CompileTask(t *task.Task, executionContext *ExecutionCon
 			continue
 		}
 
-		v, err := utils.RenderString(v.(string), vars.Map())
+		renderedStr, err := utils.RenderString(v.(string), vars.Map())
 		if err != nil {
 			return nil, err
 		}
-		vars.Set(k, v)
+		vars.Set(k, renderedStr)
 	}
 
 	// creating multiple versions of the same task with different env input
@@ -105,9 +105,9 @@ func (tc *TaskCompiler) CompileCommand(
 		commandArgs = executionCtx.Executable.GetArgs()
 	}
 	// Look at the executable details and check if the command is running `docker` determine if an Envfile is being generated
-	// If it has then check to see if the args contains the --env-file flag and if does modify the path to the envfile
+	// If it has then check to see if the args contains the --env-file flag and if it does modify the path to the envfile
 	// if it does not then add the --env-file flag to the args array
-	if executionCtx.Envfile != nil && executionCtx.Envfile.Generate {
+	if executionCtx.Envfile != nil && (executionCtx.Executable != nil) { // && executionCtx.Executable.IsContainer
 
 		// define the filename to hold the envfile path
 		// get the timestamp to use to append to the envfile name
@@ -119,9 +119,7 @@ func (tc *TaskCompiler) CompileCommand(
 
 		commandArgs = executionCtx.Executable.BuildArgsWithEnvFile(filename)
 		// set the path to the generated envfile
-		executionCtx.mu.Lock()
-		executionCtx.Envfile.Path = filename
-		executionCtx.mu.Unlock()
+		executionCtx.Envfile.WithGeneratedPath(filename)
 		// generate the envfile with supplied env only
 		err := executionCtx.GenerateEnvfile(env)
 		if err != nil {

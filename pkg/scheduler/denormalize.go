@@ -38,10 +38,9 @@ func (g *ExecutionGraph) Denormalize() (*ExecutionGraph, error) {
 func (g *ExecutionGraph) rebuildFromDenormalized(st StageTable) error {
 	for _, stage := range st.NthLevelChildren(g.Name(), 1) {
 		if stage.Pipeline != nil {
-			c := st.NthLevelChildren(stage.Name, 1)
 			// There is no chance that at this point there would be a cycle
 			// but keep this check here just in case
-			ng, err := NewExecutionGraph(stage.Name, c...)
+			ng, err := NewExecutionGraph(stage.Name)
 			if err != nil {
 				return err
 			}
@@ -53,7 +52,11 @@ func (g *ExecutionGraph) rebuildFromDenormalized(st StageTable) error {
 		// stage is task - merge into the stage all the previous env and vars
 		parentStages := st.RecurseParents(stage.Name)
 		for _, v := range parentStages {
-			stage.Env().MergeV2(v.Env())
+			stage.env = stage.Env().Merge(v.Env())
+			if stage.Task != nil {
+				stage.Task.Env = stage.env.Merge(stage.Task.Env)
+				stage.env = stage.env.Merge(stage.Task.Env)
+			}
 		}
 		// Check err just in case the denormalized graph has cyclical dependancies
 		if err := g.AddStage(stage); err != nil {

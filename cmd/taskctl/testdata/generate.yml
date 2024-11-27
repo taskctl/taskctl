@@ -7,10 +7,6 @@ contexts:
       name: alpine:latest
     env: 
       GLOBAL_VAR: this is it
-      TF_VAR_name_company: ${{ env.COMPANY }}
-      TF_VAR_name_project: ${{ env.PROJECT }}
-      TF_VAR_name_component: ${{ env.COMPONENT }}
-      TF_VAR_region: ${{ env.REGION }}
     envfile:
       exclude:
         - HOME
@@ -28,6 +24,7 @@ pipelines:
     - pipeline: graph:pipeline2
       env:
         ENV_NAME: prod
+        GLOBAL_VAR: prodPipeline
   graph:pipeline1:
     - task: graph:task2
       depends_on: 
@@ -93,6 +90,9 @@ tasks:
     context: podman
     env:
       FOO: task1
+      GLOBAL_VAR: overwritteninTask
+    envfile:
+      path: ./cmd/taskctl/testdata/dev.env
 
   task-p2:2:
     command:

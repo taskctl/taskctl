@@ -67,11 +67,9 @@ func Test_Generate_Env_file(t *testing.T) {
 
 		osEnvVars := variables.FromMap(map[string]string{"var1": "original", "var2": "original222"})
 		userEnvVars := variables.FromMap(map[string]string{"foo": "bar", "var1": "userOverwrittemdd"})
-
-		contents := genEnvFileHelperTestRunner(t, osEnvVars.Merge(userEnvVars), utils.NewEnvFile(func(e *utils.Envfile) {
-			e.Generate = true
-			e.Path = outputFilePath
-		}))
+		ef := utils.NewEnvFile()
+		ef.WithGeneratedPath(outputFilePath)
+		contents := genEnvFileHelperTestRunner(t, osEnvVars.Merge(userEnvVars), ef)
 
 		if strings.Contains(contents, "var1=original") {
 			t.Fatal("incorrectly merged and overwritten env vars")
@@ -84,11 +82,10 @@ func Test_Generate_Env_file(t *testing.T) {
 
 		osEnvVars := variables.FromMap(map[string]string{"var1": "original", "var2": "original222", "!::": "whatever val will never be added"})
 		userEnvVars := variables.FromMap(map[string]string{"foo": "bar", "var1": "userOverwrittemdd"})
+		ef := utils.NewEnvFile()
+		ef.WithGeneratedPath(outputFilePath)
 
-		contents := genEnvFileHelperTestRunner(t, osEnvVars.Merge(userEnvVars), utils.NewEnvFile(func(e *utils.Envfile) {
-			e.Generate = true
-			e.Path = outputFilePath
-		}))
+		contents := genEnvFileHelperTestRunner(t, osEnvVars.Merge(userEnvVars), ef)
 
 		if strings.Contains(contents, "!::=whatever val will never be added") {
 			t.Fatal("invalid cahrs not skipped properly and overwritten env vars")
@@ -102,16 +99,15 @@ func Test_Generate_Env_file(t *testing.T) {
 		osEnvVars := variables.FromMap(map[string]string{"var1": "original", "var2": "original222", "!::": "whatever val will never be added", "=::": "whatever val will never be added",
 			"": "::=::", " ": "::=::", "excld1": "bye bye", "exclude3": "sadgfddf"})
 		userEnvVars := variables.FromMap(map[string]string{"foo": "bar", "var1": "userOverwrittemdd", "userSuppliedButExcluded": `¯\_(ツ)_/¯`, "UPPER_VAR_make_me_bigger": "this_key_is_large"})
-
-		contents := genEnvFileHelperTestRunner(t, osEnvVars.Merge(userEnvVars), utils.NewEnvFile(func(e *utils.Envfile) {
-			e.Generate = true
-			e.Path = outputFilePath
+		ef := utils.NewEnvFile(func(e *utils.Envfile) {
 			e.Exclude = append(e.Exclude, []string{"excld1", "exclude3", "userSuppliedButExcluded"}...)
 			e.Modify = append(e.Modify, []utils.ModifyEnv{
 				{Pattern: "^(?P<keyword>TF_VAR_)(?P<varname>.*)", Operation: "lower"},
 				{Pattern: "^(?P<keyword>UPPER_VAR_)(?P<varname>.*)", Operation: "upper"},
 			}...)
-		}))
+		})
+		ef.WithGeneratedPath(outputFilePath)
+		contents := genEnvFileHelperTestRunner(t, osEnvVars.Merge(userEnvVars), ef)
 
 		for _, excluded := range []string{"excld1=bye bye", "exclude3=sadgfddf", `userSuppliedButExcluded=¯\_(ツ)_/¯`} {
 			if slices.Contains(strings.Split(contents, "\n"), excluded) {
@@ -139,13 +135,13 @@ func Test_Generate_Env_file(t *testing.T) {
 
 		osEnvVars := variables.FromMap(map[string]string{"var1": "original", "var2": "original222", "!::": "whatever val will never be added", "=::": "whatever val will never be added 2", "incld1": "welcome var", "exclude3": "sadgfddf"})
 		userEnvVars := variables.FromMap(map[string]string{"foo": "bar", "var1": "userOverwrittemdd", "userSuppliedButExcluded": `¯\_(ツ)_/¯`})
-
-		contents := genEnvFileHelperTestRunner(t, osEnvVars.Merge(userEnvVars), utils.NewEnvFile(func(e *utils.Envfile) {
-			e.Generate = true
-			e.Path = outputFilePath
+		ef := utils.NewEnvFile(func(e *utils.Envfile) {
 			e.Exclude = append(e.Exclude, []string{}...)
 			e.Include = append(e.Include, "incld1")
-		}))
+		})
+
+		ef.WithGeneratedPath(outputFilePath)
+		contents := genEnvFileHelperTestRunner(t, osEnvVars.Merge(userEnvVars), ef)
 
 		for _, included := range []string{"incld1=welcome var"} {
 			if !slices.Contains(strings.Split(contents, "\n"), included) {
@@ -165,11 +161,12 @@ func Test_Generate_Env_file(t *testing.T) {
 		osEnvVars := variables.FromMap(map[string]string{"var1": "original", "var2": "original222", "!::": "whatever val will never be added", "=::": "whatever val will never be added 2", "incld1": "welcome var", "exclude3": "sadgfddf"})
 		userEnvVars := variables.FromMap(map[string]string{"foo": "bar", "VAR1": "userOverwrittemdd", "userSuppliedButExcluded": `¯\_(ツ)_/¯`})
 
-		contents := genEnvFileHelperTestRunner(t, osEnvVars.Merge(userEnvVars), utils.NewEnvFile(func(e *utils.Envfile) {
-			e.Generate = true
-			e.Path = outputFilePath
+		ef := utils.NewEnvFile(func(e *utils.Envfile) {
 			e.Exclude = append(e.Exclude, []string{"var1", "FOO", "UserSuppliedButEXCLUDED"}...)
-		}))
+		})
+		ef.WithGeneratedPath(outputFilePath)
+
+		contents := genEnvFileHelperTestRunner(t, osEnvVars.Merge(userEnvVars), ef)
 
 		got := strings.Split(contents, "\n")
 		for _, checkExcluded := range []string{"var1=original", "VAR1=userOverwrittemdd", "foo=bar", `userSuppliedButExcluded=¯\_(ツ)_/¯`} {
@@ -193,11 +190,13 @@ func Test_Generate_Env_file(t *testing.T) {
 		osEnvVars := variables.FromMap(map[string]string{"var1": "original", "var2": "original222", "!::": "whatever val will never be added", "=::": "whatever val will never be added 2", "incld1": "welcome var", "exclude3": "sadgfddf"})
 		userEnvVars := variables.FromMap(map[string]string{"foo": "bar", "VAR1": "userOverwrittemdd", "userSuppliedButExcluded": `¯\_(ツ)_/¯`})
 
-		contents := genEnvFileHelperTestRunner(t, osEnvVars.Merge(userEnvVars), utils.NewEnvFile(func(e *utils.Envfile) {
-			e.Generate = true
-			e.Path = outputFilePath
+		ef := utils.NewEnvFile(func(e *utils.Envfile) {
 			e.Include = []string{"var1", "FOO", "UserSuppliedButEXCLUDED"}
-		}))
+		})
+
+		ef.WithGeneratedPath(outputFilePath)
+
+		contents := genEnvFileHelperTestRunner(t, osEnvVars.Merge(userEnvVars), ef)
 
 		got := strings.Split(contents, "\n")
 		for _, checkExcluded := range []string{"var1=original", "VAR1=userOverwrittemdd", "foo=bar", `userSuppliedButExcluded=¯\_(ツ)_/¯`} {
@@ -223,8 +222,7 @@ func Test_Generate_Env_file(t *testing.T) {
 		envVars := osEnvVars.Merge(userEnvVars)
 
 		execContext := runner.NewExecutionContext(nil, "", envVars, utils.NewEnvFile(func(e *utils.Envfile) {
-			e.Generate = true
-			e.Path = outputFilePath
+			e.PathValue = outputFilePath
 			e.Exclude = append(e.Exclude, []string{"excld1", "exclude3", "userSuppliedButExcluded"}...)
 			e.Include = append(e.Include, "incld1")
 		}), []string{}, []string{}, []string{}, []string{})
@@ -247,7 +245,7 @@ func genEnvFileHelperTestRunner(t *testing.T, envVars *variables.Variables, envF
 		t.Fatal(err)
 	}
 
-	contents, readErr := os.ReadFile(envFile.Path)
+	contents, readErr := os.ReadFile(envFile.GeneratedPath())
 	if readErr != nil {
 		t.Fatal(readErr)
 	}
@@ -266,16 +264,17 @@ func ExampleExecutionContext_GenerateEnvfile() {
 	//  "var2": "original222", "!::": "whatever val will never be added", "incld1": "welcome var", "exclude3": "sadgfddf"})
 	userEnvVars := variables.FromMap(map[string]string{})
 	envVars := osEnvVars.Merge(userEnvVars)
-	execContext := runner.NewExecutionContext(nil, "", envVars, utils.NewEnvFile(func(e *utils.Envfile) {
-		e.Generate = true
-		e.Path = outputFilePath
+
+	ef := utils.NewEnvFile(func(e *utils.Envfile) {
 		e.Exclude = append(e.Exclude, []string{"excld1", "exclude3", "userSuppliedButExcluded"}...)
 		e.Modify = append(e.Modify, []utils.ModifyEnv{
 			{Pattern: "^(?P<keyword>TF_VAR_)(?P<varname>.*)", Operation: "lower"},
 		}...)
+	})
 
-	}), []string{}, []string{}, []string{}, []string{})
+	ef.WithGeneratedPath(outputFilePath)
 
+	execContext := runner.NewExecutionContext(nil, "", envVars, ef, []string{}, []string{}, []string{}, []string{})
 	_ = execContext.GenerateEnvfile(envVars)
 
 	contents, _ := os.ReadFile(outputFilePath)

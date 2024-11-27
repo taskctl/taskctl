@@ -236,10 +236,6 @@
     },
     "Envfile": {
       "properties": {
-        "generate": {
-          "type": "boolean",
-          "description": "Generate will toggle the creation of the envFile\nthis \"envFile\" is only used in executables of type `docker|podman`"
-        },
         "exclude": {
           "items": {
             "type": "string"
@@ -255,7 +251,7 @@
         },
         "path": {
           "type": "string",
-          "description": "Path is generated using task name and current timestamp\nTODO: include additional graph info about the execution\ne.g. owning pipeline (if any) execution number"
+          "description": "PathValue points to the file to read in and compute using the modify/include/exclude instructions."
         },
         "replace_char": {
           "type": "string"
@@ -366,10 +362,6 @@
           "type": "string",
           "description": "Dir is the place where to run the task(s) in.\nIf empty - currentDir is used"
         },
-        "envfile": {
-          "$ref": "#/$defs/Envfile",
-          "description": "Envfile will overwrite keys set in env"
-        },
         "env": {
           "$ref": "#/$defs/EnvVarMapType",
           "description": "Env is the Key: Value map of env vars to inject into the tasks within this pipeline"
@@ -459,7 +451,7 @@
         },
         "envfile": {
           "$ref": "#/$defs/Envfile",
-          "description": "EnvFile string pointing to the file that could be read in as an envFile\ncontents will be merged with the Env (os.Environ())"
+          "description": "EnvFile is an object points to a path of an env file.\n\nThis file is read dynamically each time before the task execution.\nAny keys specified in the `env` key=value map will overwrite those set in the env file.\n\nThe precedence of environment setting can be summarized as below\nContext \u003c Pipeline \u003c Task\n\nThis means that whilst all env vars will be merged downwards to the task\ni.e. key specified at a task level will overwrite those set at any level above.\n\nSetting a key in an envfile with the same name will be overwritten by an `env.key`."
         },
         "variables": {
           "$ref": "#/$defs/EnvVarMapType",

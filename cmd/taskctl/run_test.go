@@ -60,3 +60,4 @@ func Test_runCommandWithArgumentsList(t *testing.T) {
 		cmdRunTestHelper(t, &cmdRunTestInput{args: []string{"-c", "testdata/task.yaml", "run", "task", "task:task3", "--raw", "--", "first", "and", "second"}, exactOutput: "This is first and second arguments\n"})
 	})
 }
+

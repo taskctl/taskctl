@@ -51,7 +51,6 @@ func PrintSummary(g *scheduler.ExecutionGraph, chanOut io.Writer, detailedSummar
 
 	fmt.Fprintf(chanOut, BOLD_TERMINAL, "Summary: \n")
 
-	var log string
 	for _, stage := range stages {
 		stage.Name = stageNameHelper(g.Name(), stage.Name)
 		switch stage.ReadStatus() {
@@ -60,7 +59,10 @@ func PrintSummary(g *scheduler.ExecutionGraph, chanOut io.Writer, detailedSummar
 		case scheduler.StatusSkipped:
 			fmt.Fprintf(chanOut, GREEN_TERMINAL, fmt.Sprintf("- Stage %s was skipped\n", stage.Name))
 		case scheduler.StatusError:
-			log = strings.TrimSpace(stage.Task.ErrorMessage())
+			log := strings.TrimSpace(stage.Task.ErrorMessage())
+			if log == "" {
+				log = stage.Pipeline.Error().Error()
+			}
 			fmt.Fprintf(chanOut, RED_TERMINAL, fmt.Sprintf("- Stage %s failed in %s\n", stage.Name, stage.Duration()))
 			if log != "" {
 				fmt.Fprintf(chanOut, RED_TERMINAL, fmt.Sprintf("  > %s\n", log))

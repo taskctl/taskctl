@@ -84,8 +84,8 @@ func TestVariables_MergeV2(t *testing.T) {
 	}
 	for name, tt := range ttests {
 		t.Run(name, func(t *testing.T) {
-			tt.currentVar.MergeV2(tt.overwriteVars)
-			val, found := tt.currentVar.Map()[tt.expect.key]
+			got := tt.currentVar.Merge(tt.overwriteVars)
+			val, found := got.Map()[tt.expect.key]
 			if !found {
 				t.Errorf("not found %s\n", tt.expect.key)
 			}
@@ -100,7 +100,7 @@ func TestVariables_MergeV2(t *testing.T) {
 		mainVar := variables.FromMap(map[string]string{})
 		var2 := variables.FromMap(map[string]string{"foo": "bar", "some": "123"})
 		var3 := variables.FromMap(map[string]string{"baz": "qux", "some": "456"})
-		mainVar.MergeV2(var2).MergeV2(var3)
+		mainVar = mainVar.Merge(var2).Merge(var3)
 
 		for _, ss := range [][]string{{"foo", "bar"}, {"some", "456"}, {"baz", "qux"}} {
 			if val, found := mainVar.Map()[ss[0]]; found {

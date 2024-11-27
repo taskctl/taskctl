@@ -5,11 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"sort"
 
 	"github.com/Ensono/taskctl/internal/config"
 	"github.com/Ensono/taskctl/internal/schema"
 	"github.com/Ensono/taskctl/internal/utils"
 	"github.com/Ensono/taskctl/pkg/scheduler"
+	"github.com/Ensono/taskctl/pkg/variables"
 	"gopkg.in/yaml.v2"
 )
 
@@ -71,7 +73,7 @@ func (impl *githubCiImpl) Convert(pipeline *scheduler.ExecutionGraph) ([]byte, e
 		ghaWorkflow.Env = gh.Env
 	}
 
-	if err := jobLooper(ghaWorkflow, impl.pipeline); err != nil {
+	if err := jobBuilder(ghaWorkflow, impl.pipeline); err != nil {
 		return nil, err
 	}
 	b := &bytes.Buffer{}
@@ -121,6 +123,31 @@ func addStepsToTopLevelJob(job *schema.GithubJob, node *scheduler.Stage) {
 	}
 }
 
+func addMetaToJob(job *schema.GithubJob, node *scheduler.Stage) error {
+	gh, err := extractGeneratorMetadata[schema.GithubJob](GitHubCITarget, node.Generator)
+	if err != nil {
+		return fmt.Errorf("unable to extract metadata for %s\n%v", node.Name, err)
+	}
+	if gh != nil {
+		if gh.If != "" {
+			job.If = gh.If
+		}
+		if gh.Environment != "" {
+			job.Environment = gh.Environment
+		}
+		if gh.RunsOn != "" {
+			job.RunsOn = gh.RunsOn
+		}
+		if gh.Env != nil {
+			// merge top level pipeline env vars into the top level GHA Job
+			job.Env = node.Env().
+				Merge(variables.FromMap(utils.ConvertToMapOfStrings(gh.Env))).
+				Map()
+		}
+	}
+	return nil
+}
+
 func convertTaskToStep(node *scheduler.Stage) *schema.GithubStep {
 
 	step := &schema.GithubStep{
@@ -133,6 +160,14 @@ func convertTaskToStep(node *scheduler.Stage) *schema.GithubStep {
 		if gh.If != "" {
 			step.If = gh.If
 		}
+		// if env is specified on this level we want to overwrite it
+		// with ci_meta.github.env keys
+		if gh.Env != nil {
+			step.Env = node.Env().
+				Merge(node.Task.Env).
+				Merge(variables.FromMap(utils.ConvertToMapOfStrings(gh.Env))).
+				Map()
+		}
 	}
 	return step
 }
@@ -140,6 +175,8 @@ func convertTaskToStep(node *scheduler.Stage) *schema.GithubStep {
 // flattenTasksInPipeline extracts all the tasks recursively across pipelines
 func flattenTasksInPipeline(job *schema.GithubJob, graph *scheduler.ExecutionGraph) {
 	nodes := graph.BFSNodesFlattened(scheduler.RootNodeName)
+	// sort nodes according to depends on order
+	sort.Sort(nodes)
 	for _, node := range nodes {
 		if node.Pipeline != nil {
 			flattenTasksInPipeline(job, node.Pipeline)
@@ -150,9 +187,18 @@ func flattenTasksInPipeline(job *schema.GithubJob, graph *scheduler.ExecutionGra
 	}
 }
 
-// jobLooper accepts a list of top level jobs
-func jobLooper(ciyaml *schema.GithubWorkflow, pipeline *scheduler.ExecutionGraph) error {
+// jobBuilder accepts a list of top level jobs.
+//
+// Recursively walks the nodes and flattens any nested pipelines
+// and adds them to the list of tasks.
+//
+// Respects the order of execution set in tascktl.
+func jobBuilder(ciyaml *schema.GithubWorkflow, pipeline *scheduler.ExecutionGraph) error {
 	nodes := pipeline.BFSNodesFlattened(scheduler.RootNodeName)
+	// sort nodes according to depends on order
+	// ensuring the pipeline will look the same everytime
+	// alphabetically sorted top level jobs and same level children
+	sort.Sort(nodes)
 	for _, node := range nodes {
 		jobName := ghaNameConverter(utils.TailExtract(node.Name))
 		job := &schema.GithubJob{
@@ -163,19 +209,11 @@ func jobLooper(ciyaml *schema.GithubWorkflow, pipeline *scheduler.ExecutionGraph
 		// Add defaults
 		addDefaultStepsToJob(job)
 
+		// Adds correctly ordered steps to job
 		addStepsToTopLevelJob(job, node)
 
-		gh, err := extractGeneratorMetadata[schema.GithubJob](GitHubCITarget, node.Generator)
-		if gh != nil && err == nil {
-			if gh.If != "" {
-				job.If = gh.If
-			}
-			if gh.Environment != "" {
-				job.Environment = gh.Environment
-			}
-			if gh.RunsOn != "" {
-				job.RunsOn = gh.RunsOn
-			}
+		if err := addMetaToJob(job, node); err != nil {
+			return err
 		}
 		ciyaml.Jobs = append(ciyaml.Jobs, yaml.MapItem{Key: jobName, Value: job})
 	}

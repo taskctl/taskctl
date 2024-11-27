@@ -19,11 +19,6 @@ import (
 	"mvdan.cc/sh/v3/syntax"
 )
 
-// Executor executes given job
-type Executor interface {
-	Execute(context.Context, *Job) ([]byte, error)
-}
-
 // DefaultExecutor is a default executor used for jobs
 // Uses `mvdan.cc/sh/v3/interp` under the hood
 type DefaultExecutor struct {
@@ -54,6 +49,12 @@ func NewDefaultExecutor(stdin io.Reader, stdout, stderr io.Writer) (*DefaultExec
 	}
 
 	return e, nil
+}
+
+// WithEnv is used to set more specifically the environment vars inside the executor
+func (e *DefaultExecutor) WithEnv(env []string) *DefaultExecutor {
+	e.env = env
+	return e
 }
 
 func (e *DefaultExecutor) WithReset(doReset bool) *DefaultExecutor {

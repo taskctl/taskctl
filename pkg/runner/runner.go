@@ -29,10 +29,14 @@ type Runner interface {
 	Finish()
 }
 
+type Executor interface {
+	Execute(context.Context, *executor.Job) ([]byte, error)
+}
+
 // TaskRunner struct holds the properties and methods
 // for running the tasks inside the given executor
 type TaskRunner struct {
-	Executor  executor.Executor
+	Executor  Executor
 	DryRun    bool
 	contexts  map[string]*ExecutionContext
 	variables *variables.Variables
@@ -148,6 +152,17 @@ func (r *TaskRunner) Run(t *task.Task) error {
 	env := r.env.Merge(execContext.Env)
 	env = env.With("TASK_NAME", t.Name)
 	env = env.Merge(t.Env)
+	// denormalized graph will append all ancestral env keys to the task
+	// if task also includes an envfile property
+	// We need to read it in and hang on the env for the command compiler.
+	if reader, exists := utils.ReaderFromPath(t.EnvFile); exists {
+		m, err := utils.ReadEnvFile(reader)
+		if err != nil {
+			return fmt.Errorf("%v, %w", err, utils.ErrEnvfileFormatIncorrect)
+		}
+		// now overwriting any env set properties in the envfile
+		env = variables.FromMap(m).Merge(env)
+	}
 
 	meets, err := r.checkTaskCondition(t)
 	if err != nil {
@@ -227,7 +242,7 @@ func (r *TaskRunner) before(ctx context.Context, t *task.Task, env, vars *variab
 	for _, command := range t.Before {
 		job, err := r.compiler.CompileCommand(t.Name, command, execContext, t.Dir, t.Timeout, nil, r.Stdout, r.Stderr, env, vars)
 		if err != nil {
-			return fmt.Errorf("\"before\" command compilation failed: %w", err)
+			return fmt.Errorf(`"before\" command compilation failed: %w`, err)
 		}
 
 		exec, err := executor.NewDefaultExecutor(job.Stdin, job.Stdout, job.Stderr)
@@ -257,7 +272,7 @@ func (r *TaskRunner) after(ctx context.Context, t *task.Task, env, vars *variabl
 	for _, command := range t.After {
 		job, err := r.compiler.CompileCommand(t.Name, command, execContext, t.Dir, t.Timeout, nil, r.Stdout, r.Stderr, env, vars)
 		if err != nil {
-			return fmt.Errorf("\"after\" command compilation failed: %w", err)
+			return fmt.Errorf(`"after" command compilation failed: %w`, err)
 		}
 
 		exec, err := executor.NewDefaultExecutor(job.Stdin, job.Stdout, job.Stderr)
@@ -274,7 +289,12 @@ func (r *TaskRunner) after(ctx context.Context, t *task.Task, env, vars *variabl
 	return nil
 }
 
+// contextForTask initializes a default or returns an initialized context from config.
+//
+// It checks whether there is a `taskctl.env` in the cwd if so it ingests it
+// and merges with the specified env.
 func (r *TaskRunner) contextForTask(t *task.Task) (c *ExecutionContext, err error) {
+
 	if t.Context == "" {
 		c = DefaultContext()
 	} else {
@@ -297,6 +317,8 @@ func (r *TaskRunner) contextForTask(t *task.Task) (c *ExecutionContext, err erro
 		return nil, err
 	}
 
+	// This will be run at every task start allowing dynamic changes
+	c.Env = c.Env.Merge(utils.DefaultTaskctlEnv())
 	return c, nil
 }
 

@@ -165,6 +165,18 @@ func TestExecutionGraph_Denormalize(t *testing.T) {
 		if val != "prod" {
 			t.Errorf("incorrectly inherited env across stages, got %s, wanted prod", val)
 		}
+
+		// test Context < Pipeline < Task precedence
+		// Context => GLOBAL_VAR: this is it
+		// Pipeline => GLOBAL_VAR: prodPipeline
+		// Task => GLOBAL_VAR: overwritteninTask
+		valGlobal, okGlobal := tp21.Env().Map()["GLOBAL_VAR"]
+		if !okGlobal {
+			t.Error("incorrectly built denormalized graph")
+		}
+		if valGlobal != "overwritteninTask" {
+			t.Errorf("incorrectly inherited env across stages, got %s, wanted overwritteninTask", valGlobal)
+		}
 	})
 }
 
@@ -176,19 +188,24 @@ contexts:
       name: alpine:latest
     env: 
       GLOBAL_VAR: this is it
-      TF_VAR_name_company: ${{ env.COMPANY }}
-      TF_VAR_name_project: ${{ env.PROJECT }}
-      TF_VAR_name_component: ${{ env.COMPONENT }}
-      TF_VAR_region: ${{ env.REGION }}
     envfile:
       exclude:
         - HOME
+
+ci_meta:
+  targetOpts:
+    github:
+      "on": 
+        push:
+          branches:
+            - gfooo
 
 pipelines:
   prod:
     - pipeline: graph:pipeline2
       env:
         ENV_NAME: prod
+        GLOBAL_VAR: prodPipeline
   graph:pipeline1:
     - task: graph:task2
       depends_on: 
@@ -232,6 +249,9 @@ tasks:
   graph:task2:
     command: |
       echo "hello task 2"
+      echo "another line1"
+      echo "another line2"
+      echo "another line3"
     context: podman
 
   graph:task3:
@@ -254,6 +274,7 @@ tasks:
     context: podman
     env:
       FOO: task1
+      GLOBAL_VAR: overwritteninTask
 
   task-p2:2:
     command:

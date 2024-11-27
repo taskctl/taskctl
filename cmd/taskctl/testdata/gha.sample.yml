@@ -19,7 +19,7 @@ ci_meta:
             - master
       env:
         TASKCTL_CONFIG_FILE: cmd/taskctl/testdata/gha.sample.yml
-        SOME_TOKEN_FOR_APP1: ${{ secrets.FOO_BAR_Secret }} # coming from the "native" GHA implementation
+        GLOBAL_VAR1: globVar1_foo
 
 contexts:
   podman:
@@ -81,7 +81,8 @@ pipelines:
     - pipeline: infrapipeline
       env:
         ENV_NAME: nonprod
-        SOME_TOKEN_FOR_APP1: fuzzzbarsdsd
+        # locally you can keep this value in a taskctl.env file
+        # SOME_TOKEN_FOR_APP1: fuzzzbarsdsd
     - task: post:task
       depends_on:
         - infrapipeline
@@ -90,7 +91,6 @@ pipelines:
     - pipeline: infrapipeline
       env:
         ENV_NAME: prod
-        SOME_TOKEN_FOR_APP1: overwritten_in_CI_by_ci_specific_secret
     - task: post:task
       depends_on:
         - infrapipeline
@@ -158,6 +158,11 @@ tasks:
       - echo "installing taskctl"
 
   infra:init:
+    description: |
+      multi line 
+
+      desc goes here
+      
     command:
       - | 
         for i in $(seq 1 2); do

@@ -13,7 +13,11 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"sync"
 	"text/template"
+
+	"github.com/Ensono/taskctl/pkg/variables"
+	"github.com/sirupsen/logrus"
 )
 
 // IsURL checks if given string is a valid URL
@@ -26,12 +30,16 @@ func IsURL(s string) bool {
 	return strings.HasPrefix(u.Scheme, "http")
 }
 
+const REPLACE_CHAR_DEFAULT = " "
+
+var (
+	ErrInvalidOptionsEnvFile = errors.New("invalid options on envfile")
+	ErrEnvfileFormatIncorrect = errors.New("envfile incorrect")
+)
+
 // Envile is a structure for storing the information required to generate an envfile which can be consumed
 // by the specified binary
 type Envfile struct {
-	// Generate will toggle the creation of the envFile
-	// this "envFile" is only used in executables of type `docker|podman`
-	Generate bool `mapstructure:"generate" yaml:"generate,omitempty" json:"generate,omitempty"`
 	// list of variables to be excluded
 	// from the injection into container runtimes
 	//
@@ -43,10 +51,8 @@ type Envfile struct {
 	// Both of these will be skipped
 	Exclude []string `mapstructure:"exclude" yaml:"exclude,omitempty" json:"exclude,omitempty"`
 	Include []string `mapstructure:"include" yaml:"include,omitempty" json:"include,omitempty"`
-	// Path is generated using task name and current timestamp
-	// TODO: include additional graph info about the execution
-	// e.g. owning pipeline (if any) execution number
-	Path        string `mapstructure:"path" yaml:"path,omitempty" json:"path,omitempty"`
+	// PathValue points to the file to read in and compute using the modify/include/exclude instructions.
+	PathValue   string `mapstructure:"path" yaml:"path,omitempty" json:"path,omitempty"`
 	ReplaceChar string `mapstructure:"replace_char" yaml:"replace_char,omitempty" json:"replace_char,omitempty"`
 	Quote       bool   `mapstructure:"quote" yaml:"quote,omitempty" json:"quote,omitempty"`
 	// Modify specifies the modifications to make to each env var and whether it meets the criteria
@@ -59,11 +65,17 @@ type Envfile struct {
 	// defaults to .taskctl in the current directory
 	// again this should be hidden from the user...
 	GeneratedDir string `mapstructure:"generated_dir" yaml:"generated_dir,omitempty" json:"generated_dir,omitempty"`
+	// mutex is not copieable - during denormalization we create a new instance
+	// during generate the paths will be different
+	// during read it is if path is provided
+	mu sync.Mutex
+	// generatedFilePath is the path to the generated file path, which holds the unique task name reference
+	// It will be merged with env variables from os.Environ(), supplied `context.container.env`, contents of Path if not empty.
+	// All Include/Exclude Modifications are applied to the final environment Key/Value pairs.
+	//
+	// Single file is injected via the --env-file option to the docker|podman command.
+	generatedFilePath string
 }
-
-const REPLACE_CHAR_DEFAULT = " "
-
-var ErrInvalidOptionsEnvFile = errors.New("invalid options on envfile")
 
 // Validate checks input is correct
 //
@@ -95,12 +107,35 @@ type EnvFileOpts func(*Envfile)
 func NewEnvFile(opts ...EnvFileOpts) *Envfile {
 	e := &Envfile{}
 	e.ReplaceChar = REPLACE_CHAR_DEFAULT
-	// e.Path = "envfile"
+	// can be overridden by Opts
 	e.GeneratedDir = ".taskctl"
 	for _, o := range opts {
 		o(e)
 	}
+	e.mu = sync.Mutex{}
 	return e
+}
+
+func (e *Envfile) WithPath(path string) *Envfile {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.PathValue = path
+	return e
+}
+
+func (e *Envfile) Path() string {
+	return e.PathValue
+}
+
+func (e *Envfile) WithGeneratedPath(path string) *Envfile {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.generatedFilePath = path
+	return e
+}
+
+func (e *Envfile) GeneratedPath() string {
+	return e.generatedFilePath
 }
 
 // ConvertEnv converts map representing the environment to array of strings in the form "key=value"
@@ -242,6 +277,23 @@ func MustGetUserHomeDir() string {
 	return hd
 }
 
+// ReaderFromPath returns an io.ReaderCloser from provided path
+// Returning false if the file does not exist or is unable to read it
+func ReaderFromPath(envfile *Envfile) (io.ReadCloser, bool) {
+	if envfile == nil {
+		return nil, false
+	}
+	if fi, err := os.Stat(envfile.PathValue); fi != nil && err == nil {
+		f, err := os.Open(envfile.PathValue)
+		if err != nil {
+			logrus.Debugf("unable to open %s", envfile.PathValue)
+			return nil, false
+		}
+		return f, true
+	}
+	return nil, false
+}
+
 // ReadEnvFile reads env file inv `k=v` format
 func ReadEnvFile(r io.ReadCloser) (map[string]string, error) {
 	envs := make(map[string]string)
@@ -263,6 +315,34 @@ func ReadEnvFile(r io.ReadCloser) (map[string]string, error) {
 	}
 
 	return envs, nil
+}
+
+// TASKCTL_ENV_FILE is the default location of env file ingested by taskctl for every run.
+const TASKCTL_ENV_FILE string = "taskctl.env"
+
+// DefaultTaskctlEnv checks if there is a file in the current directory `taskctl.env`
+// if we ingest it into the Env variable
+// giving preference to the `taskctl.env` specified K/V.
+//
+// Or should this be done once on start up?
+func DefaultTaskctlEnv() *variables.Variables {
+	defaultVars := variables.NewVariables()
+	if fi, err := os.Stat(TASKCTL_ENV_FILE); fi != nil && err == nil {
+		f, err := os.Open(fi.Name()) // this will always be relative to the executable
+		if err != nil {
+			logrus.Debug("unable to open default taskctl.env")
+			return defaultVars
+		}
+
+		m, err := ReadEnvFile(f)
+		if err != nil {
+			logrus.Debug("unable to read default taskctl.env")
+			return defaultVars
+		}
+		return defaultVars.Merge(variables.FromMap(m))
+	}
+	// file does not exist return empty vars
+	return defaultVars
 }
 
 // ConvertToMachineFriendly converts a string containing characters that would not play nice key names

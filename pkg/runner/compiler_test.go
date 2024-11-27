@@ -15,9 +15,7 @@ var shBin = utils.Binary{
 	Args: []string{"-c"},
 }
 
-var envFile = utils.Envfile{
-	Generate: false,
-}
+var envFile = utils.NewEnvFile()
 
 func TestTaskCompiler_CompileCommand(t *testing.T) {
 	tc := runner.NewTaskCompiler()
@@ -25,7 +23,7 @@ func TestTaskCompiler_CompileCommand(t *testing.T) {
 	job, err := tc.CompileCommand(
 		"test1",
 		"echo 1",
-		runner.NewExecutionContext(&shBin, "/tmp", variables.FromMap(map[string]string{"HOME": "/root"}), &envFile, nil, nil, nil, nil),
+		runner.NewExecutionContext(&shBin, "/tmp", variables.FromMap(map[string]string{"HOME": "/root"}), envFile, nil, nil, nil, nil),
 		"/root", nil,
 		&bytes.Buffer{},
 		&bytes.Buffer{},
@@ -45,7 +43,7 @@ func TestTaskCompiler_CompileCommand(t *testing.T) {
 		t.Error()
 	}
 
-	quotedContext := runner.NewExecutionContext(&shBin, "/", variables.NewVariables(), &envFile, []string{"false"}, []string{"false"}, []string{"false"}, []string{"false"}, runner.WithQuote("\""))
+	quotedContext := runner.NewExecutionContext(&shBin, "/", variables.NewVariables(), envFile, []string{"false"}, []string{"false"}, []string{"false"}, []string{"false"}, runner.WithQuote("\""))
 	job, err = tc.CompileCommand(
 		"test1",
 		"echo 1",
@@ -72,7 +70,7 @@ func TestTaskCompiler_CompileTask(t *testing.T) {
 		Commands:  []string{"echo 1"},
 		Variables: variables.FromMap(map[string]string{"TestInterpolatedVar": "TestVar={{.TestVar}}"}),
 	},
-		runner.NewExecutionContext(&shBin, "/tmp", variables.FromMap(map[string]string{"HOME": "/root"}), &envFile, nil, nil, nil, nil),
+		runner.NewExecutionContext(&shBin, "/tmp", variables.FromMap(map[string]string{"HOME": "/root"}), envFile, nil, nil, nil, nil),
 		&bytes.Buffer{},
 		&bytes.Buffer{},
 		&bytes.Buffer{},

@@ -71,7 +71,7 @@ tasks:
   test:
     command:
       - echo "running tests..."
-      - go test $(go list ./... | grep -v /local/) -v -race -mod=readonly -coverprofile=.coverage/out > .coverage/test.out
+      - go test $(go list ./... | grep -v /local/) -v -race -mod=readonly -shuffle=on -coverprofile=.coverage/out > .coverage/test.out
       - cat .coverage/test.out | go-junit-report > .coverage/report-junit.xml
       - gocov convert .coverage/out | gocov-xml > .coverage/report-cobertura.xml
     after:

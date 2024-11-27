@@ -8,6 +8,7 @@ import (
 
 	"github.com/Ensono/taskctl/internal/cmdutils"
 	"github.com/Ensono/taskctl/internal/config"
+	"github.com/Ensono/taskctl/pkg/output"
 	"github.com/Ensono/taskctl/pkg/runner"
 	"github.com/Ensono/taskctl/pkg/scheduler"
 	"github.com/Ensono/taskctl/pkg/task"
@@ -106,7 +107,7 @@ func newRunCmd(rootCmd *TaskCtlCmd) {
 		},
 	})
 
-	rc.PersistentFlags().StringVarP(&rootCmd.rootFlags.Output, "output", "o", "", "output format (raw, prefixed or cockpit)")
+	rc.PersistentFlags().StringVarP(&rootCmd.rootFlags.Output, "output", "o", string(output.RawOutput), "output format (raw, prefixed or cockpit)")
 	_ = rootCmd.viperConf.BindEnv("output", "TASKCTL_OUTPUT_FORMAT")
 	_ = rootCmd.viperConf.BindPFlag("output", rc.PersistentFlags().Lookup("output"))
 

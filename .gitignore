@@ -15,5 +15,5 @@ local/
 # Generated outputs
 .coverage/
 .taskctl/
-# default env file
-taskctl.env
+# local env files
+*.env

@@ -115,8 +115,6 @@ type PipelineDefinition struct {
 	// Dir is the place where to run the task(s) in.
 	// If empty - currentDir is used
 	Dir string `mapstructure:"dir" yaml:"dir,omitempty" json:"dir,omitempty"`
-	// Envfile will overwrite keys set in env
-	Envfile *utils.Envfile `mapstructure:"envfile" yaml:"envfile,omitempty" json:"envfile,omitempty"`
 	// Env is the Key: Value map of env vars to inject into the tasks within this pipeline
 	Env EnvVarMapType `mapstructure:"env" yaml:"env,omitempty" json:"env,omitempty"`
 	// Variables is the Key: Value map of vars vars to inject into the tasks
@@ -156,8 +154,18 @@ type TaskDefinition struct {
 	Artifacts    *task.Artifact `mapstructure:"artifacts" yaml:"artifacts,omitempty" json:"artifacts,omitempty"`
 	// Env key=value map that will overwrite everything set at a higher level
 	Env EnvVarMapType `mapstructure:"env" yaml:"env,omitempty" json:"env,omitempty"`
-	// EnvFile string pointing to the file that could be read in as an envFile
-	// contents will be merged with the Env (os.Environ())
+	// EnvFile is an object points to a path of an env file.
+	//
+	// This file is read dynamically each time before the task execution.
+	// Any keys specified in the `env` key=value map will overwrite those set in the env file.
+	//
+	// The precedence of environment setting can be summarized as below
+	// Context < Pipeline < Task
+	//
+	// This means that whilst all env vars will be merged downwards to the task
+	// i.e. key specified at a task level will overwrite those set at any level above.
+	//
+	// Setting a key in an envfile with the same name will be overwritten by an `env.key`.
 	Envfile *utils.Envfile `mapstructure:"envfile" yaml:"envfile,omitempty" json:"envfile,omitempty"`
 	// Variables merged with others if any already priovided
 	// These will overwrite any previously set keys

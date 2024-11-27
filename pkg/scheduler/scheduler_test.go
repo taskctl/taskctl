@@ -50,23 +50,24 @@ func TestExecutionGraph_Scheduler(t *testing.T) {
 
 	})
 
-	graph, err := scheduler.NewExecutionGraph("t1", stage1, stage2, stage3, stage4)
-	if err != nil {
+	graph, err := scheduler.NewExecutionGraph("g1", stage1, stage2, stage3, stage4)
+	if err != nil || graph.Error() != nil {
 		t.Fatal(err)
 	}
 
 	taskRunner := TestTaskRunner{}
 
 	schdlr := scheduler.NewScheduler(taskRunner)
+	// Should error on stage3
 	err = schdlr.Schedule(graph)
 	if err == nil {
-		t.Fatal(err)
+		t.Fatalf("error not captured, got %q, wanted an error", err)
 	}
 
 	if graph.Duration() <= 0 {
 		t.Fatal()
 	}
-
+	// Should cancel after stage3
 	if stage3.ReadStatus() != scheduler.StatusCanceled || stage4.ReadStatus() != scheduler.StatusCanceled {
 		t.Fatal("stage3 was not cancelled")
 	}

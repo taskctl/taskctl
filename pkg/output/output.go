@@ -47,7 +47,7 @@ func NewTaskOutput(t *task.Task, format string, stdout, stderr io.Writer) (*Task
 	case CockpitOutput:
 		o.decorator = NewCockpitOutputWriter(t, stdout, o.closeCh)
 	default:
-		return nil, fmt.Errorf("unknown decorator \"%s\" requested", format)
+		return nil, fmt.Errorf("unknown output decorator \"%s\" requested", format)
 	}
 
 	return o, nil

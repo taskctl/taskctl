@@ -63,10 +63,7 @@ func (vars *Variables) Map() map[string]interface{} {
 
 // Merge merges into current container with the src Container
 // src will overwrite the existing keys if exists
-// returns a the merged Container
-//
-// TODO: since we are dealing with pointers this does not need to return anything
-// instead update only the underlying reference, create new story for this.
+// returns a new instance of the merged *Variables
 func (vars *Variables) Merge(src *Variables) *Variables {
 	dst := &Variables{}
 
@@ -81,13 +78,6 @@ func (vars *Variables) Merge(src *Variables) *Variables {
 	}
 
 	return dst
-}
-
-func (vars *Variables) MergeV2(src *Variables) *Variables {
-	for k, v := range src.Map() {
-		vars.Set(k, v)
-	}
-	return vars
 }
 
 // With creates new container and sets key to given value

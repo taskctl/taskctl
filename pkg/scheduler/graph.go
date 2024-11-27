@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/Ensono/taskctl/internal/utils"
 )
 
 var (
@@ -12,17 +14,24 @@ var (
 	ErrCycleDetected = errors.New("cycle detected")
 	// ErrNodeNotFound occurs when node is not found in the graph
 	ErrNodeNotFound = errors.New("node not found")
+	ErrRunTimeFault = errors.New("task execution fault")
 )
 
 const (
 	RootNodeName = "root"
 )
 
+type GraphError struct {
+	stage *Stage
+	err   error
+}
+
 // ExecutionGraph is a DAG whose nodes are Stages and edges are their dependencies
 type ExecutionGraph struct {
-	error
+	errors    []GraphError
 	Generator map[string]any
 	Env       map[string]string
+	EnvFile   *utils.Envfile
 	name      string
 	alias     string
 	nodes     map[string]*Stage
@@ -47,6 +56,7 @@ func NewExecutionGraph(name string, stages ...*Stage) (*ExecutionGraph, error) {
 	nodes := map[string]*Stage{RootNodeName: rootNode}
 
 	graph := &ExecutionGraph{
+		errors:   []GraphError{},
 		nodes:    nodes,
 		name:     name,
 		parent:   make(map[string][]string),
@@ -156,9 +166,11 @@ func (g *ExecutionGraph) Children(node string) map[string]*Stage {
 // on the same level to show in that order before the level below and so on.
 //
 // When generating CI definitions - we don't need to generate the same jobs/steps over and over again
-// they will be referenced with a needs/depends_on/etc... keyword
-func (g *ExecutionGraph) BFSNodesFlattened(nodeName string) []*Stage {
-	bfsStages := []*Stage{}
+// they will be referenced with a needs/depends_on/etc... keyword.
+//
+// Returns a slice of stages in this level of the graph.
+func (g *ExecutionGraph) BFSNodesFlattened(nodeName string) StageList {
+	bfsStages := StageList{}
 	// Create a queue to keep track of nodes to visit
 	queue := []string{nodeName}
 	// Create a map to keep track of visited nodes
@@ -214,9 +226,29 @@ func (g *ExecutionGraph) cycleDfs(node string, visited map[string]bool, inStack 
 	return nil
 }
 
+func (g *ExecutionGraph) WithStageError(stage *Stage, err error) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.errors = append(g.errors, GraphError{stage: stage, err: err})
+}
+
 // LastError returns latest error appeared during stages execution
 func (g *ExecutionGraph) LastError() error {
-	return g.error
+	if len(g.errors) > 0 {
+		return g.errors[len(g.errors)-1].err
+	}
+	return nil
+}
+
+func (g *ExecutionGraph) Error() error {
+	if len(g.errors) > 0 {
+		es := ""
+		for _, v := range g.errors {
+			es += fmt.Sprintf("stage: %s\nerror: %v\n", v.stage.Name, v.err)
+		}
+		return fmt.Errorf("%w, %s", ErrRunTimeFault, es)
+	}
+	return nil
 }
 
 // Name returns the name of the graph

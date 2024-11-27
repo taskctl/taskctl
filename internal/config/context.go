@@ -14,7 +14,7 @@ import (
 	"github.com/Ensono/taskctl/internal/utils"
 )
 
-var defautlContainerExcludes = []string{"PATH", "HOME", "TMPDIR"}
+var DefaultContainerExcludes = []string{"PATH", "HOME", "TMPDIR"}
 
 var ErrBuildContextIncorrect = errors.New("build context properties are incorrect")
 
@@ -68,15 +68,14 @@ func newEnvFile(defEnvFile *utils.Envfile, isContainerContext bool) (*utils.Envf
 	}
 
 	envFile := utils.NewEnvFile(func(e *utils.Envfile) {
-		e.Generate = defEnvFile.Generate
-		if isContainerContext {
-			e.Generate = true
-		}
+		// REMOVED Generate - as we will always generate when the context is container
+		// We will always inject env file from path if present
 		e.Exclude = defEnvFile.Exclude
 		// add default excludes from host to container
 		if isContainerContext {
-			e.Exclude = append(e.Exclude, defautlContainerExcludes...)
+			e.Exclude = append(e.Exclude, DefaultContainerExcludes...)
 		}
+		e.PathValue = defEnvFile.PathValue
 		e.Include = defEnvFile.Include
 		e.Modify = defEnvFile.Modify
 		e.Quote = defEnvFile.Quote
@@ -90,7 +89,7 @@ func newEnvFile(defEnvFile *utils.Envfile, isContainerContext bool) (*utils.Envf
 
 func contextExecutable(def *ContextDefinition) *utils.Binary {
 	if def.Container != nil && def.Container.Name != "" {
-		// docker run --rm --env-file $EVNFILE --entrypoint $ENTRYPOINT -v ${PWD}:/workspace/.taskctl  $IMAGE
+		// docker run --rm --env-file $ENVFILE --entrypoint $ENTRYPOINT -v ${PWD}:/workspace/.taskctl  $IMAGE
 		// args := def.Container.Image.ContainerArgs
 		executable := &utils.Binary{
 			IsContainer: true,

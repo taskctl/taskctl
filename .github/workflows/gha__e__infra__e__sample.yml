@@ -27,79 +27,8 @@ jobs:
       run: taskctl run task lint:ci
       env:
         ENV_NAME: ci
-  InfraProd:
-    name: InfraProd
-    needs:
-    - lint
-    runs-on: ubuntu-24.04
-    steps:
-    - uses: actions/checkout@v4
-    - name: Install taskctl
-      id: install-taskctl
-      run: |-
-        rm -rf /tmp/taskctl-linux-amd64-v1.8.0-alpha-aaaabbbb1234
-        wget https://github.com/Ensono/taskctl/releases/download/v1.8.0-alpha-aaaabbbb1234/taskctl-linux-amd64 -O /tmp/taskctl-linux-amd64-v1.8.0-alpha-aaaabbbb1234
-        cp /tmp/taskctl-linux-amd64-v1.8.0-alpha-aaaabbbb1234 /usr/local/bin/taskctl
-        chmod u+x /usr/local/bin/taskctl
-      shell: bash
-    - name: gha_infra_sample-_InfraProd-_infrapipeline-_infra_init
-      id: gha_infra_sample-_InfraProd-_infrapipeline-_infra_init
-      run: taskctl run task infra:init
-      env:
-        BOOL: "1"
-        ENV_NAME: prod
-        SOME_TOKEN_FOR_APP1: overwritten_in_CI_by_ci_specific_secret
-        TF_DIR: foo/bar
-    - name: gha_infra_sample-_InfraProd-_infrapipeline-_infra_plan
-      id: gha_infra_sample-_InfraProd-_infrapipeline-_infra_plan
-      run: taskctl run task infra:plan
-      env:
-        BOOL: "1"
-        ENV_NAME: prod
-        SOME_TOKEN_FOR_APP1: overwritten_in_CI_by_ci_specific_secret
-        TF_DIR: foo/bar
-    - name: gha_infra_sample-_InfraProd-_infrapipeline-_infra_apply
-      id: gha_infra_sample-_InfraProd-_infrapipeline-_infra_apply
-      run: taskctl run task infra:apply
-      env:
-        ENV_NAME: prod
-        SOME_TOKEN_FOR_APP1: overwritten_in_CI_by_ci_specific_secret
-        TF_DIR: foo/bar
-    - name: gha_infra_sample-_InfraProd-_infrapipeline-_post_apply
-      id: gha_infra_sample-_InfraProd-_infrapipeline-_post_apply
-      run: taskctl run task post:apply
-      env:
-        ENV_NAME: prod
-        SOME_TOKEN_FOR_APP1: overwritten_in_CI_by_ci_specific_secret
-    - name: gha_infra_sample-_InfraProd-_infrapipeline-_helm-_helm_test
-      id: gha_infra_sample-_InfraProd-_infrapipeline-_helm-_helm_test
-      run: taskctl run task helm:test
-      env:
-        ENV_NAME: prod
-        SOME_TOKEN_FOR_APP1: overwritten_in_CI_by_ci_specific_secret
-    - name: gha_infra_sample-_InfraProd-_infrapipeline-_helm-_helm_deploy
-      id: gha_infra_sample-_InfraProd-_infrapipeline-_helm-_helm_deploy
-      run: taskctl run task helm:deploy
-      env:
-        ENV_NAME: prod
-        SOME_TOKEN_FOR_APP1: overwritten_in_CI_by_ci_specific_secret
-    - name: gha_infra_sample-_InfraProd-_infrapipeline-_helm-_helm_notification
-      id: gha_infra_sample-_InfraProd-_infrapipeline-_helm-_helm_notification
-      run: taskctl run task helm:notification
-      env:
-        ENV_NAME: prod
-        SOME_TOKEN_FOR_APP1: overwritten_in_CI_by_ci_specific_secret
-    - name: gha_infra_sample-_InfraProd-_infrapipeline-_helm-_helm_docs
-      id: gha_infra_sample-_InfraProd-_infrapipeline-_helm-_helm_docs
-      run: taskctl run task helm:docs
-      env:
-        ENV_NAME: prod
-        SOME_TOKEN_FOR_APP1: overwritten_in_CI_by_ci_specific_secret
-    - name: gha_infra_sample-_InfraProd-_post_task
-      id: gha_infra_sample-_InfraProd-_post_task
-      run: taskctl run task post:task
-    if: github.ref == 'refs/heads/main'
-    environment: prod
+    env:
+      SOME_TOKEN_FOR_APP1: ${{ secrets.FOO_BAR_Secret }}
   InfraDev:
     name: InfraDev
     needs:
@@ -121,7 +50,6 @@ jobs:
       env:
         BOOL: "1"
         ENV_NAME: nonprod
-        SOME_TOKEN_FOR_APP1: fuzzzbarsdsd
         TF_DIR: foo/bar
     - name: gha_infra_sample-_InfraDev-_infrapipeline-_infra_plan
       id: gha_infra_sample-_InfraDev-_infrapipeline-_infra_plan
@@ -129,54 +57,49 @@ jobs:
       env:
         BOOL: "1"
         ENV_NAME: nonprod
-        SOME_TOKEN_FOR_APP1: fuzzzbarsdsd
         TF_DIR: foo/bar
     - name: gha_infra_sample-_InfraDev-_infrapipeline-_infra_apply
       id: gha_infra_sample-_InfraDev-_infrapipeline-_infra_apply
       run: taskctl run task infra:apply
       env:
         ENV_NAME: nonprod
-        SOME_TOKEN_FOR_APP1: fuzzzbarsdsd
         TF_DIR: foo/bar
     - name: gha_infra_sample-_InfraDev-_infrapipeline-_post_apply
       id: gha_infra_sample-_InfraDev-_infrapipeline-_post_apply
       run: taskctl run task post:apply
       env:
         ENV_NAME: nonprod
-        SOME_TOKEN_FOR_APP1: fuzzzbarsdsd
     - name: gha_infra_sample-_InfraDev-_infrapipeline-_helm-_helm_test
       id: gha_infra_sample-_InfraDev-_infrapipeline-_helm-_helm_test
       run: taskctl run task helm:test
       env:
         ENV_NAME: nonprod
-        SOME_TOKEN_FOR_APP1: fuzzzbarsdsd
     - name: gha_infra_sample-_InfraDev-_infrapipeline-_helm-_helm_deploy
       id: gha_infra_sample-_InfraDev-_infrapipeline-_helm-_helm_deploy
       run: taskctl run task helm:deploy
       env:
         ENV_NAME: nonprod
-        SOME_TOKEN_FOR_APP1: fuzzzbarsdsd
     - name: gha_infra_sample-_InfraDev-_infrapipeline-_helm-_helm_docs
       id: gha_infra_sample-_InfraDev-_infrapipeline-_helm-_helm_docs
       run: taskctl run task helm:docs
       env:
         ENV_NAME: nonprod
-        SOME_TOKEN_FOR_APP1: fuzzzbarsdsd
     - name: gha_infra_sample-_InfraDev-_infrapipeline-_helm-_helm_notification
       id: gha_infra_sample-_InfraDev-_infrapipeline-_helm-_helm_notification
       run: taskctl run task helm:notification
       env:
         ENV_NAME: nonprod
-        SOME_TOKEN_FOR_APP1: fuzzzbarsdsd
     - name: gha_infra_sample-_InfraDev-_post_task
       id: gha_infra_sample-_InfraDev-_post_task
       run: taskctl run task post:task
     if: github.ref != 'refs/heads/main'
+    env:
+      SOME_TOKEN_FOR_APP1: ${{ secrets.FOO_BAR_Secret }}
     environment: nonprod
-  post_prod:
-    name: post_prod
+  InfraProd:
+    name: InfraProd
     needs:
-    - InfraProd
+    - lint
     runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v4
@@ -188,13 +111,58 @@ jobs:
         cp /tmp/taskctl-linux-amd64-v1.8.0-alpha-aaaabbbb1234 /usr/local/bin/taskctl
         chmod u+x /usr/local/bin/taskctl
       shell: bash
-    - name: gha_infra_sample-_post_prod
-      id: gha_infra_sample-_post_prod
-      run: taskctl run task post:task
+    - name: gha_infra_sample-_InfraProd-_infrapipeline-_infra_init
+      id: gha_infra_sample-_InfraProd-_infrapipeline-_infra_init
+      run: taskctl run task infra:init
+      env:
+        BOOL: "1"
+        ENV_NAME: prod
+        TF_DIR: foo/bar
+    - name: gha_infra_sample-_InfraProd-_infrapipeline-_infra_plan
+      id: gha_infra_sample-_InfraProd-_infrapipeline-_infra_plan
+      run: taskctl run task infra:plan
+      env:
+        BOOL: "1"
+        ENV_NAME: prod
+        TF_DIR: foo/bar
+    - name: gha_infra_sample-_InfraProd-_infrapipeline-_infra_apply
+      id: gha_infra_sample-_InfraProd-_infrapipeline-_infra_apply
+      run: taskctl run task infra:apply
       env:
         ENV_NAME: prod
+        TF_DIR: foo/bar
+    - name: gha_infra_sample-_InfraProd-_infrapipeline-_post_apply
+      id: gha_infra_sample-_InfraProd-_infrapipeline-_post_apply
+      run: taskctl run task post:apply
+      env:
+        ENV_NAME: prod
+    - name: gha_infra_sample-_InfraProd-_infrapipeline-_helm-_helm_test
+      id: gha_infra_sample-_InfraProd-_infrapipeline-_helm-_helm_test
+      run: taskctl run task helm:test
+      env:
+        ENV_NAME: prod
+    - name: gha_infra_sample-_InfraProd-_infrapipeline-_helm-_helm_deploy
+      id: gha_infra_sample-_InfraProd-_infrapipeline-_helm-_helm_deploy
+      run: taskctl run task helm:deploy
+      env:
+        ENV_NAME: prod
+    - name: gha_infra_sample-_InfraProd-_infrapipeline-_helm-_helm_docs
+      id: gha_infra_sample-_InfraProd-_infrapipeline-_helm-_helm_docs
+      run: taskctl run task helm:docs
+      env:
+        ENV_NAME: prod
+    - name: gha_infra_sample-_InfraProd-_infrapipeline-_helm-_helm_notification
+      id: gha_infra_sample-_InfraProd-_infrapipeline-_helm-_helm_notification
+      run: taskctl run task helm:notification
+      env:
+        ENV_NAME: prod
+    - name: gha_infra_sample-_InfraProd-_post_task
+      id: gha_infra_sample-_InfraProd-_post_task
+      run: taskctl run task post:task
+    if: github.ref == 'refs/heads/main'
     env:
-      ENV_NAME: prod
+      SOME_TOKEN_FOR_APP1: ${{ secrets.FOO_BAR_Secret }}
+    environment: prod
   post_dev:
     name: post_dev
     needs:
@@ -217,6 +185,28 @@ jobs:
         ENV_NAME: nonprod
     env:
       ENV_NAME: nonprod
+  post_prod:
+    name: post_prod
+    needs:
+    - InfraProd
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install taskctl
+      id: install-taskctl
+      run: |-
+        rm -rf /tmp/taskctl-linux-amd64-v1.8.0-alpha-aaaabbbb1234
+        wget https://github.com/Ensono/taskctl/releases/download/v1.8.0-alpha-aaaabbbb1234/taskctl-linux-amd64 -O /tmp/taskctl-linux-amd64-v1.8.0-alpha-aaaabbbb1234
+        cp /tmp/taskctl-linux-amd64-v1.8.0-alpha-aaaabbbb1234 /usr/local/bin/taskctl
+        chmod u+x /usr/local/bin/taskctl
+      shell: bash
+    - name: gha_infra_sample-_post_prod
+      id: gha_infra_sample-_post_prod
+      run: taskctl run task post:task
+      env:
+        ENV_NAME: prod
+    env:
+      ENV_NAME: prod
 env:
-  SOME_TOKEN_FOR_APP1: ${{ secrets.FOO_BAR_Secret }}
+  GLOBAL_VAR1: globVar1_foo
   TASKCTL_CONFIG_FILE: cmd/taskctl/testdata/gha.sample.yml
