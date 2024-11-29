@@ -12,6 +12,7 @@ import (
 	"github.com/Ensono/taskctl/pkg/runner"
 	"github.com/Ensono/taskctl/pkg/scheduler"
 	"github.com/Ensono/taskctl/pkg/task"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -48,8 +49,7 @@ func newRunCmd(rootCmd *TaskCtlCmd) {
 			if err != nil {
 				return err
 			}
-			runner.conf = conf
-
+			runner.ctx = rootCmd.Cmd.Context()
 			// display selector if nothing is supplied
 			if len(args) == 0 {
 				selected, err := cmdutils.DisplayTaskSelection(conf, false)
@@ -78,6 +78,8 @@ func newRunCmd(rootCmd *TaskCtlCmd) {
 			if err != nil {
 				return err
 			}
+			runner.ctx = rootCmd.Cmd.Context()
+
 			taskRunner, argsStringer, err := rootCmd.buildTaskRunner(args, conf)
 			if err != nil {
 				return err
@@ -150,7 +152,8 @@ func (r *runCmd) runTarget(taskRunner *runner.TaskRunner, conf *config.Config, a
 func (r *runCmd) runPipeline(g *scheduler.ExecutionGraph, taskRunner *runner.TaskRunner, summary bool) error {
 	sd := scheduler.NewScheduler(taskRunner)
 	go func() {
-		<-cancel // r.ctx.Done()
+		<-r.ctx.Done()
+		logrus.Info("gracefully exiting...")
 		sd.Cancel()
 	}()
 
@@ -167,6 +170,7 @@ func (r *runCmd) runPipeline(g *scheduler.ExecutionGraph, taskRunner *runner.Tas
 	}
 
 	if err := sd.Schedule(ng); err != nil {
+		logrus.Debug("returning error from sd.Schedule")
 		return err
 	}
 

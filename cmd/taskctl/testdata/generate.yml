@@ -61,7 +61,7 @@ tasks:
     command: |
       for i in $(seq 1 5); do
         echo "hello task 1 in env ${ENV_NAME} - iteration $i"
-        sleep 0
+        sleep 1
       done
     context: podman
 
@@ -99,7 +99,7 @@ tasks:
       - |
         for i in $(seq 1 5); do
           echo "hello, p2 ${FOO} - env: ${ENV_NAME:-unknown} - iteration $i"
-          sleep 0
+          sleep 1
         done
     env:
       FOO: task2
