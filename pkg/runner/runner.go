@@ -22,8 +22,6 @@ import (
 	"github.com/taskctl/taskctl/pkg/task"
 )
 
-var caser = cases.Title(language.English)
-
 // Runner describes tasks runner interface
 type Runner interface {
 	Run(t *task.Task) error
@@ -331,7 +329,7 @@ func (r *TaskRunner) checkTaskCondition(t *task.Task) (bool, error) {
 
 func (r *TaskRunner) storeTaskOutput(t *task.Task) {
 	var envVarName string
-	varName := fmt.Sprintf("Tasks.%s.Output", caser.String(t.Name))
+	varName := fmt.Sprintf("Tasks.%s.Output", cases.Title(language.English).String(t.Name))
 
 	if t.ExportAs == "" {
 		envVarName = fmt.Sprintf("%s_OUTPUT", strings.ToUpper(t.Name))

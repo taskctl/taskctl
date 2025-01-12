@@ -22,7 +22,6 @@ func TestNewTaskOutput_Prefixed(t *testing.T) {
 		t.Error()
 	}
 
-	slog.SetDefault(slog.New(slog.NewTextHandler(bufio.NewWriter(&b), nil)))
 	tt := task.FromCommands("echo 1")
 	tt.Name = "task1"
 	o, err := NewTaskOutput(

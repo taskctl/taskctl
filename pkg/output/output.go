@@ -62,12 +62,12 @@ func (o *TaskOutput) Stderr() io.Writer {
 }
 
 // Start should be called before task's output starts
-func (o TaskOutput) Start() error {
+func (o *TaskOutput) Start() error {
 	return o.decorator.WriteHeader()
 }
 
 // Finish should be called after task completes
-func (o TaskOutput) Finish() error {
+func (o *TaskOutput) Finish() error {
 	return o.decorator.WriteFooter()
 }
 

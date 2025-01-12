@@ -4,11 +4,9 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"log/slog"
 	"regexp"
 
 	"github.com/logrusorgru/aurora"
-
 	"github.com/taskctl/taskctl/pkg/task"
 )
 
@@ -18,13 +16,13 @@ var ansiRegexp = regexp.MustCompile(ansi)
 
 type prefixedOutputDecorator struct {
 	t *task.Task
-	w *bufio.Writer
+	w io.Writer
 }
 
 func newPrefixedOutputWriter(t *task.Task, w io.Writer) *prefixedOutputDecorator {
 	return &prefixedOutputDecorator{
 		t: t,
-		w: bufio.NewWriter(&lineWriter{t: t, dst: w}),
+		w: w,
 	}
 }
 
@@ -40,12 +38,7 @@ func (d *prefixedOutputDecorator) Write(p []byte) (int, error) {
 			break
 		}
 
-		_, err = d.w.Write(line)
-		if err != nil {
-			return 0, err
-		}
-
-		err = d.w.Flush()
+		_, err = d.writeLine(line)
 		if err != nil {
 			return 0, err
 		}
@@ -53,7 +46,7 @@ func (d *prefixedOutputDecorator) Write(p []byte) (int, error) {
 		p = p[advance:]
 	}
 
-	_, err := d.w.Write(p)
+	_, err := d.writeLine(p)
 	if err != nil {
 		return 0, err
 	}
@@ -62,29 +55,19 @@ func (d *prefixedOutputDecorator) Write(p []byte) (int, error) {
 }
 
 func (d *prefixedOutputDecorator) WriteHeader() error {
-	slog.Info(fmt.Sprintf("Running task %s...", d.t.Name))
-	return nil
+	_, err := d.w.Write([]byte(fmt.Sprintf("Running task %s...", d.t.Name)))
+	return err
 }
 
 func (d *prefixedOutputDecorator) WriteFooter() error {
-	err := d.w.Flush()
-	if err != nil {
-		slog.Warn(err.Error())
-	}
-
-	slog.Info(fmt.Sprintf("%s finished. Duration %s", d.t.Name, d.t.Duration()))
-	return nil
+	_, err := d.w.Write([]byte(fmt.Sprintf("%s finished. Duration %s", d.t.Name, d.t.Duration())))
+	return err
 }
 
-type lineWriter struct {
-	t   *task.Task
-	dst io.Writer
-}
-
-func (l lineWriter) Write(p []byte) (n int, err error) {
+func (d *prefixedOutputDecorator) writeLine(p []byte) (n int, err error) {
 	n = len(p)
 	p = ansiRegexp.ReplaceAllLiteral(p, []byte{})
-	_, err = fmt.Fprintf(l.dst, "%s: %s\r\n", aurora.Cyan(l.t.Name), p)
+	_, err = fmt.Fprintf(d.w, "%s: %s\r\n", aurora.Cyan(d.t.Name), p)
 
 	return n, err
 }

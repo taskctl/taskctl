@@ -1,9 +1,7 @@
 package output
 
 import (
-	"bufio"
 	"bytes"
-	"log/slog"
 	"strings"
 	"testing"
 
@@ -11,8 +9,7 @@ import (
 )
 
 func Test_prefixedOutputDecorator(t *testing.T) {
-	var l, b bytes.Buffer
-	slog.SetDefault(slog.New(slog.NewTextHandler(bufio.NewWriter(&l), nil)))
+	var b bytes.Buffer
 
 	dec := newPrefixedOutputWriter(&task.Task{Name: "task1"}, &b)
 	err := dec.WriteHeader()
@@ -20,7 +17,7 @@ func Test_prefixedOutputDecorator(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !strings.Contains(l.String(), "Running task task1...") {
+	if !strings.Contains(b.String(), "Running task task1...") {
 		t.Fatal()
 	}
 
@@ -38,7 +35,7 @@ func Test_prefixedOutputDecorator(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !strings.Contains(l.String(), "task1 finished") {
+	if !strings.Contains(b.String(), "task1 finished") {
 		t.Fatal()
 	}
 }

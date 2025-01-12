@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/taskctl/taskctl/pkg/variables"
@@ -43,6 +44,7 @@ type Watcher struct {
 	closed   chan struct{}
 	isClosed bool
 	mu       sync.Mutex
+	running  atomic.Bool
 
 	eventsWg sync.WaitGroup
 }
@@ -113,6 +115,8 @@ func (w *Watcher) Run(r *runner.TaskRunner) (err error) {
 		}
 	}
 
+	w.running.Store(true)
+
 	go func() {
 		err := w.r.Run(w.task)
 		if err != nil {
@@ -161,7 +165,7 @@ func (w *Watcher) Run(r *runner.TaskRunner) (err error) {
 
 // Close  stops this watcher
 func (w *Watcher) Close() {
-	if w.isClosed {
+	if w.isClosed || !w.running.Load() {
 		return
 	}
 	if w.fsw != nil {
@@ -174,6 +178,10 @@ func (w *Watcher) Close() {
 	w.isClosed = true
 	w.mu.Unlock()
 	<-w.finished
+}
+
+func (w *Watcher) Running() bool {
+	return w.running.Load()
 }
 
 func (w *Watcher) handle(event fsnotify.Event) {

@@ -64,7 +64,7 @@ tasks:
 
   goreleaser:
     command:
-      - goreleaser --debug --rm-dist
+      - goreleaser --clean
 
   gofmt:
     dir: "{{.Root}}"
