@@ -1,8 +1,10 @@
-name: Release ${{ github.event.release.tag_name }}
+name: Release
+
 on:
   create:
     tags:
       - '*'
+  workflow_dispatch:
 
 jobs:
   goreleaser:
