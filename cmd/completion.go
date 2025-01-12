@@ -1,10 +1,9 @@
-package taskctl_cmd
+package cmd
 
 import (
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
-	"io"
+	"log/slog"
 )
 
 func newCompletionCommand() *cli.Command {
@@ -13,8 +12,7 @@ func newCompletionCommand() *cli.Command {
 		Usage:     "generates completion scripts",
 		UsageText: helpText,
 		Action: func(c *cli.Context) error {
-			logrus.SetLevel(logrus.PanicLevel)
-			logrus.SetOutput(io.Discard)
+			slog.SetLogLoggerLevel(slog.LevelError)
 
 			var shell string
 			if !c.Args().Present() {

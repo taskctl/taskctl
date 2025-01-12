@@ -2,13 +2,12 @@ package config
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/taskctl/taskctl/pkg/variables"
 
 	"dario.cat/mergo"
-	"github.com/sirupsen/logrus"
-
 	"github.com/taskctl/taskctl/internal/watch"
 	"github.com/taskctl/taskctl/pkg/output"
 	"github.com/taskctl/taskctl/pkg/runner"
@@ -50,7 +49,7 @@ type Config struct {
 func (cfg *Config) merge(src *Config) error {
 	defer func() {
 		if err := recover(); err != nil {
-			logrus.Error(err)
+			slog.Error(fmt.Sprintf("%s", err))
 		}
 	}()
 

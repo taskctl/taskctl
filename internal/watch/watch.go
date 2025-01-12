@@ -1,10 +1,10 @@
 package watch
 
 import (
+	"fmt"
+	"log/slog"
 	"sync"
 	"time"
-
-	"github.com/sirupsen/logrus"
 
 	"github.com/taskctl/taskctl/pkg/variables"
 
@@ -104,10 +104,10 @@ func NewWatcher(name string, events, watch, exclude []string, t *task.Task) (w *
 func (w *Watcher) Run(r *runner.TaskRunner) (err error) {
 	w.r = r
 
-	logrus.Debugf("starting watcher %s", w.name)
+	slog.Debug(fmt.Sprintf("starting watcher %s", w.name))
 	for _, path := range w.paths {
 		err = w.fsw.Add(path)
-		logrus.Debugf("watcher \"%s\" is waiting for events in %s", w.name, path)
+		slog.Debug(fmt.Sprintf("watcher \"%s\" is waiting for events in %s", w.name, path))
 		if err != nil {
 			return err
 		}
@@ -116,7 +116,7 @@ func (w *Watcher) Run(r *runner.TaskRunner) (err error) {
 	go func() {
 		err := w.r.Run(w.task)
 		if err != nil {
-			logrus.Error(err)
+			slog.Error(err.Error())
 		}
 	}()
 
@@ -137,18 +137,18 @@ func (w *Watcher) Run(r *runner.TaskRunner) (err error) {
 				}
 				w.eventsWg.Add(1)
 				go w.handle(event)
-				logrus.Debugf("%s: event \"%s\" in file \"%s\"", w.name, event.Op.String(), event.Name)
+				slog.Debug(fmt.Sprintf("%s: event \"%s\" in file \"%s\"", w.name, event.Op.String(), event.Name))
 				if event.Op == fsnotify.Rename {
 					err = w.fsw.Add(event.Name)
 					if err != nil {
-						logrus.Error(err)
+						slog.Error(err.Error())
 					}
 				}
 			case err, ok := <-w.fsw.Errors:
 				if !ok {
 					return
 				}
-				logrus.Error(err)
+				slog.Error(err.Error())
 			default:
 			}
 		}
@@ -167,7 +167,7 @@ func (w *Watcher) Close() {
 	if w.fsw != nil {
 		err := w.fsw.Close()
 		if err != nil {
-			logrus.Error(err)
+			slog.Error(err.Error())
 		}
 	}
 	w.mu.Lock()
@@ -185,7 +185,7 @@ func (w *Watcher) handle(event fsnotify.Event) {
 	}
 
 	w.r.Cancel()
-	logrus.Debugf("running task \"%s\" for watcher \"%s\"", w.task.Name, w.name)
+	slog.Debug(fmt.Sprintf("running task \"%s\" for watcher \"%s\"", w.task.Name, w.name))
 
 	t := *w.task
 	t.Env = t.Env.Merge(variables.FromMap(map[string]string{
@@ -200,6 +200,6 @@ func (w *Watcher) handle(event fsnotify.Event) {
 
 	err := w.r.Run(&t)
 	if err != nil {
-		logrus.Error(err)
+		slog.Error(err.Error())
 	}
 }

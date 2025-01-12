@@ -3,13 +3,13 @@ package executor
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"strings"
 
 	"mvdan.cc/sh/v3/expand"
-
-	"github.com/sirupsen/logrus"
 
 	"mvdan.cc/sh/v3/interp"
 	"mvdan.cc/sh/v3/syntax"
@@ -81,7 +81,7 @@ func (e *DefaultExecutor) Execute(ctx context.Context, job *Job) ([]byte, error)
 		job.Dir = e.dir
 	}
 
-	logrus.Debugf("Executing \"%s\"", command)
+	slog.Debug(fmt.Sprintf("Executing \"%s\"", command))
 
 	e.interp.Dir = job.Dir
 	e.interp.Env = expand.ListEnviron(env...)

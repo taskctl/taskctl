@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"mime"
 	"net/http"
 	"net/url"
@@ -17,7 +18,6 @@ import (
 	"dario.cat/mergo"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pelletier/go-toml"
-	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 
 	"github.com/taskctl/taskctl/pkg/utils"
@@ -92,7 +92,7 @@ func (cl *Loader) Load(file string) (*Config, error) {
 	}
 	cl.dst.Variables.Set("Root", cl.dir)
 
-	logrus.Debugf("config %s loaded", file)
+	slog.Debug(fmt.Sprintf("config %s loaded", file))
 	return cl.dst, nil
 }
 
@@ -173,7 +173,7 @@ func (cl *Loader) load(file string) (config map[string]interface{}, err error) {
 					raw, err = cl.loadDir(importFile)
 				}
 				if err != nil {
-					logrus.Error(err)
+					slog.Error(err.Error())
 				}
 			}
 			if err != nil {

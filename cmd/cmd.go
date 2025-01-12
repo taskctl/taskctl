@@ -1,10 +1,11 @@
-package taskctl_cmd
+package cmd
 
 import (
 	"errors"
 	"fmt"
 	"github.com/taskctl/taskctl/pkg/runner"
 	"io"
+	"log/slog"
 	"os"
 	"os/signal"
 	"sort"
@@ -14,7 +15,6 @@ import (
 	"github.com/logrusorgru/aurora"
 	"github.com/manifoldco/promptui"
 
-	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 
 	"github.com/taskctl/taskctl/internal/config"
@@ -119,14 +119,14 @@ func NewApp() *cli.App {
 			}
 
 			if c.Bool("debug") || cfg.Debug {
-				logrus.SetLevel(logrus.DebugLevel)
+				slog.SetLogLoggerLevel(slog.LevelDebug)
 			} else {
-				logrus.SetLevel(logrus.InfoLevel)
+				slog.SetLogLoggerLevel(slog.LevelInfo)
 			}
 
 			if c.Bool("quiet") {
 				c.App.ErrWriter = io.Discard
-				logrus.SetOutput(io.Discard)
+				slog.SetDefault(slog.New(slog.NewTextHandler(io.Discard, nil)))
 				cfg.Quiet = true
 			} else {
 				if c.IsSet("output") {

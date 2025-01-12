@@ -2,6 +2,8 @@ package runner
 
 import (
 	"context"
+	"fmt"
+	"log/slog"
 	"sync"
 
 	"github.com/taskctl/taskctl/pkg/executor"
@@ -9,8 +11,6 @@ import (
 	"github.com/taskctl/taskctl/pkg/variables"
 
 	"github.com/taskctl/taskctl/pkg/utils"
-
-	"github.com/sirupsen/logrus"
 )
 
 // ExecutionContext allow you to set up execution environment, variables, binary which will run your task, up/down commands etc.
@@ -65,7 +65,7 @@ func (c *ExecutionContext) Up() error {
 				c.mu.Lock()
 				c.startupError = err
 				c.mu.Unlock()
-				logrus.Errorf("context startup error: %s", err)
+				slog.Error(fmt.Sprintf("context startup error: %s", err.Error()))
 			}
 		}
 	})
@@ -79,7 +79,7 @@ func (c *ExecutionContext) Down() {
 		for _, command := range c.down {
 			err := c.runServiceCommand(command)
 			if err != nil {
-				logrus.Errorf("context cleanup error: %s", err)
+				slog.Error(fmt.Sprintf("context cleanup error: %s", err.Error()))
 			}
 		}
 	})
@@ -110,7 +110,7 @@ func (c *ExecutionContext) After() error {
 }
 
 func (c *ExecutionContext) runServiceCommand(command string) (err error) {
-	logrus.Debugf("running context service command: %s", command)
+	slog.Debug(fmt.Sprintf("running context service command: %s", command))
 	ex, err := executor.NewDefaultExecutor(nil, nil, nil)
 	if err != nil {
 		return err
@@ -124,7 +124,7 @@ func (c *ExecutionContext) runServiceCommand(command string) (err error) {
 	})
 	if err != nil {
 		if out != nil {
-			logrus.Warning(string(out))
+			slog.Warn(string(out))
 		}
 
 		return err

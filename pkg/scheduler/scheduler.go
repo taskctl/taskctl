@@ -1,14 +1,13 @@
 package scheduler
 
 import (
+	"log/slog"
 	"os/exec"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/taskctl/taskctl/pkg/utils"
-
-	"github.com/sirupsen/logrus"
 
 	"github.com/taskctl/taskctl/pkg/runner"
 )
@@ -52,7 +51,7 @@ func (s *Scheduler) Schedule(g *ExecutionGraph) error {
 			if stage.Condition != "" {
 				meets, err := checkStageCondition(stage.Condition)
 				if err != nil {
-					logrus.Error(err)
+					slog.Error(err.Error())
 					stage.UpdateStatus(StatusError)
 					s.Cancel()
 					continue
@@ -116,6 +115,8 @@ func (s *Scheduler) isDone(p *ExecutionGraph) bool {
 		switch stage.ReadStatus() {
 		case StatusWaiting, StatusRunning:
 			return false
+		default:
+			continue
 		}
 	}
 
@@ -152,7 +153,8 @@ func checkStatus(p *ExecutionGraph, stage *Stage) (ready bool) {
 	for _, dep := range p.To(stage.Name) {
 		depStage, err := p.Node(dep)
 		if err != nil {
-			logrus.Fatal(err)
+			slog.Error(err.Error())
+			panic(err)
 		}
 
 		switch depStage.ReadStatus() {

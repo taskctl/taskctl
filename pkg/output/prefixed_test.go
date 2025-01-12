@@ -1,18 +1,18 @@
 package output
 
 import (
+	"bufio"
 	"bytes"
+	"log/slog"
 	"strings"
 	"testing"
-
-	"github.com/sirupsen/logrus"
 
 	"github.com/taskctl/taskctl/pkg/task"
 )
 
 func Test_prefixedOutputDecorator(t *testing.T) {
 	var l, b bytes.Buffer
-	logrus.SetOutput(&l)
+	slog.SetDefault(slog.New(slog.NewTextHandler(bufio.NewWriter(&l), nil)))
 
 	dec := newPrefixedOutputWriter(&task.Task{Name: "task1"}, &b)
 	err := dec.WriteHeader()

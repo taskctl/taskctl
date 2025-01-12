@@ -1,19 +1,15 @@
 package main
 
 import (
-	"github.com/sirupsen/logrus"
-	"github.com/taskctl/taskctl/cmd/taskctl_cmd"
+	"github.com/taskctl/taskctl/cmd"
+	"log/slog"
+	"os"
 )
 
 func main() {
-	logrus.SetFormatter(&logrus.TextFormatter{
-		DisableColors:   false,
-		TimestampFormat: "2006-01-02 15:04:05",
-		FullTimestamp:   false,
-	})
-
-	err := taskctl_cmd.Run()
+	err := cmd.Run()
 	if err != nil {
-		logrus.Fatal(err)
+		slog.Error(err.Error())
+		os.Exit(1)
 	}
 }

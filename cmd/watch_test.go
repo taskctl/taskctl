@@ -1,4 +1,4 @@
-package taskctl_cmd
+package cmd
 
 import (
 	"testing"

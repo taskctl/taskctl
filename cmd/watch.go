@@ -1,7 +1,8 @@
-package taskctl_cmd
+package cmd
 
 import (
 	"fmt"
+	"log/slog"
 	"sync"
 
 	"github.com/taskctl/taskctl/pkg/output"
@@ -9,8 +10,6 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/taskctl/taskctl/internal/watch"
-
-	"github.com/sirupsen/logrus"
 )
 
 func newWatchCommand() *cli.Command {
@@ -50,7 +49,7 @@ func newWatchCommand() *cli.Command {
 
 					err = w.Run(taskRunner)
 					if err != nil {
-						logrus.Error(err)
+						slog.Error(err.Error())
 					}
 				}(w)
 			}

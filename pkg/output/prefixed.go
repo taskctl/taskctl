@@ -4,11 +4,10 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"log/slog"
 	"regexp"
 
 	"github.com/logrusorgru/aurora"
-
-	"github.com/sirupsen/logrus"
 
 	"github.com/taskctl/taskctl/pkg/task"
 )
@@ -63,17 +62,17 @@ func (d *prefixedOutputDecorator) Write(p []byte) (int, error) {
 }
 
 func (d *prefixedOutputDecorator) WriteHeader() error {
-	logrus.Infof("Running task %s...", d.t.Name)
+	slog.Info(fmt.Sprintf("Running task %s...", d.t.Name))
 	return nil
 }
 
 func (d *prefixedOutputDecorator) WriteFooter() error {
 	err := d.w.Flush()
 	if err != nil {
-		logrus.Warning(err)
+		slog.Warn(err.Error())
 	}
 
-	logrus.Infof("%s finished. Duration %s", d.t.Name, d.t.Duration())
+	slog.Info(fmt.Sprintf("%s finished. Duration %s", d.t.Name, d.t.Duration()))
 	return nil
 }
 
