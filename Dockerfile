@@ -1,3 +1,3 @@
 FROM alpine:latest
-COPY taskctl /
+COPY ./bin/taskctl /
 ENTRYPOINT ["/taskctl"]
