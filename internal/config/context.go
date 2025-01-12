@@ -1,6 +1,8 @@
 package config
 
 import (
+	"path/filepath"
+
 	"github.com/taskctl/taskctl/pkg/runner"
 	"github.com/taskctl/taskctl/pkg/variables"
 
@@ -14,6 +16,7 @@ type contextDefinition struct {
 	Before     []string
 	After      []string
 	Env        map[string]string
+	EnvFile    string `mapstructure:"env_file"`
 	Variables  map[string]string
 	Executable utils.Binary
 	Quote      string
@@ -25,10 +28,25 @@ func buildContext(def *contextDefinition) (*runner.ExecutionContext, error) {
 		dir = utils.MustGetwd()
 	}
 
+	envs := variables.FromMap(def.Env)
+	if def.EnvFile != "" {
+		filename := def.EnvFile
+		if !filepath.IsAbs(filename) && dir != "" {
+			filename = filepath.Join(dir, filename)
+		}
+
+		fileEnvs, err := utils.ReadEnvFile(filename)
+		if err != nil {
+			return nil, err
+		}
+
+		envs = variables.FromMap(fileEnvs).Merge(envs)
+	}
+
 	c := runner.NewExecutionContext(
 		&def.Executable,
 		dir,
-		variables.FromMap(def.Env),
+		envs,
 		def.Up,
 		def.Down,
 		def.Before,
