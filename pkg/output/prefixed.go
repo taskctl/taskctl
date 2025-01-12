@@ -38,7 +38,7 @@ func (d *prefixedOutputDecorator) Write(p []byte) (int, error) {
 			break
 		}
 
-		_, err = d.writeLine(line)
+		_, err = d.writePrefixedLine(line)
 		if err != nil {
 			return 0, err
 		}
@@ -46,7 +46,7 @@ func (d *prefixedOutputDecorator) Write(p []byte) (int, error) {
 		p = p[advance:]
 	}
 
-	_, err := d.writeLine(p)
+	_, err := d.writePrefixedLine(p)
 	if err != nil {
 		return 0, err
 	}
@@ -55,16 +55,16 @@ func (d *prefixedOutputDecorator) Write(p []byte) (int, error) {
 }
 
 func (d *prefixedOutputDecorator) WriteHeader() error {
-	_, err := d.w.Write([]byte(fmt.Sprintf("Running task %s...", d.t.Name)))
+	_, err := d.writePrefixedLine([]byte(fmt.Sprintf("Running task %s...", d.t.Name)))
 	return err
 }
 
 func (d *prefixedOutputDecorator) WriteFooter() error {
-	_, err := d.w.Write([]byte(fmt.Sprintf("%s finished. Duration %s", d.t.Name, d.t.Duration())))
+	_, err := d.writePrefixedLine([]byte(fmt.Sprintf("%s finished. Duration %s", d.t.Name, d.t.Duration())))
 	return err
 }
 
-func (d *prefixedOutputDecorator) writeLine(p []byte) (n int, err error) {
+func (d *prefixedOutputDecorator) writePrefixedLine(p []byte) (n int, err error) {
 	n = len(p)
 	p = ansiRegexp.ReplaceAllLiteral(p, []byte{})
 	_, err = fmt.Fprintf(d.w, "%s: %s\r\n", aurora.Cyan(d.t.Name), p)

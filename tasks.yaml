@@ -31,9 +31,7 @@ pipelines:
       depends_on: test
 
   lints:
-    - task: golint
-    - task: govet
-      depends_on: golint
+    - task: golangci-lint
 
 tasks:
   test:
@@ -48,13 +46,9 @@ tasks:
       - GOOS: darwin
       - GOOS: windows
 
-  golint:
+  golangci-lint:
     command:
-      - golint  $(go list ./... | grep -v /vendor/)
-
-  govet:
-    command:
-      - go vet $(go list ./... | grep -v /vendor/)
+      - golangci-lint run
 
   goimports:
     command:

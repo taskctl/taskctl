@@ -272,13 +272,8 @@ func buildTaskRunner(ctx context.Context, c *cli.Context) (*runner.TaskRunner, e
 	}
 
 	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				taskRunner.Cancel()
-				return
-			}
-		}
+		<-ctx.Done()
+		taskRunner.Cancel()
 	}()
 
 	return taskRunner, nil
