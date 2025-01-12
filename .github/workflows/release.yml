@@ -1,10 +1,12 @@
 name: Release
 
 on:
-  create:
+  push:
     tags:
       - '*'
-  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   goreleaser:
@@ -12,17 +14,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
           cache-dependency-path: go.sum
-
-      - name: Install Snapcraft
-        uses: samuelmeuli/action-snapcraft@v1
-        with:
-          snapcraft_token: ${{ secrets.SNAPCRAFT_TOKEN }}
 
       - name: Docker login
         uses: azure/docker-login@v1
@@ -34,6 +33,7 @@ jobs:
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
+          distribution: goreleaser
           args: release --clean
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}

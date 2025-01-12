@@ -45,17 +45,6 @@ release:
 checksum:
   name_template: checksums.txt
 
-snapcrafts:
-  - name: taskctl
-    confinement: classic
-    grade: stable
-    publish: true
-    summary: taskctl - concurrent task runner, developer's routine tasks automation toolkit. Simple modern alternative to GNU Make
-    description: |
-      Simple modern alternative to GNU Make. *taskctl* is concurrent task runner that allows you to design you routine tasks and development pipelines in nice and neat way in human-readable format (YAML, JSON or TOML).
-      Each pipeline composed of tasks or other pipelines and allows them to run in parallel or one-by-one.
-      Beside pipelines, each single task can be performed manually or triggered by built-in filesystem watcher.
-
 brews:
   - commit_author:
       name: Yevhen Terentiev
@@ -87,12 +76,3 @@ scoops:
       name: Yevhen Terentiev
       email: yevhen.terentiev@gmail.com
     homepage: https://github.com/taskctl/taskctl
-
-nfpms:
-  -
-    homepage: https://github.com/taskctl/taskctl
-    maintainer: Yevhen Terentiev <yevhen.terentiev@gmail.com>
-    description: taskctl - concurrent task runner, developer's routine tasks automation toolkit. Simple modern alternative to GNU Make 🧰
-    formats:
-      - deb
-      - rpm
