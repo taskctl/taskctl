@@ -1,7 +1,6 @@
-package main
+package taskctl_cmd
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -10,13 +9,13 @@ import (
 func Test_initCommand(t *testing.T) {
 	confirm := stdinConfirm(t, 1)
 	defer func(f os.File) {
-		confirm.Close()
-		os.Remove(f.Name())
+		_ = confirm.Close()
+		_ = os.Remove(f.Name())
 	}(*confirm)
 
-	app := makeTestApp(t)
+	app := makeTestApp()
 	dir := os.TempDir()
-	os.Remove(filepath.Join(dir, "taskctl.yaml"))
+	_ = os.Remove(filepath.Join(dir, "taskctl.yaml"))
 
 	runAppTest(app, appTest{args: []string{"", "init", "--dir", dir}, stdin: confirm}, t)
 }
@@ -24,13 +23,13 @@ func Test_initCommand(t *testing.T) {
 func TestInitCommand_Overwrite(t *testing.T) {
 	confirm := stdinConfirm(t, 2)
 	defer func(f os.File) {
-		confirm.Close()
-		os.Remove(f.Name())
+		_ = confirm.Close()
+		_ = os.Remove(f.Name())
 	}(*confirm)
 
-	app := makeTestApp(t)
+	app := makeTestApp()
 	dir := os.TempDir()
-	err := ioutil.WriteFile(filepath.Join(dir, "taskctl.yaml"), []byte("here"), 0764)
+	err := os.WriteFile(filepath.Join(dir, "taskctl.yaml"), []byte("here"), 0764)
 	if err != nil {
 		t.Fatal(err)
 	}

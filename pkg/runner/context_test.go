@@ -1,7 +1,7 @@
 package runner
 
 import (
-	"io/ioutil"
+	"io"
 	"testing"
 
 	"github.com/sirupsen/logrus"
@@ -11,7 +11,7 @@ import (
 )
 
 func TestContext(t *testing.T) {
-	logrus.SetOutput(ioutil.Discard)
+	logrus.SetOutput(io.Discard)
 
 	c1 := NewExecutionContext(nil, "/", variables.NewVariables(), []string{"true"}, []string{"false"}, []string{"true"}, []string{"false"})
 	c2 := NewExecutionContext(nil, "/", variables.NewVariables(), []string{"false"}, []string{"false"}, []string{"false"}, []string{"false"})

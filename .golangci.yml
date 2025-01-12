@@ -1,0 +1,12 @@
+# Options for analysis running.
+run:
+  timeout: 10m
+  modules-download-mode: readonly
+
+severity:
+  default-severity: error
+
+linters-settings:
+    # Enable all analyzers.
+    # Default: false
+    enable-all: true

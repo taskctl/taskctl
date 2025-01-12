@@ -1,4 +1,4 @@
-package main
+package taskctl_cmd
 
 import (
 	"errors"

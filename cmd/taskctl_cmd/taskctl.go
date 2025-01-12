@@ -1,17 +1,15 @@
-package main
+package taskctl_cmd
 
 import (
 	"errors"
 	"fmt"
+	"github.com/taskctl/taskctl/pkg/runner"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/signal"
 	"sort"
 	"strings"
 	"syscall"
-
-	"github.com/taskctl/taskctl/pkg/runner"
 
 	"github.com/logrusorgru/aurora"
 	"github.com/manifoldco/promptui"
@@ -25,47 +23,20 @@ import (
 )
 
 var version = "dev"
-
 var stdin io.ReadCloser
-
 var cancel = make(chan struct{})
-
 var cfg *config.Config
 
-func main() {
-	logrus.SetFormatter(&logrus.TextFormatter{
-		DisableColors:   false,
-		TimestampFormat: "2006-01-02 15:04:05",
-		FullTimestamp:   false,
-	})
-
-	err := run()
-	if err != nil {
-		logrus.Fatal(err)
-	}
-}
-
-func listenSignals() {
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-	go func() {
-		for sig := range sigs {
-			abort()
-			os.Exit(int(sig.(syscall.Signal)))
-		}
-	}()
-}
-
-func run() error {
+func Run() error {
 	stdin = os.Stdin
-	app := makeApp()
+	app := NewApp()
 
 	listenSignals()
 
 	return app.Run(os.Args)
 }
 
-func makeApp() *cli.App {
+func NewApp() *cli.App {
 	cfg = config.NewConfig()
 	cl := config.NewConfigLoader(cfg)
 
@@ -124,8 +95,8 @@ func makeApp() *cli.App {
 				Usage: "set global variable value",
 			},
 			&cli.BoolFlag{
-				Name:  "dry-run",
-				Usage: "dry run",
+				Name:  "dry-Run",
+				Usage: "dry Run",
 			},
 			&cli.BoolFlag{
 				Name:    "summary",
@@ -169,7 +140,7 @@ func makeApp() *cli.App {
 				}
 			}
 
-			if c.Bool("dry-run") {
+			if c.Bool("dry-Run") {
 				cfg.DryRun = true
 			}
 
@@ -195,6 +166,17 @@ func makeApp() *cli.App {
 	}
 }
 
+func listenSignals() {
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		for sig := range sigs {
+			abort()
+			os.Exit(int(sig.(syscall.Signal)))
+		}
+	}()
+}
+
 func rootAction(c *cli.Context) (err error) {
 	taskRunner, err := buildTaskRunner(c)
 	if err != nil {
@@ -218,7 +200,7 @@ func rootAction(c *cli.Context) (err error) {
 
 	suggestions := buildSuggestions(cfg)
 	targetSelect := promptui.Select{
-		Label:        "Select task to run",
+		Label:        "Select task to Run",
 		Items:        suggestions,
 		Size:         15,
 		CursorPos:    0,
@@ -269,8 +251,8 @@ func buildTaskRunner(c *cli.Context) (*runner.TaskRunner, error) {
 	taskRunner.DryRun = cfg.DryRun
 
 	if cfg.Quiet {
-		taskRunner.Stdout = ioutil.Discard
-		taskRunner.Stderr = ioutil.Discard
+		taskRunner.Stdout = io.Discard
+		taskRunner.Stderr = io.Discard
 	}
 
 	go func() {

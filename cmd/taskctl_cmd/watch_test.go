@@ -1,4 +1,4 @@
-package main
+package taskctl_cmd
 
 import (
 	"testing"
@@ -6,7 +6,7 @@ import (
 )
 
 func Test_watchCommand(t *testing.T) {
-	app := makeTestApp(t)
+	app := makeTestApp()
 	listenSignals()
 
 	tests := []appTest{

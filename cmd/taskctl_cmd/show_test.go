@@ -1,9 +1,9 @@
-package main
+package taskctl_cmd
 
 import "testing"
 
 func Test_showCommand(t *testing.T) {
-	app := makeTestApp(t)
+	app := makeTestApp()
 
 	tests := []appTest{
 		{args: []string{"", "-c", "testdata/graph.yaml", "show"}, errored: true},

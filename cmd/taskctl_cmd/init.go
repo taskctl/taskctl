@@ -1,4 +1,4 @@
-package main
+package taskctl_cmd
 
 import (
 	"errors"
@@ -102,7 +102,7 @@ func newInitCommand() *cli.Command {
 			}
 
 			fmt.Println(aurora.Sprintf(aurora.Magenta("%s was created. Edit it accordingly to your needs"), aurora.Green(filename)))
-			fmt.Println(aurora.Cyan("To run example pipeline - taskctl run pipeline1"))
+			fmt.Println(aurora.Cyan("To Run example pipeline - taskctl Run pipeline1"))
 
 			return nil
 		},

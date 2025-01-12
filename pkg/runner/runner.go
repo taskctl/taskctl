@@ -3,6 +3,7 @@ package runner
 import (
 	"context"
 	"fmt"
+	"golang.org/x/text/language"
 	"io"
 	"os"
 	"regexp"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/taskctl/taskctl/pkg/executor"
+	"golang.org/x/text/cases"
 
 	"github.com/taskctl/taskctl/pkg/variables"
 
@@ -20,6 +22,8 @@ import (
 
 	"github.com/taskctl/taskctl/pkg/task"
 )
+
+var caser = cases.Title(language.English)
 
 // Runner describes tasks runner interface
 type Runner interface {
@@ -328,7 +332,7 @@ func (r *TaskRunner) checkTaskCondition(t *task.Task) (bool, error) {
 
 func (r *TaskRunner) storeTaskOutput(t *task.Task) {
 	var envVarName string
-	varName := fmt.Sprintf("Tasks.%s.Output", strings.Title(t.Name))
+	varName := fmt.Sprintf("Tasks.%s.Output", caser.String(t.Name))
 
 	if t.ExportAs == "" {
 		envVarName = fmt.Sprintf("%s_OUTPUT", strings.ToUpper(t.Name))

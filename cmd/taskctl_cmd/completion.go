@@ -1,11 +1,10 @@
-package main
+package taskctl_cmd
 
 import (
 	"fmt"
-	"io/ioutil"
-
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
+	"io"
 )
 
 func newCompletionCommand() *cli.Command {
@@ -15,7 +14,7 @@ func newCompletionCommand() *cli.Command {
 		UsageText: helpText,
 		Action: func(c *cli.Context) error {
 			logrus.SetLevel(logrus.PanicLevel)
-			logrus.SetOutput(ioutil.Discard)
+			logrus.SetOutput(io.Discard)
 
 			var shell string
 			if !c.Args().Present() {
@@ -41,7 +40,7 @@ func newCompletionCommand() *cli.Command {
 }
 
 var helpText = `
-To load completion run
+To load completion Run
 
 . <(taskctl completion)
 

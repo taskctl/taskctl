@@ -6,7 +6,7 @@ import (
 
 	"github.com/taskctl/taskctl/pkg/variables"
 
-	"github.com/imdario/mergo"
+	"dario.cat/mergo"
 	"github.com/sirupsen/logrus"
 
 	"github.com/taskctl/taskctl/internal/watch"

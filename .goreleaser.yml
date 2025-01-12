@@ -1,25 +1,30 @@
+version: 2
 dist: bin
 
 builds:
-- dir: cmd/taskctl
-  env:
-    - CGO_ENABLED=0
-  goos:
-    - darwin
-    - linux
-    - windows
-  goarch:
-    - 386
-    - amd64
-    - arm
-  goarm:
-    - 6
-    - 7
-  ignore:
-    - goos: darwin
-      goarch: 386
-  gcflags:
-    - all=-trimpath={{.Env.GOPATH}}
+  - binary: bin/taskctl
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - "386"
+      - amd64
+      - arm
+      - arm64
+    goarm:
+      - "6"
+      - "7"
+    goarm64:
+      - v8.0
+      - v9.0
+    ignore:
+      - goos: darwin
+        goarch: "386"
+    gcflags:
+      - all=-trimpath={{.Env.GOPATH}}
 
 archives:
   - format: tar.gz
@@ -35,14 +40,14 @@ archives:
 source:
   enabled: true
 
+changelog:
+  disable: true
+
 release:
   prerelease: auto
 
 checksum:
   name_template: checksums.txt
-
-changelog:
-  skip: true
 
 snapcrafts:
   - name: taskctl
@@ -54,37 +59,36 @@ snapcrafts:
       Simple modern alternative to GNU Make. *taskctl* is concurrent task runner that allows you to design you routine tasks and development pipelines in nice and neat way in human-readable format (YAML, JSON or TOML).
       Each pipeline composed of tasks or other pipelines and allows them to run in parallel or one-by-one.
       Beside pipelines, each single task can be performed manually or triggered by built-in filesystem watcher.
-    apps:
-      taskctl:
-        completer: autocomplete/bash_completion.bash
 
 brews:
-  - tap:
-      owner: taskctl
-      name: homebrew-taskctl
-    commit_author:
+  - commit_author:
       name: Yevhen Terentiev
       email: yevhen.terentiev@gmail.com
     homepage: https://github.com/taskctl/taskctl
-    install: |
-        bin.install "taskctl"
+    extra_install: |
         bash_completion.install "autocomplete/bash_completion.bash"
         zsh_completion.install "autocomplete/zsh_completion.zsh"
+    repository:
+      owner: taskctl
+      name: homebrew-taskctl
+
 
 dockers:
   - image_templates:
       - "docker.io/taskctl/taskctl:latest"
+      - "ghcr.io/taskctl/taskctl:latest"
       - "docker.io/taskctl/taskctl:{{ .Tag }}"
+      - "ghcr.io/taskctl/taskctl:{{ .Tag }}"
     skip_push: auto
 
-scoop:
-  bucket:
-    owner: taskctl
-    name: scoop-taskctl
-  commit_author:
-    name: Yevhen Terentiev
-    email: yevhen.terentiev@gmail.com
-  homepage: https://github.com/taskctl/taskctl
+scoops:
+  - repository:
+      owner: taskctl
+      name: scoop-taskctl
+    commit_author:
+      name: Yevhen Terentiev
+      email: yevhen.terentiev@gmail.com
+    homepage: https://github.com/taskctl/taskctl
 
 nfpms:
   -

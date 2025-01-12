@@ -1,9 +1,9 @@
-package main
+package taskctl_cmd
 
 import "testing"
 
 func Test_validateCommand(t *testing.T) {
-	app := makeTestApp(t)
+	app := makeTestApp()
 
 	tests := []appTest{
 		{args: []string{"", "validate", "testdata/graph2.yaml"}, errored: true},

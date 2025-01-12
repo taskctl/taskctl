@@ -29,10 +29,8 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v1
+        uses: goreleaser/goreleaser-action@v6
         with:
-          version: v0.149.0
-          args: release --rm-dist
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TASKCTL_TOKEN}}
-          GOPATH: /home/runner/go
