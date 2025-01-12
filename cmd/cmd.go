@@ -24,7 +24,6 @@ import (
 	"github.com/taskctl/taskctl/pkg/utils"
 )
 
-var version = "dev"
 var stdin io.ReadCloser
 var cancelFn func()
 var cancelMu sync.Mutex
@@ -38,16 +37,16 @@ func SetStdin(newStdin io.ReadCloser) {
 	stdin = newStdin
 }
 
-func Run() error {
+func Run(version string) error {
 	stdin = os.Stdin
-	app := NewApp()
+	app := NewApp(version)
 
 	go listenSignals()
 
 	return app.Run(os.Args)
 }
 
-func NewApp() *cli.App {
+func NewApp(version string) *cli.App {
 	cfg = config.NewConfig()
 	cl := config.NewConfigLoader(cfg)
 

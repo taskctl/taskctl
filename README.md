@@ -120,11 +120,6 @@ brew install taskctl
 sudo wget https://github.com/taskctl/taskctl/releases/latest/download/taskctl_linux_amd64 -O /usr/local/bin/taskctl
 sudo chmod +x /usr/local/bin/taskctl
 ```
-#### Ubuntu Linux
-```
-sudo snap install --classic taskctl
-```
-
 #### deb/rpm:
 Download the .deb or .rpm from the [releases](https://github.com/taskctl/taskctl/releases) page and install with `dpkg -i` 
 and `rpm -i` respectively.
@@ -133,10 +128,6 @@ and `rpm -i` respectively.
 ```
 scoop bucket add taskctl https://github.com/taskctl/scoop-taskctl.git
 scoop install taskctl
-```
-#### Installation script
-```
-curl -sL https://raw.githubusercontent.com/taskctl/taskctl/master/install.sh | sh
 ```
 #### From sources
 ```
