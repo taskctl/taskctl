@@ -35,3 +35,4 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TASKCTL_TOKEN}}
+          GOPATH: ${{github.workspace}}
