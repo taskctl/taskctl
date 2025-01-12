@@ -478,6 +478,7 @@ Add to  ~/.zshrc
 - [mage](https://github.com/magefile/mage)
 - [tusk](https://github.com/rliebz/tusk)
 - [just](https://github.com/casey/just)
+- [makesure](https://github.com/xonixx/makesure)
 - [cr](https://github.com/cirocosta/cr)
 - [realize](https://github.com/oxequa/realize)
 
