@@ -151,7 +151,7 @@ func (cl *Loader) load(file string) (config map[string]interface{}, err error) {
 
 	var raw map[string]interface{}
 	importDir := path.Dir(file)
-	if imports, ok := config["import"]; ok {
+	if imports, ok := config["import"]; ok && imports != nil {
 		for _, v := range imports.([]interface{}) {
 			if utils.IsURL(v.(string)) {
 				if cl.imports[v.(string)] {
