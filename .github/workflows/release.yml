@@ -1,4 +1,4 @@
-name: Release
+name: Release ${{ github.event.release.tag_name }}
 on:
   create:
     tags:
@@ -34,5 +34,5 @@ jobs:
         with:
           args: release --clean
         env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TASKCTL_TOKEN}}
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
           GOPATH: ${{github.workspace}}
