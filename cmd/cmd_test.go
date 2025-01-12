@@ -1,15 +1,15 @@
-package cmd
+package cmd_test
 
 import (
 	"bytes"
 	"encoding/binary"
+	"github.com/manifoldco/promptui"
+	"github.com/taskctl/taskctl/cmd"
+	"github.com/urfave/cli/v2"
 	"io"
 	"os"
 	"strings"
 	"testing"
-
-	"github.com/manifoldco/promptui"
-	"github.com/urfave/cli/v2"
 )
 
 type appTest struct {
@@ -21,7 +21,7 @@ type appTest struct {
 }
 
 func makeTestApp() *cli.App {
-	return NewApp()
+	return cmd.NewApp()
 }
 
 func runAppTest(app *cli.App, test appTest, t *testing.T) {
@@ -37,21 +37,21 @@ func runAppTest(app *cli.App, test appTest, t *testing.T) {
 	}()
 
 	if test.stdin != nil {
-		origStdin := stdin
-		stdin = test.stdin
+		origStdin := cmd.Stdin()
+		cmd.SetStdin(test.stdin)
 		defer func() {
-			stdin = origStdin
+			cmd.SetStdin(origStdin)
 		}()
 	}
 
 	err = app.Run(test.args)
-	os.Stdout = origStdout
-	_ = w.Close()
-
 	if err != nil && !test.errored {
 		t.Fatal(err)
 		return
 	}
+
+	os.Stdout = origStdout
+	_ = w.Close()
 
 	var buf bytes.Buffer
 	_, err = io.Copy(&buf, r)

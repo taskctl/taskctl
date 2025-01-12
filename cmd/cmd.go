@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/taskctl/taskctl/pkg/runner"
@@ -10,6 +11,7 @@ import (
 	"os/signal"
 	"sort"
 	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/logrusorgru/aurora"
@@ -24,14 +26,23 @@ import (
 
 var version = "dev"
 var stdin io.ReadCloser
-var cancel = make(chan struct{})
+var cancelFn func()
+var cancelMu sync.Mutex
 var cfg *config.Config
+
+func Stdin() io.ReadCloser {
+	return stdin
+}
+
+func SetStdin(newStdin io.ReadCloser) {
+	stdin = newStdin
+}
 
 func Run() error {
 	stdin = os.Stdin
 	app := NewApp()
 
-	listenSignals()
+	go listenSignals()
 
 	return app.Run(os.Args)
 }
@@ -46,7 +57,7 @@ func NewApp() *cli.App {
 		Version:              version,
 		EnableBashCompletion: true,
 		BashComplete: func(c *cli.Context) {
-			cfg, _ := cl.Load(c.String("config"))
+			cfg, _ = cl.Load(c.String("config"))
 			suggestions := buildSuggestions(cfg)
 
 			for _, v := range suggestions {
@@ -166,19 +177,28 @@ func NewApp() *cli.App {
 	}
 }
 
+func Abort() {
+	cancelMu.Lock()
+	defer cancelMu.Unlock()
+
+	cancelFn()
+}
+
 func listenSignals() {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-	go func() {
-		for sig := range sigs {
-			abort()
-			os.Exit(int(sig.(syscall.Signal)))
-		}
-	}()
+	for sig := range sigs {
+		Abort()
+		os.Exit(int(sig.(syscall.Signal)))
+	}
 }
 
 func rootAction(c *cli.Context) (err error) {
-	taskRunner, err := buildTaskRunner(c)
+	cancelMu.Lock()
+	c.Context, cancelFn = context.WithCancel(c.Context)
+	cancelMu.Unlock()
+
+	taskRunner, err := buildTaskRunner(c.Context, c)
 	if err != nil {
 		return err
 	}
@@ -233,11 +253,7 @@ func rootAction(c *cli.Context) (err error) {
 	return runPipeline(cfg.Pipelines[selection.Target], taskRunner, cfg.Summary || c.Bool("summary"))
 }
 
-func abort() {
-	close(cancel)
-}
-
-func buildTaskRunner(c *cli.Context) (*runner.TaskRunner, error) {
+func buildTaskRunner(ctx context.Context, c *cli.Context) (*runner.TaskRunner, error) {
 	ta := taskArgs(c)
 	variables := cfg.Variables.With("Args", strings.Join(ta, " "))
 	variables.Set("ArgsList", ta)
@@ -256,8 +272,13 @@ func buildTaskRunner(c *cli.Context) (*runner.TaskRunner, error) {
 	}
 
 	go func() {
-		<-cancel
-		taskRunner.Cancel()
+		for {
+			select {
+			case <-ctx.Done():
+				taskRunner.Cancel()
+				return
+			}
+		}
 	}()
 
 	return taskRunner, nil

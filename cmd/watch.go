@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"sync"
@@ -25,7 +26,11 @@ func newWatchCommand() *cli.Command {
 			return nil
 		},
 		Action: func(c *cli.Context) (err error) {
-			taskRunner, err := buildTaskRunner(c)
+			cancelMu.Lock()
+			c.Context, cancelFn = context.WithCancel(c.Context)
+			cancelMu.Unlock()
+
+			taskRunner, err := buildTaskRunner(c.Context, c)
 			if err != nil {
 				return err
 			}
@@ -40,8 +45,13 @@ func newWatchCommand() *cli.Command {
 					return fmt.Errorf("unknown watcher %s", name)
 				}
 				go func(w *watch.Watcher) {
-					<-cancel
-					w.Close()
+					for {
+						select {
+						case <-c.Context.Done():
+							w.Close()
+							return
+						}
+					}
 				}(w)
 
 				go func(w *watch.Watcher) {

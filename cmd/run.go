@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"sort"
@@ -37,7 +38,11 @@ func newRunCommand() *cli.Command {
 			},
 		},
 		Before: func(c *cli.Context) (err error) {
-			taskRunner, err = buildTaskRunner(c)
+			cancelMu.Lock()
+			c.Context, cancelFn = context.WithCancel(c.Context)
+			cancelMu.Unlock()
+
+			taskRunner, err = buildTaskRunner(c.Context, c)
 			return err
 		},
 		After: func(c *cli.Context) error {
@@ -118,10 +123,10 @@ func runTarget(name string, c *cli.Context, taskRunner *runner.TaskRunner) (err 
 
 func runPipeline(g *scheduler.ExecutionGraph, taskRunner *runner.TaskRunner, summary bool) error {
 	sd := scheduler.NewScheduler(taskRunner)
-	go func() {
-		<-cancel
-		sd.Cancel()
-	}()
+	//go func() {
+	//	<-cancelCh
+	//	sd.Cancel()
+	//}()
 
 	err := sd.Schedule(g)
 	if err != nil {
