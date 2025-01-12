@@ -1,11 +1,11 @@
-package main
+package cmd_test
 
 import (
 	"testing"
 )
 
 func Test_graphCommand(t *testing.T) {
-	app := makeTestApp(t)
+	app := makeTestApp()
 
 	tests := []appTest{
 		{

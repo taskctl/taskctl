@@ -3,7 +3,9 @@ package runner
 import (
 	"context"
 	"fmt"
+	"golang.org/x/text/language"
 	"io"
+	"log/slog"
 	"os"
 	"regexp"
 	"strings"
@@ -11,12 +13,11 @@ import (
 	"time"
 
 	"github.com/taskctl/taskctl/pkg/executor"
+	"golang.org/x/text/cases"
 
 	"github.com/taskctl/taskctl/pkg/variables"
 
 	"github.com/taskctl/taskctl/pkg/output"
-
-	"github.com/sirupsen/logrus"
 
 	"github.com/taskctl/taskctl/pkg/task"
 )
@@ -125,12 +126,12 @@ func (r *TaskRunner) Run(t *task.Task) error {
 	defer func() {
 		err := taskOutput.Finish()
 		if err != nil {
-			logrus.Error(err)
+			slog.Error(err.Error())
 		}
 
 		err = execContext.After()
 		if err != nil {
-			logrus.Error(err)
+			slog.Error(err.Error())
 		}
 
 		if !t.Errored && !t.Skipped {
@@ -150,7 +151,7 @@ func (r *TaskRunner) Run(t *task.Task) error {
 	}
 
 	if !meets {
-		logrus.Infof("task %s was skipped", t.Name)
+		slog.Info(fmt.Sprintf("task %s was skipped", t.Name))
 		t.Skipped = true
 		return nil
 	}
@@ -184,7 +185,7 @@ func (r *TaskRunner) Cancel() {
 	r.cancelMutex.Lock()
 	if !r.canceling {
 		r.canceling = true
-		defer logrus.Debug("runner has been cancelled")
+		defer slog.Debug("runner has been cancelled")
 		r.cancelFunc()
 	}
 	r.cancelMutex.Unlock()
@@ -261,7 +262,7 @@ func (r *TaskRunner) after(ctx context.Context, t *task.Task, env, vars variable
 
 		_, err = exec.Execute(ctx, job)
 		if err != nil {
-			logrus.Warning(err)
+			slog.Warn(err.Error())
 		}
 	}
 
@@ -328,7 +329,7 @@ func (r *TaskRunner) checkTaskCondition(t *task.Task) (bool, error) {
 
 func (r *TaskRunner) storeTaskOutput(t *task.Task) {
 	var envVarName string
-	varName := fmt.Sprintf("Tasks.%s.Output", strings.Title(t.Name))
+	varName := fmt.Sprintf("Tasks.%s.Output", cases.Title(language.English).String(t.Name))
 
 	if t.ExportAs == "" {
 		envVarName = fmt.Sprintf("%s_OUTPUT", strings.ToUpper(t.Name))
@@ -355,7 +356,7 @@ func (r *TaskRunner) execute(ctx context.Context, t *task.Task, job *executor.Jo
 
 		prevOutput, err = exec.Execute(ctx, nextJob)
 		if err != nil {
-			logrus.Debug(err.Error())
+			slog.Debug(err.Error())
 			if status, ok := executor.IsExitStatus(err); ok {
 				t.ExitCode = int16(status)
 				if t.AllowFailure {

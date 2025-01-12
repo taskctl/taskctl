@@ -1,11 +1,11 @@
-package main
+package cmd
 
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/emicklei/dot"
-	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 
 	"github.com/taskctl/taskctl/pkg/scheduler"
@@ -29,7 +29,7 @@ func newGraphCommand() *cli.Command {
 			if c.NArg() == 0 {
 				err := cli.ShowCommandHelp(c, "graph")
 				if err != nil {
-					logrus.Error(err)
+					slog.Error(err.Error())
 				}
 				return errors.New("no pipeline set")
 			}

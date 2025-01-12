@@ -1,7 +1,9 @@
-package main
+package cmd
 
 import (
+	"context"
 	"fmt"
+	"log/slog"
 	"sync"
 
 	"github.com/taskctl/taskctl/pkg/output"
@@ -9,8 +11,6 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/taskctl/taskctl/internal/watch"
-
-	"github.com/sirupsen/logrus"
 )
 
 func newWatchCommand() *cli.Command {
@@ -26,7 +26,11 @@ func newWatchCommand() *cli.Command {
 			return nil
 		},
 		Action: func(c *cli.Context) (err error) {
-			taskRunner, err := buildTaskRunner(c)
+			cancelMu.Lock()
+			c.Context, cancelFn = context.WithCancel(c.Context)
+			cancelMu.Unlock()
+
+			taskRunner, err := buildTaskRunner(c.Context, c)
 			if err != nil {
 				return err
 			}
@@ -41,7 +45,7 @@ func newWatchCommand() *cli.Command {
 					return fmt.Errorf("unknown watcher %s", name)
 				}
 				go func(w *watch.Watcher) {
-					<-cancel
+					<-c.Context.Done()
 					w.Close()
 				}(w)
 
@@ -50,7 +54,7 @@ func newWatchCommand() *cli.Command {
 
 					err = w.Run(taskRunner)
 					if err != nil {
-						logrus.Error(err)
+						slog.Error(err.Error())
 					}
 				}(w)
 			}

@@ -1,6 +1,7 @@
-package main
+package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"sort"
@@ -18,16 +19,16 @@ import (
 func newRunCommand() *cli.Command {
 	var taskRunner *runner.TaskRunner
 	cmd := &cli.Command{
-		Name:      "run",
-		ArgsUsage: "run (PIPELINE1 OR TASK1) [PIPELINE2 OR TASK2]... [flags] [-- TASKS_ARGS]",
+		Name:      "Run",
+		ArgsUsage: "Run (PIPELINE1 OR TASK1) [PIPELINE2 OR TASK2]... [flags] [-- TASKS_ARGS]",
 		Usage:     "runs pipeline or task",
-		UsageText: "taskctl run pipeline1\n" +
+		UsageText: "taskctl Run pipeline1\n" +
 			"taskctl pipeline1\n" +
 			"taskctl task1",
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
-				Name:  "dry-run",
-				Usage: "dry run",
+				Name:  "dry-Run",
+				Usage: "dry Run",
 			},
 			&cli.BoolFlag{
 				Name:    "summary",
@@ -37,7 +38,11 @@ func newRunCommand() *cli.Command {
 			},
 		},
 		Before: func(c *cli.Context) (err error) {
-			taskRunner, err = buildTaskRunner(c)
+			cancelMu.Lock()
+			c.Context, cancelFn = context.WithCancel(c.Context)
+			cancelMu.Unlock()
+
+			taskRunner, err = buildTaskRunner(c.Context, c)
 			return err
 		},
 		After: func(c *cli.Context) error {
@@ -68,7 +73,7 @@ func newRunCommand() *cli.Command {
 			{
 				Name:      "task",
 				ArgsUsage: "task (TASK1) [TASK2]... [flags] [-- TASK_ARGS]",
-				Usage:     "run specified task(s)",
+				Usage:     "Run specified task(s)",
 				Action: func(c *cli.Context) error {
 					for _, v := range c.Args().Slice() {
 						if v == "--" {
@@ -118,10 +123,10 @@ func runTarget(name string, c *cli.Context, taskRunner *runner.TaskRunner) (err 
 
 func runPipeline(g *scheduler.ExecutionGraph, taskRunner *runner.TaskRunner, summary bool) error {
 	sd := scheduler.NewScheduler(taskRunner)
-	go func() {
-		<-cancel
-		sd.Cancel()
-	}()
+	//go func() {
+	//	<-cancelCh
+	//	sd.Cancel()
+	//}()
 
 	err := sd.Schedule(g)
 	if err != nil {
@@ -129,7 +134,7 @@ func runPipeline(g *scheduler.ExecutionGraph, taskRunner *runner.TaskRunner, sum
 	}
 	sd.Finish()
 
-	fmt.Fprint(os.Stdout, "\r\n")
+	_, _ = fmt.Fprint(os.Stdout, "\r\n")
 
 	if summary {
 		printSummary(g)
@@ -175,27 +180,27 @@ func printSummary(g *scheduler.ExecutionGraph) {
 		return stages[j].Start.Nanosecond() > stages[i].Start.Nanosecond()
 	})
 
-	fmt.Fprintln(os.Stdout, aurora.Bold("Summary:").String())
+	_, _ = fmt.Fprintln(os.Stdout, aurora.Bold("Summary:").String())
 
 	var log string
 	for _, stage := range stages {
 		switch stage.ReadStatus() {
 		case scheduler.StatusDone:
-			fmt.Fprintln(os.Stdout, aurora.Sprintf(aurora.Green("- Stage %s was completed in %s"), stage.Name, stage.Duration()))
+			_, _ = fmt.Fprintln(os.Stdout, aurora.Sprintf(aurora.Green("- Stage %s was completed in %s"), stage.Name, stage.Duration()))
 		case scheduler.StatusSkipped:
-			fmt.Fprintln(os.Stdout, aurora.Sprintf(aurora.Green("- Stage %s was skipped"), stage.Name))
+			_, _ = fmt.Fprintln(os.Stdout, aurora.Sprintf(aurora.Green("- Stage %s was skipped"), stage.Name))
 		case scheduler.StatusError:
 			log = strings.TrimSpace(stage.Task.ErrorMessage())
-			fmt.Fprintln(os.Stdout, aurora.Sprintf(aurora.Red("- Stage %s failed in %s"), stage.Name, stage.Duration()))
+			_, _ = fmt.Fprintln(os.Stdout, aurora.Sprintf(aurora.Red("- Stage %s failed in %s"), stage.Name, stage.Duration()))
 			if log != "" {
-				fmt.Fprintln(os.Stdout, aurora.Sprintf(aurora.Red("  > %s"), log))
+				_, _ = fmt.Fprintln(os.Stdout, aurora.Sprintf(aurora.Red("  > %s"), log))
 			}
 		case scheduler.StatusCanceled:
-			fmt.Fprintln(os.Stdout, aurora.Sprintf(aurora.Gray(12, "- Stage %s was cancelled"), stage.Name))
+			_, _ = fmt.Fprintln(os.Stdout, aurora.Sprintf(aurora.Gray(12, "- Stage %s was cancelled"), stage.Name))
 		default:
-			fmt.Fprintln(os.Stdout, aurora.Sprintf(aurora.Red("- Unexpected status %d for stage %s"), stage.Status, stage.Name))
+			_, _ = fmt.Fprintln(os.Stdout, aurora.Sprintf(aurora.Red("- Unexpected status %d for stage %s"), stage.Status, stage.Name))
 		}
 	}
 
-	fmt.Fprintln(os.Stdout, aurora.Sprintf("%s: %s", aurora.Bold("Total duration"), aurora.Green(g.Duration())))
+	_, _ = fmt.Fprintln(os.Stdout, aurora.Sprintf("%s: %s", aurora.Bold("Total duration"), aurora.Green(g.Duration())))
 }

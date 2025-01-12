@@ -7,3 +7,6 @@ bin/
 # IDEs
 .idea
 .vscode
+
+# Local
+.envrc

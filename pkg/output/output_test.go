@@ -1,11 +1,11 @@
 package output
 
 import (
+	"bufio"
 	"bytes"
+	"log/slog"
 	"strings"
 	"testing"
-
-	"github.com/sirupsen/logrus"
 
 	"github.com/taskctl/taskctl/pkg/task"
 )
@@ -22,7 +22,6 @@ func TestNewTaskOutput_Prefixed(t *testing.T) {
 		t.Error()
 	}
 
-	logrus.SetOutput(&b)
 	tt := task.FromCommands("echo 1")
 	tt.Name = "task1"
 	o, err := NewTaskOutput(
@@ -63,7 +62,7 @@ func TestNewTaskOutput(t *testing.T) {
 		t.Error()
 	}
 
-	logrus.SetOutput(&b)
+	slog.SetDefault(slog.New(slog.NewTextHandler(bufio.NewWriter(&b), nil)))
 	tt := task.FromCommands("echo 1")
 	tt.Name = "task1"
 	o, err := NewTaskOutput(

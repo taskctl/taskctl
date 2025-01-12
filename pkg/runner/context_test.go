@@ -1,17 +1,16 @@
 package runner
 
 import (
-	"io/ioutil"
+	"io"
+	"log/slog"
 	"testing"
-
-	"github.com/sirupsen/logrus"
 
 	"github.com/taskctl/taskctl/pkg/task"
 	"github.com/taskctl/taskctl/pkg/variables"
 )
 
 func TestContext(t *testing.T) {
-	logrus.SetOutput(ioutil.Discard)
+	slog.SetDefault(slog.New(slog.NewTextHandler(io.Discard, nil)))
 
 	c1 := NewExecutionContext(nil, "/", variables.NewVariables(), []string{"true"}, []string{"false"}, []string{"true"}, []string{"false"})
 	c2 := NewExecutionContext(nil, "/", variables.NewVariables(), []string{"false"}, []string{"false"}, []string{"false"}, []string{"false"})

@@ -1,22 +1,22 @@
-package main
+package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"github.com/taskctl/taskctl/pkg/runner"
 	"io"
-	"io/ioutil"
+	"log/slog"
 	"os"
 	"os/signal"
 	"sort"
 	"strings"
+	"sync"
 	"syscall"
-
-	"github.com/taskctl/taskctl/pkg/runner"
 
 	"github.com/logrusorgru/aurora"
 	"github.com/manifoldco/promptui"
 
-	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 
 	"github.com/taskctl/taskctl/internal/config"
@@ -25,47 +25,29 @@ import (
 )
 
 var version = "dev"
-
 var stdin io.ReadCloser
-
-var cancel = make(chan struct{})
-
+var cancelFn func()
+var cancelMu sync.Mutex
 var cfg *config.Config
 
-func main() {
-	logrus.SetFormatter(&logrus.TextFormatter{
-		DisableColors:   false,
-		TimestampFormat: "2006-01-02 15:04:05",
-		FullTimestamp:   false,
-	})
-
-	err := run()
-	if err != nil {
-		logrus.Fatal(err)
-	}
+func Stdin() io.ReadCloser {
+	return stdin
 }
 
-func listenSignals() {
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-	go func() {
-		for sig := range sigs {
-			abort()
-			os.Exit(int(sig.(syscall.Signal)))
-		}
-	}()
+func SetStdin(newStdin io.ReadCloser) {
+	stdin = newStdin
 }
 
-func run() error {
+func Run() error {
 	stdin = os.Stdin
-	app := makeApp()
+	app := NewApp()
 
-	listenSignals()
+	go listenSignals()
 
 	return app.Run(os.Args)
 }
 
-func makeApp() *cli.App {
+func NewApp() *cli.App {
 	cfg = config.NewConfig()
 	cl := config.NewConfigLoader(cfg)
 
@@ -75,7 +57,7 @@ func makeApp() *cli.App {
 		Version:              version,
 		EnableBashCompletion: true,
 		BashComplete: func(c *cli.Context) {
-			cfg, _ := cl.Load(c.String("config"))
+			cfg, _ = cl.Load(c.String("config"))
 			suggestions := buildSuggestions(cfg)
 
 			for _, v := range suggestions {
@@ -124,8 +106,8 @@ func makeApp() *cli.App {
 				Usage: "set global variable value",
 			},
 			&cli.BoolFlag{
-				Name:  "dry-run",
-				Usage: "dry run",
+				Name:  "dry-Run",
+				Usage: "dry Run",
 			},
 			&cli.BoolFlag{
 				Name:    "summary",
@@ -148,14 +130,14 @@ func makeApp() *cli.App {
 			}
 
 			if c.Bool("debug") || cfg.Debug {
-				logrus.SetLevel(logrus.DebugLevel)
+				slog.SetLogLoggerLevel(slog.LevelDebug)
 			} else {
-				logrus.SetLevel(logrus.InfoLevel)
+				slog.SetLogLoggerLevel(slog.LevelInfo)
 			}
 
 			if c.Bool("quiet") {
 				c.App.ErrWriter = io.Discard
-				logrus.SetOutput(io.Discard)
+				slog.SetDefault(slog.New(slog.NewTextHandler(io.Discard, nil)))
 				cfg.Quiet = true
 			} else {
 				if c.IsSet("output") {
@@ -169,7 +151,7 @@ func makeApp() *cli.App {
 				}
 			}
 
-			if c.Bool("dry-run") {
+			if c.Bool("dry-Run") {
 				cfg.DryRun = true
 			}
 
@@ -195,8 +177,28 @@ func makeApp() *cli.App {
 	}
 }
 
+func Abort() {
+	cancelMu.Lock()
+	defer cancelMu.Unlock()
+
+	cancelFn()
+}
+
+func listenSignals() {
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	for sig := range sigs {
+		Abort()
+		os.Exit(int(sig.(syscall.Signal)))
+	}
+}
+
 func rootAction(c *cli.Context) (err error) {
-	taskRunner, err := buildTaskRunner(c)
+	cancelMu.Lock()
+	c.Context, cancelFn = context.WithCancel(c.Context)
+	cancelMu.Unlock()
+
+	taskRunner, err := buildTaskRunner(c.Context, c)
 	if err != nil {
 		return err
 	}
@@ -218,7 +220,7 @@ func rootAction(c *cli.Context) (err error) {
 
 	suggestions := buildSuggestions(cfg)
 	targetSelect := promptui.Select{
-		Label:        "Select task to run",
+		Label:        "Select task to Run",
 		Items:        suggestions,
 		Size:         15,
 		CursorPos:    0,
@@ -251,11 +253,7 @@ func rootAction(c *cli.Context) (err error) {
 	return runPipeline(cfg.Pipelines[selection.Target], taskRunner, cfg.Summary || c.Bool("summary"))
 }
 
-func abort() {
-	close(cancel)
-}
-
-func buildTaskRunner(c *cli.Context) (*runner.TaskRunner, error) {
+func buildTaskRunner(ctx context.Context, c *cli.Context) (*runner.TaskRunner, error) {
 	ta := taskArgs(c)
 	variables := cfg.Variables.With("Args", strings.Join(ta, " "))
 	variables.Set("ArgsList", ta)
@@ -269,12 +267,12 @@ func buildTaskRunner(c *cli.Context) (*runner.TaskRunner, error) {
 	taskRunner.DryRun = cfg.DryRun
 
 	if cfg.Quiet {
-		taskRunner.Stdout = ioutil.Discard
-		taskRunner.Stderr = ioutil.Discard
+		taskRunner.Stdout = io.Discard
+		taskRunner.Stderr = io.Discard
 	}
 
 	go func() {
-		<-cancel
+		<-ctx.Done()
 		taskRunner.Cancel()
 	}()
 

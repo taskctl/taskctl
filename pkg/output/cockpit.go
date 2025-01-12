@@ -15,7 +15,8 @@ import (
 	"github.com/taskctl/taskctl/pkg/task"
 )
 
-var frame = 100 * time.Millisecond
+const frame = 100 * time.Millisecond
+
 var base *baseCockpit
 
 type baseCockpit struct {
@@ -37,8 +38,12 @@ func (b *baseCockpit) start() *spinner.Spinner {
 		return b.spinner
 	}
 
-	s := spinner.New(spinner.CharSets[b.charSet], frame, spinner.WithColor("yellow"))
-	s.Writer = b.w
+	s := spinner.New(
+		spinner.CharSets[b.charSet],
+		frame,
+		spinner.WithColor("yellow"),
+		spinner.WithWriter(b.w),
+	)
 	s.PreUpdate = func(s *spinner.Spinner) {
 		tasks := make([]string, 0)
 		b.mu.Lock()

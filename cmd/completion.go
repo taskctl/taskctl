@@ -1,11 +1,9 @@
-package main
+package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
-
-	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
+	"log/slog"
 )
 
 func newCompletionCommand() *cli.Command {
@@ -14,8 +12,7 @@ func newCompletionCommand() *cli.Command {
 		Usage:     "generates completion scripts",
 		UsageText: helpText,
 		Action: func(c *cli.Context) error {
-			logrus.SetLevel(logrus.PanicLevel)
-			logrus.SetOutput(ioutil.Discard)
+			slog.SetLogLoggerLevel(slog.LevelError)
 
 			var shell string
 			if !c.Args().Present() {
@@ -41,7 +38,7 @@ func newCompletionCommand() *cli.Command {
 }
 
 var helpText = `
-To load completion run
+To load completion Run
 
 . <(taskctl completion)
 

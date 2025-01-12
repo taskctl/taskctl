@@ -1,9 +1,9 @@
-package main
+package cmd_test
 
 import "testing"
 
 func Test_listCommand(t *testing.T) {
-	app := makeTestApp(t)
+	app := makeTestApp()
 
 	tests := []appTest{
 		{args: []string{"", "-c", "testdata/graph.yaml", "list"}, output: []string{"graph:pipeline1", "graph:task1", "no watchers"}},

@@ -1,9 +1,9 @@
-package main
+package cmd_test
 
 import "testing"
 
 func Test_validateCommand(t *testing.T) {
-	app := makeTestApp(t)
+	app := makeTestApp()
 
 	tests := []appTest{
 		{args: []string{"", "validate", "testdata/graph2.yaml"}, errored: true},

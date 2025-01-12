@@ -5,7 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
+	"log/slog"
 	"mime"
 	"net/http"
 	"net/url"
@@ -14,10 +15,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/imdario/mergo"
+	"dario.cat/mergo"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pelletier/go-toml"
-	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 
 	"github.com/taskctl/taskctl/pkg/utils"
@@ -92,7 +92,7 @@ func (cl *Loader) Load(file string) (*Config, error) {
 	}
 	cl.dst.Variables.Set("Root", cl.dir)
 
-	logrus.Debugf("config %s loaded", file)
+	slog.Debug(fmt.Sprintf("config %s loaded", file))
 	return cl.dst, nil
 }
 
@@ -151,7 +151,7 @@ func (cl *Loader) load(file string) (config map[string]interface{}, err error) {
 
 	var raw map[string]interface{}
 	importDir := path.Dir(file)
-	if imports, ok := config["import"]; ok {
+	if imports, ok := config["import"]; ok && imports != nil {
 		for _, v := range imports.([]interface{}) {
 			if utils.IsURL(v.(string)) {
 				if cl.imports[v.(string)] {
@@ -173,7 +173,7 @@ func (cl *Loader) load(file string) (config map[string]interface{}, err error) {
 					raw, err = cl.loadDir(importFile)
 				}
 				if err != nil {
-					logrus.Error(err)
+					slog.Error(err.Error())
 				}
 			}
 			if err != nil {
@@ -227,7 +227,7 @@ func (cl *Loader) readURL(u string) (map[string]interface{}, error) {
 		return nil, fmt.Errorf("%d: config request failed - %s", resp.StatusCode, u)
 	}
 
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %v", u, err)
 	}
@@ -256,7 +256,7 @@ func (cl *Loader) readURL(u string) (map[string]interface{}, error) {
 }
 
 func (cl *Loader) readFile(filename string) (map[string]interface{}, error) {
-	data, err := ioutil.ReadFile(filename)
+	data, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %v", filename, err)
 	}

@@ -1,17 +1,15 @@
-package main
+package cmd_test
 
 import (
 	"bytes"
 	"encoding/binary"
+	"github.com/manifoldco/promptui"
+	"github.com/taskctl/taskctl/cmd"
+	"github.com/urfave/cli/v2"
 	"io"
-	"io/ioutil"
 	"os"
-	"reflect"
 	"strings"
 	"testing"
-
-	"github.com/manifoldco/promptui"
-	"github.com/urfave/cli/v2"
 )
 
 type appTest struct {
@@ -22,8 +20,8 @@ type appTest struct {
 	stdin       io.ReadCloser
 }
 
-func makeTestApp(t *testing.T) *cli.App {
-	return makeApp()
+func makeTestApp() *cli.App {
+	return cmd.NewApp()
 }
 
 func runAppTest(app *cli.App, test appTest, t *testing.T) {
@@ -39,21 +37,21 @@ func runAppTest(app *cli.App, test appTest, t *testing.T) {
 	}()
 
 	if test.stdin != nil {
-		origStdin := stdin
-		stdin = test.stdin
+		origStdin := cmd.Stdin()
+		cmd.SetStdin(test.stdin)
 		defer func() {
-			stdin = origStdin
+			cmd.SetStdin(origStdin)
 		}()
 	}
 
 	err = app.Run(test.args)
-	os.Stdout = origStdout
-	w.Close()
-
 	if err != nil && !test.errored {
 		t.Fatal(err)
 		return
 	}
+
+	os.Stdout = origStdout
+	_ = w.Close()
 
 	var buf bytes.Buffer
 	_, err = io.Copy(&buf, r)
@@ -77,7 +75,7 @@ func runAppTest(app *cli.App, test appTest, t *testing.T) {
 }
 
 func stdinConfirm(t *testing.T, times int) *os.File {
-	tmpfile, err := ioutil.TempFile("", "confirm")
+	tmpfile, err := os.CreateTemp("", "confirm")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,7 +95,7 @@ func stdinConfirm(t *testing.T, times int) *os.File {
 }
 
 func TestBashComplete(t *testing.T) {
-	app := makeTestApp(t)
+	app := makeTestApp()
 	runAppTest(app, appTest{
 		args:   []string{"", "-c", "testdata/graph.yaml", "--generate-bash-completion"},
 		output: []string{"graph\\:task1", "graph\\:pipeline1"},
@@ -117,23 +115,7 @@ func TestRootAction(t *testing.T) {
 	}
 
 	for _, v := range tests {
-		app := makeTestApp(t)
+		app := makeTestApp()
 		runAppTest(app, v, t)
-	}
-}
-
-func Test_makeApp(t *testing.T) {
-	tests := []struct {
-		name string
-		want *cli.App
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := makeApp(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("makeApp() = %v, want %v", got, tt.want)
-			}
-		})
 	}
 }
