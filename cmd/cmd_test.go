@@ -21,7 +21,7 @@ type appTest struct {
 }
 
 func makeTestApp() *cli.App {
-	return cmd.NewApp()
+	return cmd.NewApp("test")
 }
 
 func runAppTest(app *cli.App, test appTest, t *testing.T) {

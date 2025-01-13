@@ -3,7 +3,6 @@ package runner
 import (
 	"context"
 	"fmt"
-	"golang.org/x/text/language"
 	"io"
 	"log/slog"
 	"os"
@@ -12,8 +11,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/taskctl/taskctl/pkg/executor"
+	"golang.org/x/text/language"
+
 	"golang.org/x/text/cases"
+
+	"github.com/taskctl/taskctl/pkg/executor"
 
 	"github.com/taskctl/taskctl/pkg/variables"
 

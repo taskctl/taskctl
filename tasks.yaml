@@ -64,7 +64,7 @@ tasks:
     dir: "{{.Root}}"
     command:
       - go fmt -x ./...
-      - gofmt -s -w cmd/**/*.go
+      - gofmt -s -w cmd/*.go
       - gofmt -s -w internal/**/*.go
       - gofmt -s -w pkg/**/*.go
 

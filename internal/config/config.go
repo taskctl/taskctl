@@ -8,6 +8,7 @@ import (
 	"github.com/taskctl/taskctl/pkg/variables"
 
 	"dario.cat/mergo"
+
 	"github.com/taskctl/taskctl/internal/watch"
 	"github.com/taskctl/taskctl/pkg/output"
 	"github.com/taskctl/taskctl/pkg/runner"

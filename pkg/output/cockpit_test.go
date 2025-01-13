@@ -2,8 +2,9 @@ package output
 
 import (
 	"bytes"
-	"github.com/taskctl/taskctl/pkg/task"
 	"testing"
+
+	"github.com/taskctl/taskctl/pkg/task"
 )
 
 func Test_cockpitOutputDecorator(t *testing.T) {

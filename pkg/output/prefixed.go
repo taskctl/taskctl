@@ -7,6 +7,7 @@ import (
 	"regexp"
 
 	"github.com/logrusorgru/aurora"
+
 	"github.com/taskctl/taskctl/pkg/task"
 )
 
