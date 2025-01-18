@@ -119,7 +119,7 @@ func TestCustomOutputFormat(t *testing.T) {
 	}
 
 	for _, v := range tests {
-		app := makeTestApp(t)
+		app := makeTestApp()
 		runAppTest(app, v, t)
 	}
 }

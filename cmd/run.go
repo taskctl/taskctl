@@ -11,9 +11,9 @@ import (
 
 	"github.com/logrusorgru/aurora"
 
-	"github.com/taskctl/taskctl/pkg/runner"
-	"github.com/taskctl/taskctl/pkg/scheduler"
-	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/taskctl/taskctl/runner"
+	"github.com/taskctl/taskctl/scheduler"
+	"github.com/taskctl/taskctl/task"
 )
 
 func newRunCommand() *cli.Command {

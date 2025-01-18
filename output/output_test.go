@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/taskctl/taskctl/task"
 )
 
 func TestNewTaskOutput_Prefixed(t *testing.T) {

@@ -3,7 +3,7 @@ package config
 import (
 	"testing"
 
-	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/taskctl/taskctl/task"
 )
 
 func Test_buildWatcher(t *testing.T) {

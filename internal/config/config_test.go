@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/taskctl/taskctl/task"
 
 	"gopkg.in/yaml.v2"
 )

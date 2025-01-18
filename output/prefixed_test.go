@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/taskctl/taskctl/task"
 )
 
 func Test_prefixedOutputDecorator(t *testing.T) {

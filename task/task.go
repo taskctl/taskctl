@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"time"
 
-	"github.com/taskctl/taskctl/pkg/variables"
+	"github.com/taskctl/taskctl/variables"
 
-	"github.com/taskctl/taskctl/pkg/utils"
+	"github.com/taskctl/taskctl/utils"
 )
 
 // Task is a structure that describes task, its commands, environment, working directory etc.

@@ -3,7 +3,7 @@ package config
 import (
 	"testing"
 
-	"github.com/taskctl/taskctl/pkg/variables"
+	"github.com/taskctl/taskctl/variables"
 )
 
 func Test_buildTask(t *testing.T) {

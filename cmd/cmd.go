@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/taskctl/taskctl/pkg/runner"
+	"github.com/taskctl/taskctl/runner"
 	"io"
 	"log/slog"
 	"os"
@@ -20,8 +20,8 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/taskctl/taskctl/internal/config"
-	"github.com/taskctl/taskctl/pkg/output"
-	"github.com/taskctl/taskctl/pkg/utils"
+	"github.com/taskctl/taskctl/output"
+	"github.com/taskctl/taskctl/utils"
 )
 
 var stdin io.ReadCloser

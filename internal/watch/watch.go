@@ -7,13 +7,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/taskctl/taskctl/pkg/variables"
+	"github.com/taskctl/taskctl/variables"
 
 	"github.com/bmatcuk/doublestar"
 	"github.com/fsnotify/fsnotify"
 
-	"github.com/taskctl/taskctl/pkg/runner"
-	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/taskctl/taskctl/runner"
+	"github.com/taskctl/taskctl/task"
 )
 
 const (

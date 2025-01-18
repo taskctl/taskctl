@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/taskctl/taskctl/pkg/task"
-	"github.com/taskctl/taskctl/pkg/utils"
-	"github.com/taskctl/taskctl/pkg/variables"
+	"github.com/taskctl/taskctl/task"
+	"github.com/taskctl/taskctl/utils"
+	"github.com/taskctl/taskctl/variables"
 )
 
 var shBin = utils.Binary{

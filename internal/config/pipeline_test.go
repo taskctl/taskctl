@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/taskctl/taskctl/pkg/variables"
+	"github.com/taskctl/taskctl/variables"
 
-	"github.com/taskctl/taskctl/pkg/scheduler"
+	"github.com/taskctl/taskctl/scheduler"
 )
 
 func TestBuildPipeline_Cyclic(t *testing.T) {

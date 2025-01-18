@@ -8,7 +8,7 @@ import (
 	"github.com/emicklei/dot"
 	"github.com/urfave/cli/v2"
 
-	"github.com/taskctl/taskctl/pkg/scheduler"
+	"github.com/taskctl/taskctl/scheduler"
 )
 
 func newGraphCommand() *cli.Command {

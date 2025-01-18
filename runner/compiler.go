@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/taskctl/taskctl/pkg/executor"
-	"github.com/taskctl/taskctl/pkg/task"
-	"github.com/taskctl/taskctl/pkg/utils"
-	"github.com/taskctl/taskctl/pkg/variables"
+	"github.com/taskctl/taskctl/executor"
+	"github.com/taskctl/taskctl/task"
+	"github.com/taskctl/taskctl/utils"
+	"github.com/taskctl/taskctl/variables"
 )
 
 // TaskCompiler compiles tasks into jobs for executor

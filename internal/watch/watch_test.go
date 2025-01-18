@@ -6,8 +6,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/taskctl/taskctl/pkg/runner"
-	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/taskctl/taskctl/runner"
+	"github.com/taskctl/taskctl/task"
 )
 
 func TestNewWatcher(t *testing.T) {

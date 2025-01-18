@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"testing"
 
-	"github.com/taskctl/taskctl/pkg/task"
-	"github.com/taskctl/taskctl/pkg/variables"
+	"github.com/taskctl/taskctl/task"
+	"github.com/taskctl/taskctl/variables"
 )
 
 func TestContext(t *testing.T) {

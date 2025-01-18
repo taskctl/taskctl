@@ -15,13 +15,13 @@ import (
 
 	"golang.org/x/text/cases"
 
-	"github.com/taskctl/taskctl/pkg/executor"
+	"github.com/taskctl/taskctl/executor"
 
-	"github.com/taskctl/taskctl/pkg/variables"
+	"github.com/taskctl/taskctl/variables"
 
-	"github.com/taskctl/taskctl/pkg/output"
+	"github.com/taskctl/taskctl/output"
 
-	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/taskctl/taskctl/task"
 )
 
 // Runner describes tasks runner interface

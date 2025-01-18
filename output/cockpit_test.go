@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/taskctl/taskctl/task"
 )
 
 func Test_cockpitOutputDecorator(t *testing.T) {

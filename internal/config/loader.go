@@ -20,7 +20,7 @@ import (
 	"github.com/pelletier/go-toml"
 	"gopkg.in/yaml.v2"
 
-	"github.com/taskctl/taskctl/pkg/utils"
+	"github.com/taskctl/taskctl/utils"
 )
 
 // ErrConfigNotFound occurs when requested config file does not exists

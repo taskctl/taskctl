@@ -3,9 +3,9 @@ package config
 import (
 	"testing"
 
-	"github.com/taskctl/taskctl/pkg/variables"
+	"github.com/taskctl/taskctl/variables"
 
-	"github.com/taskctl/taskctl/pkg/utils"
+	"github.com/taskctl/taskctl/utils"
 )
 
 func Test_buildContext_dir(t *testing.T) {

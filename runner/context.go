@@ -6,11 +6,11 @@ import (
 	"log/slog"
 	"sync"
 
-	"github.com/taskctl/taskctl/pkg/executor"
+	"github.com/taskctl/taskctl/executor"
 
-	"github.com/taskctl/taskctl/pkg/variables"
+	"github.com/taskctl/taskctl/variables"
 
-	"github.com/taskctl/taskctl/pkg/utils"
+	"github.com/taskctl/taskctl/utils"
 )
 
 // ExecutionContext allow you to set up execution environment, variables, binary which will run your task, up/down commands etc.

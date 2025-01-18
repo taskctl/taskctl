@@ -5,14 +5,14 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/taskctl/taskctl/pkg/variables"
+	"github.com/taskctl/taskctl/variables"
 
 	"dario.cat/mergo"
 
 	"github.com/taskctl/taskctl/internal/watch"
-	"github.com/taskctl/taskctl/pkg/runner"
-	"github.com/taskctl/taskctl/pkg/scheduler"
-	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/taskctl/taskctl/runner"
+	"github.com/taskctl/taskctl/scheduler"
+	"github.com/taskctl/taskctl/task"
 )
 
 // DefaultFileNames is default names for tasks' files

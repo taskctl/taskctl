@@ -7,9 +7,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/taskctl/taskctl/pkg/utils"
+	"github.com/taskctl/taskctl/utils"
 
-	"github.com/taskctl/taskctl/pkg/runner"
+	"github.com/taskctl/taskctl/runner"
 )
 
 // Scheduler executes ExecutionGraph

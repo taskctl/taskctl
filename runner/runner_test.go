@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/taskctl/taskctl/pkg/variables"
+	"github.com/taskctl/taskctl/variables"
 
-	taskpkg "github.com/taskctl/taskctl/pkg/task"
+	taskpkg "github.com/taskctl/taskctl/task"
 )
 
 func TestTaskRunner(t *testing.T) {

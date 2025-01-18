@@ -12,7 +12,7 @@ import (
 
 	"github.com/briandowns/spinner"
 
-	"github.com/taskctl/taskctl/pkg/task"
+	"github.com/taskctl/taskctl/task"
 )
 
 const frame = 100 * time.Millisecond

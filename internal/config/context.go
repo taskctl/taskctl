@@ -3,10 +3,10 @@ package config
 import (
 	"path/filepath"
 
-	"github.com/taskctl/taskctl/pkg/runner"
-	"github.com/taskctl/taskctl/pkg/variables"
+	"github.com/taskctl/taskctl/runner"
+	"github.com/taskctl/taskctl/variables"
 
-	"github.com/taskctl/taskctl/pkg/utils"
+	"github.com/taskctl/taskctl/utils"
 )
 
 type contextDefinition struct {
