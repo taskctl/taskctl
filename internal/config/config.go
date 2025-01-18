@@ -10,7 +10,6 @@ import (
 	"dario.cat/mergo"
 
 	"github.com/taskctl/taskctl/internal/watch"
-	"github.com/taskctl/taskctl/pkg/output"
 	"github.com/taskctl/taskctl/pkg/runner"
 	"github.com/taskctl/taskctl/pkg/scheduler"
 	"github.com/taskctl/taskctl/pkg/task"
@@ -22,7 +21,6 @@ var DefaultFileNames = []string{"taskctl.yaml", "tasks.yaml"}
 // NewConfig creates new config instance
 func NewConfig() *Config {
 	cfg := &Config{
-		Output:    output.FormatPrefixed,
 		Contexts:  make(map[string]*runner.ExecutionContext),
 		Pipelines: make(map[string]*scheduler.ExecutionGraph),
 		Tasks:     make(map[string]*task.Task),
