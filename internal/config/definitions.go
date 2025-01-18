@@ -26,6 +26,7 @@ type stageDefinition struct {
 	AllowFailure bool     `mapstructure:"allow_failure"`
 	Dir          string
 	Env          map[string]string
+	EnvFile      string `mapstructure:"env_file"`
 	Variables    map[string]string
 }
 
