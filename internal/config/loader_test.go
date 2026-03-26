@@ -88,7 +88,7 @@ func TestLoader_loadDir(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tasks := m["tasks"].(map[interface{}]interface{})
+	tasks := m["tasks"].(map[any]any)
 	if len(tasks) != 5 {
 		t.Error()
 	}
@@ -114,7 +114,7 @@ func TestLoader_readURL(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tasks := m["tasks"].(map[string]interface{})
+	tasks := m["tasks"].(map[string]any)
 	if len(tasks) != 1 {
 		t.Error()
 	}

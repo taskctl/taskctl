@@ -31,14 +31,12 @@ func TestNewWatcher(t *testing.T) {
 	}
 
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		err := w.Run(r)
 		if err != nil {
 			t.Error(err)
 		}
-	}()
+	})
 
 	err = os.WriteFile(filepath.Join(cwd, "fake_file.json"), []byte{}, 0644)
 	if err != nil {

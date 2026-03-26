@@ -43,7 +43,7 @@ func ConvertEnv(env map[string]string) []string {
 }
 
 // ConvertToMapOfStrings converts map of interfaces to map of strings
-func ConvertToMapOfStrings(m map[string]interface{}) map[string]string {
+func ConvertToMapOfStrings(m map[string]any) map[string]string {
 	mdst := make(map[string]string)
 
 	for k, v := range m {
@@ -59,7 +59,7 @@ func FileExists(file string) bool {
 }
 
 // MapKeys returns an array of map's keys
-func MapKeys(m interface{}) (keys []string) {
+func MapKeys(m any) (keys []string) {
 	v := reflect.ValueOf(m)
 	if v.Kind() != reflect.Map {
 		return keys
@@ -82,9 +82,9 @@ func LastLine(r io.Reader) (l string) {
 }
 
 // RenderString parses given string as a template and executes it with provided params
-func RenderString(tmpl string, variables map[string]interface{}) (string, error) {
+func RenderString(tmpl string, variables map[string]any) (string, error) {
 	funcMap := template.FuncMap{
-		"default": func(arg interface{}, value interface{}) interface{} {
+		"default": func(arg any, value any) any {
 			v := reflect.ValueOf(value)
 			switch v.Kind() {
 			case reflect.String, reflect.Slice, reflect.Array, reflect.Map:

@@ -56,12 +56,12 @@ func (d *prefixedOutputDecorator) Write(p []byte) (int, error) {
 }
 
 func (d *prefixedOutputDecorator) WriteHeader() error {
-	_, err := d.writePrefixedLine([]byte(fmt.Sprintf("Running task %s...", d.t.Name)))
+	_, err := d.writePrefixedLine(fmt.Appendf(nil, "Running task %s...", d.t.Name))
 	return err
 }
 
 func (d *prefixedOutputDecorator) WriteFooter() error {
-	_, err := d.writePrefixedLine([]byte(fmt.Sprintf("%s finished. Duration %s", d.t.Name, d.t.Duration())))
+	_, err := d.writePrefixedLine(fmt.Appendf(nil, "%s finished. Duration %s", d.t.Name, d.t.Duration()))
 	return err
 }
 

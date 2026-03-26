@@ -134,7 +134,7 @@ func (cl *Loader) reset() {
 	cl.imports = make(map[string]bool)
 }
 
-func (cl *Loader) load(file string) (config map[string]interface{}, err error) {
+func (cl *Loader) load(file string) (config map[string]any, err error) {
 	cl.imports[file] = true
 
 	if utils.IsURL(file) {
@@ -149,10 +149,10 @@ func (cl *Loader) load(file string) (config map[string]interface{}, err error) {
 		return nil, err
 	}
 
-	var raw map[string]interface{}
+	var raw map[string]any
 	importDir := path.Dir(file)
 	if imports, ok := config["import"]; ok && imports != nil {
-		for _, v := range imports.([]interface{}) {
+		for _, v := range imports.([]any) {
 			if utils.IsURL(v.(string)) {
 				if cl.imports[v.(string)] {
 					continue
@@ -190,14 +190,14 @@ func (cl *Loader) load(file string) (config map[string]interface{}, err error) {
 	return config, nil
 }
 
-func (cl *Loader) loadDir(dir string) (map[string]interface{}, error) {
+func (cl *Loader) loadDir(dir string) (map[string]any, error) {
 	pattern := filepath.Join(dir, "*.yaml")
 	q, err := filepath.Glob(pattern)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %v", dir, err)
 	}
 
-	cm := make(map[string]interface{})
+	cm := make(map[string]any)
 	for _, importFile := range q {
 		if cl.imports[importFile] {
 			continue
@@ -217,7 +217,7 @@ func (cl *Loader) loadDir(dir string) (map[string]interface{}, error) {
 	return cm, nil
 }
 
-func (cl *Loader) readURL(u string) (map[string]interface{}, error) {
+func (cl *Loader) readURL(u string) (map[string]any, error) {
 	resp, err := http.Get(u)
 	if err != nil {
 		return nil, err
@@ -255,7 +255,7 @@ func (cl *Loader) readURL(u string) (map[string]interface{}, error) {
 	return cl.unmarshalData(data, ext)
 }
 
-func (cl *Loader) readFile(filename string) (map[string]interface{}, error) {
+func (cl *Loader) readFile(filename string) (map[string]any, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %v", filename, err)
@@ -266,8 +266,8 @@ func (cl *Loader) readFile(filename string) (map[string]interface{}, error) {
 	return cl.unmarshalData(data, ext)
 }
 
-func (cl *Loader) unmarshalData(data []byte, ext string) (map[string]interface{}, error) {
-	var cm map[string]interface{}
+func (cl *Loader) unmarshalData(data []byte, ext string) (map[string]any, error) {
+	var cm map[string]any
 
 	switch strings.ToLower(ext) {
 	case ".yaml", ".yml":
@@ -292,7 +292,7 @@ func (cl *Loader) unmarshalData(data []byte, ext string) (map[string]interface{}
 	return cm, nil
 }
 
-func (cl *Loader) decode(cm map[string]interface{}) (*configDefinition, error) {
+func (cl *Loader) decode(cm map[string]any) (*configDefinition, error) {
 	c := &configDefinition{}
 	md, _ := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(

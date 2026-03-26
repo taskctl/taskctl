@@ -40,7 +40,7 @@ tasks:
 
   build:
     command:
-      - GOOS=${GOOS} GOARCH=amd64 go build -o bin/taskctl_${GOOS} ./cmd/taskctl
+      - GOOS=${GOOS} GOARCH=amd64 go build -o bin/taskctl_${GOOS} .
     variations:
       - GOOS: linux
       - GOOS: darwin
@@ -53,7 +53,6 @@ tasks:
   goimports:
     command:
       - goimports -v -local github.com/taskctl/taskctl -w -format-only $(ls -d internal/**/*.go)
-      - goimports -v -local github.com/taskctl/taskctl -w -format-only $(ls -d pkg/**/*.go)
       - goimports -v -local github.com/taskctl/taskctl -w -format-only $(ls -d cmd/**/*.go)
 
   goreleaser:
@@ -66,15 +65,14 @@ tasks:
       - go fmt -x ./...
       - gofmt -s -w cmd/*.go
       - gofmt -s -w internal/**/*.go
-      - gofmt -s -w pkg/**/*.go
 
   tidy:
     command:
       - go mod tidy
 
   update-completers:
-    dir: "{{.Root}}/cmd/taskctl"
+    dir: "{{.Root}}"
     command:
-      - rm -rf ../../autocomplete/*
-      - go run . completion bash > ./../../autocomplete/bash_completion.bash
-      - go run . completion zsh > ./../../autocomplete/zsh_completion.zsh
+      - rm -rf autocomplete/*
+      - go run . completion bash > autocomplete/bash_completion.bash
+      - go run . completion zsh > autocomplete/zsh_completion.zsh
