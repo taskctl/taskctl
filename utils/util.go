@@ -60,6 +60,9 @@ func FileExists(file string) bool {
 
 // MapKeys returns an array of map's keys
 func MapKeys(m any) (keys []string) {
+	if m == nil {
+		return keys
+	}
 	v := reflect.ValueOf(m)
 	if v.Kind() != reflect.Map {
 		return keys
