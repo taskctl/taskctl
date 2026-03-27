@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/taskctl/taskctl/runner"
 	"github.com/taskctl/taskctl/task"
@@ -43,7 +44,12 @@ func TestNewWatcher(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	deadline := time.Now().Add(5 * time.Second)
 	for !w.Running() {
+		if time.Now().After(deadline) {
+			t.Fatal("watcher did not start running within 5 seconds")
+		}
+		time.Sleep(10 * time.Millisecond)
 	}
 
 	w.Close()
