@@ -314,10 +314,7 @@ func (cl *Loader) decode(cm map[string]any) (*configDefinition, error) {
 
 func (cl *Loader) resolveDefaultConfigFile() (file string, err error) {
 	dir := cl.dir
-	for {
-		if dir == filepath.Dir(dir) {
-			break
-		}
+	for dir != filepath.Dir(dir) {
 
 		for _, v := range DefaultFileNames {
 			file := filepath.Join(dir, v)

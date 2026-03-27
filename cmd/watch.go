@@ -45,7 +45,7 @@ func newWatchCommand() *cli.Command {
 					return fmt.Errorf("unknown watcher %s", name)
 				}
 				go func(w *watch.Watcher) {
-					<-c.Context.Done()
+					<-c.Done()
 					w.Close()
 				}(w)
 

@@ -43,10 +43,7 @@ func TestNewWatcher(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	for {
-		if w.Running() {
-			break
-		}
+	for !w.Running() {
 	}
 
 	w.Close()
