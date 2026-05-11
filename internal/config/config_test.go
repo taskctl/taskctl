@@ -15,7 +15,7 @@ var testConfig, _ = os.ReadFile("testdata/tasks.yaml")
 func TestConfig_decode(t *testing.T) {
 	loader := NewConfigLoader(NewConfig())
 
-	var cm = make(map[string]interface{})
+	var cm = make(map[string]any)
 	var dec = yaml.NewDecoder(bytes.NewReader(testConfig))
 	dec.SetStrict(true)
 

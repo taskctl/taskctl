@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -127,7 +128,7 @@ func TestLastLine(t *testing.T) {
 
 func TestMapKeys(t *testing.T) {
 	type args struct {
-		m interface{}
+		m any
 	}
 	tests := []struct {
 		name     string
@@ -142,11 +143,8 @@ func TestMapKeys(t *testing.T) {
 			gotKeys := MapKeys(tt.args.m)
 			for _, v := range tt.wantKeys {
 				var found bool
-				for _, vv := range gotKeys {
-					if v == vv {
-						found = true
-						break
-					}
+				if slices.Contains(gotKeys, v) {
+					found = true
 				}
 				if found == false {
 					t.Errorf("MapKeys() = %v, want %v", gotKeys, tt.wantKeys)
@@ -159,7 +157,7 @@ func TestMapKeys(t *testing.T) {
 func TestRenderString(t *testing.T) {
 	type args struct {
 		tmpl      string
-		variables map[string]interface{}
+		variables map[string]any
 	}
 	tests := []struct {
 		name    string
@@ -167,10 +165,10 @@ func TestRenderString(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		{args: args{tmpl: "hello, {{ .Name }}!", variables: map[string]interface{}{"Name": "world"}}, want: "hello, world!"},
-		{args: args{tmpl: "hello, {{ .Name | default \"John\" }}!", variables: map[string]interface{}{"Name": ""}}, want: "hello, John!"},
-		{args: args{tmpl: "hello, {{ .Name }}!", variables: make(map[string]interface{})}, wantErr: true},
-		{args: args{tmpl: "hello, {{ .Name", variables: make(map[string]interface{})}, wantErr: true},
+		{args: args{tmpl: "hello, {{ .Name }}!", variables: map[string]any{"Name": "world"}}, want: "hello, world!"},
+		{args: args{tmpl: "hello, {{ .Name | default \"John\" }}!", variables: map[string]any{"Name": ""}}, want: "hello, John!"},
+		{args: args{tmpl: "hello, {{ .Name }}!", variables: make(map[string]any)}, wantErr: true},
+		{args: args{tmpl: "hello, {{ .Name", variables: make(map[string]any)}, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

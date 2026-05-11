@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/taskctl/taskctl/runner"
 	"github.com/taskctl/taskctl/task"
@@ -31,24 +32,24 @@ func TestNewWatcher(t *testing.T) {
 	}
 
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		err := w.Run(r)
 		if err != nil {
 			t.Error(err)
 		}
-	}()
+	})
 
 	err = os.WriteFile(filepath.Join(cwd, "fake_file.json"), []byte{}, 0644)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	for {
-		if w.Running() {
-			break
+	deadline := time.Now().Add(5 * time.Second)
+	for !w.Running() {
+		if time.Now().After(deadline) {
+			t.Fatal("watcher did not start running within 5 seconds")
 		}
+		time.Sleep(10 * time.Millisecond)
 	}
 
 	w.Close()

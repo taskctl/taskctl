@@ -80,7 +80,7 @@ func stdinConfirm(t *testing.T, times int) *os.File {
 		t.Fatal(err)
 	}
 
-	for i := 0; i < times; i++ {
+	for range times {
 		err = binary.Write(tmpfile, binary.LittleEndian, promptui.KeyEnter)
 		if err != nil {
 			t.Fatal(err)
@@ -105,16 +105,16 @@ func TestBashComplete(t *testing.T) {
 func TestCustomOutputFormat(t *testing.T) {
 	tests := []appTest{
 		{
-			args:        []string{"", "-c", "testdata/output-none.yaml", "task1"},
-			exactOutput: "\x1b[36mtask1\x1b[0m: hello, world!\r\n",
+			args:   []string{"", "-c", "testdata/output-none.yaml", "task1"},
+			output: []string{"task1", "hello, world!", "Running task task1", "task1 finished"},
 		},
 		{
 			args:        []string{"", "-c", "testdata/output-raw.yaml", "task1"},
 			exactOutput: "hello, world!\n",
 		},
 		{
-			args:        []string{"", "-c", "testdata/output-raw.yaml", "--output", "prefixed", "task1"},
-			exactOutput: "\x1b[36mtask1\x1b[0m: hello, world!\r\n",
+			args:   []string{"", "-c", "testdata/output-raw.yaml", "--output", "prefixed", "task1"},
+			output: []string{"task1", "hello, world!", "Running task task1", "task1 finished"},
 		},
 	}
 
