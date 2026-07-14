@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/taskctl/taskctl/runner"
 	"io"
 	"log/slog"
 	"os"
@@ -14,8 +13,11 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/taskctl/taskctl/runner"
+
 	"github.com/logrusorgru/aurora"
 	"github.com/manifoldco/promptui"
+	"github.com/mattn/go-isatty"
 
 	"github.com/urfave/cli/v2"
 
@@ -28,6 +30,20 @@ var stdin io.ReadCloser
 var cancelFn func()
 var cancelMu sync.Mutex
 var cfg *config.Config
+var au aurora.Aurora = aurora.NewAurora(false)
+
+// isTTY reports whether the given file descriptor is an interactive terminal.
+func isTTY(fd uintptr) bool {
+	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
+}
+
+func defaultStdinIsTTY() bool  { return isTTY(os.Stdin.Fd()) }
+func defaultStdoutIsTTY() bool { return isTTY(os.Stdout.Fd()) }
+
+// stdinIsTTY / stdoutIsTTY report whether stdin / stdout are interactive
+// terminals. They are package-level vars so tests can stub them without a real TTY.
+var stdinIsTTY = defaultStdinIsTTY
+var stdoutIsTTY = defaultStdoutIsTTY
 
 func Stdin() io.ReadCloser {
 	return stdin
@@ -35,6 +51,33 @@ func Stdin() io.ReadCloser {
 
 func SetStdin(newStdin io.ReadCloser) {
 	stdin = newStdin
+}
+
+// SetStdinIsTTY overrides the stdin TTY detection function; intended for
+// tests. Pass nil to restore the default isatty-based detection.
+func SetStdinIsTTY(f func() bool) {
+	if f == nil {
+		stdinIsTTY = defaultStdinIsTTY
+		return
+	}
+	stdinIsTTY = f
+}
+
+// SetStdoutIsTTY overrides the stdout TTY detection function; intended for
+// tests. Pass nil to restore the default isatty-based detection.
+func SetStdoutIsTTY(f func() bool) {
+	if f == nil {
+		stdoutIsTTY = defaultStdoutIsTTY
+		return
+	}
+	stdoutIsTTY = f
+}
+
+// nonInteractive reports whether the CLI should avoid interactive prompts:
+// when explicitly requested via --no-input/TASKCTL_NO_INPUT, when producing
+// machine-readable JSON output, or when stdin is not a terminal.
+func nonInteractive(c *cli.Context) bool {
+	return c.Bool("no-input") || cfg.Output == output.FormatJSON || !stdinIsTTY()
 }
 
 func Run(version string) error {
@@ -83,7 +126,7 @@ func NewApp(version string) *cli.App {
 			&cli.StringFlag{
 				Name:    "output",
 				Aliases: []string{"o"},
-				Usage:   "output format (raw, prefixed or cockpit)",
+				Usage:   "output format (raw, prefixed, cockpit or json)",
 				EnvVars: []string{"TASKCTL_OUTPUT_FORMAT"},
 			},
 			&cli.BoolFlag{
@@ -113,6 +156,11 @@ func NewApp(version string) *cli.App {
 				Usage:   "show summary",
 				Aliases: []string{"s"},
 				Value:   true,
+			},
+			&cli.BoolFlag{
+				Name:    "no-input",
+				Usage:   "disable interactive prompts",
+				EnvVars: []string{"TASKCTL_NO_INPUT"},
 			},
 		},
 		Before: func(c *cli.Context) (err error) {
@@ -154,6 +202,12 @@ func NewApp(version string) *cli.App {
 				cfg.DryRun = true
 			}
 
+			if cfg.Output == output.FormatCockpit && !stdoutIsTTY() {
+				cfg.Output = output.FormatPrefixed
+			}
+
+			au = aurora.NewAurora(stdoutIsTTY() && cfg.Output != output.FormatJSON)
+
 			return nil
 		},
 		Action: rootAction,
@@ -166,6 +220,7 @@ func NewApp(version string) *cli.App {
 			newCompletionCommand(),
 			newGraphCommand(),
 			newValidateCommand(),
+			newSkillCommand(),
 		},
 		Authors: []*cli.Author{
 			{
@@ -204,17 +259,11 @@ func rootAction(c *cli.Context) (err error) {
 
 	targets := c.Args().Slice()
 	if len(targets) > 0 {
-		for _, target := range targets {
-			if target == "--" {
-				break
-			}
+		return runTargets(targetNames(targets, false), c, taskRunner)
+	}
 
-			err = runTarget(target, c, taskRunner)
-			if err != nil {
-				return err
-			}
-		}
-		return nil
+	if nonInteractive(c) {
+		return errors.New("no target specified; run 'taskctl list' to see available targets")
 	}
 
 	suggestions := buildSuggestions(cfg)
@@ -293,7 +342,7 @@ func buildSuggestions(cfg *config.Config) []suggestion {
 	for _, v := range utils.MapKeys(cfg.Pipelines) {
 		suggestions = append(suggestions, suggestion{
 			Target:      v,
-			DisplayName: fmt.Sprintf("%s - %s", v, aurora.Gray(12, "pipeline").String()),
+			DisplayName: fmt.Sprintf("%s - %s", v, au.Gray(12, "pipeline").String()),
 		})
 	}
 
@@ -304,7 +353,7 @@ func buildSuggestions(cfg *config.Config) []suggestion {
 		}
 		suggestions = append(suggestions, suggestion{
 			Target:      k,
-			DisplayName: fmt.Sprintf("%s - %s", k, aurora.Gray(12, desc).String()),
+			DisplayName: fmt.Sprintf("%s - %s", k, au.Gray(12, desc).String()),
 			IsTask:      true,
 		})
 	}

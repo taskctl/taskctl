@@ -80,6 +80,86 @@ According to this plan `lint` and `test` will run concurrently, `build` will sta
 
 [![asciicast](https://asciinema.org/a/326726.svg)](https://asciinema.org/a/326726)
 
+## taskctl for AI agents
+
+taskctl has a machine-readable CLI surface designed for use by AI agents and other tooling: JSON discovery documents, an NDJSON event stream for runs, non-interactive execution, and an installable Claude Code skill.
+
+### Discovering tasks and pipelines: `--output json list` / `show`
+
+`taskctl --output json list` prints a single JSON document describing every task, pipeline, context and watcher in the config:
+
+```json
+{
+  "schema_version": 1,
+  "tasks": [
+    {"name": "lint", "description": "", "context": ""}
+  ],
+  "pipelines": [
+    {"name": "release", "stages": ["build", "lint", "test"]}
+  ],
+  "contexts": [],
+  "watchers": []
+}
+```
+
+`taskctl --output json show <name>` prints the full detail for a single task or pipeline:
+
+```json
+{
+  "name": "lint",
+  "commands": ["golint ./..."],
+  "env": {},
+  "variables": {},
+  "allow_failure": false
+}
+```
+
+Pipelines are shown as a name plus an ordered list of stages, each with its task, dependencies and conditions:
+
+```json
+{
+  "name": "release",
+  "stages": [
+    {"name": "build", "task": "build", "depends_on": ["lint", "test"], "allow_failure": false}
+  ]
+}
+```
+
+### Streaming run events: `--output json`
+
+Running with `--output json` switches the run's output to newline-delimited JSON (NDJSON) — one event object per line — instead of human-oriented text. This makes it easy for an agent to parse progress and results without screen-scraping.
+
+```
+taskctl --output json --no-input <task-or-pipeline>
+```
+
+`<task-or-pipeline>` is passed directly, with no `run` keyword. The stream is:
+
+| event | key fields |
+|---|---|
+| `run_started` | `schema_version`, `targets` |
+| `task_started` | `task` |
+| `task_output` | `task`, `stream` (`stdout`/`stderr`), `data` |
+| `task_finished` | `task`, `status` (`done`/`failed`/`skipped`), `exit_code`, `duration_ms`, `error` (on failure) |
+| `run_finished` | `status`, `duration_ms`, `tasks` (array of `{task, status, exit_code, duration_ms}`) |
+
+### Non-interactive execution: `--no-input`
+
+By default taskctl may prompt interactively (e.g. for confirmation or input tasks). Non-interactive mode disables all of that, and is enabled automatically whenever any of the following is true:
+
+- `--no-input` is passed, or the `TASKCTL_NO_INPUT` environment variable is set
+- output format is `json`
+- stdin is not a TTY (e.g. taskctl is running under an agent harness or in a pipe)
+
+Separately, `--cockpit` (the live full-screen dashboard) requires an interactive stdout; if stdout is not a TTY, taskctl automatically degrades cockpit output to `prefixed` output instead of failing.
+
+### Claude Code skill: `taskctl skill install`
+
+`taskctl skill install` writes a Claude Code skill (`SKILL.md`) that teaches an agent how to use taskctl's JSON surface, into `.claude/skills/taskctl/SKILL.md` in the current directory.
+
+- `--global` installs into the user's home directory instead of the current directory.
+- `--force` overwrites an existing installation.
+
 ## Contents  
 - [Getting started](#getting-started)
   - [Installation](#install)

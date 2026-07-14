@@ -125,6 +125,9 @@ func TestCustomOutputFormat(t *testing.T) {
 }
 
 func TestRootAction(t *testing.T) {
+	cmd.SetStdinIsTTY(func() bool { return true })
+	defer cmd.SetStdinIsTTY(nil)
+
 	tests := []appTest{
 		{args: []string{""}, output: []string{"Please use `Ctrl-C` to exit this program"}, errored: true},
 		{args: []string{"", "-c", "--quiet", "testdata/graph.yaml", "graph:task2"}, errored: true},
@@ -140,4 +143,37 @@ func TestRootAction(t *testing.T) {
 		app := makeTestApp()
 		runAppTest(app, v, t)
 	}
+}
+
+func TestRootAction_NoInputFlagBlocksPrompt(t *testing.T) {
+	cmd.SetStdinIsTTY(func() bool { return true })
+	defer cmd.SetStdinIsTTY(nil)
+
+	app := makeTestApp()
+	runAppTest(app, appTest{
+		args:    []string{"", "--no-input"},
+		errored: true,
+	}, t)
+}
+
+func TestRootAction_NonTTYStdinBlocksPrompt(t *testing.T) {
+	cmd.SetStdinIsTTY(func() bool { return false })
+	defer cmd.SetStdinIsTTY(nil)
+
+	app := makeTestApp()
+	runAppTest(app, appTest{
+		args:    []string{""},
+		errored: true,
+	}, t)
+}
+
+func TestCockpitDegradesWhenStdoutNotTTY(t *testing.T) {
+	cmd.SetStdoutIsTTY(func() bool { return false })
+	defer cmd.SetStdoutIsTTY(nil)
+
+	app := makeTestApp()
+	runAppTest(app, appTest{
+		args:   []string{"", "--cockpit", "-c", "testdata/graph.yaml", "graph:task1"},
+		output: []string{"hello, world!"},
+	}, t)
 }

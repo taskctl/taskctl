@@ -52,15 +52,22 @@ func newInitCommand() *cli.Command {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			fileSelect := promptui.Select{
-				Label: "Choose file name",
-				Items: config.DefaultFileNames,
-				Stdin: stdin,
-			}
+			var filename string
+			var err error
 
-			_, filename, err := fileSelect.Run()
-			if err != nil {
-				return err
+			if nonInteractive(c) {
+				filename = config.DefaultFileNames[0]
+			} else {
+				fileSelect := promptui.Select{
+					Label: "Choose file name",
+					Items: config.DefaultFileNames,
+					Stdin: stdin,
+				}
+
+				_, filename, err = fileSelect.Run()
+				if err != nil {
+					return err
+				}
 			}
 
 			dir := c.String("dir")
@@ -74,6 +81,10 @@ func newInitCommand() *cli.Command {
 			file := filepath.Join(dir, filename)
 
 			if utils.FileExists(file) {
+				if nonInteractive(c) {
+					return fmt.Errorf("%s already exists; remove it or run interactively to overwrite", file)
+				}
+
 				replaceConfirmation := promptui.Prompt{
 					Label:     "File already exists. Overwrite",
 					IsConfirm: true,

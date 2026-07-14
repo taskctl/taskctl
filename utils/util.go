@@ -58,6 +58,15 @@ func FileExists(file string) bool {
 	return !os.IsNotExist(err)
 }
 
+// OrEmpty returns s unchanged, or a non-nil empty slice when s is nil, so it
+// marshals to a JSON [] rather than null.
+func OrEmpty[T any](s []T) []T {
+	if s == nil {
+		return []T{}
+	}
+	return s
+}
+
 // MapKeys returns an array of map's keys
 func MapKeys(m any) (keys []string) {
 	if m == nil {
