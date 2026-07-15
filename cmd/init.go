@@ -14,7 +14,8 @@ import (
 	"github.com/logrusorgru/aurora"
 	"github.com/manifoldco/promptui"
 
-	"github.com/taskctl/taskctl/utils"
+	"github.com/taskctl/taskctl/internal/fsutil"
+	"github.com/taskctl/taskctl/internal/iox"
 )
 
 var configTmpl = `# This is an example of taskctl tasks configuration file.
@@ -73,7 +74,7 @@ func newInitCommand() *cli.Command {
 
 			file := filepath.Join(dir, filename)
 
-			if utils.FileExists(file) {
+			if fsutil.FileExists(file) {
 				replaceConfirmation := promptui.Prompt{
 					Label:     "File already exists. Overwrite",
 					IsConfirm: true,
@@ -93,6 +94,7 @@ func newInitCommand() *cli.Command {
 			if err != nil {
 				return err
 			}
+			defer iox.Close(fw)
 
 			t := template.Must(template.New("init_config").Parse(configTmpl))
 

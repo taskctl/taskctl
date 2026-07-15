@@ -9,13 +9,17 @@ import (
 	"github.com/taskctl/taskctl/executor"
 
 	"github.com/taskctl/taskctl/variables"
-
-	"github.com/taskctl/taskctl/utils"
 )
+
+// Binary is a structure for storing binary file path and arguments that should be passed on binary's invocation
+type Binary struct {
+	Bin  string
+	Args []string
+}
 
 // ExecutionContext allow you to set up execution environment, variables, binary which will run your task, up/down commands etc.
 type ExecutionContext struct {
-	Executable *utils.Binary
+	Executable *Binary
 	Dir        string
 	Env        variables.Container
 	Variables  variables.Container
@@ -37,7 +41,7 @@ type ExecutionContext struct {
 type ExecutionContextOption func(c *ExecutionContext)
 
 // NewExecutionContext creates new ExecutionContext instance
-func NewExecutionContext(executable *utils.Binary, dir string, env variables.Container, up, down, before, after []string, options ...ExecutionContextOption) *ExecutionContext {
+func NewExecutionContext(executable *Binary, dir string, env variables.Container, up, down, before, after []string, options ...ExecutionContextOption) *ExecutionContext {
 	c := &ExecutionContext{
 		Executable: executable,
 		Env:        env,

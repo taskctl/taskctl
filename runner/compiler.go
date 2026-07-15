@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/taskctl/taskctl/executor"
+	"github.com/taskctl/taskctl/internal/tmpl"
 	"github.com/taskctl/taskctl/task"
-	"github.com/taskctl/taskctl/utils"
 	"github.com/taskctl/taskctl/variables"
 )
 
@@ -33,7 +33,7 @@ func (tc *TaskCompiler) CompileTask(t *task.Task, executionContext *ExecutionCon
 			continue
 		}
 
-		v, err := utils.RenderString(v.(string), vars.Map())
+		v, err := tmpl.RenderString(v.(string), vars.Map())
 		if err != nil {
 			return nil, err
 		}
@@ -110,7 +110,7 @@ func (tc *TaskCompiler) CompileCommand(
 		j.Dir = executionCtx.Dir
 	}
 
-	j.Dir, err = utils.RenderString(j.Dir, j.Vars.Map())
+	j.Dir, err = tmpl.RenderString(j.Dir, j.Vars.Map())
 	if err != nil {
 		return nil, err
 	}

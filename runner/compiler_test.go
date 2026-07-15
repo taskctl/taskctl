@@ -5,11 +5,10 @@ import (
 	"testing"
 
 	"github.com/taskctl/taskctl/task"
-	"github.com/taskctl/taskctl/utils"
 	"github.com/taskctl/taskctl/variables"
 )
 
-var shBin = utils.Binary{
+var shBin = Binary{
 	Bin:  "/bin/sh",
 	Args: []string{"-c"},
 }

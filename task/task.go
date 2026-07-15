@@ -1,13 +1,23 @@
 package task
 
 import (
+	"bufio"
 	"bytes"
+	"io"
 	"time"
 
 	"github.com/taskctl/taskctl/variables"
-
-	"github.com/taskctl/taskctl/utils"
 )
+
+// lastLine returns last line from provided reader
+func lastLine(r io.Reader) (l string) {
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		l = scanner.Text()
+	}
+
+	return l
+}
 
 // Task is a structure that describes task, its commands, environment, working directory etc.
 // After task completes it provides task's execution status, exit code, stdout and stderr
@@ -77,10 +87,10 @@ func (t *Task) ErrorMessage() string {
 	}
 
 	if t.Log.Stderr.Len() > 0 {
-		return utils.LastLine(&t.Log.Stderr)
+		return lastLine(&t.Log.Stderr)
 	}
 
-	return utils.LastLine(&t.Log.Stdout)
+	return lastLine(&t.Log.Stdout)
 }
 
 // WithEnv sets environment variable

@@ -4,15 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/taskctl/taskctl/runner"
 	"io"
 	"log/slog"
+	"maps"
 	"os"
 	"os/signal"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
 	"syscall"
+
+	"github.com/taskctl/taskctl/runner"
 
 	"github.com/logrusorgru/aurora"
 	"github.com/manifoldco/promptui"
@@ -21,7 +24,6 @@ import (
 
 	"github.com/taskctl/taskctl/internal/config"
 	"github.com/taskctl/taskctl/output"
-	"github.com/taskctl/taskctl/utils"
 )
 
 var stdin io.ReadCloser
@@ -290,7 +292,7 @@ func buildSuggestions(cfg *config.Config) []suggestion {
 
 	suggestions := make([]suggestion, 0)
 
-	for _, v := range utils.MapKeys(cfg.Pipelines) {
+	for _, v := range slices.Collect(maps.Keys(cfg.Pipelines)) {
 		suggestions = append(suggestions, suggestion{
 			Target:      v,
 			DisplayName: fmt.Sprintf("%s - %s", v, aurora.Gray(12, "pipeline").String()),

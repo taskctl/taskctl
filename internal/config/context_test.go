@@ -3,9 +3,8 @@ package config
 import (
 	"testing"
 
+	"github.com/taskctl/taskctl/internal/fsutil"
 	"github.com/taskctl/taskctl/variables"
-
-	"github.com/taskctl/taskctl/utils"
 )
 
 func Test_buildContext_dir(t *testing.T) {
@@ -22,7 +21,7 @@ func Test_buildContext_dir(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cwd := utils.MustGetwd()
+	cwd := fsutil.MustGetwd()
 	if c.Dir != cwd {
 		t.Error()
 	}
