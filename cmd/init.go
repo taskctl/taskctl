@@ -15,6 +15,7 @@ import (
 	"github.com/manifoldco/promptui"
 
 	"github.com/taskctl/taskctl/internal/fsutil"
+	"github.com/taskctl/taskctl/internal/iox"
 )
 
 var configTmpl = `# This is an example of taskctl tasks configuration file.
@@ -93,6 +94,7 @@ func newInitCommand() *cli.Command {
 			if err != nil {
 				return err
 			}
+			defer iox.Close(fw)
 
 			t := template.Must(template.New("init_config").Parse(configTmpl))
 

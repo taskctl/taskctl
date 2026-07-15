@@ -21,6 +21,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/taskctl/taskctl/internal/fsutil"
+	"github.com/taskctl/taskctl/internal/iox"
 )
 
 // ErrConfigNotFound occurs when requested config file does not exists
@@ -232,6 +233,7 @@ func (cl *Loader) readURL(u string) (map[string]any, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer iox.Close(resp.Body)
 
 	if resp.StatusCode != 200 {
 		return nil, fmt.Errorf("%d: config request failed - %s", resp.StatusCode, u)

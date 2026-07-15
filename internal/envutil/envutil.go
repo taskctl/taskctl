@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/taskctl/taskctl/internal/iox"
 )
 
 // ConvertEnv converts map representing the environment to array of strings in the form "key=value"
@@ -36,7 +38,7 @@ func ReadEnvFile(filename string) (map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = f.Close() }()
+	defer iox.Close(f)
 
 	envs := make(map[string]string)
 	envscanner := bufio.NewScanner(f)
