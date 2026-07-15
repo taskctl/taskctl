@@ -16,9 +16,9 @@ import (
 	"strings"
 
 	"dario.cat/mergo"
-	"github.com/mitchellh/mapstructure"
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/pelletier/go-toml"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 
 	"github.com/taskctl/taskctl/utils"
 )

@@ -7,7 +7,7 @@ import (
 
 	"github.com/taskctl/taskctl/task"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 var testConfig, _ = os.ReadFile("testdata/tasks.yaml")
@@ -17,7 +17,7 @@ func TestConfig_decode(t *testing.T) {
 
 	var cm = make(map[string]any)
 	var dec = yaml.NewDecoder(bytes.NewReader(testConfig))
-	dec.SetStrict(true)
+	dec.KnownFields(true)
 
 	err := dec.Decode(cm)
 	if err != nil {
