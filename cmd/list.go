@@ -2,13 +2,12 @@ package cmd
 
 import (
 	"fmt"
+	"maps"
 	"os"
-	"sort"
+	"slices"
 	"text/template"
 
 	"github.com/urfave/cli/v2"
-
-	"github.com/taskctl/taskctl/utils"
 )
 
 var listTmpl = `Contexts:{{range $context := .Contexts}}
@@ -37,15 +36,10 @@ func newListCommand() *cli.Command {
 		Action: func(c *cli.Context) (err error) {
 			t := template.Must(template.New("list").Parse(listTmpl))
 
-			contexts := utils.MapKeys(cfg.Contexts)
-			pipelines := utils.MapKeys(cfg.Pipelines)
-			tasks := utils.MapKeys(cfg.Tasks)
-			watchers := utils.MapKeys(cfg.Watchers)
-
-			sort.Strings(contexts)
-			sort.Strings(pipelines)
-			sort.Strings(tasks)
-			sort.Strings(watchers)
+			contexts := slices.Sorted(maps.Keys(cfg.Contexts))
+			pipelines := slices.Sorted(maps.Keys(cfg.Pipelines))
+			tasks := slices.Sorted(maps.Keys(cfg.Tasks))
+			watchers := slices.Sorted(maps.Keys(cfg.Watchers))
 
 			err = t.Execute(os.Stdout, struct {
 				Contexts, Pipelines, Tasks, Watchers []string
@@ -62,7 +56,7 @@ func newListCommand() *cli.Command {
 				Name:        "tasks",
 				Description: "List tasks",
 				Action: func(c *cli.Context) error {
-					for _, name := range utils.MapKeys(cfg.Tasks) {
+					for _, name := range slices.Sorted(maps.Keys(cfg.Tasks)) {
 						fmt.Println(name)
 					}
 
@@ -73,7 +67,7 @@ func newListCommand() *cli.Command {
 				Name:        "pipelines",
 				Description: "List pipelines",
 				Action: func(c *cli.Context) error {
-					for _, name := range utils.MapKeys(cfg.Pipelines) {
+					for _, name := range slices.Sorted(maps.Keys(cfg.Pipelines)) {
 						fmt.Println(name)
 					}
 
@@ -84,7 +78,7 @@ func newListCommand() *cli.Command {
 				Name:        "watchers",
 				Description: "List watchers",
 				Action: func(c *cli.Context) error {
-					for _, name := range utils.MapKeys(cfg.Watchers) {
+					for _, name := range slices.Sorted(maps.Keys(cfg.Watchers)) {
 						fmt.Println(name)
 					}
 

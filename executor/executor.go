@@ -14,7 +14,8 @@ import (
 	"mvdan.cc/sh/v3/interp"
 	"mvdan.cc/sh/v3/syntax"
 
-	"github.com/taskctl/taskctl/utils"
+	"github.com/taskctl/taskctl/internal/envutil"
+	"github.com/taskctl/taskctl/internal/tmpl"
 )
 
 // Executor executes given job
@@ -64,7 +65,7 @@ func NewDefaultExecutor(stdin io.Reader, stdout, stderr io.Writer) (*DefaultExec
 // Execute executes given job with provided context
 // Returns job output
 func (e *DefaultExecutor) Execute(ctx context.Context, job *Job) ([]byte, error) {
-	command, err := utils.RenderString(job.Command, job.Vars.Map())
+	command, err := tmpl.RenderString(job.Command, job.Vars.Map())
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +76,7 @@ func (e *DefaultExecutor) Execute(ctx context.Context, job *Job) ([]byte, error)
 	}
 
 	env := e.env
-	env = append(env, utils.ConvertEnv(utils.ConvertToMapOfStrings(job.Env.Map()))...)
+	env = append(env, envutil.ConvertEnv(envutil.ConvertToMapOfStrings(job.Env.Map()))...)
 
 	if job.Dir == "" {
 		job.Dir = e.dir

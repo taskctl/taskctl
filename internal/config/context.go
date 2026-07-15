@@ -3,10 +3,10 @@ package config
 import (
 	"path/filepath"
 
+	"github.com/taskctl/taskctl/internal/envutil"
+	"github.com/taskctl/taskctl/internal/fsutil"
 	"github.com/taskctl/taskctl/runner"
 	"github.com/taskctl/taskctl/variables"
-
-	"github.com/taskctl/taskctl/utils"
 )
 
 type contextDefinition struct {
@@ -18,14 +18,14 @@ type contextDefinition struct {
 	Env        map[string]string
 	EnvFile    string `mapstructure:"env_file"`
 	Variables  map[string]string
-	Executable utils.Binary
+	Executable runner.Binary
 	Quote      string
 }
 
 func buildContext(def *contextDefinition) (*runner.ExecutionContext, error) {
 	dir := def.Dir
 	if dir == "" {
-		dir = utils.MustGetwd()
+		dir = fsutil.MustGetwd()
 	}
 
 	envs := variables.FromMap(def.Env)
@@ -35,7 +35,7 @@ func buildContext(def *contextDefinition) (*runner.ExecutionContext, error) {
 			filename = filepath.Join(dir, filename)
 		}
 
-		fileEnvs, err := utils.ReadEnvFile(filename)
+		fileEnvs, err := envutil.ReadEnvFile(filename)
 		if err != nil {
 			return nil, err
 		}
