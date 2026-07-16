@@ -16,6 +16,7 @@ import (
 	"golang.org/x/text/cases"
 
 	"github.com/taskctl/taskctl/executor"
+	"github.com/taskctl/taskctl/internal/collections"
 
 	"github.com/taskctl/taskctl/variables"
 
@@ -51,7 +52,7 @@ type TaskRunner struct {
 	Stdout, Stderr io.Writer
 	OutputFormat   string
 
-	cleanupList sync.Map
+	cleanupList collections.SyncMap[string, *ExecutionContext]
 }
 
 // NewTaskRunner creates new TaskRunner instance
@@ -196,8 +197,8 @@ func (r *TaskRunner) Cancel() {
 
 // Finish makes cleanup tasks over contexts
 func (r *TaskRunner) Finish() {
-	r.cleanupList.Range(func(key, value any) bool {
-		value.(*ExecutionContext).Down()
+	r.cleanupList.Range(func(key string, value *ExecutionContext) bool {
+		value.Down()
 		return true
 	})
 	output.Close()

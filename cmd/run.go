@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"maps"
 	"os"
 	"slices"
 	"strings"
@@ -170,10 +171,7 @@ func taskArgs(c *cli.Context) []string {
 }
 
 func printSummary(g *scheduler.ExecutionGraph) {
-	var stages = make([]*scheduler.Stage, 0)
-	for _, stage := range g.Nodes() {
-		stages = append(stages, stage)
-	}
+	stages := slices.Collect(maps.Values(g.Nodes()))
 
 	slices.SortFunc(stages, func(a, b *scheduler.Stage) int {
 		return a.Start.Compare(b.Start)
