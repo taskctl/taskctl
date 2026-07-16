@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 )
 
 func Test_initCommand(t *testing.T) {
@@ -38,10 +37,9 @@ func TestInitCommand_NoOverwrite(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// With this static reader, the select form's scanner consumes both lines
-	// ("1" and "n"), so the confirm form hits EOF and resolves to its
-	// zero-value default (false) rather than actually parsing "n". The
-	// assertion below still holds: either way the outcome is no-overwrite.
+	// The select consumes "1" and the confirm reads "n" (PromptReader hands
+	// each prompt exactly one line), so the confirm parses "n" -> false and the
+	// file is left intact.
 	runAppTest(app, appTest{args: []string{"", "init", "--dir", dir}, stdin: in}, t)
 
 	content, err := os.ReadFile(path)
@@ -54,20 +52,13 @@ func TestInitCommand_NoOverwrite(t *testing.T) {
 }
 
 func TestInitCommand_Overwrite(t *testing.T) {
-	// The select and the confirm each read one line; feed the confirm's answer
-	// only after the select has consumed its own, so accessible mode's buffered
-	// reader doesn't swallow it.
-	pr, pw, err := os.Pipe()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = pr.Close() }()
-	go func() {
-		_, _ = pw.WriteString("1\n")
-		time.Sleep(250 * time.Millisecond)
-		_, _ = pw.WriteString("y\n")
-		_ = pw.Close()
-	}()
+	// PromptReader gives each prompt exactly one line, so a plain two-line stdin
+	// works: the select reads "1" and the confirm reads "y" -> overwrite.
+	in := stdinLines(t, "1", "y")
+	defer func(f os.File) {
+		_ = in.Close()
+		_ = os.Remove(f.Name())
+	}(*in)
 
 	app := makeTestApp()
 	dir := os.TempDir()
@@ -76,7 +67,7 @@ func TestInitCommand_Overwrite(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	runAppTest(app, appTest{args: []string{"", "init", "--dir", dir}, stdin: pr, output: []string{"was created"}}, t)
+	runAppTest(app, appTest{args: []string{"", "init", "--dir", dir}, stdin: in, output: []string{"was created"}}, t)
 
 	content, err := os.ReadFile(path)
 	if err != nil {

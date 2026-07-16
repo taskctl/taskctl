@@ -61,8 +61,11 @@ func newInitCommand() *cli.Command {
 
 			// Two sequential prompts rather than one form with a conditional
 			// group: huh's accessible (non-TTY) mode ignores WithHideFunc, so
-			// gate the overwrite confirm in Go instead.
-			filename, err := tui.Select(stdin, "Choose file name", tui.StringItems(config.DefaultFileNames))
+			// gate the overwrite confirm in Go instead. Both prompts share one
+			// PromptReader so piped input survives across them (see tui docs).
+			in := tui.PromptReader(stdin)
+
+			filename, err := tui.Select(in, "Choose file name", tui.StringItems(config.DefaultFileNames))
 			if err != nil {
 				if errors.Is(err, tui.ErrAborted) {
 					return nil
@@ -72,7 +75,7 @@ func newInitCommand() *cli.Command {
 
 			file := filepath.Join(dir, filename)
 			if fsutil.FileExists(file) {
-				overwrite, err := tui.Confirm(stdin, fmt.Sprintf("%s already exists. Overwrite?", filename))
+				overwrite, err := tui.Confirm(in, fmt.Sprintf("%s already exists. Overwrite?", filename))
 				if err != nil {
 					if errors.Is(err, tui.ErrAborted) {
 						return nil
