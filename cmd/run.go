@@ -3,8 +3,9 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"maps"
 	"os"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/urfave/cli/v2"
@@ -171,13 +172,10 @@ func taskArgs(c *cli.Context) []string {
 }
 
 func printSummary(g *scheduler.ExecutionGraph) {
-	var stages = make([]*scheduler.Stage, 0)
-	for _, stage := range g.Nodes() {
-		stages = append(stages, stage)
-	}
+	stages := slices.Collect(maps.Values(g.Nodes()))
 
-	sort.Slice(stages, func(i, j int) bool {
-		return stages[j].Start.Nanosecond() > stages[i].Start.Nanosecond()
+	slices.SortFunc(stages, func(a, b *scheduler.Stage) int {
+		return a.Start.Compare(b.Start)
 	})
 
 	_, _ = fmt.Fprintln(os.Stdout, aurora.Bold("Summary:").String())

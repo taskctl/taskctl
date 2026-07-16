@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/signal"
 	"slices"
-	"sort"
 	"strings"
 	"sync"
 	"syscall"
@@ -311,8 +310,8 @@ func buildSuggestions(cfg *config.Config) []suggestion {
 		})
 	}
 
-	sort.Slice(suggestions, func(i, j int) bool {
-		return suggestions[j].Target > suggestions[i].Target
+	slices.SortFunc(suggestions, func(a, b suggestion) int {
+		return strings.Compare(a.Target, b.Target)
 	})
 
 	return suggestions
