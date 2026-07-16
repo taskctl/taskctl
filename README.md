@@ -1,5 +1,5 @@
 <p align="center">
-<img width="400" src="https://raw.githubusercontent.com/taskctl/taskctl/master/docs/logo.png" alt="taskctl - developer's routine tasks automation toolkit" title="taskctl - developer's routine tasks automation toolkit" />
+<img width="400" src="https://raw.githubusercontent.com/taskctl/taskctl/main/docs/logo.png" alt="taskctl - developer's routine tasks automation toolkit" title="taskctl - developer's routine tasks automation toolkit" />
 </p>
 
 # taskctl - concurrent task runner, developer's routine tasks automation toolkit
@@ -13,7 +13,7 @@
 ![Tests](https://github.com/taskctl/taskctl/workflows/Test/badge.svg)
 ![GitHub top language](https://img.shields.io/github/languages/top/taskctl/taskctl)
 [![Go Report Card](https://goreportcard.com/badge/github.com/taskctl/taskctl)](https://goreportcard.com/report/github.com/taskctl/taskctl)
-[![Test Coverage](https://codecov.io/gh/taskctl/taskctl/branch/master/graph/badge.svg)](https://codecov.io/gh/taskctl/taskctl/tree/master/pkg)
+[![Test Coverage](https://codecov.io/gh/taskctl/taskctl/branch/main/graph/badge.svg)](https://codecov.io/gh/taskctl/taskctl/tree/main/pkg)
 [![Maintainability](https://api.codeclimate.com/v1/badges/a99a88d28ad37a79dbf6/maintainability)](https://codeclimate.com/github/codeclimate/codeclimate/maintainability)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat)](https://github.com/taskctl/taskctl/pulls)
 
@@ -159,11 +159,11 @@ Config file may import other config files, directories or URLs.
 import:
 - .tasks/database.yaml
 - .tasks/lint/
-- https://raw.githubusercontent.com/taskctl/taskctl/master/docs/example.yaml
+- https://raw.githubusercontent.com/taskctl/taskctl/main/docs/example.yaml
 ```
 
 ### Example
-Config file [example](https://github.com/taskctl/taskctl/blob/master/docs/example.yaml)
+Config file [example](https://github.com/taskctl/taskctl/blob/main/docs/example.yaml)
 
 ### Global configuration
 *taskctl* has global configuration stored in ``$HOME/.taskctl/config.yaml`` file. It is handy to store system-wide tasks, reusable contexts, defaults etc. 
@@ -312,7 +312,7 @@ pipelines:
           depends_on: ["task E"]    
 ```
 will result in an execution plan like this:
-![execution plan](https://raw.githubusercontent.com/taskctl/taskctl/master/docs/pipeline.svg)
+![execution plan](https://raw.githubusercontent.com/taskctl/taskctl/main/docs/pipeline.svg)
 
 Stage definition takes following parameters:
 - `name` - stage name. If not set - referenced task or pipeline name will be used.
@@ -475,7 +475,7 @@ Add to  ~/.zshrc
 
 ## How to contribute?
 Feel free to contribute in any way you want. Share ideas, submit issues, create pull requests. 
-You can start by improving this [README.md](https://github.com/taskctl/taskctl/blob/master/README.md) or suggesting new [features](https://github.com/taskctl/taskctl/issues)
+You can start by improving this [README.md](https://github.com/taskctl/taskctl/blob/main/README.md) or suggesting new [features](https://github.com/taskctl/taskctl/issues)
 Thank you! 
 
 ## License

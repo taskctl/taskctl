@@ -1,0 +1,101 @@
+# AGENTS.md
+
+This file provides guidance to AI coding agents when working with code in this repository.
+
+## What this is
+
+`taskctl` is a concurrent task runner / Make alternative. Tasks and pipelines are declared in a
+human-readable config (`tasks.yaml`/`taskctl.yaml`, also JSON/TOML). It is both a CLI and an
+embeddable Go library (the `runner`, `scheduler`, `task`, `executor`, `output`, `variables` packages
+are public API — treat their exported symbols as such).
+
+## Commands
+
+There is no Makefile. The repo dogfoods itself via `tasks.yaml` (run with an installed `taskctl`, or
+`go run . <target>`). Raw Go commands:
+
+```bash
+go build -o bin/taskctl .          # build
+go test ./...                      # all tests
+go test -race ./...                # race detector (CI runs this)
+go test -run TestName ./runner/    # single test in one package
+golangci-lint run                  # lint (golangci-lint v2; config in .golangci.yml)
+go run . <pipeline-or-task>        # run the tool from source
+go run . completion zsh            # regenerate shell completers (see update-completers task)
+```
+
+CI (`.github/workflows/pull-request-checks.yml`) gates PRs on `golangci-lint` + `go test -v -race ./...`.
+Go version is pinned in `go.mod` (currently 1.26). Release is handled by GoReleaser on tag push.
+
+## Architecture
+
+Execution flows through two layers — a pipeline DAG on top, single-task compilation underneath.
+
+**Entry** — `main.go` → `cmd.Run(version)` builds a `urfave/cli/v2` app (`cmd/cmd.go`). Subcommands
+live in `cmd/*.go` (run, init, list, show, watch, completion, graph, validate). The root action with
+no target opens an interactive `promptui` selector. A background goroutine (`listenSignals`) turns
+SIGINT/SIGTERM into a context cancel.
+
+**Config** — `internal/config`. `Loader` (`loader.go`) reads YAML/JSON/TOML, resolves `import:`
+entries (local files, directories, or remote URLs), and merges them with `dario.cat/mergo`. Raw maps
+are decoded into typed structs via `go-viper/mapstructure/v2`. The result is a `config.Config`
+holding `Tasks`, `Pipelines` (already built into `scheduler.ExecutionGraph`s), `Contexts`, `Watchers`,
+and a `Variables` container.
+
+**Pipelines / scheduling** — `scheduler`. A pipeline is an `ExecutionGraph`: a DAG whose nodes are
+`Stage`s and edges are `depends_on` relationships (cycle detection in `graph.go`). `Scheduler.Schedule`
+polls the graph on a 50ms tick; any `StatusWaiting` stage whose deps are all `Done`/`Skipped` is
+launched in its own goroutine, giving concurrent execution while respecting dependencies. Stages can
+nest sub-pipelines. `AllowFailure` and per-stage `Condition` gate propagation.
+
+**Single task** — `runner.TaskRunner.Run` (`runner/runner.go`) is the core. For each task it: resolves
+the `ExecutionContext` (running `Up`/`Before` hooks), merges env + variables, checks the task
+`condition`, runs `before` commands, then calls `TaskCompiler.CompileTask`.
+
+**Compilation** — `runner/compiler.go`. `CompileTask` renders variable templates and expands
+`variations` into a **linked list of `executor.Job`s** (`job.Next`). Each command becomes one job; a
+task with N commands × M variations produces N×M chained jobs. Output of one command is fed to the
+next as the `Output` variable.
+
+**Execution** — `executor`. `DefaultExecutor.Execute` renders the command template (`internal/tmpl`,
+Go `text/template`), parses it with `mvdan.cc/sh/v3/syntax`, and runs it through the embedded
+`interp` interpreter. **There is no dependency on a system shell** — this is what makes taskctl
+cross-platform. Exit codes surface via `IsExitStatus`.
+
+**Output** — `output`. `TaskOutput` wraps a task's stdout/stderr with a `DecoratedOutputWriter`
+decorator chosen by format: `raw`, `prefixed`, or `cockpit` (live multi-task dashboard). Interactive
+tasks force `raw`.
+
+**Contexts** — `runner/context.go`. An `ExecutionContext` can wrap commands in an executable (e.g.
+`docker`, `bash -c`), set a dir/env, and define `up`/`down`/`before`/`after` lifecycle hooks. Contexts
+touched during a run are cleaned up (`Down`) on `Finish`.
+
+**Watchers** — `internal/watch` uses `fsnotify` + `bmatcuk/doublestar` globs to re-trigger tasks on
+file changes (`taskctl watch ...`).
+
+### internal/ helpers
+
+`internal/` packages are private, single-purpose utilities split out from a former catch-all `utils`
+package: `fsutil` (path/file checks), `envutil` (env map ↔ `KEY=VAL` slice conversion), `iox`
+(`iox.Close` deferred-close helper), `tmpl` (template rendering). Keep these focused; don't
+reintroduce a grab-bag utils package.
+
+## Conventions
+
+- Errors are wrapped with `%w`; check with `errors.Is`/`errors.As`. Deferred `Close()` errors must be
+  handled (errcheck is enforced) — use `iox.Close`.
+- Prefer stdlib generics helpers already adopted here: `maps.Keys`+`slices.Collect`, `slices.*`,
+  `strings.Cut`.
+- Logging is `log/slog` (level set from `--debug`/`TASKCTL_DEBUG`).
+- The public library packages have doc comments on exported symbols — maintain them.
+- Every package has table-style `_test.go` tests alongside; `cmd/` and `internal/config/` use
+  `testdata/` fixtures.
+
+## Development process
+
+- **Plan first, then implement.** For any non-trivial change, agree on an approach before touching
+  code — surface assumptions, edge cases, and trade-offs up front. Don't start editing while the
+  design is still open.
+- **Run tests and linters once, at the end** — not after every intermediate stage. Make the full set
+  of changes, then run `go test -race ./...` and `golangci-lint run` as a final verification pass
+  before wrapping up.
