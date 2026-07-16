@@ -1,7 +1,7 @@
 package variables
 
 import (
-	"sync"
+	"github.com/taskctl/taskctl/internal/collections"
 )
 
 // Container is an interface of variables container.
@@ -17,7 +17,7 @@ type Container interface {
 
 // Variables is struct containing simple key-value string values
 type Variables struct {
-	m sync.Map
+	m collections.SyncMap[string, any]
 }
 
 // NewVariables creates new Variables instance
@@ -59,8 +59,8 @@ func (vars *Variables) Has(name string) bool {
 // Map returns container in map[string]string form
 func (vars *Variables) Map() map[string]any {
 	m := make(map[string]any)
-	vars.m.Range(func(key, value any) bool {
-		m[key.(string)] = value
+	vars.m.Range(func(key string, value any) bool {
+		m[key] = value
 		return true
 	})
 	return m

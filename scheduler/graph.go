@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/taskctl/taskctl/internal/collections"
 )
 
 // ErrCycleDetected occurs when added edge causes cycle to appear
@@ -64,7 +66,7 @@ func (g *ExecutionGraph) addEdge(from string, to string) error {
 	g.from[from] = append(g.from[from], to)
 	g.to[to] = append(g.to[to], from)
 
-	if err := g.cycleDfs(to, make(map[string]bool)); err != nil {
+	if err := g.cycleDfs(to, collections.NewSet[string]()); err != nil {
 		return err
 	}
 
@@ -96,11 +98,11 @@ func (g *ExecutionGraph) To(name string) []string {
 	return g.to[name]
 }
 
-func (g *ExecutionGraph) cycleDfs(t string, visited map[string]bool) error {
-	if visited[t] {
+func (g *ExecutionGraph) cycleDfs(t string, visited *collections.Set[string]) error {
+	if visited.Has(t) {
 		return ErrCycleDetected
 	}
-	visited[t] = true
+	visited.Add(t)
 
 	for _, next := range g.from[t] {
 		err := g.cycleDfs(next, visited)
