@@ -64,9 +64,10 @@ cross-platform. Exit codes surface via `IsExitStatus`.
 
 **Output** — `internal/output`. `TaskOutput` wraps a task's stdout/stderr with a
 `DecoratedOutputWriter` decorator chosen by format: `raw`, `prefixed`, or `cockpit` (live multi-task
-dashboard). Interactive tasks force `raw`. The `prefixed` and `cockpit` decorators render through
-`internal/tui`; the cockpit decorator is a thin bridge to `tui.Cockpit` (the bubbletea engine lives in
-`tui` so `output` stays free of it, avoiding an import cycle).
+dashboard). Interactive tasks force `raw`. The `prefixed` decorator renders through `internal/tui`
+(palette + colorprofile writer). The `cockpit` dashboard is a `bubbletea` program implemented here in
+`internal/output/cockpit.go` — it lives with its sole consumer rather than in `tui`, borrowing only the
+`tui` palette; keeping the `DecoratedOutputWriter` bridge here avoids an `output`↔`tui` import cycle.
 
 **Contexts** — `runner/context.go`. An `ExecutionContext` can wrap commands in an executable (e.g.
 `docker`, `bash -c`), set a dir/env, and define `up`/`down`/`before`/`after` lifecycle hooks. Contexts
@@ -79,10 +80,10 @@ file changes (`taskctl watch ...`).
 
 `internal/` packages are private, single-purpose helpers: `fsutil` (path/file checks), `envutil`
 (env map ↔ `KEY=VAL` slice conversion), `iox` (`iox.Close` deferred-close helper), `tmpl` (template
-rendering), `tui` (the Charm-based terminal UI: shared color palette, TTY detection, huh prompts, and
-the bubbletea cockpit engine), and `output` (task-output decorators). Keep these focused; don't
-reintroduce a grab-bag utils package, and keep the Charm/`huh`/`bubbletea`/`lipgloss` dependencies
-contained in `tui`.
+rendering), `tui` (shared terminal-UI primitives: color palette, TTY detection, styled-print helpers,
+and huh-based prompts), and `output` (task-output decorators, including the `bubbletea` cockpit
+dashboard). Keep these focused; don't reintroduce a grab-bag utils package. `huh`/`lipgloss`/
+`colorprofile` live in `tui`; `bubbletea` lives in `output` with the cockpit (its only consumer).
 
 ## Conventions
 

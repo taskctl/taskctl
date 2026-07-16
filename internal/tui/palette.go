@@ -1,7 +1,9 @@
-// Package tui holds taskctl's terminal-UI primitives: the shared color palette,
-// TTY detection, interactive prompts (built on huh), and the cockpit dashboard
-// (built on bubbletea). Keeping these in one place lets the cmd and output
-// packages share styling and stay free of direct Charm dependencies.
+// Package tui holds taskctl's shared terminal-UI primitives: the color palette,
+// TTY detection, styled-output helpers, and the interactive prompts (built on
+// huh). Keeping them here lets cmd render without importing any Charm library
+// directly. The cockpit dashboard is deliberately not here — it is a
+// single-consumer bubbletea program that lives with its consumer in
+// internal/output and borrows only this palette.
 package tui
 
 import "charm.land/lipgloss/v2"
