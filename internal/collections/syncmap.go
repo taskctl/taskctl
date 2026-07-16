@@ -2,10 +2,17 @@ package collections
 
 import "sync"
 
+// noCopy is used to help go vet detect unintended copies of types that must not
+// be copied after first use.
+type noCopy struct{}
+
+func (*noCopy) Lock() {}
+
 // SyncMap is a type-safe wrapper around sync.Map. Like sync.Map it must not be
 // copied after first use; use it via a pointer or as a non-copied struct field.
 type SyncMap[K comparable, V any] struct {
-	m sync.Map
+	noCopy noCopy
+	m      sync.Map
 }
 
 // Store sets the value for a key.
