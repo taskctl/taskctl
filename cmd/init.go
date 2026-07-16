@@ -10,12 +10,9 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/taskctl/taskctl/internal/config"
-
-	"github.com/logrusorgru/aurora"
-	"github.com/manifoldco/promptui"
-
 	"github.com/taskctl/taskctl/internal/fsutil"
 	"github.com/taskctl/taskctl/internal/iox"
+	"github.com/taskctl/taskctl/internal/tui"
 )
 
 var configTmpl = `# This is an example of taskctl tasks configuration file.
@@ -53,39 +50,37 @@ func newInitCommand() *cli.Command {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			fileSelect := promptui.Select{
-				Label: "Choose file name",
-				Items: config.DefaultFileNames,
-				Stdin: stdin,
-			}
-
-			_, filename, err := fileSelect.Run()
-			if err != nil {
-				return err
-			}
-
 			dir := c.String("dir")
 			if dir == "" {
-				dir, err = os.Getwd()
+				wd, err := os.Getwd()
 				if err != nil {
 					return err
 				}
+				dir = wd
+			}
+
+			// Two sequential prompts rather than one form with a conditional
+			// group: huh's accessible (non-TTY) mode ignores WithHideFunc, so
+			// gate the overwrite confirm in Go instead.
+			filename, err := tui.Select(stdin, "Choose file name", tui.StringItems(config.DefaultFileNames))
+			if err != nil {
+				if errors.Is(err, tui.ErrAborted) {
+					return nil
+				}
+				return err
 			}
 
 			file := filepath.Join(dir, filename)
-
 			if fsutil.FileExists(file) {
-				replaceConfirmation := promptui.Prompt{
-					Label:     "File already exists. Overwrite",
-					IsConfirm: true,
-					Stdin:     stdin,
+				overwrite, err := tui.Confirm(stdin, fmt.Sprintf("%s already exists. Overwrite?", filename))
+				if err != nil {
+					if errors.Is(err, tui.ErrAborted) {
+						return nil
+					}
+					return err
 				}
 
-				_, err = replaceConfirmation.Run()
-				if err != nil {
-					if !errors.Is(err, promptui.ErrAbort) {
-						return err
-					}
+				if !overwrite {
 					return nil
 				}
 			}
@@ -103,8 +98,8 @@ func newInitCommand() *cli.Command {
 				return err
 			}
 
-			fmt.Println(aurora.Sprintf(aurora.Magenta("%s was created. Edit it accordingly to your needs"), aurora.Green(filename)))
-			fmt.Println(aurora.Cyan("To Run example pipeline - taskctl Run pipeline1"))
+			tui.Println(os.Stdout, tui.StyleSuccess.Render(fmt.Sprintf("%s was created. Edit it accordingly to your needs", filename)))
+			tui.Println(os.Stdout, tui.StyleFaint.Render("To Run example pipeline - taskctl Run pipeline1"))
 
 			return nil
 		},

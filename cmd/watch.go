@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"sync"
 
-	"github.com/taskctl/taskctl/output"
+	"github.com/taskctl/taskctl/internal/output"
 
 	"github.com/urfave/cli/v2"
 
