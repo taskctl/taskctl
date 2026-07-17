@@ -99,3 +99,13 @@ reintroduce a grab-bag utils package.
 - **Run tests and linters once, at the end** — not after every intermediate stage. Make the full set
   of changes, then run `go test -race ./...` and `golangci-lint run` as a final verification pass
   before wrapping up.
+- **Sync the docs before every PR.** Before opening or updating a pull request, invoke the
+  `docs-sync` agent (`.claude/agents/docs-sync.md`) so `README.md` and `docs/` reflect the change
+  set. Don't hand-wave this — the agent reconciles docs against the actual diff and fixes drift.
+
+## Agent skill (single source of truth)
+
+The taskctl agent skill lives once at `.agents/skills/taskctl/SKILL.md`. It is embedded into the
+binary from `main.go` (go:embed, then injected into `cmd` via `SetSkillTemplate`) and shipped by
+`taskctl skill install`; `.claude/skills/taskctl` symlinks to it so this repo's own agents use the
+same copy. Edit only the canonical file — never a copy.

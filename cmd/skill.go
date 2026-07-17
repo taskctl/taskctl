@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	_ "embed"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,8 +10,16 @@ import (
 	"github.com/taskctl/taskctl/internal/fsutil"
 )
 
-//go:embed skill/SKILL.md
+// skillTemplate holds the canonical SKILL.md content. It is embedded and
+// injected by package main via SetSkillTemplate, because go:embed cannot reach
+// the single source of truth at .agents/skills/taskctl/SKILL.md from here.
 var skillTemplate string
+
+// SetSkillTemplate injects the embedded SKILL.md content that `skill install`
+// writes out. Call it once at startup before running the CLI.
+func SetSkillTemplate(s string) {
+	skillTemplate = s
+}
 
 func newSkillCommand() *cli.Command {
 	cmd := &cli.Command{

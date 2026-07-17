@@ -7,6 +7,13 @@ import (
 	"testing"
 )
 
+// The real SKILL.md is embedded and injected by package main, which isn't
+// linked into this test binary, so inject a representative template here to
+// make the install round-trip assertions meaningful.
+func init() {
+	SetSkillTemplate("---\nname: taskctl\n---\n\n# taskctl test skill\n")
+}
+
 func TestInstallSkill_FreshInstall(t *testing.T) {
 	dir := t.TempDir()
 
