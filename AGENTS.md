@@ -5,9 +5,9 @@ This file provides guidance to AI coding agents when working with code in this r
 ## What this is
 
 `taskctl` is a concurrent task runner / Make alternative. Tasks and pipelines are declared in a
-human-readable config (`tasks.yaml`/`taskctl.yaml`, also JSON/TOML). It is both a CLI and an
-embeddable Go library (the `runner`, `scheduler`, `task`, `executor`, `output`, `variables` packages
-are public API — treat their exported symbols as such).
+human-readable config (`tasks.yaml`/`taskctl.yaml`, also JSON/TOML). It is a CLI application; the
+`runner`, `scheduler`, `task`, `executor`, and `variables` packages hold the reusable core, while
+CLI-only support (interactive prompts and output rendering) lives under `internal/`.
 
 ## Commands
 
@@ -62,9 +62,12 @@ Go `text/template`), parses it with `mvdan.cc/sh/v3/syntax`, and runs it through
 `interp` interpreter. **There is no dependency on a system shell** — this is what makes taskctl
 cross-platform. Exit codes surface via `IsExitStatus`.
 
-**Output** — `output`. `TaskOutput` wraps a task's stdout/stderr with a `DecoratedOutputWriter`
-decorator chosen by format: `raw`, `prefixed`, or `cockpit` (live multi-task dashboard). Interactive
-tasks force `raw`.
+**Output** — `internal/output`. `TaskOutput` wraps a task's stdout/stderr with a
+`DecoratedOutputWriter` decorator chosen by format: `raw`, `prefixed`, or `cockpit` (live multi-task
+dashboard). Interactive tasks force `raw`. The `prefixed` decorator renders through `internal/tui`
+(palette + colorprofile writer). The `cockpit` dashboard is a `bubbletea` program implemented here in
+`internal/output/cockpit.go` — it lives with its sole consumer rather than in `tui`, borrowing only the
+`tui` palette; keeping the `DecoratedOutputWriter` bridge here avoids an `output`↔`tui` import cycle.
 
 **Contexts** — `runner/context.go`. An `ExecutionContext` can wrap commands in an executable (e.g.
 `docker`, `bash -c`), set a dir/env, and define `up`/`down`/`before`/`after` lifecycle hooks. Contexts
@@ -75,10 +78,12 @@ file changes (`taskctl watch ...`).
 
 ### internal/ helpers
 
-`internal/` packages are private, single-purpose utilities split out from a former catch-all `utils`
-package: `fsutil` (path/file checks), `envutil` (env map ↔ `KEY=VAL` slice conversion), `iox`
-(`iox.Close` deferred-close helper), `tmpl` (template rendering). Keep these focused; don't
-reintroduce a grab-bag utils package.
+`internal/` packages are private, single-purpose helpers: `fsutil` (path/file checks), `envutil`
+(env map ↔ `KEY=VAL` slice conversion), `iox` (`iox.Close` deferred-close helper), `tmpl` (template
+rendering), `tui` (shared terminal-UI primitives: color palette, TTY detection, styled-print helpers,
+and huh-based prompts), and `output` (task-output decorators, including the `bubbletea` cockpit
+dashboard). Keep these focused; don't reintroduce a grab-bag utils package. `huh`/`lipgloss`/
+`colorprofile` live in `tui`; `bubbletea` lives in `output` with the cockpit (its only consumer).
 
 ## Conventions
 
@@ -87,7 +92,8 @@ reintroduce a grab-bag utils package.
 - Prefer stdlib generics helpers already adopted here: `maps.Keys`+`slices.Collect`, `slices.*`,
   `strings.Cut`.
 - Logging is `log/slog` (level set from `--debug`/`TASKCTL_DEBUG`).
-- The public library packages have doc comments on exported symbols — maintain them.
+- The reusable core packages (`runner`, `scheduler`, `task`, `executor`, `variables`) have doc
+  comments on exported symbols — maintain them.
 - Every package has table-style `_test.go` tests alongside; `cmd/` and `internal/config/` use
   `testdata/` fixtures.
 

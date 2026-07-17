@@ -20,7 +20,7 @@ import (
 
 	"github.com/taskctl/taskctl/variables"
 
-	"github.com/taskctl/taskctl/output"
+	"github.com/taskctl/taskctl/internal/output"
 
 	"github.com/taskctl/taskctl/task"
 )

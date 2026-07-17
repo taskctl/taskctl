@@ -16,13 +16,11 @@ import (
 
 	"github.com/taskctl/taskctl/runner"
 
-	"github.com/logrusorgru/aurora"
-	"github.com/manifoldco/promptui"
-
 	"github.com/urfave/cli/v2"
 
 	"github.com/taskctl/taskctl/internal/config"
-	"github.com/taskctl/taskctl/output"
+	"github.com/taskctl/taskctl/internal/output"
+	"github.com/taskctl/taskctl/internal/tui"
 )
 
 var stdin io.ReadCloser
@@ -218,34 +216,28 @@ func rootAction(c *cli.Context) (err error) {
 		return nil
 	}
 
-	suggestions := buildSuggestions(cfg)
-	targetSelect := promptui.Select{
-		Label:        "Select task to Run",
-		Items:        suggestions,
-		Size:         15,
-		CursorPos:    0,
-		IsVimMode:    false,
-		HideHelp:     false,
-		HideSelected: false,
-		Templates: &promptui.SelectTemplates{
-			Active:   fmt.Sprintf("%s {{ .DisplayName | underline }}", promptui.IconSelect),
-			Inactive: "  {{ .DisplayName }}",
-			Selected: fmt.Sprintf(`{{ "%s" | green }} {{ .DisplayName | faint }}`, promptui.IconGood),
-		},
-		Keys: nil,
-		Searcher: func(input string, index int) bool {
-			return strings.Contains(suggestions[index].DisplayName, input)
-		},
-		StartInSearchMode: true,
+	if !tui.Interactive(stdin) {
+		return errors.New("no task or pipeline specified")
 	}
 
-	fmt.Println("Please use `Ctrl-C` to exit this program.")
-	index, _, err := targetSelect.Run()
+	suggestions := buildSuggestions(cfg)
+	if len(suggestions) == 0 {
+		return errors.New("no tasks or pipelines found in config")
+	}
+
+	items := make([]tui.Item[suggestion], 0, len(suggestions))
+	for _, s := range suggestions {
+		items = append(items, tui.Item[suggestion]{Label: s.DisplayName, Value: s})
+	}
+
+	selection, err := tui.Select(stdin, "Select task to run", items)
 	if err != nil {
+		if errors.Is(err, tui.ErrAborted) {
+			return nil
+		}
 		return err
 	}
 
-	selection := suggestions[index]
 	if selection.IsTask {
 		return runTask(cfg.Tasks[selection.Target], taskRunner)
 	}
@@ -294,7 +286,7 @@ func buildSuggestions(cfg *config.Config) []suggestion {
 	for _, v := range slices.Collect(maps.Keys(cfg.Pipelines)) {
 		suggestions = append(suggestions, suggestion{
 			Target:      v,
-			DisplayName: fmt.Sprintf("%s - %s", v, aurora.Gray(12, "pipeline").String()),
+			DisplayName: fmt.Sprintf("%s - %s", v, "pipeline"),
 		})
 	}
 
@@ -305,7 +297,7 @@ func buildSuggestions(cfg *config.Config) []suggestion {
 		}
 		suggestions = append(suggestions, suggestion{
 			Target:      k,
-			DisplayName: fmt.Sprintf("%s - %s", k, aurora.Gray(12, desc).String()),
+			DisplayName: fmt.Sprintf("%s - %s", k, desc),
 			IsTask:      true,
 		})
 	}
