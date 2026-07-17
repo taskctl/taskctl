@@ -102,7 +102,7 @@ taskctl has a machine-readable CLI surface designed for use by AI agents and oth
 }
 ```
 
-Pipelines are shown as a name plus an ordered list of stages, each with its task, dependencies and conditions:
+Pipelines are shown as a name plus a list of stages (sorted by stage name for stability), each with its task, dependencies and conditions:
 
 ```json
 {
