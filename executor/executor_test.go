@@ -102,3 +102,30 @@ func TestDefaultExecutor_Execute_SharedShellState(t *testing.T) {
 		t.Errorf("output = %q, want %q", got, "BBB")
 	}
 }
+
+// TestDefaultExecutor_Execute_PerJobDir verifies that a job's working directory
+// is honored even when a same-env job ran before it: the interpreter must be
+// rebuilt when job.Dir changes rather than reusing the previous directory.
+func TestDefaultExecutor_Execute_PerJobDir(t *testing.T) {
+	e, err := NewDefaultExecutor(nil, io.Discard, io.Discard)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dirA := t.TempDir()
+	dirB := t.TempDir()
+
+	for _, want := range []string{dirA, dirB} {
+		job := NewJobFromCommand("pwd")
+		job.Dir = want
+
+		out, err := e.Execute(context.Background(), job)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if got := strings.TrimSpace(string(out)); got != want {
+			t.Errorf("pwd = %q, want %q", got, want)
+		}
+	}
+}

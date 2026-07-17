@@ -35,15 +35,17 @@ type DefaultExecutor struct {
 	stderr io.Writer
 	buf    bytes.Buffer
 
-	// interp is reused across consecutive jobs sharing the same environment so
-	// that shell state (functions, variables, cwd) set by one command is
-	// visible to the next. lastEnv records the environment it was built with;
-	// when a job's environment differs (e.g. the next task variation) a fresh
-	// interpreter is created — interp.Runner snapshots its environment on first
-	// Run and ignores later Env mutations, so reuse alone would leak the first
-	// job's environment into every subsequent variation.
+	// interp is reused across consecutive jobs sharing the same environment and
+	// directory so that shell state (functions, variables, cwd) set by one
+	// command is visible to the next. lastEnv/lastDir record what it was built
+	// with; when a job's environment or directory differs (e.g. the next task
+	// variation) a fresh interpreter is created — interp.Runner snapshots its
+	// environment and directory on first Run and ignores later Env/Dir
+	// mutations, so reuse alone would leak the first job's environment into
+	// every subsequent variation.
 	interp  *interp.Runner
 	lastEnv map[string]string
+	lastDir string
 }
 
 // NewDefaultExecutor creates new default executor
@@ -94,11 +96,11 @@ func (e *DefaultExecutor) Execute(ctx context.Context, job *Job) ([]byte, error)
 
 	slog.Debug(fmt.Sprintf("Executing \"%s\"", command))
 
-	// Reuse the interpreter while the environment is unchanged so shell state
-	// (functions, variables, cwd) carries across a task's commands; rebuild it
-	// when the environment changes (a new variation) so each variation runs
-	// with its own environment and a clean state.
-	if e.interp == nil || !maps.Equal(jobEnv, e.lastEnv) {
+	// Reuse the interpreter while the environment and directory are unchanged so
+	// shell state (functions, variables, cwd) carries across a task's commands;
+	// rebuild it when either changes (a new variation) so each variation runs
+	// with its own environment/directory and a clean state.
+	if e.interp == nil || job.Dir != e.lastDir || !maps.Equal(jobEnv, e.lastEnv) {
 		env := append(slices.Clone(e.env), envutil.ConvertEnv(jobEnv)...)
 		e.interp, err = interp.New(
 			interp.StdIO(e.stdin, e.stdout, e.stderr),
@@ -109,6 +111,7 @@ func (e *DefaultExecutor) Execute(ctx context.Context, job *Job) ([]byte, error)
 			return nil, err
 		}
 		e.lastEnv = jobEnv
+		e.lastDir = job.Dir
 	}
 
 	var cancelFn context.CancelFunc
