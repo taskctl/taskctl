@@ -32,7 +32,6 @@ var cancelMu sync.Mutex
 var cfg *config.Config
 var au aurora.Aurora = aurora.NewAurora(false)
 
-// isTTY reports whether the given file descriptor is an interactive terminal.
 func isTTY(fd uintptr) bool {
 	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
 }

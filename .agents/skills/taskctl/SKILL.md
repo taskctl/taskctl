@@ -11,7 +11,10 @@ use the machine-readable CLI instead.
 
 ## Discover what exists
 
-    taskctl --output json list
+```bash
+# List every task, pipeline, context and watcher as one JSON document
+taskctl --output json list
+```
 
 Returns `{schema_version, tasks, pipelines, contexts, watchers}`. Task entries
 carry `name`, `description`, `context`; pipeline entries carry `name` and
@@ -19,7 +22,10 @@ carry `name`, `description`, `context`; pipeline entries carry `name` and
 
 ## Inspect before running
 
-    taskctl --output json show <task-or-pipeline>
+```bash
+# Full resolved detail for one task or pipeline
+taskctl --output json show <task-or-pipeline>
+```
 
 Tasks: resolved `commands`, `env`, `variables`, `dir`, `timeout_seconds`,
 `allow_failure`, `condition`. Pipelines: `stages` with `depends_on` edges
@@ -27,10 +33,12 @@ Tasks: resolved `commands`, `env`, `variables`, `dir`, `timeout_seconds`,
 
 ## Execute
 
-    taskctl --output json --no-input <target>
+```bash
+# Run a task or pipeline; <target> is passed directly, no `run` keyword
+taskctl --output json --no-input <target>
+```
 
-`<target>` is a task or pipeline name — no `run` keyword needed. Stdout is an
-NDJSON event stream — one JSON object per line:
+Stdout is an NDJSON event stream — one JSON object per line:
 
 | event | key fields |
 |---|---|

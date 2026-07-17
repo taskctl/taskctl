@@ -87,7 +87,10 @@ reintroduce a grab-bag utils package.
 - Prefer stdlib generics helpers already adopted here: `maps.Keys`+`slices.Collect`, `slices.*`,
   `strings.Cut`.
 - Logging is `log/slog` (level set from `--debug`/`TASKCTL_DEBUG`).
-- The public library packages have doc comments on exported symbols — maintain them.
+- Comments are concise — one line by default. Always comment exported (public) symbols; the public
+  library packages carry doc comments on every exported symbol — maintain them. For unexported
+  methods and variables, comment only when genuinely needed — when what the code does, or why a
+  variable exists, is not obvious from the code itself. Don't restate the obvious.
 - Every package has table-style `_test.go` tests alongside; `cmd/` and `internal/config/` use
   `testdata/` fixtures.
 
