@@ -16,11 +16,14 @@ import (
 )
 
 // base is a process-wide singleton: all tasks in a run share one cockpit
-// dashboard. It is created once and lives for the process; a second cockpit
-// session in a long-lived host process reuses the same (already finished)
-// program. baseMu guards lazy creation against the scheduler's concurrent task
-// goroutines. Do not reset base to nil after Close — that lets a new program
-// start while the old one tears down, which races two bubbletea programs.
+// dashboard. The bubbletea program starts at most once (startOnce), and
+// output.Close permanently closes closeCh to quit it — so the cockpit is
+// one-shot and cannot be restarted within the process. taskctl's CLI runs a
+// single cockpit session per invocation (run is single-shot; watch forces raw
+// output), so this suffices. base is intentionally never reset to nil: a reset
+// would let a new program start while the old one tears down, racing two
+// bubbletea programs. baseMu guards lazy creation against the scheduler's
+// concurrent task goroutines.
 var (
 	base   *baseCockpit
 	baseMu sync.Mutex

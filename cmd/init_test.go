@@ -63,7 +63,10 @@ func TestInitCommand_Overwrite(t *testing.T) {
 	app := makeTestApp()
 	dir := os.TempDir()
 	path := filepath.Join(dir, "taskctl.yaml")
-	if err := os.WriteFile(path, []byte("here"), 0764); err != nil {
+	// Pre-seed a file longer than the template with a trailing marker: without
+	// O_TRUNC the marker survives past the freshly-written (shorter) template.
+	existing := strings.Repeat("# old\n", 500) + "TRAILING_MARKER\n"
+	if err := os.WriteFile(path, []byte(existing), 0764); err != nil {
 		t.Fatal(err)
 	}
 
@@ -75,5 +78,8 @@ func TestInitCommand_Overwrite(t *testing.T) {
 	}
 	if !strings.Contains(string(content), "pipelines:") {
 		t.Errorf("expected overwritten file to contain config template, got: %s", content)
+	}
+	if strings.Contains(string(content), "TRAILING_MARKER") {
+		t.Errorf("expected overwrite to truncate the old file, but trailing bytes remain: %s", content)
 	}
 }
