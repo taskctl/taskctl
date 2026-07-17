@@ -81,7 +81,7 @@ func Test_showCommand_json_unknown(t *testing.T) {
 		t.Fatal("expected error for unknown task or pipeline")
 	}
 
-	if !strings.Contains(err.Error(), "unknown task or pipeline nope") {
+	if !strings.Contains(err.Error(), `unknown task or pipeline "nope"`) {
 		t.Errorf("unexpected error message: %v", err)
 	}
 }

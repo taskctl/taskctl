@@ -45,8 +45,8 @@ Stdout is an NDJSON event stream — one JSON object per line:
 | run_started | schema_version, targets |
 | task_started | task |
 | task_output | task, stream (stdout/stderr), data (one line) |
-| task_finished | task, status (done/failed/skipped/canceled), exit_code, duration_ms, error |
-| run_finished | status (done/failed), duration_ms, tasks[] |
+| task_finished | task, status (done/failed/skipped), exit_code, duration_ms, error |
+| run_finished | status (done/failed), duration_ms, tasks[] (per-task status: done/failed/skipped/canceled) |
 
 `run_finished.status` is the source of truth for success. Exit code is 0 on
 success, non-zero on failure. taskctl's own diagnostics go to stderr.

@@ -37,6 +37,22 @@ func TestInstallSkill_FreshInstall(t *testing.T) {
 	}
 }
 
+func TestInstallSkill_EmptyTemplateErrors(t *testing.T) {
+	saved := skillTemplate
+	skillTemplate = ""
+	defer func() { skillTemplate = saved }()
+
+	dir := t.TempDir()
+
+	if _, err := installSkill(dir, false); err == nil {
+		t.Fatal("expected error when skill template is empty, got nil")
+	}
+
+	if _, err := os.Stat(filepath.Join(dir, ".claude")); !os.IsNotExist(err) {
+		t.Errorf("expected no files written when template is empty, got err=%v", err)
+	}
+}
+
 func TestInstallSkill_ExistingFileErrorsWithoutForce(t *testing.T) {
 	dir := t.TempDir()
 

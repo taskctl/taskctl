@@ -44,6 +44,7 @@ func captureStdout(t *testing.T, args []string) ([]byte, error) {
 
 	os.Stdout = origStdout
 	_ = w.Close()
+	defer func() { _ = r.Close() }()
 
 	var buf bytes.Buffer
 	if _, err := io.Copy(&buf, r); err != nil {

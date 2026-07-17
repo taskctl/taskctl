@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -71,6 +72,10 @@ func newSkillCommand() *cli.Command {
 // installSkill writes the embedded SKILL.md to <baseDir>/.claude/skills/taskctl/SKILL.md.
 // It returns the written path, or an error if the file already exists and force is false.
 func installSkill(baseDir string, force bool) (string, error) {
+	if skillTemplate == "" {
+		return "", errors.New("skill template is empty; the binary was built without an embedded SKILL.md")
+	}
+
 	dir := filepath.Join(baseDir, ".claude", "skills", "taskctl")
 	path := filepath.Join(dir, "SKILL.md")
 
