@@ -132,7 +132,7 @@ taskctl --output json --no-input <task-or-pipeline>
 | `task_started` | `task` |
 | `task_output` | `task`, `stream` (`stdout`/`stderr`), `data` |
 | `task_finished` | `task`, `status` (`done`/`failed`/`skipped`), `exit_code`, `duration_ms`, `error` (on failure) |
-| `run_finished` | `status`, `duration_ms`, `tasks` (array of `{task, status, exit_code, duration_ms}`) |
+| `run_finished` | `status` (`done`/`failed`), `duration_ms`, `tasks` (array of `{task, status (done/failed/skipped/canceled), exit_code, duration_ms}`) |
 
 ### Non-interactive execution: `--no-input`
 
