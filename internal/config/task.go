@@ -3,7 +3,7 @@ package config
 import (
 	"path/filepath"
 
-	"github.com/taskctl/taskctl/utils"
+	"github.com/taskctl/taskctl/internal/envutil"
 	"github.com/taskctl/taskctl/variables"
 
 	"github.com/taskctl/taskctl/task"
@@ -37,7 +37,7 @@ func buildTask(def *taskDefinition, lc *loaderContext) (*task.Task, error) {
 			filename = filepath.Join(lc.Dir, filename)
 		}
 
-		envs, err := utils.ReadEnvFile(filename)
+		envs, err := envutil.ReadEnvFile(filename)
 		if err != nil {
 			return nil, err
 		}

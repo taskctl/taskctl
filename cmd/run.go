@@ -3,8 +3,9 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"maps"
 	"os"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 
@@ -14,7 +15,6 @@ import (
 	"github.com/taskctl/taskctl/runner"
 	"github.com/taskctl/taskctl/scheduler"
 	"github.com/taskctl/taskctl/task"
-	"github.com/taskctl/taskctl/utils"
 )
 
 func newRunCommand() *cli.Command {
@@ -213,8 +213,7 @@ func emitRunFinished(graphs []*scheduler.ExecutionGraph, tasks []*task.Task, run
 	failed := runErr != nil
 
 	for _, g := range graphs {
-		names := utils.MapKeys(g.Nodes())
-		sort.Strings(names)
+		names := slices.Sorted(maps.Keys(g.Nodes()))
 		for _, name := range names {
 			stage := g.Nodes()[name]
 			status := stageStatus(stage)
@@ -308,13 +307,10 @@ func taskArgs(c *cli.Context) []string {
 }
 
 func printSummary(g *scheduler.ExecutionGraph) {
-	var stages = make([]*scheduler.Stage, 0)
-	for _, stage := range g.Nodes() {
-		stages = append(stages, stage)
-	}
+	stages := slices.Collect(maps.Values(g.Nodes()))
 
-	sort.Slice(stages, func(i, j int) bool {
-		return stages[j].Start.Nanosecond() > stages[i].Start.Nanosecond()
+	slices.SortFunc(stages, func(a, b *scheduler.Stage) int {
+		return a.Start.Compare(b.Start)
 	})
 
 	_, _ = fmt.Fprintln(os.Stdout, au.Bold("Summary:").String())

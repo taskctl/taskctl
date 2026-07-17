@@ -8,14 +8,14 @@ require (
 	github.com/briandowns/spinner v1.23.1
 	github.com/emicklei/dot v1.6.4
 	github.com/fsnotify/fsnotify v1.8.0
+	github.com/go-viper/mapstructure/v2 v2.5.0
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/manifoldco/promptui v0.9.0
 	github.com/mattn/go-isatty v0.0.20
-	github.com/mitchellh/mapstructure v1.5.0
 	github.com/pelletier/go-toml v1.9.5
 	github.com/urfave/cli/v2 v2.27.5
 	golang.org/x/text v0.21.0
-	gopkg.in/yaml.v2 v2.4.0
+	gopkg.in/yaml.v3 v3.0.1
 	mvdan.cc/sh/v3 v3.10.0
 )
 

@@ -4,11 +4,12 @@ package schema
 
 import (
 	"fmt"
-	"sort"
+	"maps"
+	"slices"
 
+	"github.com/taskctl/taskctl/internal/collections"
 	"github.com/taskctl/taskctl/scheduler"
 	"github.com/taskctl/taskctl/task"
-	"github.com/taskctl/taskctl/utils"
 )
 
 // ListResponse is the top-level document produced by `taskctl --output json list`.
@@ -77,7 +78,7 @@ func NewTaskDetail(t *task.Task) TaskDetail {
 		Name:         t.Name,
 		Description:  t.Description,
 		Context:      t.Context,
-		Commands:     utils.OrEmpty(t.Commands),
+		Commands:     collections.OrEmpty(t.Commands),
 		Env:          stringifyMap(t.Env.Map()),
 		Variables:    stringifyMap(t.Variables.Map()),
 		Dir:          t.Dir,
@@ -110,7 +111,7 @@ func NewPipelineDetail(name string, g *scheduler.ExecutionGraph) PipelineDetail 
 		stages = append(stages, StageDetail{
 			Name:         stage.Name,
 			Task:         taskName,
-			DependsOn:    utils.OrEmpty(stage.DependsOn),
+			DependsOn:    collections.OrEmpty(stage.DependsOn),
 			Condition:    stage.Condition,
 			AllowFailure: stage.AllowFailure,
 		})
@@ -133,13 +134,7 @@ func NewPipelineSummary(name string, g *scheduler.ExecutionGraph) PipelineSummar
 }
 
 func sortedStageNames(nodes map[string]*scheduler.Stage) []string {
-	names := make([]string, 0, len(nodes))
-	for name := range nodes {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-
-	return names
+	return slices.Sorted(maps.Keys(nodes))
 }
 
 func stringifyMap(m map[string]any) map[string]string {

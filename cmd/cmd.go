@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"maps"
 	"os"
 	"os/signal"
-	"sort"
+	"slices"
 	"strings"
 	"sync"
 	"syscall"
@@ -23,7 +24,6 @@ import (
 
 	"github.com/taskctl/taskctl/internal/config"
 	"github.com/taskctl/taskctl/output"
-	"github.com/taskctl/taskctl/utils"
 )
 
 var stdin io.ReadCloser
@@ -339,7 +339,7 @@ func buildSuggestions(cfg *config.Config) []suggestion {
 
 	suggestions := make([]suggestion, 0)
 
-	for _, v := range utils.MapKeys(cfg.Pipelines) {
+	for _, v := range slices.Collect(maps.Keys(cfg.Pipelines)) {
 		suggestions = append(suggestions, suggestion{
 			Target:      v,
 			DisplayName: fmt.Sprintf("%s - %s", v, au.Gray(12, "pipeline").String()),
@@ -358,8 +358,8 @@ func buildSuggestions(cfg *config.Config) []suggestion {
 		})
 	}
 
-	sort.Slice(suggestions, func(i, j int) bool {
-		return suggestions[j].Target > suggestions[i].Target
+	slices.SortFunc(suggestions, func(a, b suggestion) int {
+		return strings.Compare(a.Target, b.Target)
 	})
 
 	return suggestions

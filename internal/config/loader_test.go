@@ -88,7 +88,7 @@ func TestLoader_loadDir(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tasks := m["tasks"].(map[any]any)
+	tasks := m["tasks"].(map[string]any)
 	if len(tasks) != 5 {
 		t.Error()
 	}

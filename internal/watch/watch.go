@@ -12,6 +12,7 @@ import (
 	"github.com/bmatcuk/doublestar"
 	"github.com/fsnotify/fsnotify"
 
+	"github.com/taskctl/taskctl/internal/collections"
 	"github.com/taskctl/taskctl/runner"
 	"github.com/taskctl/taskctl/task"
 )
@@ -38,7 +39,7 @@ type Watcher struct {
 	r        *runner.TaskRunner
 	finished chan struct{}
 	paths    []string
-	events   map[string]bool
+	events   *collections.Set[string]
 	task     *task.Task
 	fsw      *fsnotify.Watcher
 	closed   chan struct{}
@@ -57,7 +58,7 @@ func NewWatcher(name string, events, watch, exclude []string, t *task.Task) (w *
 		finished: make(chan struct{}),
 		closed:   make(chan struct{}),
 		task:     t,
-		events:   make(map[string]bool),
+		events:   collections.NewSet[string](),
 	}
 
 	w.fsw, err = fsnotify.NewWatcher()
@@ -96,7 +97,7 @@ func NewWatcher(name string, events, watch, exclude []string, t *task.Task) (w *
 	}
 
 	for _, e := range events {
-		w.events[e] = true
+		w.events.Add(e)
 	}
 
 	return w, nil
@@ -188,7 +189,7 @@ func (w *Watcher) handle(event fsnotify.Event) {
 	defer w.eventsWg.Done()
 
 	eventName := fsnotifyMap[event.Op]
-	if !w.events[eventName] {
+	if !w.events.Has(eventName) {
 		return
 	}
 

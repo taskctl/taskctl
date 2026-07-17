@@ -16,15 +16,26 @@ import (
 	"strings"
 
 	"dario.cat/mergo"
-	"github.com/mitchellh/mapstructure"
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/pelletier/go-toml"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 
-	"github.com/taskctl/taskctl/utils"
+	"github.com/taskctl/taskctl/internal/fsutil"
+	"github.com/taskctl/taskctl/internal/iox"
 )
 
 // ErrConfigNotFound occurs when requested config file does not exists
 var ErrConfigNotFound = errors.New("config file not found")
+
+// isURL checks if given string is a valid URL
+func isURL(s string) bool {
+	u, err := url.Parse(s)
+	if err != nil {
+		return false
+	}
+
+	return strings.HasPrefix(u.Scheme, "http")
+}
 
 // Loader reads and parses config files
 type Loader struct {
@@ -39,8 +50,8 @@ func NewConfigLoader(dst *Config) Loader {
 	return Loader{
 		dst:     dst,
 		imports: make(map[string]bool),
-		homeDir: utils.MustGetUserHomeDir(),
-		dir:     utils.MustGetwd(),
+		homeDir: fsutil.MustGetUserHomeDir(),
+		dir:     fsutil.MustGetwd(),
 	}
 }
 
@@ -67,7 +78,7 @@ func (cl *Loader) Load(file string) (*Config, error) {
 		}
 	}
 
-	if !utils.IsURL(file) && !filepath.IsAbs(file) {
+	if !isURL(file) && !filepath.IsAbs(file) {
 		file = path.Join(cl.dir, file)
 	}
 
@@ -103,7 +114,7 @@ func (cl *Loader) LoadGlobalConfig() (*Config, error) {
 	}
 
 	file := path.Join(cl.homeDir, ".taskctl", "config.yaml")
-	if !utils.FileExists(file) {
+	if !fsutil.FileExists(file) {
 		return cl.dst, nil
 	}
 
@@ -137,10 +148,10 @@ func (cl *Loader) reset() {
 func (cl *Loader) load(file string) (config map[string]any, err error) {
 	cl.imports[file] = true
 
-	if utils.IsURL(file) {
+	if isURL(file) {
 		config, err = cl.readURL(file)
 	} else {
-		if !utils.FileExists(file) {
+		if !fsutil.FileExists(file) {
 			return config, fmt.Errorf("%s: %w", file, ErrConfigNotFound)
 		}
 		config, err = cl.readFile(file)
@@ -153,7 +164,7 @@ func (cl *Loader) load(file string) (config map[string]any, err error) {
 	importDir := path.Dir(file)
 	if imports, ok := config["import"]; ok && imports != nil {
 		for _, v := range imports.([]any) {
-			if utils.IsURL(v.(string)) {
+			if isURL(v.(string)) {
 				if cl.imports[v.(string)] {
 					continue
 				}
@@ -222,6 +233,7 @@ func (cl *Loader) readURL(u string) (map[string]any, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer iox.Close(resp.Body)
 
 	if resp.StatusCode != 200 {
 		return nil, fmt.Errorf("%d: config request failed - %s", resp.StatusCode, u)
@@ -318,7 +330,7 @@ func (cl *Loader) resolveDefaultConfigFile() (file string, err error) {
 
 		for _, v := range DefaultFileNames {
 			file := filepath.Join(dir, v)
-			if utils.FileExists(file) {
+			if fsutil.FileExists(file) {
 				cl.dir = dir
 				return file, nil
 			}

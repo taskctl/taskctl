@@ -3,6 +3,7 @@ package output
 import (
 	"fmt"
 	"io"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -78,11 +79,9 @@ func (b *baseCockpit) remove(t *task.Task) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	for k, v := range b.tasks {
-		if v == t {
-			b.tasks = append(b.tasks[:k], b.tasks[k+1:]...)
-		}
-	}
+	b.tasks = slices.DeleteFunc(b.tasks, func(x *task.Task) bool {
+		return x == t
+	})
 
 	var mark = aurora.Green("✔")
 	if t.Errored {

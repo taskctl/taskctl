@@ -3,15 +3,16 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
-	"sort"
+	"slices"
 	"text/template"
 
 	"github.com/urfave/cli/v2"
 
+	"github.com/taskctl/taskctl/internal/collections"
 	"github.com/taskctl/taskctl/internal/schema"
 	"github.com/taskctl/taskctl/output"
-	"github.com/taskctl/taskctl/utils"
 )
 
 var listTmpl = `Contexts:{{range $context := .Contexts}}
@@ -38,15 +39,10 @@ func newListCommand() *cli.Command {
 		Name:  "list",
 		Usage: "lists contexts, pipelines, tasks and watchers",
 		Action: func(c *cli.Context) (err error) {
-			contexts := utils.MapKeys(cfg.Contexts)
-			pipelines := utils.MapKeys(cfg.Pipelines)
-			tasks := utils.MapKeys(cfg.Tasks)
-			watchers := utils.MapKeys(cfg.Watchers)
-
-			sort.Strings(contexts)
-			sort.Strings(pipelines)
-			sort.Strings(tasks)
-			sort.Strings(watchers)
+			contexts := slices.Sorted(maps.Keys(cfg.Contexts))
+			pipelines := slices.Sorted(maps.Keys(cfg.Pipelines))
+			tasks := slices.Sorted(maps.Keys(cfg.Tasks))
+			watchers := slices.Sorted(maps.Keys(cfg.Watchers))
 
 			if cfg.Output == output.FormatJSON {
 				return encodeListJSON(contexts, pipelines, tasks, watchers)
@@ -68,11 +64,9 @@ func newListCommand() *cli.Command {
 				Name:        "tasks",
 				Description: "List tasks",
 				Action: func(c *cli.Context) error {
-					names := utils.MapKeys(cfg.Tasks)
+					names := slices.Sorted(maps.Keys(cfg.Tasks))
 
 					if cfg.Output == output.FormatJSON {
-						sort.Strings(names)
-
 						summaries := make([]schema.TaskSummary, 0, len(names))
 						for _, name := range names {
 							summaries = append(summaries, schema.NewTaskSummary(cfg.Tasks[name]))
@@ -95,11 +89,9 @@ func newListCommand() *cli.Command {
 				Name:        "pipelines",
 				Description: "List pipelines",
 				Action: func(c *cli.Context) error {
-					names := utils.MapKeys(cfg.Pipelines)
+					names := slices.Sorted(maps.Keys(cfg.Pipelines))
 
 					if cfg.Output == output.FormatJSON {
-						sort.Strings(names)
-
 						summaries := make([]schema.PipelineSummary, 0, len(names))
 						for _, name := range names {
 							summaries = append(summaries, schema.NewPipelineSummary(name, cfg.Pipelines[name]))
@@ -122,15 +114,13 @@ func newListCommand() *cli.Command {
 				Name:        "watchers",
 				Description: "List watchers",
 				Action: func(c *cli.Context) error {
-					names := utils.MapKeys(cfg.Watchers)
+					names := slices.Sorted(maps.Keys(cfg.Watchers))
 
 					if cfg.Output == output.FormatJSON {
-						sort.Strings(names)
-
 						return json.NewEncoder(os.Stdout).Encode(struct {
 							SchemaVersion int      `json:"schema_version"`
 							Watchers      []string `json:"watchers"`
-						}{1, utils.OrEmpty(names)})
+						}{1, collections.OrEmpty(names)})
 					}
 
 					for _, name := range names {
@@ -165,8 +155,8 @@ func encodeListJSON(contexts, pipelineNames, taskNames, watchers []string) error
 		SchemaVersion: 1,
 		Tasks:         taskSummaries,
 		Pipelines:     pipelineSummaries,
-		Contexts:      utils.OrEmpty(contexts),
-		Watchers:      utils.OrEmpty(watchers),
+		Contexts:      collections.OrEmpty(contexts),
+		Watchers:      collections.OrEmpty(watchers),
 	}
 
 	return json.NewEncoder(os.Stdout).Encode(resp)

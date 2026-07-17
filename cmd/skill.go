@@ -8,7 +8,7 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	"github.com/taskctl/taskctl/utils"
+	"github.com/taskctl/taskctl/internal/fsutil"
 )
 
 //go:embed skill/SKILL.md
@@ -67,7 +67,7 @@ func installSkill(baseDir string, force bool) (string, error) {
 	dir := filepath.Join(baseDir, ".claude", "skills", "taskctl")
 	path := filepath.Join(dir, "SKILL.md")
 
-	if !force && utils.FileExists(path) {
+	if !force && fsutil.FileExists(path) {
 		return "", fmt.Errorf("skill already installed at %s (use --force to overwrite)", path)
 	}
 

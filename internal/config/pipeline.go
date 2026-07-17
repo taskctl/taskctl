@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/taskctl/taskctl/utils"
+	"github.com/taskctl/taskctl/internal/envutil"
 
 	"github.com/taskctl/taskctl/variables"
 
@@ -41,7 +41,7 @@ func buildPipeline(g *scheduler.ExecutionGraph, stages []*stageDefinition, cfg *
 				filename = filepath.Join(def.Dir, filename)
 			}
 
-			fileEnvs, err := utils.ReadEnvFile(filename)
+			fileEnvs, err := envutil.ReadEnvFile(filename)
 			if err != nil {
 				return nil, err
 			}

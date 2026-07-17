@@ -3,13 +3,14 @@ package cmd_test
 import (
 	"bytes"
 	"encoding/binary"
-	"github.com/manifoldco/promptui"
-	"github.com/taskctl/taskctl/cmd"
-	"github.com/urfave/cli/v2"
 	"io"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/manifoldco/promptui"
+	"github.com/taskctl/taskctl/cmd"
+	"github.com/urfave/cli/v2"
 )
 
 type appTest struct {

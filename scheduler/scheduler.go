@@ -1,16 +1,21 @@
 package scheduler
 
 import (
+	"errors"
 	"log/slog"
 	"os/exec"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/taskctl/taskctl/utils"
-
 	"github.com/taskctl/taskctl/runner"
 )
+
+// isExitError checks if given error is an instance of exec.ExitError
+func isExitError(err error) bool {
+	var e *exec.ExitError
+	return errors.As(err, &e)
+}
 
 // Scheduler executes ExecutionGraph
 type Scheduler struct {
@@ -180,7 +185,7 @@ func checkStageCondition(condition string) (bool, error) {
 	cmd := exec.Command(condition)
 	err := cmd.Run()
 	if err != nil {
-		if utils.IsExitError(err) {
+		if isExitError(err) {
 			return false, nil
 		}
 
