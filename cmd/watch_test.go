@@ -1,9 +1,10 @@
 package cmd_test
 
 import (
-	"github.com/taskctl/taskctl/cmd"
 	"testing"
 	"time"
+
+	"github.com/taskctl/taskctl/cmd"
 )
 
 func Test_watchCommand_error(t *testing.T) {

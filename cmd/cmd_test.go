@@ -2,12 +2,14 @@ package cmd_test
 
 import (
 	"bytes"
-	"github.com/taskctl/taskctl/cmd"
-	"github.com/urfave/cli/v2"
 	"io"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/urfave/cli/v2"
+
+	"github.com/taskctl/taskctl/cmd"
 )
 
 type appTest struct {
@@ -143,4 +145,24 @@ func TestRootAction(t *testing.T) {
 		app := makeTestApp()
 		runAppTest(app, v, t)
 	}
+}
+
+// --no-input forces non-interactive mode, so a bare invocation with no target
+// errors instead of opening the selector.
+func TestRootAction_NoInputFlagBlocksPrompt(t *testing.T) {
+	app := makeTestApp()
+	runAppTest(app, appTest{
+		args:    []string{"", "--no-input"},
+		errored: true,
+	}, t)
+}
+
+// With a non-TTY stdout, the cockpit dashboard degrades to prefixed output
+// rather than failing to render, so task output still appears.
+func TestCockpitDegradesWhenStdoutNotTTY(t *testing.T) {
+	app := makeTestApp()
+	runAppTest(app, appTest{
+		args:   []string{"", "--cockpit", "-c", "testdata/graph.yaml", "graph:task1"},
+		output: []string{"hello, world!"},
+	}, t)
 }

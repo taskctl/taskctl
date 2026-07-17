@@ -36,6 +36,14 @@ func SetStdin(newStdin io.ReadCloser) {
 	stdin = newStdin
 }
 
+// nonInteractive reports whether the CLI should skip prompts entirely and rely
+// on defaults: when explicitly requested via --no-input/TASKCTL_NO_INPUT, or
+// when producing machine-readable JSON output. A non-TTY stdin alone does not
+// count — huh still prompts in accessible (line-based) mode against a pipe.
+func nonInteractive(c *cli.Context) bool {
+	return c.Bool("no-input") || cfg.Output == output.FormatJSON
+}
+
 func Run(version string) error {
 	stdin = os.Stdin
 	app := NewApp(version)
@@ -82,7 +90,7 @@ func NewApp(version string) *cli.App {
 			&cli.StringFlag{
 				Name:    "output",
 				Aliases: []string{"o"},
-				Usage:   "output format (raw, prefixed or cockpit)",
+				Usage:   "output format (raw, prefixed, cockpit or json)",
 				EnvVars: []string{"TASKCTL_OUTPUT_FORMAT"},
 			},
 			&cli.BoolFlag{
@@ -112,6 +120,11 @@ func NewApp(version string) *cli.App {
 				Usage:   "show summary",
 				Aliases: []string{"s"},
 				Value:   true,
+			},
+			&cli.BoolFlag{
+				Name:    "no-input",
+				Usage:   "disable interactive prompts",
+				EnvVars: []string{"TASKCTL_NO_INPUT"},
 			},
 		},
 		Before: func(c *cli.Context) (err error) {
@@ -153,6 +166,10 @@ func NewApp(version string) *cli.App {
 				cfg.DryRun = true
 			}
 
+			if cfg.Output == output.FormatCockpit && !tui.Interactive(os.Stdout) {
+				cfg.Output = output.FormatPrefixed
+			}
+
 			return nil
 		},
 		Action: rootAction,
@@ -165,6 +182,7 @@ func NewApp(version string) *cli.App {
 			newCompletionCommand(),
 			newGraphCommand(),
 			newValidateCommand(),
+			newSkillCommand(),
 		},
 		Authors: []*cli.Author{
 			{
@@ -203,21 +221,14 @@ func rootAction(c *cli.Context) (err error) {
 
 	targets := c.Args().Slice()
 	if len(targets) > 0 {
-		for _, target := range targets {
-			if target == "--" {
-				break
-			}
-
-			err = runTarget(target, c, taskRunner)
-			if err != nil {
-				return err
-			}
-		}
-		return nil
+		return runTargets(targetNames(targets, false), c, taskRunner)
 	}
 
-	if !tui.Interactive(stdin) {
-		return errors.New("no task or pipeline specified")
+	// No target: skip the selector when prompts are suppressed (--no-input/json)
+	// or stdin isn't a real terminal (the selector needs a TTY), rather than
+	// blocking on or silently running it.
+	if nonInteractive(c) || !tui.Interactive(stdin) {
+		return errors.New("no target specified; run 'taskctl list' to see available targets")
 	}
 
 	suggestions := buildSuggestions(cfg)

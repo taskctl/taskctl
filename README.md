@@ -17,21 +17,6 @@
 [![Maintainability](https://api.codeclimate.com/v1/badges/a99a88d28ad37a79dbf6/maintainability)](https://codeclimate.com/github/codeclimate/codeclimate/maintainability)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat)](https://github.com/taskctl/taskctl/pulls)
 
-# Stand with Ukraine!
-
----
-<p align="center">
-   <img align="center" src="https://github.blog/wp-content/uploads/2022/03/1200x630-GitHub-1.png?resize=320%2C240">
-</p>
-
-While Russia is destroying my home and my country, killing my friends and neighbors - any russian company, organization, or citizen, who do nothing about it,
-is prohibited from using this package.
-For others - please, pray for us, share information about war crimes Russia is conducting in Ukraine, do everything you can
-to urge your governments to be on the right side of history.
-Ukraine will prevail! Good triumph over evil! Русский военный корабль, иди нах#й!
-
----
-
 Simple modern alternative to GNU Make. *taskctl* is concurrent task runner that allows you to design you routine tasks and development pipelines in nice and neat way in human-readable format (YAML, JSON or TOML). 
 Given a pipeline (composed of tasks or other pipelines) it builds a graph that outlines the execution plan. Each task my run concurrently or cascade.
 Beside pipelines, each single task can be started manually or triggered by built-in filesystem watcher.
@@ -80,7 +65,95 @@ According to this plan `lint` and `test` will run concurrently, `build` will sta
 
 [![asciicast](https://asciinema.org/a/326726.svg)](https://asciinema.org/a/326726)
 
+## taskctl for AI agents
+
+taskctl has a machine-readable CLI surface designed for use by AI agents and other tooling: JSON discovery documents, an NDJSON event stream for runs, non-interactive execution, and an installable Claude Code skill.
+
+### Discovering tasks and pipelines: `--output json list` / `show`
+
+`taskctl --output json list` prints a single JSON document describing every task, pipeline, context and watcher in the config:
+
+```json
+{
+  "schema_version": 1,
+  "tasks": [
+    {"name": "lint", "description": "", "context": ""}
+  ],
+  "pipelines": [
+    {"name": "release", "stages": ["build", "lint", "test"]}
+  ],
+  "contexts": [],
+  "watchers": []
+}
+```
+
+`taskctl --output json show <name>` prints the full detail for a single task or pipeline:
+
+```json
+{
+  "schema_version": 1,
+  "task": {
+    "name": "lint",
+    "commands": ["golint ./..."],
+    "env": {},
+    "variables": {},
+    "allow_failure": false
+  }
+}
+```
+
+Pipelines are shown as a name plus a list of stages (sorted by stage name for stability), each with its task (or `pipeline` for nested sub-pipelines), dependencies and conditions:
+
+```json
+{
+  "schema_version": 1,
+  "pipeline": {
+    "name": "release",
+    "stages": [
+      {"name": "build", "task": "build", "depends_on": ["lint", "test"], "allow_failure": false}
+    ]
+  }
+}
+```
+
+### Streaming run events: `--output json`
+
+Running with `--output json` switches the run's output to newline-delimited JSON (NDJSON) — one event object per line — instead of human-oriented text. This makes it easy for an agent to parse progress and results without screen-scraping.
+
+```
+taskctl --output json --no-input <task-or-pipeline>
+```
+
+`<task-or-pipeline>` is passed directly, with no `run` keyword. The stream is:
+
+| event | key fields |
+|---|---|
+| `run_started` | `schema_version`, `targets` |
+| `task_started` | `task` |
+| `task_output` | `task`, `stream` (`stdout`/`stderr`), `data` |
+| `task_finished` | `task`, `status` (`done`/`failed`/`skipped`), `exit_code`, `duration_ms`, `error` (on failure) |
+| `run_finished` | `status` (`done`/`failed`), `duration_ms`, `tasks` (array of `{task, status (done/failed/skipped/canceled), exit_code, duration_ms}`), `error` (on failure) |
+
+### Non-interactive execution: `--no-input`
+
+By default taskctl may prompt interactively (e.g. for confirmation or input tasks). Non-interactive mode disables all of that, and is enabled whenever either of the following is true:
+
+- `--no-input` is passed, or the `TASKCTL_NO_INPUT` environment variable is set
+- output format is `json`
+
+A non-TTY stdin (e.g. a pipe or an agent harness) does *not* by itself enable non-interactive mode — prompts still run in accessible, line-based mode against the pipe. It only affects the no-target case: when you run `taskctl` with no task or pipeline, the interactive selector requires a TTY, so on a non-TTY stdin taskctl errors with guidance instead of blocking. Pass `--no-input` (or `--output json`) to suppress prompts explicitly.
+
+Separately, `--cockpit` (the live full-screen dashboard) requires an interactive stdout; if stdout is not a TTY, taskctl automatically degrades cockpit output to `prefixed` output instead of failing.
+
+### Claude Code skill: `taskctl skill install`
+
+`taskctl skill install` writes a Claude Code skill (`SKILL.md`) that teaches an agent how to use taskctl's JSON surface, into `.claude/skills/taskctl/SKILL.md` in the current directory.
+
+- `--global` installs into the user's home directory instead of the current directory.
+- `--force` overwrites an existing installation.
+
 ## Contents  
+- [taskctl for AI agents](#taskctl-for-ai-agents)
 - [Getting started](#getting-started)
   - [Installation](#install)
   - [Usage](#usage)
@@ -330,6 +403,7 @@ Taskctl has several output formats:
 - `raw` - prints raw commands output
 - `prefixed` - strips ANSI escape sequences where possible, prefixes command output with task's name
 - `cockpit` - tasks dashboard
+- `json` - newline-delimited JSON event stream for machine consumption (see [taskctl for AI agents](#taskctl-for-ai-agents))
 
 ## Filesystem watchers
 Watcher watches for changes in files selected by provided patterns and triggers task anytime an event has occurred.

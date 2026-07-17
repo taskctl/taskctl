@@ -2,8 +2,9 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/urfave/cli/v2"
 	"log/slog"
+
+	"github.com/urfave/cli/v2"
 )
 
 func newCompletionCommand() *cli.Command {

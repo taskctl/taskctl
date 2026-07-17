@@ -11,17 +11,33 @@ CLI-only support (interactive prompts and output rendering) lives under `interna
 
 ## Commands
 
-There is no Makefile. The repo dogfoods itself via `tasks.yaml` (run with an installed `taskctl`, or
-`go run . <target>`). Raw Go commands:
+There is no Makefile. The repo **dogfoods itself**: routine work (test, lint, format, completers)
+runs through taskctl's own task definitions in `tasks.yaml`, driven from the current source — so
+every dev loop also exercises the tool being changed. Use the machine-readable interface described
+by the bundled taskctl skill (`.agents/skills/taskctl/SKILL.md`); don't parse `tasks.yaml` or
+hand-sequence its commands in bash.
 
 ```bash
-go build -o bin/taskctl .          # build
-go test ./...                      # all tests
-go test -race ./...                # race detector (CI runs this)
+go run . --output json list                       # discover tasks/pipelines (always current source)
+go run . --output json show <task-or-pipeline>    # inspect resolved commands and the stage DAG
+go run . --output json --no-input <target>        # run; run_finished.status is the source of truth
+```
+
+`go run .` is the default invocation — it can never run a stale binary. For repeated runs, build
+once and use the binary (`go run . --output json --no-input build-host`, then `./bin/taskctl ...`);
+rebuild after changing source.
+
+Common targets: `prepare` (tidy → test → format → lint → completers; run before wrapping up),
+`test`, `golangci-lint`, `fixcs`, `build-host` (host binary for dogfooding), `build`
+(cross-platform release binaries), `update-completers`. `list` gives the authoritative set.
+
+Raw Go commands — fallback for cases with no matching task, or to mirror CI exactly:
+
+```bash
+go test -race ./...                # race detector (CI runs -v -race; no task for this)
 go test -run TestName ./runner/    # single test in one package
-golangci-lint run                  # lint (golangci-lint v2; config in .golangci.yml)
-go run . <pipeline-or-task>        # run the tool from source
-go run . completion zsh            # regenerate shell completers (see update-completers task)
+golangci-lint run                  # lint directly (golangci-lint v2; config in .golangci.yml)
+go build -o bin/taskctl .          # host build without taskctl (same as build-host task)
 ```
 
 CI (`.github/workflows/pull-request-checks.yml`) gates PRs on `golangci-lint` + `go test -v -race ./...`.
@@ -32,9 +48,9 @@ Go version is pinned in `go.mod` (currently 1.26). Release is handled by GoRelea
 Execution flows through two layers — a pipeline DAG on top, single-task compilation underneath.
 
 **Entry** — `main.go` → `cmd.Run(version)` builds a `urfave/cli/v2` app (`cmd/cmd.go`). Subcommands
-live in `cmd/*.go` (run, init, list, show, watch, completion, graph, validate). The root action with
-no target opens an interactive `promptui` selector. A background goroutine (`listenSignals`) turns
-SIGINT/SIGTERM into a context cancel.
+live in `cmd/*.go` (run, init, list, show, watch, completion, graph, validate, skill). The root action
+with no target opens an interactive `huh` selector (via `internal/tui`). A background goroutine
+(`listenSignals`) turns SIGINT/SIGTERM into a context cancel.
 
 **Config** — `internal/config`. `Loader` (`loader.go`) reads YAML/JSON/TOML, resolves `import:`
 entries (local files, directories, or remote URLs), and merges them with `dario.cat/mergo`. Raw maps
@@ -92,8 +108,11 @@ dashboard). Keep these focused; don't reintroduce a grab-bag utils package. `huh
 - Prefer stdlib generics helpers already adopted here: `maps.Keys`+`slices.Collect`, `slices.*`,
   `strings.Cut`.
 - Logging is `log/slog` (level set from `--debug`/`TASKCTL_DEBUG`).
-- The reusable core packages (`runner`, `scheduler`, `task`, `executor`, `variables`) have doc
-  comments on exported symbols — maintain them.
+- Comments are concise — one line by default. Always comment exported (public) symbols; the reusable
+  core packages (`runner`, `scheduler`, `task`, `executor`, `variables`) carry doc comments on every
+  exported symbol — maintain them. For unexported methods and variables, comment only when genuinely
+  needed — when what the code does, or why a variable exists, is not obvious from the code itself.
+  Don't restate the obvious.
 - Every package has table-style `_test.go` tests alongside; `cmd/` and `internal/config/` use
   `testdata/` fixtures.
 
@@ -103,5 +122,17 @@ dashboard). Keep these focused; don't reintroduce a grab-bag utils package. `huh
   code — surface assumptions, edge cases, and trade-offs up front. Don't start editing while the
   design is still open.
 - **Run tests and linters once, at the end** — not after every intermediate stage. Make the full set
-  of changes, then run `go test -race ./...` and `golangci-lint run` as a final verification pass
-  before wrapping up.
+  of changes, then verify by dogfooding: `go run . --output json --no-input prepare` (tidy, test,
+  format, lint, completers), plus `go test -race ./...` for the race gate CI enforces (no task
+  covers it). Check the tree is clean afterwards — `prepare` rewrites formatting and generated
+  files, and an unexpected diff means something drifted.
+- **Sync the docs before every PR.** Before opening or updating a pull request, invoke the
+  `docs-sync` agent (`.claude/agents/docs-sync.md`) so `README.md` and `docs/` reflect the change
+  set. Don't hand-wave this — the agent reconciles docs against the actual diff and fixes drift.
+
+## Agent skill (single source of truth)
+
+The taskctl agent skill lives once at `.agents/skills/taskctl/SKILL.md`. It is embedded into the
+binary from `main.go` (go:embed, then injected into `cmd` via `SetSkillTemplate`) and shipped by
+`taskctl skill install`; `.claude/skills/taskctl` symlinks to it so this repo's own agents use the
+same copy. Edit only the canonical file — never a copy.

@@ -65,16 +65,26 @@ func newInitCommand() *cli.Command {
 			// PromptReader so piped input survives across them (see tui docs).
 			in := tui.PromptReader(stdin)
 
-			filename, err := tui.Select(in, "Choose file name", tui.StringItems(config.DefaultFileNames))
-			if err != nil {
-				if errors.Is(err, tui.ErrAborted) {
-					return nil
+			var filename string
+			if nonInteractive(c) {
+				filename = config.DefaultFileNames[0]
+			} else {
+				var err error
+				filename, err = tui.Select(in, "Choose file name", tui.StringItems(config.DefaultFileNames))
+				if err != nil {
+					if errors.Is(err, tui.ErrAborted) {
+						return nil
+					}
+					return err
 				}
-				return err
 			}
 
 			file := filepath.Join(dir, filename)
 			if fsutil.FileExists(file) {
+				if nonInteractive(c) {
+					return fmt.Errorf("%s already exists; remove it or run interactively to overwrite", file)
+				}
+
 				overwrite, err := tui.Confirm(in, fmt.Sprintf("%s already exists. Overwrite?", filename))
 				if err != nil {
 					if errors.Is(err, tui.ErrAborted) {

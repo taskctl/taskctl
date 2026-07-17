@@ -23,10 +23,18 @@ pipelines:
 
 tasks:
   test:
+    description: Run all Go tests
     command:
       - go test ./...
 
+  build-host:
+    description: Build taskctl for the host platform into bin/taskctl (dogfooding binary)
+    dir: "{{.Root}}"
+    command:
+      - go build -o bin/taskctl .
+
   build:
+    description: Cross-compile bin/taskctl_{linux,darwin,windows} release binaries
     command:
       - GOOS=${GOOS} GOARCH=amd64 go build -o bin/taskctl_${GOOS} .
     variations:
@@ -35,30 +43,35 @@ tasks:
       - GOOS: windows
 
   golangci-lint:
+    description: Lint with golangci-lint (config in .golangci.yml)
     command:
       - golangci-lint run
 
   goimports:
+    # Walk directories instead of globbing: taskctl's embedded shell has no
+    # globstar, so `**` patterns silently match nothing.
+    description: Group and sort imports across the repo
     command:
-      - goimports -v -local github.com/taskctl/taskctl -w -format-only $(ls -d internal/**/*.go)
-      - goimports -v -local github.com/taskctl/taskctl -w -format-only $(ls -d cmd/**/*.go)
+      - goimports -v -local github.com/taskctl/taskctl -w -format-only .
 
   goreleaser:
+    description: Build a release snapshot with GoReleaser
     command:
       - goreleaser --clean
 
   gofmt:
+    description: Format and simplify all Go sources (gofmt -s)
     dir: "{{.Root}}"
     command:
-      - go fmt -x ./...
-      - gofmt -s -w cmd/*.go
-      - gofmt -s -w internal/**/*.go
+      - gofmt -l -s -w .
 
   tidy:
+    description: Sync go.mod/go.sum with the source (go mod tidy)
     command:
       - go mod tidy
 
   update-completers:
+    description: Regenerate bash/zsh completion scripts in autocomplete/
     dir: "{{.Root}}"
     command:
       - rm -rf autocomplete/*
