@@ -89,10 +89,20 @@ func (o *TaskOutput) Finish() error {
 	return o.decorator.WriteFooter()
 }
 
-// Close releases resources and closes underlying decorators
+// Close releases resources and closes underlying decorators. For cockpit output
+// it blocks until the dashboard program has fully shut down (final lines
+// flushed, terminal restored).
 func Close() {
 	if !closed {
 		closed = true
 		close(closeCh)
+
+		baseMu.Lock()
+		b := base
+		baseMu.Unlock()
+
+		if b != nil {
+			b.wait()
+		}
 	}
 }

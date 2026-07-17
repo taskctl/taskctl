@@ -10,7 +10,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/taskctl/taskctl/internal/schema"
-	"github.com/taskctl/taskctl/output"
+	"github.com/taskctl/taskctl/internal/output"
 )
 
 var showTmpl = `

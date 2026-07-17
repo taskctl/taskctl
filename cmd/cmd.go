@@ -16,33 +16,17 @@ import (
 
 	"github.com/taskctl/taskctl/runner"
 
-	"github.com/logrusorgru/aurora"
-	"github.com/manifoldco/promptui"
-	"github.com/mattn/go-isatty"
-
 	"github.com/urfave/cli/v2"
 
 	"github.com/taskctl/taskctl/internal/config"
-	"github.com/taskctl/taskctl/output"
+	"github.com/taskctl/taskctl/internal/output"
+	"github.com/taskctl/taskctl/internal/tui"
 )
 
 var stdin io.ReadCloser
 var cancelFn func()
 var cancelMu sync.Mutex
 var cfg *config.Config
-var au aurora.Aurora = aurora.NewAurora(false)
-
-func isTTY(fd uintptr) bool {
-	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
-}
-
-func defaultStdinIsTTY() bool  { return isTTY(os.Stdin.Fd()) }
-func defaultStdoutIsTTY() bool { return isTTY(os.Stdout.Fd()) }
-
-// stdinIsTTY / stdoutIsTTY report whether stdin / stdout are interactive
-// terminals. They are package-level vars so tests can stub them without a real TTY.
-var stdinIsTTY = defaultStdinIsTTY
-var stdoutIsTTY = defaultStdoutIsTTY
 
 func Stdin() io.ReadCloser {
 	return stdin
@@ -52,31 +36,12 @@ func SetStdin(newStdin io.ReadCloser) {
 	stdin = newStdin
 }
 
-// SetStdinIsTTY overrides the stdin TTY detection function; intended for
-// tests. Pass nil to restore the default isatty-based detection.
-func SetStdinIsTTY(f func() bool) {
-	if f == nil {
-		stdinIsTTY = defaultStdinIsTTY
-		return
-	}
-	stdinIsTTY = f
-}
-
-// SetStdoutIsTTY overrides the stdout TTY detection function; intended for
-// tests. Pass nil to restore the default isatty-based detection.
-func SetStdoutIsTTY(f func() bool) {
-	if f == nil {
-		stdoutIsTTY = defaultStdoutIsTTY
-		return
-	}
-	stdoutIsTTY = f
-}
-
-// nonInteractive reports whether the CLI should avoid interactive prompts:
-// when explicitly requested via --no-input/TASKCTL_NO_INPUT, when producing
-// machine-readable JSON output, or when stdin is not a terminal.
+// nonInteractive reports whether the CLI should skip prompts entirely and rely
+// on defaults: when explicitly requested via --no-input/TASKCTL_NO_INPUT, or
+// when producing machine-readable JSON output. A non-TTY stdin alone does not
+// count — huh still prompts in accessible (line-based) mode against a pipe.
 func nonInteractive(c *cli.Context) bool {
-	return c.Bool("no-input") || cfg.Output == output.FormatJSON || !stdinIsTTY()
+	return c.Bool("no-input") || cfg.Output == output.FormatJSON
 }
 
 func Run(version string) error {
@@ -201,11 +166,9 @@ func NewApp(version string) *cli.App {
 				cfg.DryRun = true
 			}
 
-			if cfg.Output == output.FormatCockpit && !stdoutIsTTY() {
+			if cfg.Output == output.FormatCockpit && !tui.Interactive(os.Stdout) {
 				cfg.Output = output.FormatPrefixed
 			}
-
-			au = aurora.NewAurora(stdoutIsTTY() && cfg.Output != output.FormatJSON)
 
 			return nil
 		},
@@ -261,38 +224,31 @@ func rootAction(c *cli.Context) (err error) {
 		return runTargets(targetNames(targets, false), c, taskRunner)
 	}
 
-	if nonInteractive(c) {
+	// No target: skip the selector when prompts are suppressed (--no-input/json)
+	// or stdin isn't a real terminal (the selector needs a TTY), rather than
+	// blocking on or silently running it.
+	if nonInteractive(c) || !tui.Interactive(stdin) {
 		return errors.New("no target specified; run 'taskctl list' to see available targets")
 	}
 
 	suggestions := buildSuggestions(cfg)
-	targetSelect := promptui.Select{
-		Label:        "Select task to Run",
-		Items:        suggestions,
-		Size:         15,
-		CursorPos:    0,
-		IsVimMode:    false,
-		HideHelp:     false,
-		HideSelected: false,
-		Templates: &promptui.SelectTemplates{
-			Active:   fmt.Sprintf("%s {{ .DisplayName | underline }}", promptui.IconSelect),
-			Inactive: "  {{ .DisplayName }}",
-			Selected: fmt.Sprintf(`{{ "%s" | green }} {{ .DisplayName | faint }}`, promptui.IconGood),
-		},
-		Keys: nil,
-		Searcher: func(input string, index int) bool {
-			return strings.Contains(suggestions[index].DisplayName, input)
-		},
-		StartInSearchMode: true,
+	if len(suggestions) == 0 {
+		return errors.New("no tasks or pipelines found in config")
 	}
 
-	fmt.Println("Please use `Ctrl-C` to exit this program.")
-	index, _, err := targetSelect.Run()
+	items := make([]tui.Item[suggestion], 0, len(suggestions))
+	for _, s := range suggestions {
+		items = append(items, tui.Item[suggestion]{Label: s.DisplayName, Value: s})
+	}
+
+	selection, err := tui.Select(stdin, "Select task to run", items)
 	if err != nil {
+		if errors.Is(err, tui.ErrAborted) {
+			return nil
+		}
 		return err
 	}
 
-	selection := suggestions[index]
 	if selection.IsTask {
 		return runTask(cfg.Tasks[selection.Target], taskRunner)
 	}
@@ -341,7 +297,7 @@ func buildSuggestions(cfg *config.Config) []suggestion {
 	for _, v := range slices.Collect(maps.Keys(cfg.Pipelines)) {
 		suggestions = append(suggestions, suggestion{
 			Target:      v,
-			DisplayName: fmt.Sprintf("%s - %s", v, au.Gray(12, "pipeline").String()),
+			DisplayName: fmt.Sprintf("%s - %s", v, "pipeline"),
 		})
 	}
 
@@ -352,7 +308,7 @@ func buildSuggestions(cfg *config.Config) []suggestion {
 		}
 		suggestions = append(suggestions, suggestion{
 			Target:      k,
-			DisplayName: fmt.Sprintf("%s - %s", k, au.Gray(12, desc).String()),
+			DisplayName: fmt.Sprintf("%s - %s", k, desc),
 			IsTask:      true,
 		})
 	}

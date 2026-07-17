@@ -6,8 +6,7 @@ import (
 	"io"
 	"regexp"
 
-	"github.com/logrusorgru/aurora"
-
+	"github.com/taskctl/taskctl/internal/tui"
 	"github.com/taskctl/taskctl/task"
 )
 
@@ -16,14 +15,16 @@ const ansi = "[\u001B\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)
 var ansiRegexp = regexp.MustCompile(ansi)
 
 type prefixedOutputDecorator struct {
-	t *task.Task
-	w io.Writer
+	t      *task.Task
+	w      io.Writer
+	prefix string
 }
 
 func newPrefixedOutputWriter(t *task.Task, w io.Writer) *prefixedOutputDecorator {
 	return &prefixedOutputDecorator{
-		t: t,
-		w: w,
+		t:      t,
+		w:      tui.NewWriter(w),
+		prefix: tui.StylePrefix.Render(t.Name),
 	}
 }
 
@@ -68,7 +69,7 @@ func (d *prefixedOutputDecorator) WriteFooter() error {
 func (d *prefixedOutputDecorator) writePrefixedLine(p []byte) (n int, err error) {
 	n = len(p)
 	p = ansiRegexp.ReplaceAllLiteral(p, []byte{})
-	_, err = fmt.Fprintf(d.w, "%s: %s\r\n", aurora.Cyan(d.t.Name), p)
+	_, err = fmt.Fprintf(d.w, "%s: %s\r\n", d.prefix, p)
 
 	return n, err
 }

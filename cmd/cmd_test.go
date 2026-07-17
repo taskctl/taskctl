@@ -2,13 +2,11 @@ package cmd_test
 
 import (
 	"bytes"
-	"encoding/binary"
 	"io"
 	"os"
 	"strings"
 	"testing"
 
-	"github.com/manifoldco/promptui"
 	"github.com/taskctl/taskctl/cmd"
 	"github.com/urfave/cli/v2"
 )
@@ -75,15 +73,18 @@ func runAppTest(app *cli.App, test appTest, t *testing.T) {
 	}
 }
 
-func stdinConfirm(t *testing.T, times int) *os.File {
-	tmpfile, err := os.CreateTemp("", "confirm")
+// stdinLines returns a non-TTY reader holding the given lines. huh runs in
+// accessible (line-based) mode against a non-terminal input, so a prompt
+// consumes one line per field: a 1-based option number for a select, "y"/"n"
+// for a confirm.
+func stdinLines(t *testing.T, lines ...string) *os.File {
+	tmpfile, err := os.CreateTemp("", "stdin")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	for range times {
-		err = binary.Write(tmpfile, binary.LittleEndian, promptui.KeyEnter)
-		if err != nil {
+	for _, line := range lines {
+		if _, err := tmpfile.WriteString(line + "\n"); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -126,11 +127,10 @@ func TestCustomOutputFormat(t *testing.T) {
 }
 
 func TestRootAction(t *testing.T) {
-	cmd.SetStdinIsTTY(func() bool { return true })
-	defer cmd.SetStdinIsTTY(nil)
-
 	tests := []appTest{
-		{args: []string{""}, output: []string{"Please use `Ctrl-C` to exit this program"}, errored: true},
+		// No target and a non-TTY stdin: taskctl refuses to guess rather than
+		// blocking on or silently running the interactive selector.
+		{args: []string{""}, errored: true},
 		{args: []string{"", "-c", "--quiet", "testdata/graph.yaml", "graph:task2"}, errored: true},
 
 		{args: []string{"", "--raw", "-c", "testdata/graph.yaml", "graph:task1"}, exactOutput: "hello, world!\n"},
@@ -146,10 +146,9 @@ func TestRootAction(t *testing.T) {
 	}
 }
 
+// --no-input forces non-interactive mode, so a bare invocation with no target
+// errors instead of opening the selector.
 func TestRootAction_NoInputFlagBlocksPrompt(t *testing.T) {
-	cmd.SetStdinIsTTY(func() bool { return true })
-	defer cmd.SetStdinIsTTY(nil)
-
 	app := makeTestApp()
 	runAppTest(app, appTest{
 		args:    []string{"", "--no-input"},
@@ -157,21 +156,9 @@ func TestRootAction_NoInputFlagBlocksPrompt(t *testing.T) {
 	}, t)
 }
 
-func TestRootAction_NonTTYStdinBlocksPrompt(t *testing.T) {
-	cmd.SetStdinIsTTY(func() bool { return false })
-	defer cmd.SetStdinIsTTY(nil)
-
-	app := makeTestApp()
-	runAppTest(app, appTest{
-		args:    []string{""},
-		errored: true,
-	}, t)
-}
-
+// With a non-TTY stdout, the cockpit dashboard degrades to prefixed output
+// rather than failing to render, so task output still appears.
 func TestCockpitDegradesWhenStdoutNotTTY(t *testing.T) {
-	cmd.SetStdoutIsTTY(func() bool { return false })
-	defer cmd.SetStdoutIsTTY(nil)
-
 	app := makeTestApp()
 	runAppTest(app, appTest{
 		args:   []string{"", "--cockpit", "-c", "testdata/graph.yaml", "graph:task1"},

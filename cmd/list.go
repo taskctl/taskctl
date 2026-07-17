@@ -12,7 +12,7 @@ import (
 
 	"github.com/taskctl/taskctl/internal/collections"
 	"github.com/taskctl/taskctl/internal/schema"
-	"github.com/taskctl/taskctl/output"
+	"github.com/taskctl/taskctl/internal/output"
 )
 
 var listTmpl = `Contexts:{{range $context := .Contexts}}

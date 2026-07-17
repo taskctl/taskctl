@@ -1,17 +1,5 @@
 output: cockpit
 pipelines:
-  build:
-    - name: Build "darwin"
-      task: build
-      env:
-        GOOS: darwin
-        BIN_OUT: bin/taskctl_darwin_amd64
-    - name: Build "linux"
-      task: build
-      env:
-        GOOS: linux
-        BIN_OUT: bin/taskctl_linux_amd64
-
   fixcs:
     - task: goimports
       dir: "{{.Root}}"

@@ -11,7 +11,8 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	"github.com/taskctl/taskctl/output"
+	"github.com/taskctl/taskctl/internal/output"
+	"github.com/taskctl/taskctl/internal/tui"
 	"github.com/taskctl/taskctl/runner"
 	"github.com/taskctl/taskctl/scheduler"
 	"github.com/taskctl/taskctl/task"
@@ -313,27 +314,27 @@ func printSummary(g *scheduler.ExecutionGraph) {
 		return a.Start.Compare(b.Start)
 	})
 
-	_, _ = fmt.Fprintln(os.Stdout, au.Bold("Summary:").String())
+	tui.Println(os.Stdout, tui.StyleBold.Render("Summary:"))
 
 	var log string
 	for _, stage := range stages {
 		switch stage.ReadStatus() {
 		case scheduler.StatusDone:
-			_, _ = fmt.Fprintln(os.Stdout, au.Sprintf(au.Green("- Stage %s was completed in %s"), stage.Name, stage.Duration()))
+			tui.Println(os.Stdout, tui.StyleSuccess.Render(fmt.Sprintf("- Stage %s was completed in %s", stage.Name, stage.Duration())))
 		case scheduler.StatusSkipped:
-			_, _ = fmt.Fprintln(os.Stdout, au.Sprintf(au.Green("- Stage %s was skipped"), stage.Name))
+			tui.Println(os.Stdout, tui.StyleSuccess.Render(fmt.Sprintf("- Stage %s was skipped", stage.Name)))
 		case scheduler.StatusError:
 			log = strings.TrimSpace(stage.Task.ErrorMessage())
-			_, _ = fmt.Fprintln(os.Stdout, au.Sprintf(au.Red("- Stage %s failed in %s"), stage.Name, stage.Duration()))
+			tui.Println(os.Stdout, tui.StyleError.Render(fmt.Sprintf("- Stage %s failed in %s", stage.Name, stage.Duration())))
 			if log != "" {
-				_, _ = fmt.Fprintln(os.Stdout, au.Sprintf(au.Red("  > %s"), log))
+				tui.Println(os.Stdout, tui.StyleError.Render(fmt.Sprintf("  > %s", log)))
 			}
 		case scheduler.StatusCanceled:
-			_, _ = fmt.Fprintln(os.Stdout, au.Sprintf(au.Gray(12, "- Stage %s was cancelled"), stage.Name))
+			tui.Println(os.Stdout, tui.StyleFaint.Render(fmt.Sprintf("- Stage %s was cancelled", stage.Name)))
 		default:
-			_, _ = fmt.Fprintln(os.Stdout, au.Sprintf(au.Red("- Unexpected status %d for stage %s"), stage.Status, stage.Name))
+			tui.Println(os.Stdout, tui.StyleError.Render(fmt.Sprintf("- Unexpected status %d for stage %s", stage.Status, stage.Name)))
 		}
 	}
 
-	_, _ = fmt.Fprintln(os.Stdout, au.Sprintf("%s: %s", au.Bold("Total duration"), au.Green(g.Duration())))
+	tui.Printf(os.Stdout, "%s: %s\n", tui.StyleBold.Render("Total duration"), tui.StyleSuccess.Render(g.Duration().String()))
 }
