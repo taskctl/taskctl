@@ -31,14 +31,7 @@ Do not guess what changed — derive it:
 
 - **README.md** — features list, CLI usage/flags, config examples, output
   formats, embeddable-API snippets, any command names or invocation forms.
-- **docs/example.yaml, docs/pipeline.yaml, docs/docker-compose.yaml** — must
-  parse under the current config schema and reflect current keys/behavior.
-- **docs/superpowers/specs/** and **docs/superpowers/plans/** — these are
-  **point-in-time design records**. Do NOT rewrite their narrative, restate
-  their decisions, or "freshen" them. Only correct a statement that is now
-  **factually false about shipped behavior** (e.g. a documented flag name that
-  was renamed), and when you do, keep the historical framing intact. Prefer
-  leaving them untouched; flag rather than rewrite when unsure.
+- **docs/** — must parse under the current config schema and reflect current keys/behavior.
 - **Never edit** binary/generated assets: `docs/logo.png`, `docs/pipeline.svg`.
 
 ## How to verify examples (don't just eyeball)

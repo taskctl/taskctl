@@ -17,21 +17,6 @@
 [![Maintainability](https://api.codeclimate.com/v1/badges/a99a88d28ad37a79dbf6/maintainability)](https://codeclimate.com/github/codeclimate/codeclimate/maintainability)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat)](https://github.com/taskctl/taskctl/pulls)
 
-# Stand with Ukraine!
-
----
-<p align="center">
-   <img align="center" src="https://github.blog/wp-content/uploads/2022/03/1200x630-GitHub-1.png?resize=320%2C240">
-</p>
-
-While Russia is destroying my home and my country, killing my friends and neighbors - any russian company, organization, or citizen, who do nothing about it,
-is prohibited from using this package.
-For others - please, pray for us, share information about war crimes Russia is conducting in Ukraine, do everything you can
-to urge your governments to be on the right side of history.
-Ukraine will prevail! Good triumph over evil! Русский военный корабль, иди нах#й!
-
----
-
 Simple modern alternative to GNU Make. *taskctl* is concurrent task runner that allows you to design you routine tasks and development pipelines in nice and neat way in human-readable format (YAML, JSON or TOML). 
 Given a pipeline (composed of tasks or other pipelines) it builds a graph that outlines the execution plan. Each task my run concurrently or cascade.
 Beside pipelines, each single task can be started manually or triggered by built-in filesystem watcher.
@@ -106,11 +91,14 @@ taskctl has a machine-readable CLI surface designed for use by AI agents and oth
 
 ```json
 {
-  "name": "lint",
-  "commands": ["golint ./..."],
-  "env": {},
-  "variables": {},
-  "allow_failure": false
+  "schema_version": 1,
+  "task": {
+    "name": "lint",
+    "commands": ["golint ./..."],
+    "env": {},
+    "variables": {},
+    "allow_failure": false
+  }
 }
 ```
 
@@ -118,10 +106,13 @@ Pipelines are shown as a name plus an ordered list of stages, each with its task
 
 ```json
 {
-  "name": "release",
-  "stages": [
-    {"name": "build", "task": "build", "depends_on": ["lint", "test"], "allow_failure": false}
-  ]
+  "schema_version": 1,
+  "pipeline": {
+    "name": "release",
+    "stages": [
+      {"name": "build", "task": "build", "depends_on": ["lint", "test"], "allow_failure": false}
+    ]
+  }
 }
 ```
 
@@ -161,6 +152,7 @@ Separately, `--cockpit` (the live full-screen dashboard) requires an interactive
 - `--force` overwrites an existing installation.
 
 ## Contents  
+- [taskctl for AI agents](#taskctl-for-ai-agents)
 - [Getting started](#getting-started)
   - [Installation](#install)
   - [Usage](#usage)
@@ -410,6 +402,7 @@ Taskctl has several output formats:
 - `raw` - prints raw commands output
 - `prefixed` - strips ANSI escape sequences where possible, prefixes command output with task's name
 - `cockpit` - tasks dashboard
+- `json` - newline-delimited JSON event stream for machine consumption (see [taskctl for AI agents](#taskctl-for-ai-agents))
 
 ## Filesystem watchers
 Watcher watches for changes in files selected by provided patterns and triggers task anytime an event has occurred.
