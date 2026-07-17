@@ -8,6 +8,7 @@ import (
 	"slices"
 
 	"github.com/taskctl/taskctl/internal/collections"
+	"github.com/taskctl/taskctl/internal/tmpl"
 	"github.com/taskctl/taskctl/scheduler"
 	"github.com/taskctl/taskctl/task"
 )
@@ -55,9 +56,12 @@ type PipelineDetail struct {
 }
 
 // StageDetail describes a single stage within a pipeline's execution graph.
+// Exactly one of Task or Pipeline is set: Task names the task the stage runs,
+// Pipeline marks the stage as a nested sub-pipeline.
 type StageDetail struct {
 	Name         string   `json:"name"`
 	Task         string   `json:"task,omitempty"`
+	Pipeline     string   `json:"pipeline,omitempty"`
 	DependsOn    []string `json:"depends_on"`
 	Condition    string   `json:"condition,omitempty"`
 	AllowFailure bool     `json:"allow_failure"`
@@ -72,8 +76,11 @@ func NewTaskSummary(t *task.Task) TaskSummary {
 	}
 }
 
-// NewTaskDetail builds a TaskDetail from a task.Task.
-func NewTaskDetail(t *task.Task) TaskDetail {
+// NewTaskDetail builds a TaskDetail from a task.Task. vars carries the
+// config-level variables (e.g. Root, TempDir) merged under the task's own,
+// used to render templated fields such as dir; templates that need runtime
+// values are left as-is.
+func NewTaskDetail(t *task.Task, vars map[string]any) TaskDetail {
 	detail := TaskDetail{
 		Name:         t.Name,
 		Description:  t.Description,
@@ -81,7 +88,7 @@ func NewTaskDetail(t *task.Task) TaskDetail {
 		Commands:     collections.OrEmpty(t.Commands),
 		Env:          stringifyMap(t.Env.Map()),
 		Variables:    stringifyMap(t.Variables.Map()),
-		Dir:          t.Dir,
+		Dir:          renderOrRaw(t.Dir, vars),
 		AllowFailure: t.AllowFailure,
 		Condition:    t.Condition,
 	}
@@ -108,9 +115,17 @@ func NewPipelineDetail(name string, g *scheduler.ExecutionGraph) PipelineDetail 
 			taskName = stage.Task.Name
 		}
 
+		// A stage runs either a task or a nested sub-pipeline; the stage name
+		// is the sub-pipeline's name in the latter case.
+		pipelineName := ""
+		if stage.Pipeline != nil {
+			pipelineName = stage.Name
+		}
+
 		stages = append(stages, StageDetail{
 			Name:         stage.Name,
 			Task:         taskName,
+			Pipeline:     pipelineName,
 			DependsOn:    collections.OrEmpty(stage.DependsOn),
 			Condition:    stage.Condition,
 			AllowFailure: stage.AllowFailure,
@@ -135,6 +150,17 @@ func NewPipelineSummary(name string, g *scheduler.ExecutionGraph) PipelineSummar
 
 func sortedStageNames(nodes map[string]*scheduler.Stage) []string {
 	return slices.Sorted(maps.Keys(nodes))
+}
+
+// renderOrRaw renders s as a template with vars, falling back to the raw
+// string when rendering fails (e.g. the template needs runtime-only values).
+func renderOrRaw(s string, vars map[string]any) string {
+	rendered, err := tmpl.RenderString(s, vars)
+	if err != nil {
+		return s
+	}
+
+	return rendered
 }
 
 func stringifyMap(m map[string]any) map[string]string {

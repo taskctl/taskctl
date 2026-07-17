@@ -6,6 +6,7 @@ import (
 	"io"
 	"sync"
 
+	"github.com/taskctl/taskctl/internal/collections"
 	"github.com/taskctl/taskctl/task"
 )
 
@@ -54,6 +55,7 @@ type RunFinishedEvent struct {
 	Status     string       `json:"status"`
 	DurationMs int64        `json:"duration_ms"`
 	Tasks      []TaskResult `json:"tasks"`
+	Error      string       `json:"error,omitempty"`
 }
 
 // eventMu guards every NDJSON event write so that concurrent tasks writing
@@ -91,12 +93,15 @@ func EmitRunStarted(w io.Writer, targets []string) error {
 }
 
 // EmitRunFinished writes the run_finished event that closes an NDJSON run stream.
-func EmitRunFinished(w io.Writer, status string, durationMs int64, results []TaskResult) error {
+// errMsg carries the run-level failure reason (empty on success) so consumers
+// don't have to correlate stderr with the event stream.
+func EmitRunFinished(w io.Writer, status string, durationMs int64, results []TaskResult, errMsg string) error {
 	return writeEvent(w, RunFinishedEvent{
 		Event:      "run_finished",
 		Status:     status,
 		DurationMs: durationMs,
-		Tasks:      results,
+		Tasks:      collections.OrEmpty(results),
+		Error:      errMsg,
 	})
 }
 

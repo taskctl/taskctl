@@ -102,7 +102,7 @@ taskctl has a machine-readable CLI surface designed for use by AI agents and oth
 }
 ```
 
-Pipelines are shown as a name plus a list of stages (sorted by stage name for stability), each with its task, dependencies and conditions:
+Pipelines are shown as a name plus a list of stages (sorted by stage name for stability), each with its task (or `pipeline` for nested sub-pipelines), dependencies and conditions:
 
 ```json
 {
@@ -132,15 +132,16 @@ taskctl --output json --no-input <task-or-pipeline>
 | `task_started` | `task` |
 | `task_output` | `task`, `stream` (`stdout`/`stderr`), `data` |
 | `task_finished` | `task`, `status` (`done`/`failed`/`skipped`), `exit_code`, `duration_ms`, `error` (on failure) |
-| `run_finished` | `status` (`done`/`failed`), `duration_ms`, `tasks` (array of `{task, status (done/failed/skipped/canceled), exit_code, duration_ms}`) |
+| `run_finished` | `status` (`done`/`failed`), `duration_ms`, `tasks` (array of `{task, status (done/failed/skipped/canceled), exit_code, duration_ms}`), `error` (on failure) |
 
 ### Non-interactive execution: `--no-input`
 
-By default taskctl may prompt interactively (e.g. for confirmation or input tasks). Non-interactive mode disables all of that, and is enabled automatically whenever any of the following is true:
+By default taskctl may prompt interactively (e.g. for confirmation or input tasks). Non-interactive mode disables all of that, and is enabled whenever either of the following is true:
 
 - `--no-input` is passed, or the `TASKCTL_NO_INPUT` environment variable is set
 - output format is `json`
-- stdin is not a TTY (e.g. taskctl is running under an agent harness or in a pipe)
+
+A non-TTY stdin (e.g. a pipe or an agent harness) does *not* by itself enable non-interactive mode — prompts still run in accessible, line-based mode against the pipe. It only affects the no-target case: when you run `taskctl` with no task or pipeline, the interactive selector requires a TTY, so on a non-TTY stdin taskctl errors with guidance instead of blocking. Pass `--no-input` (or `--output json`) to suppress prompts explicitly.
 
 Separately, `--cockpit` (the live full-screen dashboard) requires an interactive stdout; if stdout is not a TTY, taskctl automatically degrades cockpit output to `prefixed` output instead of failing.
 

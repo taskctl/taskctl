@@ -29,7 +29,8 @@ taskctl --output json show <task-or-pipeline>
 
 Tasks: resolved `commands`, `env`, `variables`, `dir`, `timeout_seconds`,
 `allow_failure`, `condition`. Pipelines: `stages` with `depends_on` edges
-(the execution DAG).
+(the execution DAG); a stage carries either `task` (the task it runs) or
+`pipeline` (a nested sub-pipeline).
 
 ## Execute
 
@@ -46,7 +47,7 @@ Stdout is an NDJSON event stream — one JSON object per line:
 | task_started | task |
 | task_output | task, stream (stdout/stderr), data (one line) |
 | task_finished | task, status (done/failed/skipped), exit_code, duration_ms, error |
-| run_finished | status (done/failed), duration_ms, tasks[] (per-task status: done/failed/skipped/canceled) |
+| run_finished | status (done/failed), duration_ms, tasks[] (per-task status: done/failed/skipped/canceled), error (present on failure) |
 
 `run_finished.status` is the source of truth for success. Exit code is 0 on
 success, non-zero on failure. taskctl's own diagnostics go to stderr.

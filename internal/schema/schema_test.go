@@ -68,7 +68,7 @@ func TestNewTaskSummary(t *testing.T) {
 
 func TestNewTaskDetail(t *testing.T) {
 	tk := buildTestTask()
-	detail := NewTaskDetail(tk)
+	detail := NewTaskDetail(tk, nil)
 
 	if detail.Name != "build" {
 		t.Errorf("expected name %q, got %q", "build", detail.Name)
@@ -109,11 +109,27 @@ func TestNewTaskDetail(t *testing.T) {
 	}
 }
 
+func TestNewTaskDetailRendersDir(t *testing.T) {
+	tk := buildTestTask()
+	tk.Dir = "{{.Root}}/sub"
+
+	detail := NewTaskDetail(tk, map[string]any{"Root": "/repo"})
+	if detail.Dir != "/repo/sub" {
+		t.Errorf("expected rendered dir /repo/sub, got %q", detail.Dir)
+	}
+
+	// Unresolvable templates fall back to the raw string.
+	detail = NewTaskDetail(tk, nil)
+	if detail.Dir != "{{.Root}}/sub" {
+		t.Errorf("expected raw dir on render failure, got %q", detail.Dir)
+	}
+}
+
 func TestNewTaskDetailOmitsEmptyOptionalFields(t *testing.T) {
 	tk := task.NewTask()
 	tk.Name = "noop"
 
-	detail := NewTaskDetail(tk)
+	detail := NewTaskDetail(tk, nil)
 
 	data, err := json.Marshal(detail)
 	if err != nil {
@@ -154,6 +170,9 @@ func TestNewPipelineDetail(t *testing.T) {
 	if detail.Stages[1].Task != "" {
 		t.Errorf("expected format stage task to be empty, got %q", detail.Stages[1].Task)
 	}
+	if detail.Stages[0].Pipeline != "" || detail.Stages[1].Pipeline != "" {
+		t.Errorf("expected no pipeline markers on task stages, got %+v", detail.Stages)
+	}
 
 	data, err := json.Marshal(detail)
 	if err != nil {
@@ -166,6 +185,35 @@ func TestNewPipelineDetail(t *testing.T) {
 	}
 	if _, ok := m["stages"]; !ok {
 		t.Errorf("expected snake_case key \"stages\" in %s", data)
+	}
+}
+
+func TestNewPipelineDetailMarksSubPipelineStages(t *testing.T) {
+	sub, err := scheduler.NewExecutionGraph()
+	if err != nil {
+		t.Fatalf("failed to build sub graph: %v", err)
+	}
+
+	g, err := scheduler.NewExecutionGraph(
+		&scheduler.Stage{Name: "lints", Pipeline: sub},
+		&scheduler.Stage{Name: "build", Task: buildTestTask()},
+	)
+	if err != nil {
+		t.Fatalf("failed to build execution graph: %v", err)
+	}
+
+	detail := NewPipelineDetail("mypipeline", g)
+	for _, stage := range detail.Stages {
+		switch stage.Name {
+		case "lints":
+			if stage.Pipeline != "lints" || stage.Task != "" {
+				t.Errorf("expected sub-pipeline marker on lints stage, got %+v", stage)
+			}
+		case "build":
+			if stage.Pipeline != "" || stage.Task != "build" {
+				t.Errorf("expected task marker on build stage, got %+v", stage)
+			}
+		}
 	}
 }
 

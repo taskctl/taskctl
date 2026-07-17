@@ -9,8 +9,8 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	"github.com/taskctl/taskctl/internal/schema"
 	"github.com/taskctl/taskctl/internal/output"
+	"github.com/taskctl/taskctl/internal/schema"
 )
 
 var showTmpl = `
@@ -63,10 +63,13 @@ func newShowCommand() *cli.Command {
 // pipelines, matching the plan's lookup order.
 func encodeShowJSON(name string) error {
 	if t := cfg.Tasks[name]; t != nil {
+		// Mirror the compiler's precedence: task variables override config ones.
+		vars := cfg.Variables.Merge(t.Variables).Map()
+
 		return json.NewEncoder(os.Stdout).Encode(struct {
 			SchemaVersion int               `json:"schema_version"`
 			Task          schema.TaskDetail `json:"task"`
-		}{1, schema.NewTaskDetail(t)})
+		}{1, schema.NewTaskDetail(t, vars)})
 	}
 
 	if g := cfg.Pipelines[name]; g != nil {

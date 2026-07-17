@@ -11,17 +11,33 @@ CLI-only support (interactive prompts and output rendering) lives under `interna
 
 ## Commands
 
-There is no Makefile. The repo dogfoods itself via `tasks.yaml` (run with an installed `taskctl`, or
-`go run . <target>`). Raw Go commands:
+There is no Makefile. The repo **dogfoods itself**: routine work (test, lint, format, completers)
+runs through taskctl's own task definitions in `tasks.yaml`, driven from the current source — so
+every dev loop also exercises the tool being changed. Use the machine-readable interface described
+by the bundled taskctl skill (`.agents/skills/taskctl/SKILL.md`); don't parse `tasks.yaml` or
+hand-sequence its commands in bash.
 
 ```bash
-go build -o bin/taskctl .          # build
-go test ./...                      # all tests
-go test -race ./...                # race detector (CI runs this)
+go run . --output json list                       # discover tasks/pipelines (always current source)
+go run . --output json show <task-or-pipeline>    # inspect resolved commands and the stage DAG
+go run . --output json --no-input <target>        # run; run_finished.status is the source of truth
+```
+
+`go run .` is the default invocation — it can never run a stale binary. For repeated runs, build
+once and use the binary (`go run . --output json --no-input build-host`, then `./bin/taskctl ...`);
+rebuild after changing source.
+
+Common targets: `prepare` (tidy → test → format → lint → completers; run before wrapping up),
+`test`, `golangci-lint`, `fixcs`, `build-host` (host binary for dogfooding), `build`
+(cross-platform release binaries), `update-completers`. `list` gives the authoritative set.
+
+Raw Go commands — fallback for cases with no matching task, or to mirror CI exactly:
+
+```bash
+go test -race ./...                # race detector (CI runs -v -race; no task for this)
 go test -run TestName ./runner/    # single test in one package
-golangci-lint run                  # lint (golangci-lint v2; config in .golangci.yml)
-go run . <pipeline-or-task>        # run the tool from source
-go run . completion zsh            # regenerate shell completers (see update-completers task)
+golangci-lint run                  # lint directly (golangci-lint v2; config in .golangci.yml)
+go build -o bin/taskctl .          # host build without taskctl (same as build-host task)
 ```
 
 CI (`.github/workflows/pull-request-checks.yml`) gates PRs on `golangci-lint` + `go test -v -race ./...`.
@@ -106,8 +122,10 @@ dashboard). Keep these focused; don't reintroduce a grab-bag utils package. `huh
   code — surface assumptions, edge cases, and trade-offs up front. Don't start editing while the
   design is still open.
 - **Run tests and linters once, at the end** — not after every intermediate stage. Make the full set
-  of changes, then run `go test -race ./...` and `golangci-lint run` as a final verification pass
-  before wrapping up.
+  of changes, then verify by dogfooding: `go run . --output json --no-input prepare` (tidy, test,
+  format, lint, completers), plus `go test -race ./...` for the race gate CI enforces (no task
+  covers it). Check the tree is clean afterwards — `prepare` rewrites formatting and generated
+  files, and an unexpected diff means something drifted.
 - **Sync the docs before every PR.** Before opening or updating a pull request, invoke the
   `docs-sync` agent (`.claude/agents/docs-sync.md`) so `README.md` and `docs/` reflect the change
   set. Don't hand-wave this — the agent reconciles docs against the actual diff and fixes drift.

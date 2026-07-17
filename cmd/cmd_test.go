@@ -7,8 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/taskctl/taskctl/cmd"
 	"github.com/urfave/cli/v2"
+
+	"github.com/taskctl/taskctl/cmd"
 )
 
 type appTest struct {

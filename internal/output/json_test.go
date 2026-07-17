@@ -197,7 +197,7 @@ func TestEmitRunStartedAndFinished(t *testing.T) {
 	results := []TaskResult{
 		{Task: "task1", Status: "done", ExitCode: 0, DurationMs: 5},
 	}
-	if err := EmitRunFinished(&buf, "done", 5, results); err != nil {
+	if err := EmitRunFinished(&buf, "done", 5, results, ""); err != nil {
 		t.Fatal(err)
 	}
 
@@ -218,6 +218,25 @@ func TestEmitRunStartedAndFinished(t *testing.T) {
 	}
 	if events[1]["status"] != "done" {
 		t.Errorf("expected status done, got %+v", events[1]["status"])
+	}
+}
+
+func TestEmitRunFinished_FailureCarriesErrorAndEmptyTasks(t *testing.T) {
+	var buf bytes.Buffer
+
+	if err := EmitRunFinished(&buf, "failed", 0, nil, "unknown task or pipeline nope"); err != nil {
+		t.Fatal(err)
+	}
+
+	events := decodeLines(t, buf.Bytes())
+	ev := events[0]
+
+	if ev["error"] != "unknown task or pipeline nope" {
+		t.Errorf("expected error message in run_finished, got %+v", ev["error"])
+	}
+	// nil results must marshal as [], not null, so consumers can range over it.
+	if tasks, ok := ev["tasks"].([]any); !ok || len(tasks) != 0 {
+		t.Errorf("expected tasks to be an empty array, got %+v", ev["tasks"])
 	}
 }
 

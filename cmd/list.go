@@ -11,8 +11,8 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/taskctl/taskctl/internal/collections"
-	"github.com/taskctl/taskctl/internal/schema"
 	"github.com/taskctl/taskctl/internal/output"
+	"github.com/taskctl/taskctl/internal/schema"
 )
 
 var listTmpl = `Contexts:{{range $context := .Contexts}}

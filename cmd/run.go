@@ -131,18 +131,18 @@ func runTarget(name string, c *cli.Context, taskRunner *runner.TaskRunner) (g *s
 	if p != nil {
 		err = runPipeline(p, taskRunner, cfg.Summary || c.Bool("summary"))
 		if err != nil {
-			return p, nil, fmt.Errorf("pipeline %s failed: %w", name, err)
+			return p, nil, fmt.Errorf("pipeline %q failed: %w", name, err)
 		}
 		return p, nil, nil
 	}
 
 	t = cfg.Tasks[name]
 	if t == nil {
-		return nil, nil, fmt.Errorf("unknown task or pipeline %s", name)
+		return nil, nil, fmt.Errorf("unknown task or pipeline %q", name)
 	}
 	err = runTask(t, taskRunner)
 	if err != nil {
-		return nil, t, fmt.Errorf("task %s failed: %w", name, err)
+		return nil, t, fmt.Errorf("task %q failed: %w", name, err)
 	}
 
 	return nil, t, nil
@@ -263,7 +263,12 @@ func emitRunFinished(graphs []*scheduler.ExecutionGraph, tasks []*task.Task, run
 		status = "failed"
 	}
 
-	_ = output.EmitRunFinished(os.Stdout, status, totalDuration.Milliseconds(), results)
+	errMsg := ""
+	if runErr != nil {
+		errMsg = runErr.Error()
+	}
+
+	_ = output.EmitRunFinished(os.Stdout, status, totalDuration.Milliseconds(), results, errMsg)
 }
 
 // stageStatus maps a scheduler stage status to the NDJSON status vocabulary.
