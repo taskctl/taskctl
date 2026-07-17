@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"maps"
 	"os"
+	"slices"
 	"strings"
 
 	"mvdan.cc/sh/v3/expand"
@@ -28,8 +30,20 @@ type Executor interface {
 type DefaultExecutor struct {
 	dir    string
 	env    []string
-	interp *interp.Runner
+	stdin  io.Reader
+	stdout io.Writer
+	stderr io.Writer
 	buf    bytes.Buffer
+
+	// interp is reused across consecutive jobs sharing the same environment so
+	// that shell state (functions, variables, cwd) set by one command is
+	// visible to the next. lastEnv records the environment it was built with;
+	// when a job's environment differs (e.g. the next task variation) a fresh
+	// interpreter is created — interp.Runner snapshots its environment on first
+	// Run and ignores later Env mutations, so reuse alone would leak the first
+	// job's environment into every subsequent variation.
+	interp  *interp.Runner
+	lastEnv map[string]string
 }
 
 // NewDefaultExecutor creates new default executor
@@ -52,12 +66,9 @@ func NewDefaultExecutor(stdin io.Reader, stdout, stderr io.Writer) (*DefaultExec
 		stderr = io.Discard
 	}
 
-	e.interp, err = interp.New(
-		interp.StdIO(stdin, io.MultiWriter(&e.buf, stdout), io.MultiWriter(&e.buf, stderr)),
-	)
-	if err != nil {
-		return nil, err
-	}
+	e.stdin = stdin
+	e.stdout = io.MultiWriter(&e.buf, stdout)
+	e.stderr = io.MultiWriter(&e.buf, stderr)
 
 	return e, nil
 }
@@ -75,8 +86,7 @@ func (e *DefaultExecutor) Execute(ctx context.Context, job *Job) ([]byte, error)
 		return nil, err
 	}
 
-	env := e.env
-	env = append(env, envutil.ConvertEnv(envutil.ConvertToMapOfStrings(job.Env.Map()))...)
+	jobEnv := envutil.ConvertToMapOfStrings(job.Env.Map())
 
 	if job.Dir == "" {
 		job.Dir = e.dir
@@ -84,8 +94,22 @@ func (e *DefaultExecutor) Execute(ctx context.Context, job *Job) ([]byte, error)
 
 	slog.Debug(fmt.Sprintf("Executing \"%s\"", command))
 
-	e.interp.Dir = job.Dir
-	e.interp.Env = expand.ListEnviron(env...)
+	// Reuse the interpreter while the environment is unchanged so shell state
+	// (functions, variables, cwd) carries across a task's commands; rebuild it
+	// when the environment changes (a new variation) so each variation runs
+	// with its own environment and a clean state.
+	if e.interp == nil || !maps.Equal(jobEnv, e.lastEnv) {
+		env := append(slices.Clone(e.env), envutil.ConvertEnv(jobEnv)...)
+		e.interp, err = interp.New(
+			interp.StdIO(e.stdin, e.stdout, e.stderr),
+			interp.Dir(job.Dir),
+			interp.Env(expand.ListEnviron(env...)),
+		)
+		if err != nil {
+			return nil, err
+		}
+		e.lastEnv = jobEnv
+	}
 
 	var cancelFn context.CancelFunc
 	if job.Timeout != nil {
