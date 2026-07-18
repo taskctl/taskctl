@@ -227,7 +227,7 @@ func rootAction(c *cli.Context) (err error) {
 
 	targets := c.Args().Slice()
 	if len(targets) > 0 {
-		return runTargets(targetNames(targets, false), c, taskRunner)
+		return runTargets(targetNames(targets, false), taskRunner, summaryEnabled(c))
 	}
 
 	// No target: skip the selector when prompts are suppressed (--no-input/json)
@@ -255,11 +255,7 @@ func rootAction(c *cli.Context) (err error) {
 		return err
 	}
 
-	if selection.IsTask {
-		return runTask(cfg.Tasks[selection.Target], taskRunner)
-	}
-
-	return runPipeline(cfg.Pipelines[selection.Target], taskRunner, cfg.Summary || c.Bool("summary"))
+	return runTargets([]string{selection.Target}, taskRunner, summaryEnabled(c))
 }
 
 func buildTaskRunner(ctx context.Context, c *cli.Context) (*runner.TaskRunner, error) {

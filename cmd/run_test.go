@@ -9,9 +9,15 @@ func Test_runCommand(t *testing.T) {
 	tests := []appTest{
 		{args: []string{"", "--raw", "-c", "testdata/graph.yaml", "run", "graph:task2"}, errored: true},
 		{args: []string{"", "--raw", "-c", "testdata/graph.yaml", "run"}, errored: true},
+		// raw output defaults the summary off, so command output stays clean.
 		{args: []string{"", "--raw", "-c", "testdata/graph.yaml", "run", "graph:task1"}, exactOutput: "hello, world!\n"},
 		{args: []string{"", "--raw", "-c", "testdata/graph.yaml", "run", "task", "graph:task1"}, exactOutput: "hello, world!\n"},
-		{args: []string{"", "--raw", "-c", "testdata/graph.yaml", "run", "pipeline", "graph:pipeline1"}, output: []string{"graph:task3", "hello, world!\n"}},
+		// but an explicit --summary opts raw back in.
+		{args: []string{"", "--raw", "-c", "testdata/graph.yaml", "run", "--summary", "graph:task1"}, output: []string{"hello, world!", "succeeded", "total"}},
+		// a root-level --summary=false must not be shadowed by the run
+		// command's own (unset, default-true) flag declaration.
+		{args: []string{"", "--output=prefixed", "--summary=false", "-c", "testdata/graph.yaml", "run", "graph:task1"}, output: []string{"hello, world!"}, absent: []string{"succeeded", "total"}},
+		{args: []string{"", "--raw", "-c", "testdata/graph.yaml", "run", "--summary", "pipeline", "graph:pipeline1"}, output: []string{"graph:task3", "hello, world!\n"}},
 		{
 			args:   []string{"", "--output=prefixed", "-c", "testdata/graph.yaml", "run", "graph:pipeline1"},
 			output: []string{"graph:task1", "graph:task2", "graph:task3", "hello, world!"},
@@ -66,6 +72,28 @@ func Test_runCommand_json(t *testing.T) {
 	tasks, ok := last["tasks"].([]any)
 	if !ok || len(tasks) == 0 {
 		t.Errorf("expected run_finished.tasks to be a non-empty array, got %+v", last["tasks"])
+	}
+}
+
+// Test_runCommandSummary asserts the end-of-run summary is printed in a human
+// output mode: for a single-task run (the summary now extends to single tasks)
+// and for a pipeline (exercising summarizeGraph over stages, including the
+// nested sub-pipeline node). --output json is verified summary-free.
+func Test_runCommandSummary(t *testing.T) {
+	tests := []appTest{
+		{
+			args:   []string{"", "--output=prefixed", "-c", "testdata/graph.yaml", "graph:task1"},
+			output: []string{"hello, world!", "succeeded", "total"},
+		},
+		{
+			args:   []string{"", "--output=prefixed", "-c", "testdata/graph.yaml", "run", "graph:pipeline1"},
+			output: []string{"succeeded", "total", "graph:task1"},
+		},
+	}
+
+	for _, v := range tests {
+		app := makeTestApp()
+		runAppTest(t, app, v)
 	}
 }
 
