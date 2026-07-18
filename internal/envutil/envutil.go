@@ -22,10 +22,10 @@ func ConvertEnv(env map[string]string) []string {
 	return enva
 }
 
-// OverlayEnviron merges overlay onto a base environment (both in "key=value"
-// form / a map), letting overlay values win over base entries with the same
-// key. Base entries shadowed by overlay are dropped, then overlay is appended,
-// so the caller does not depend on a downstream dedup rule to decide precedence.
+// OverlayEnviron merges overlay onto base (base in "key=value" form, overlay as a map).
+// For exact key matches, it drops shadowed base entries before appending overlay,
+// making precedence explicit. The result may still contain duplicates from base;
+// callers may still pass the list through a normalization/dedup step (e.g. Windows case-folding).
 func OverlayEnviron(base []string, overlay map[string]string) []string {
 	merged := make([]string, 0, len(base)+len(overlay))
 	for _, kv := range base {
