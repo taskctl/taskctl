@@ -2,6 +2,7 @@ package task
 
 import (
 	"testing"
+	"time"
 )
 
 func TestTask(t *testing.T) {
@@ -16,7 +17,12 @@ func TestTask(t *testing.T) {
 		t.Error("task's env creation failed")
 	}
 
-	if task.Duration().Seconds() <= 0 {
+	if task.Duration() != 0 {
+		t.Error("task that never started must report zero duration")
+	}
+
+	task.Start = time.Now().Add(-time.Second)
+	if task.Duration() <= 0 {
 		t.Error()
 	}
 }

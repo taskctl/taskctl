@@ -71,8 +71,28 @@ func FromCommands(commands ...string) *Task {
 	return t
 }
 
+// Clone returns a copy of the task with fresh execution state (status, exit
+// code, timings, logs) for an independent run of the same definition.
+func (t *Task) Clone() *Task {
+	c := *t
+	c.Start = time.Time{}
+	c.End = time.Time{}
+	c.ExitCode = -1
+	c.Errored = false
+	c.Error = nil
+	c.Skipped = false
+	c.Log.Stdout = bytes.Buffer{}
+	c.Log.Stderr = bytes.Buffer{}
+
+	return &c
+}
+
 // Duration returns task's execution duration
 func (t *Task) Duration() time.Duration {
+	if t.Start.IsZero() {
+		return 0
+	}
+
 	if t.End.IsZero() {
 		return time.Since(t.Start)
 	}

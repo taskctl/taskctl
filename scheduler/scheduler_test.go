@@ -116,6 +116,93 @@ func TestExecutionGraph_Scheduler_AllowFailure(t *testing.T) {
 	schdlr.Finish()
 }
 
+func TestScheduler_TaskVariablesSurviveStageMerge(t *testing.T) {
+	tsk := task.FromCommands("true")
+	tsk.Variables = variables.FromMap(map[string]string{"taskVar": "fromTask", "shared": "fromTask"})
+	tsk.Dir = "/task-dir"
+
+	stage1 := &Stage{
+		Name:      "stage1",
+		Task:      tsk,
+		Variables: variables.FromMap(map[string]string{"stageVar": "fromStage", "shared": "fromStage"}),
+		Env:       variables.NewVariables(),
+		Dir:       "/stage-dir",
+	}
+
+	graph, err := NewExecutionGraph(stage1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	schdlr := NewScheduler(TestTaskRunner{})
+	if err = schdlr.Schedule(graph); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := stage1.Task.Variables.Get("taskVar"); got != "fromTask" {
+		t.Errorf("task-level variable lost after stage merge: got %v", got)
+	}
+
+	if got := stage1.Task.Variables.Get("stageVar"); got != "fromStage" {
+		t.Errorf("stage variable missing: got %v", got)
+	}
+
+	if got := stage1.Task.Variables.Get("shared"); got != "fromStage" {
+		t.Errorf("stage variable should override task variable: got %v", got)
+	}
+
+	if stage1.Task.Dir != "/stage-dir" {
+		t.Errorf("stage dir should override task dir: got %q", stage1.Task.Dir)
+	}
+
+	if tsk.Dir != "/task-dir" {
+		t.Errorf("stage dir leaked into the shared task definition: got %q", tsk.Dir)
+	}
+}
+
+func TestScheduler_SharedTaskClonedPerStage(t *testing.T) {
+	tsk := task.FromCommands("true")
+	tsk.Variables = variables.FromMap(map[string]string{"taskVar": "fromTask"})
+
+	stage1 := &Stage{
+		Name:      "stage1",
+		Task:      tsk,
+		Variables: variables.FromMap(map[string]string{"stage1Var": "one"}),
+	}
+	stage2 := &Stage{
+		Name:      "stage2",
+		Task:      tsk,
+		DependsOn: []string{"stage1"},
+		Variables: variables.FromMap(map[string]string{"stage2Var": "two"}),
+	}
+
+	graph, err := NewExecutionGraph(stage1, stage2)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	schdlr := NewScheduler(TestTaskRunner{})
+	if err = schdlr.Schedule(graph); err != nil {
+		t.Fatal(err)
+	}
+
+	if stage1.Task == tsk || stage2.Task == tsk || stage1.Task == stage2.Task {
+		t.Fatal("stages must run their own task clones")
+	}
+
+	if stage1.Task.Variables.Has("stage2Var") || stage2.Task.Variables.Has("stage1Var") {
+		t.Error("stage variables leaked into another stage's task")
+	}
+
+	if got := stage2.Task.Variables.Get("taskVar"); got != "fromTask" {
+		t.Errorf("task-level variable missing on clone: got %v", got)
+	}
+
+	if tsk.Variables.Has("stage1Var") || tsk.Variables.Has("stage2Var") {
+		t.Error("stage variables leaked into the shared task definition")
+	}
+}
+
 func TestSkippedStage(t *testing.T) {
 	stage1 := &Stage{
 		Name:      "stage1",
