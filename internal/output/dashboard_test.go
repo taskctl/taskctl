@@ -12,16 +12,27 @@ import (
 	"github.com/taskctl/taskctl/task"
 )
 
-func newTestDashboardDecorator() *dashboardOutputDecorator {
-	return newDashboardOutputWriter(&task.Task{Name: "task1"}, bytes.NewBuffer(nil), make(chan bool))
+// resetDashboard clears the process-wide dashboard singleton so each test starts
+// clean and tears down any program it started — the singleton is deliberately
+// never reset in production (see base), so this lives only in tests.
+func resetDashboard(t *testing.T) {
+	t.Helper()
+	baseMu.Lock()
+	base = nil
+	baseMu.Unlock()
+	closed = false
+	closeCh = make(chan bool)
+	t.Cleanup(Close)
+}
+
+func newTestDashboardDecorator(t *testing.T) *dashboardOutputDecorator {
+	t.Helper()
+	resetDashboard(t)
+	return newDashboardOutputWriter(&task.Task{Name: "task1"}, bytes.NewBuffer(nil), closeCh)
 }
 
 func Test_dashboardOutputDecorator(t *testing.T) {
-	// WriteHeader starts the process-wide bubbletea program; it quits only when
-	// closeCh closes, so drive base's channel here and close it to tear down —
-	// otherwise a later Close() (e.g. TestNewTaskOutput) blocks in p.Wait().
-	closeCh = make(chan bool)
-	dec := newDashboardOutputWriter(&task.Task{Name: "task1"}, bytes.NewBuffer(nil), closeCh)
+	dec := newTestDashboardDecorator(t)
 	if err := dec.WriteHeader(); err != nil {
 		t.Fatal(err)
 	}
@@ -31,11 +42,10 @@ func Test_dashboardOutputDecorator(t *testing.T) {
 	if err := dec.WriteFooter(); err != nil {
 		t.Fatal(err)
 	}
-	close(closeCh)
 }
 
 func Test_dashboardOutputDecorator_Write_partialLineCarry(t *testing.T) {
-	dec := newTestDashboardDecorator()
+	dec := newTestDashboardDecorator(t)
 
 	if _, err := dec.Write([]byte("par")); err != nil {
 		t.Fatal(err)
@@ -52,7 +62,7 @@ func Test_dashboardOutputDecorator_Write_partialLineCarry(t *testing.T) {
 // Both '\n' and '\r' terminate a line, so a carriage-return progress bar
 // surfaces its latest state and no raw '\r' survives into the carry buffer.
 func Test_dashboardOutputDecorator_scanLine_carriageReturn(t *testing.T) {
-	dec := newTestDashboardDecorator()
+	dec := newTestDashboardDecorator(t)
 
 	dec.mu.Lock()
 	last := dec.scanLine("stdout", []byte("10%\r20%\r30%"))
@@ -69,7 +79,7 @@ func Test_dashboardOutputDecorator_scanLine_carriageReturn(t *testing.T) {
 // A partial stdout write must not merge with a stderr line into one garbled
 // dashboard line — each stream carries its own buffer.
 func Test_dashboardOutputDecorator_streamsDoNotMerge(t *testing.T) {
-	dec := newTestDashboardDecorator()
+	dec := newTestDashboardDecorator(t)
 	stderr := dec.StreamWriter("stderr")
 
 	if _, err := dec.Write([]byte("hello")); err != nil { // partial stdout, no newline
@@ -90,7 +100,7 @@ func Test_dashboardOutputDecorator_streamsDoNotMerge(t *testing.T) {
 // Output without line terminators (e.g. a carriage-return progress bar) must not
 // grow the carry buffer without bound.
 func Test_dashboardOutputDecorator_Write_boundsBuffer(t *testing.T) {
-	dec := newTestDashboardDecorator()
+	dec := newTestDashboardDecorator(t)
 
 	for range 100 {
 		if _, err := dec.Write(bytes.Repeat([]byte("x"), 1000)); err != nil {

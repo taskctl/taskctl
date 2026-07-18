@@ -93,16 +93,18 @@ func (o *TaskOutput) Finish() error {
 // (dashboard) output it blocks until the dashboard program has fully shut down
 // (final lines flushed, terminal restored).
 func Close() {
-	if !closed {
-		closed = true
-		close(closeCh)
-
-		baseMu.Lock()
-		b := base
-		baseMu.Unlock()
-
-		if b != nil {
-			b.wait()
-		}
+	if closed {
+		return
 	}
+	closed = true
+
+	baseMu.Lock()
+	b := base
+	baseMu.Unlock()
+
+	if b == nil {
+		return
+	}
+	close(b.closeCh)
+	b.wait()
 }
