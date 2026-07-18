@@ -63,13 +63,7 @@ Execution flows through two layers — a pipeline DAG on top, single-task compil
 - Errors are wrapped with `%w`; check with `errors.Is`/`errors.As`. Deferred `Close()` errors must be handled (errcheck is enforced) — use `iox.Close`.
 - Prefer stdlib generics helpers already adopted here: `maps.Keys`+`slices.Collect`, `slices.*`, `strings.Cut`.
 - Logging is `log/slog` (level set from `--debug`/`TASKCTL_DEBUG`).
-- Comments are rare. Default to zero. Add one only when it captures something the code cannot: a non-obvious 
-  invariant, a workaround, or the reason a choice was made over the obvious alternative. A comment that restates the 
-  signature or name (`// Run executes the task`) is a defect — delete it, exported or not. Exported symbols in the 
-  reusable core packages (`runner`, `scheduler`, `task`, `executor`, `variables`) still need a doc comment, but only 
-  the one sentence (or few if it's critical) a reader can't get from the name/signature alone (error conditions, 
-  ordering 
-  guarantees, side effects) — never a restatement. Do not use GitHub issue IDs in comments.
+- Comments are rare. Default to zero. Add one only when it captures something the code cannot: a non-obvious invariant, a workaround, or the reason a choice was made over the obvious alternative. A comment that restates the signature or name (`// Run executes the task`) is a defect — delete it, exported or not. Exported symbols in the reusable core packages (`runner`, `scheduler`, `task`, `executor`, `variables`) still need a doc comment, but only the one sentence (or few if it's critical) a reader can't get from the name/signature alone (error conditions, ordering guarantees, side effects) — never a restatement. Do not use GitHub issue IDs in comments.
 - Every package has table-style `_test.go` tests alongside; `cmd/` and `internal/config/` use `testdata/` fixtures.
 - Do not use branch prefixes (`feat/`, `fix/`, `chore/`, …) — use plain branch names (e.g. `pipeline-task-variables`, not `fix/pipeline-task-variables`). Commit messages still use conventional prefixes (`feat:`, `fix:`, …).
 - Do not use manual line breaks inside Markdown paragraphs or list items (`AGENTS.md`, `SKILL.md`, etc.) — write each paragraph or list item as a single line and let the renderer soft-wrap it. Reason: hard-wrapped source lines diff noisily on small edits and read awkwardly once rendered at a different width. Code blocks and tables are exempt.
