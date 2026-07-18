@@ -96,15 +96,17 @@ func Close() {
 	if closed {
 		return
 	}
-	closed = true
 
 	baseMu.Lock()
 	b := base
 	baseMu.Unlock()
 
+	// Leave closed unset when no dashboard ran, so a later run in the same
+	// process (e.g. an embedded runner) can still start and tear one down.
 	if b == nil {
 		return
 	}
+	closed = true
 	close(b.closeCh)
 	b.wait()
 }
