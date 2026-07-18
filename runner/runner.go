@@ -128,8 +128,9 @@ func (r *TaskRunner) Run(t *task.Task) error {
 
 	defer func() {
 		// Record the success exit code before Finish writes the task_finished
-		// footer, which reports it.
-		if !t.Errored && !t.Skipped {
+		// footer, which reports it. Only after the task actually executed
+		// (t.End set) — failures before execution must not report success.
+		if !t.Errored && !t.Skipped && !t.End.IsZero() {
 			t.ExitCode = 0
 		}
 

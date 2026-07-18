@@ -98,6 +98,25 @@ func TestTaskRunner(t *testing.T) {
 	runner.Finish()
 }
 
+func TestTaskRunner_PreExecutionFailureKeepsExitCode(t *testing.T) {
+	runner, err := NewTaskRunner()
+	if err != nil {
+		t.Fatal(err)
+	}
+	runner.Stdout, runner.Stderr = io.Discard, io.Discard
+
+	tsk := taskpkg.FromCommands("echo {{ .missing }}")
+	if err = runner.Run(tsk); err == nil {
+		t.Fatal("expected compilation error")
+	}
+
+	if tsk.ExitCode != -1 {
+		t.Errorf("task that never executed must not report a success exit code, got %d", tsk.ExitCode)
+	}
+
+	runner.Finish()
+}
+
 func ExampleTaskRunner_Run() {
 	t := taskpkg.FromCommands("go fmt ./...", "go build ./..")
 	r, err := NewTaskRunner()
