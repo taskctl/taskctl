@@ -30,6 +30,13 @@ linters:
     revive:
       rules:
         - name: exported
+  exclusions:
+    rules:
+      # Only the reusable core packages require doc comments on exported symbols;
+      # internal/ helpers follow the repo's default-to-zero-comments convention.
+      - path: ^internal/
+        linters:
+          - revive
 
 formatters:
   enable:
