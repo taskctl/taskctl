@@ -51,6 +51,73 @@ func TestReadEnvFile(t *testing.T) {
 	}
 }
 
+func TestSanitizeEnviron(t *testing.T) {
+	type args struct {
+		environ []string
+	}
+	tests := []struct {
+		name string
+		args args
+		want []string
+	}{
+		{
+			name: "normal var kept",
+			args: args{environ: []string{"PATH=/usr/bin"}},
+			want: []string{"PATH=/usr/bin"},
+		},
+		{
+			name: "underscore-first kept",
+			args: args{environ: []string{"_UNDERSCORE=x"}},
+			want: []string{"_UNDERSCORE=x"},
+		},
+		{
+			name: "windows var with parens kept",
+			args: args{environ: []string{"ProgramFiles(x86)=C:\\Program Files (x86)"}},
+			want: []string{"ProgramFiles(x86)=C:\\Program Files (x86)"},
+		},
+		{
+			name: "cygwin junk dropped",
+			args: args{environ: []string{"!::=::\\"}},
+			want: []string{},
+		},
+		{
+			name: "windows hidden drive entry dropped (empty key)",
+			args: args{environ: []string{"=C:=C:\\foo"}},
+			want: []string{},
+		},
+		{
+			name: "no-equals dropped",
+			args: args{environ: []string{"NOEQUALS"}},
+			want: []string{},
+		},
+		{
+			name: "empty string dropped",
+			args: args{environ: []string{""}},
+			want: []string{},
+		},
+		{
+			name: "mixed input preserves order and drops invalid entries",
+			args: args{environ: []string{
+				"PATH=/usr/bin",
+				"!::=::\\",
+				"=C:=C:\\foo",
+				"HOME=/home/user",
+				"NOEQUALS",
+				"_OK=1",
+				"",
+			}},
+			want: []string{"PATH=/usr/bin", "HOME=/home/user", "_OK=1"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := SanitizeEnviron(tt.args.environ); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("SanitizeEnviron() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestReadEnvFile_notExist(t *testing.T) {
 	if _, err := ReadEnvFile(filepath.Join(t.TempDir(), "missing.env")); err == nil {
 		t.Error("expected error for missing file, got nil")
