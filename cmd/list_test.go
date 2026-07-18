@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/taskctl/taskctl/internal/iox"
 	"github.com/taskctl/taskctl/internal/schema"
 )
 
@@ -43,8 +44,8 @@ func captureStdout(t *testing.T, args []string) ([]byte, error) {
 	runErr := app.Run(args)
 
 	os.Stdout = origStdout
-	_ = w.Close()
-	defer func() { _ = r.Close() }()
+	iox.Close(w)
+	defer iox.Close(r)
 
 	var buf bytes.Buffer
 	if _, err := io.Copy(&buf, r); err != nil {

@@ -7,12 +7,13 @@ import (
 	"testing"
 
 	"github.com/taskctl/taskctl/internal/config"
+	"github.com/taskctl/taskctl/internal/iox"
 )
 
 func Test_initCommand(t *testing.T) {
 	in := stdinLines(t, "1")
 	defer func(f os.File) {
-		_ = in.Close()
+		iox.Close(in)
 		_ = os.Remove(f.Name())
 	}(*in)
 
@@ -28,7 +29,7 @@ func Test_initCommand(t *testing.T) {
 func TestInitCommand_NoOverwrite(t *testing.T) {
 	in := stdinLines(t, "1", "n")
 	defer func(f os.File) {
-		_ = in.Close()
+		iox.Close(in)
 		_ = os.Remove(f.Name())
 	}(*in)
 
@@ -58,7 +59,7 @@ func TestInitCommand_Overwrite(t *testing.T) {
 	// works: the select reads "1" and the confirm reads "y" -> overwrite.
 	in := stdinLines(t, "1", "y")
 	defer func(f os.File) {
-		_ = in.Close()
+		iox.Close(in)
 		_ = os.Remove(f.Name())
 	}(*in)
 

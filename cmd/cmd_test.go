@@ -10,6 +10,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/taskctl/taskctl/cmd"
+	"github.com/taskctl/taskctl/internal/iox"
 )
 
 type appTest struct {
@@ -51,7 +52,7 @@ func runAppTest(app *cli.App, test appTest, t *testing.T) {
 	}
 
 	os.Stdout = origStdout
-	_ = w.Close()
+	iox.Close(w)
 
 	var buf bytes.Buffer
 	_, err = io.Copy(&buf, r)
