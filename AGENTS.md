@@ -115,6 +115,9 @@ dashboard). Keep these focused; don't reintroduce a grab-bag utils package. `huh
   Don't restate the obvious.
 - Every package has table-style `_test.go` tests alongside; `cmd/` and `internal/config/` use
   `testdata/` fixtures.
+- Do not use branch prefixes (`feat/`, `fix/`, `chore/`, …) — use plain branch names
+  (e.g. `pipeline-task-variables`, not `fix/pipeline-task-variables`). Commit messages still use
+  conventional prefixes (`feat:`, `fix:`, …).
 
 ## Development process
 
