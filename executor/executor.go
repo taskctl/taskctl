@@ -52,7 +52,7 @@ type DefaultExecutor struct {
 func NewDefaultExecutor(stdin io.Reader, stdout, stderr io.Writer) (*DefaultExecutor, error) {
 	var err error
 	e := &DefaultExecutor{
-		env: os.Environ(),
+		env: envutil.SanitizeEnviron(os.Environ()),
 	}
 
 	e.dir, err = os.Getwd()
