@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -24,6 +25,30 @@ func TestConvertEnv(t *testing.T) {
 				t.Errorf("ConvertEnv() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestOverlayEnviron(t *testing.T) {
+	base := []string{"KEEP=base", "VAR_NAME=external", "MALFORMED"}
+	overlay := map[string]string{"VAR_NAME": "exported"}
+
+	got := OverlayEnviron(base, overlay)
+
+	want := map[string]string{"KEEP": "base", "MALFORMED": "", "VAR_NAME": "exported"}
+	seen := make(map[string]string, len(got))
+	for _, kv := range got {
+		k, v, ok := strings.Cut(kv, "=")
+		if !ok {
+			k = kv // malformed entry with no '=' is preserved verbatim
+		}
+		if _, dup := seen[k]; dup {
+			t.Errorf("OverlayEnviron() produced duplicate key %q: %v", k, got)
+		}
+		seen[k] = v
+	}
+
+	if !reflect.DeepEqual(seen, want) {
+		t.Errorf("OverlayEnviron() = %v, want %v", seen, want)
 	}
 }
 

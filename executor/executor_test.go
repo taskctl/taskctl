@@ -79,6 +79,30 @@ func TestDefaultExecutor_Execute_PerJobEnv(t *testing.T) {
 	}
 }
 
+// TestDefaultExecutor_Execute_JobEnvOverridesOSEnv verifies that a job's environment
+// wins over an inherited OS variable of the same name, so a task's exportAs
+// output overrides an external value.
+func TestDefaultExecutor_Execute_JobEnvOverridesOSEnv(t *testing.T) {
+	t.Setenv("TASKCTL_ISSUE88", "external")
+
+	e, err := NewDefaultExecutor(nil, io.Discard, io.Discard)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	job := NewJobFromCommand(`printf "%s" "$TASKCTL_ISSUE88"`)
+	job.Env = variables.FromMap(map[string]string{"TASKCTL_ISSUE88": "exported"})
+
+	out, err := e.Execute(context.Background(), job)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got := strings.TrimSpace(string(out)); got != "exported" {
+		t.Errorf("job env must override OS env: got %q, want %q", got, "exported")
+	}
+}
+
 // TestDefaultExecutor_Execute_SharedShellState verifies that consecutive
 // commands sharing the same environment keep shell state: a function defined by
 // one command must be callable by the next (the executor reuses its

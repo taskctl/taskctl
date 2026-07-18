@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"maps"
 	"os"
-	"slices"
 	"strings"
 
 	"mvdan.cc/sh/v3/expand"
@@ -101,7 +100,7 @@ func (e *DefaultExecutor) Execute(ctx context.Context, job *Job) ([]byte, error)
 	// rebuild it when either changes (a new variation) so each variation runs
 	// with its own environment/directory and a clean state.
 	if e.interp == nil || job.Dir != e.lastDir || !maps.Equal(jobEnv, e.lastEnv) {
-		env := append(slices.Clone(e.env), envutil.ConvertEnv(jobEnv)...)
+		env := envutil.OverlayEnviron(e.env, jobEnv)
 		e.interp, err = interp.New(
 			interp.StdIO(e.stdin, e.stdout, e.stderr),
 			interp.Dir(job.Dir),
