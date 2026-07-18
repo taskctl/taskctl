@@ -27,7 +27,6 @@ tasks:
     dir: "{{.Root}}"
     command:
       - go build -o bin/taskctl .
-      - chmod +x bin/taskctl
 
   build:
     description: Cross-compile bin/taskctl_{linux,darwin,windows} release binaries
