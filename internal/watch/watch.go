@@ -25,12 +25,18 @@ const (
 	eventChmod  = "chmod"
 )
 
-var fsnotifyMap = map[fsnotify.Op]string{
-	fsnotify.Create: eventCreate,
-	fsnotify.Write:  eventWrite,
-	fsnotify.Remove: eventRemove,
-	fsnotify.Rename: eventRename,
-	fsnotify.Chmod:  eventChmod,
+// fsnotifyOps pairs fsnotify operations with event names in priority order.
+// Op is a bitmask, so one event may carry several ops (e.g. Write|Chmod); the
+// first matching, watched op wins rather than requiring an exact-op match.
+var fsnotifyOps = []struct {
+	op   fsnotify.Op
+	name string
+}{
+	{fsnotify.Create, eventCreate},
+	{fsnotify.Write, eventWrite},
+	{fsnotify.Remove, eventRemove},
+	{fsnotify.Rename, eventRename},
+	{fsnotify.Chmod, eventChmod},
 }
 
 // Watcher is a file watcher. It triggers tasks or pipelines when filesystem event occurs.
@@ -126,7 +132,8 @@ func (w *Watcher) Run(r *runner.TaskRunner) (err error) {
 	go func() {
 		w.runMu.Lock()
 		defer w.runMu.Unlock()
-		err := w.r.Run(w.task)
+		// Clone so w.task stays a pristine definition; Run mutates run state.
+		err := w.r.Run(w.task.Clone())
 		if err != nil {
 			slog.Error(err.Error())
 		}
@@ -196,8 +203,14 @@ func (w *Watcher) Running() bool {
 func (w *Watcher) handle(event fsnotify.Event) {
 	defer w.eventsWg.Done()
 
-	eventName := fsnotifyMap[event.Op]
-	if !w.events.Has(eventName) {
+	var eventName string
+	for _, e := range fsnotifyOps {
+		if event.Op.Has(e.op) && w.events.Has(e.name) {
+			eventName = e.name
+			break
+		}
+	}
+	if eventName == "" {
 		return
 	}
 

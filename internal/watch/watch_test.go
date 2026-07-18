@@ -127,5 +127,5 @@ func runCount(t *testing.T, outFile string) int {
 		}
 		t.Fatal(err)
 	}
-	return bytes.Count(data, []byte("x"))
+	return bytes.Count(data, []byte("x\n"))
 }
