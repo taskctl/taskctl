@@ -57,8 +57,8 @@ func TestNewWatcher(t *testing.T) {
 	wg.Wait()
 }
 
-// TestWatcherRetriggers a file change must re-run the task,
-// not just trigger it once. The output file lives outside the watched dir so the
+// TestWatcherRetriggers verifies that a file change re-runs the task,
+// not just triggers it once. The output file lives outside the watched dir so the
 // task's own writes don't feed back as events.
 func TestWatcherRetriggers(t *testing.T) {
 	watchDir := t.TempDir()
