@@ -312,6 +312,9 @@ func (d *dashboardOutputDecorator) scanLine(stream string, p []byte) string {
 	if len(data) > maxDashboardLineBuf {
 		data = data[len(data)-maxDashboardLineBuf:]
 	}
+	if cap(*buf) > maxDashboardLineBuf {
+		*buf = make([]byte, 0, maxDashboardLineBuf)
+	}
 	*buf = append((*buf)[:0], data...)
 
 	return line
