@@ -47,6 +47,11 @@ type Watcher struct {
 	mu       sync.Mutex
 	running  atomic.Bool
 
+	// runMu serializes task runs: events fan out into concurrent handle
+	// goroutines, but the shared TaskRunner is stateful and must run one task
+	// at a time.
+	runMu sync.Mutex
+
 	eventsWg sync.WaitGroup
 }
 
@@ -119,6 +124,8 @@ func (w *Watcher) Run(r *runner.TaskRunner) (err error) {
 	w.running.Store(true)
 
 	go func() {
+		w.runMu.Lock()
+		defer w.runMu.Unlock()
 		err := w.r.Run(w.task)
 		if err != nil {
 			slog.Error(err.Error())
@@ -194,10 +201,14 @@ func (w *Watcher) handle(event fsnotify.Event) {
 		return
 	}
 
-	w.r.Cancel()
 	slog.Debug(fmt.Sprintf("running task \"%s\" for watcher \"%s\"", w.task.Name, w.name))
 
-	t := *w.task
+	// Clone under runMu: the shared task is mutated in place by an active run,
+	// so both the clone and the run must be serialized against it.
+	w.runMu.Lock()
+	defer w.runMu.Unlock()
+
+	t := w.task.Clone()
 	t.Env = t.Env.Merge(variables.FromMap(map[string]string{
 		"EventName": eventName,
 		"EventPath": event.Name,
@@ -208,7 +219,7 @@ func (w *Watcher) handle(event fsnotify.Event) {
 		"EVENT_PATH": event.Name,
 	}))
 
-	err := w.r.Run(&t)
+	err := w.r.Run(t)
 	if err != nil {
 		slog.Error(err.Error())
 	}
