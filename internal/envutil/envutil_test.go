@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -24,6 +25,30 @@ func TestConvertEnv(t *testing.T) {
 				t.Errorf("ConvertEnv() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestOverlayEnviron(t *testing.T) {
+	base := []string{"KEEP=base", "VAR_NAME=external", "MALFORMED"}
+	overlay := map[string]string{"VAR_NAME": "exported"}
+
+	got := OverlayEnviron(base, overlay)
+
+	want := map[string]string{"KEEP": "base", "MALFORMED": "", "VAR_NAME": "exported"}
+	seen := make(map[string]string, len(got))
+	for _, kv := range got {
+		k, v, ok := strings.Cut(kv, "=")
+		if !ok {
+			k = kv // malformed entry with no '=' is preserved verbatim
+		}
+		if _, dup := seen[k]; dup {
+			t.Errorf("OverlayEnviron() produced duplicate key %q: %v", k, got)
+		}
+		seen[k] = v
+	}
+
+	if !reflect.DeepEqual(seen, want) {
+		t.Errorf("OverlayEnviron() = %v, want %v", seen, want)
 	}
 }
 
@@ -48,6 +73,73 @@ func TestReadEnvFile(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("ReadEnvFile() = %v, want %v", got, want)
+	}
+}
+
+func TestSanitizeEnviron(t *testing.T) {
+	type args struct {
+		environ []string
+	}
+	tests := []struct {
+		name string
+		args args
+		want []string
+	}{
+		{
+			name: "normal var kept",
+			args: args{environ: []string{"PATH=/usr/bin"}},
+			want: []string{"PATH=/usr/bin"},
+		},
+		{
+			name: "underscore-first kept",
+			args: args{environ: []string{"_UNDERSCORE=x"}},
+			want: []string{"_UNDERSCORE=x"},
+		},
+		{
+			name: "windows var with parens kept",
+			args: args{environ: []string{"ProgramFiles(x86)=C:\\Program Files (x86)"}},
+			want: []string{"ProgramFiles(x86)=C:\\Program Files (x86)"},
+		},
+		{
+			name: "cygwin junk dropped",
+			args: args{environ: []string{"!::=::\\"}},
+			want: []string{},
+		},
+		{
+			name: "windows hidden drive entry dropped (empty key)",
+			args: args{environ: []string{"=C:=C:\\foo"}},
+			want: []string{},
+		},
+		{
+			name: "no-equals dropped",
+			args: args{environ: []string{"NOEQUALS"}},
+			want: []string{},
+		},
+		{
+			name: "empty string dropped",
+			args: args{environ: []string{""}},
+			want: []string{},
+		},
+		{
+			name: "mixed input preserves order and drops invalid entries",
+			args: args{environ: []string{
+				"PATH=/usr/bin",
+				"!::=::\\",
+				"=C:=C:\\foo",
+				"HOME=/home/user",
+				"NOEQUALS",
+				"_OK=1",
+				"",
+			}},
+			want: []string{"PATH=/usr/bin", "HOME=/home/user", "_OK=1"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := SanitizeEnviron(tt.args.environ); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("SanitizeEnviron() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
 

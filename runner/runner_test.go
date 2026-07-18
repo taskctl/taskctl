@@ -117,6 +117,39 @@ func TestTaskRunner_PreExecutionFailureKeepsExitCode(t *testing.T) {
 	runner.Finish()
 }
 
+// TestTaskRunner_ExportAsOverridesExternalEnv reproduces issue #88: when a task
+// exports its output as an env var (exportAs) that already exists in the
+// external environment, a later task in the same pipeline must see the exported
+// value, not the inherited one. Pipeline stages share a single TaskRunner, so
+// running two tasks on one runner mirrors that flow.
+func TestTaskRunner_ExportAsOverridesExternalEnv(t *testing.T) {
+	t.Setenv("VAR_NAME", "external")
+
+	runner, err := NewTaskRunner()
+	if err != nil {
+		t.Fatal(err)
+	}
+	runner.Stdout, runner.Stderr = io.Discard, io.Discard
+	defer runner.Finish()
+
+	producer := taskpkg.FromCommands(`printf "exported"`)
+	producer.Name = "producer"
+	producer.ExportAs = "VAR_NAME"
+	if err := runner.Run(producer); err != nil {
+		t.Fatal(err)
+	}
+
+	consumer := taskpkg.FromCommands(`printf "[%s]" "${VAR_NAME}"`)
+	consumer.Name = "consumer"
+	if err := runner.Run(consumer); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := consumer.Output(); !strings.Contains(got, "[exported]") {
+		t.Errorf("exportAs must override external env: got %q, want to contain %q", got, "[exported]")
+	}
+}
+
 func ExampleTaskRunner_Run() {
 	t := taskpkg.FromCommands("go fmt ./...", "go build ./..")
 	r, err := NewTaskRunner()
