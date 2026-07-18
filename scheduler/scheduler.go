@@ -146,7 +146,7 @@ func (s *Scheduler) runStage(stage *Stage) error {
 		if t.Variables == nil {
 			t.Variables = stage.Variables
 		} else {
-			t.Variables = t.Env.Merge(stage.Variables)
+			t.Variables = t.Variables.Merge(stage.Variables)
 		}
 	}
 

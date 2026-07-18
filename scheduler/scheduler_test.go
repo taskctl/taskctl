@@ -116,6 +116,40 @@ func TestExecutionGraph_Scheduler_AllowFailure(t *testing.T) {
 	schdlr.Finish()
 }
 
+func TestScheduler_TaskVariablesSurviveStageMerge(t *testing.T) {
+	tsk := task.FromCommands("true")
+	tsk.Variables = variables.FromMap(map[string]string{"taskVar": "fromTask", "shared": "fromTask"})
+
+	stage1 := &Stage{
+		Name:      "stage1",
+		Task:      tsk,
+		Variables: variables.FromMap(map[string]string{"stageVar": "fromStage", "shared": "fromStage"}),
+		Env:       variables.NewVariables(),
+	}
+
+	graph, err := NewExecutionGraph(stage1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	schdlr := NewScheduler(TestTaskRunner{})
+	if err = schdlr.Schedule(graph); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := stage1.Task.Variables.Get("taskVar"); got != "fromTask" {
+		t.Errorf("task-level variable lost after stage merge: got %v", got)
+	}
+
+	if got := stage1.Task.Variables.Get("stageVar"); got != "fromStage" {
+		t.Errorf("stage variable missing: got %v", got)
+	}
+
+	if got := stage1.Task.Variables.Get("shared"); got != "fromStage" {
+		t.Errorf("stage variable should override task variable: got %v", got)
+	}
+}
+
 func TestSkippedStage(t *testing.T) {
 	stage1 := &Stage{
 		Name:      "stage1",
