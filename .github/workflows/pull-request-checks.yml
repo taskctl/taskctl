@@ -4,15 +4,15 @@ on:
     types: [opened, synchronize]
 
 jobs:
-  build:
-    name: Test
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache-dependency-path: go.sum
@@ -22,6 +22,40 @@ jobs:
         with:
           version: v2.12
 
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
       - name: Test
-        run: |
-          go test -v -race ./...
+        run: go test -v -race ./...
+
+  build:
+    name: Build (${{ matrix.goos }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux, darwin, windows]
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: amd64
+        run: go build -o bin/taskctl_${{ matrix.goos }} .
