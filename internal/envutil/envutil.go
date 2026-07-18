@@ -22,6 +22,25 @@ func ConvertEnv(env map[string]string) []string {
 	return enva
 }
 
+// OverlayEnviron merges overlay onto a base environment (both in "key=value"
+// form / a map), letting overlay values win over base entries with the same
+// key. Base entries shadowed by overlay are dropped, then overlay is appended,
+// so the caller does not depend on a downstream dedup rule to decide precedence.
+func OverlayEnviron(base []string, overlay map[string]string) []string {
+	merged := make([]string, 0, len(base)+len(overlay))
+	for _, kv := range base {
+		k, _, ok := strings.Cut(kv, "=")
+		if ok {
+			if _, shadowed := overlay[k]; shadowed {
+				continue
+			}
+		}
+		merged = append(merged, kv)
+	}
+
+	return append(merged, ConvertEnv(overlay)...)
+}
+
 // ConvertToMapOfStrings converts map of interfaces to map of strings
 func ConvertToMapOfStrings(m map[string]any) map[string]string {
 	mdst := make(map[string]string)
