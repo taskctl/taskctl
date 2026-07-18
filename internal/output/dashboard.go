@@ -119,8 +119,7 @@ func (m dashboardModel) rowIndex(id uint64) int {
 func (m dashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case taskStartedMsg:
-		m.rows = append(m.rows, taskRow{id: msg.id, name: msg.name, started: time.Now()})
-		slices.SortFunc(m.rows, func(a, b taskRow) int {
+		m.rows = append(m.rows, taskRow{id: msg.id, name: msg.name, started: msg.started})
 			if c := strings.Compare(a.name, b.name); c != 0 {
 				return c
 			}
@@ -322,7 +321,7 @@ func (d *dashboardOutputDecorator) scanLine(stream string, p []byte) string {
 
 func (d *dashboardOutputDecorator) WriteHeader() error {
 	d.b.start()
-	d.b.send(taskStartedMsg{id: d.id, name: d.t.Name})
+	d.b.send(taskStartedMsg{id: d.id, name: d.t.Name, started: time.Now()})
 	return nil
 }
 
