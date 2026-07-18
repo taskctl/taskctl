@@ -120,6 +120,7 @@ func (m dashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case taskStartedMsg:
 		m.rows = append(m.rows, taskRow{id: msg.id, name: msg.name, started: msg.started})
+		slices.SortFunc(m.rows, func(a, b taskRow) int {
 			if c := strings.Compare(a.name, b.name); c != 0 {
 				return c
 			}
