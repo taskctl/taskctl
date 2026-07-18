@@ -28,10 +28,12 @@ var cancelFn func()
 var cancelMu sync.Mutex
 var cfg *config.Config
 
+// Stdin returns the reader used for interactive prompts.
 func Stdin() io.ReadCloser {
 	return stdin
 }
 
+// SetStdin sets the reader used for interactive prompts.
 func SetStdin(newStdin io.ReadCloser) {
 	stdin = newStdin
 }
@@ -44,6 +46,7 @@ func nonInteractive(c *cli.Context) bool {
 	return c.Bool("no-input") || cfg.Output == output.FormatJSON
 }
 
+// Run builds the CLI application and runs it against os.Args.
 func Run(version string) error {
 	stdin = os.Stdin
 	app := NewApp(version)
@@ -53,6 +56,7 @@ func Run(version string) error {
 	return app.Run(os.Args)
 }
 
+// NewApp builds the taskctl CLI application.
 func NewApp(version string) *cli.App {
 	cfg = config.NewConfig()
 	cl := config.NewConfigLoader(cfg)
@@ -148,16 +152,17 @@ func NewApp(version string) *cli.App {
 
 			if c.Bool("quiet") {
 				c.App.ErrWriter = io.Discard
-				slog.SetDefault(slog.New(slog.NewTextHandler(io.Discard, nil)))
+				slog.SetDefault(slog.New(slog.DiscardHandler))
 				cfg.Quiet = true
 			} else {
-				if c.IsSet("output") {
+				switch {
+				case c.IsSet("output"):
 					cfg.Output = c.String("output")
-				} else if c.Bool("raw") {
+				case c.Bool("raw"):
 					cfg.Output = output.FormatRaw
-				} else if c.Bool("cockpit") {
+				case c.Bool("cockpit"):
 					cfg.Output = output.FormatCockpit
-				} else if cfg.Output == "" {
+				case cfg.Output == "":
 					cfg.Output = output.FormatPrefixed
 				}
 			}
@@ -193,6 +198,7 @@ func NewApp(version string) *cli.App {
 	}
 }
 
+// Abort cancels the currently running task execution.
 func Abort() {
 	cancelMu.Lock()
 	defer cancelMu.Unlock()

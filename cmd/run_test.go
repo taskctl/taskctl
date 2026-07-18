@@ -20,7 +20,7 @@ func Test_runCommand(t *testing.T) {
 
 	for _, v := range tests {
 		app := makeTestApp()
-		runAppTest(app, v, t)
+		runAppTest(t, app, v)
 	}
 }
 
@@ -95,6 +95,6 @@ func Test_runCommandWithArgumentsList(t *testing.T) {
 
 	for _, v := range tests {
 		app := makeTestApp()
-		runAppTest(app, v, t)
+		runAppTest(t, app, v)
 	}
 }

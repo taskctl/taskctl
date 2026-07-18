@@ -40,7 +40,7 @@ func (d *prefixedOutputDecorator) Write(p []byte) (int, error) {
 			break
 		}
 
-		_, err = d.writePrefixedLine(line)
+		err = d.writePrefixedLine(line)
 		if err != nil {
 			return 0, err
 		}
@@ -48,7 +48,7 @@ func (d *prefixedOutputDecorator) Write(p []byte) (int, error) {
 		p = p[advance:]
 	}
 
-	_, err := d.writePrefixedLine(p)
+	err := d.writePrefixedLine(p)
 	if err != nil {
 		return 0, err
 	}
@@ -57,19 +57,18 @@ func (d *prefixedOutputDecorator) Write(p []byte) (int, error) {
 }
 
 func (d *prefixedOutputDecorator) WriteHeader() error {
-	_, err := d.writePrefixedLine(fmt.Appendf(nil, "Running task %s...", d.t.Name))
+	err := d.writePrefixedLine(fmt.Appendf(nil, "Running task %s...", d.t.Name))
 	return err
 }
 
 func (d *prefixedOutputDecorator) WriteFooter() error {
-	_, err := d.writePrefixedLine(fmt.Appendf(nil, "%s finished. Duration %s", d.t.Name, d.t.Duration()))
+	err := d.writePrefixedLine(fmt.Appendf(nil, "%s finished. Duration %s", d.t.Name, d.t.Duration()))
 	return err
 }
 
-func (d *prefixedOutputDecorator) writePrefixedLine(p []byte) (n int, err error) {
-	n = len(p)
+func (d *prefixedOutputDecorator) writePrefixedLine(p []byte) error {
 	p = ansiRegexp.ReplaceAllLiteral(p, []byte{})
-	_, err = fmt.Fprintf(d.w, "%s: %s\r\n", d.prefix, p)
+	_, err := fmt.Fprintf(d.w, "%s: %s\r\n", d.prefix, p)
 
-	return n, err
+	return err
 }

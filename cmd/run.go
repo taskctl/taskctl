@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"maps"
 	"os"
@@ -52,7 +53,7 @@ func newRunCommand() *cli.Command {
 		},
 		Action: func(c *cli.Context) error {
 			if !c.Args().Present() {
-				return fmt.Errorf("no target specified")
+				return errors.New("no target specified")
 			}
 
 			return runTargets(targetNames(c.Args().Slice(), true), c, taskRunner)
@@ -150,10 +151,10 @@ func runTarget(name string, c *cli.Context, taskRunner *runner.TaskRunner) (g *s
 
 func runPipeline(g *scheduler.ExecutionGraph, taskRunner *runner.TaskRunner, summary bool) error {
 	sd := scheduler.NewScheduler(taskRunner)
-	//go func() {
+	// go func() {
 	//	<-cancelCh
 	//	sd.Cancel()
-	//}()
+	// }()
 
 	err := sd.Schedule(g)
 	if err != nil {
@@ -332,7 +333,7 @@ func printSummary(g *scheduler.ExecutionGraph) {
 			log = strings.TrimSpace(stage.Task.ErrorMessage())
 			tui.Println(os.Stdout, tui.StyleError.Render(fmt.Sprintf("- Stage %s failed in %s", stage.Name, stage.Duration())))
 			if log != "" {
-				tui.Println(os.Stdout, tui.StyleError.Render(fmt.Sprintf("  > %s", log)))
+				tui.Println(os.Stdout, tui.StyleError.Render("  > "+log))
 			}
 		case scheduler.StatusCanceled:
 			tui.Println(os.Stdout, tui.StyleFaint.Render(fmt.Sprintf("- Stage %s was cancelled", stage.Name)))

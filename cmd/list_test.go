@@ -22,7 +22,7 @@ func Test_listCommand(t *testing.T) {
 	}
 
 	for _, v := range tests {
-		runAppTest(app, v, t)
+		runAppTest(t, app, v)
 	}
 }
 

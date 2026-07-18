@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -110,7 +111,7 @@ func (cl *Loader) Load(file string) (*Config, error) {
 // LoadGlobalConfig load global config file  - ~/.taskctl/config.yaml
 func (cl *Loader) LoadGlobalConfig() (*Config, error) {
 	if cl.homeDir == "" {
-		return nil, nil
+		return cl.dst, nil
 	}
 
 	file := path.Join(cl.homeDir, ".taskctl", "config.yaml")
@@ -176,7 +177,7 @@ func (cl *Loader) load(file string) (config map[string]any, err error) {
 				}
 				fi, err := os.Stat(importFile)
 				if err != nil {
-					return nil, fmt.Errorf("%s: %v", importFile, err)
+					return nil, fmt.Errorf("%s: %w", importFile, err)
 				}
 				if !fi.IsDir() {
 					raw, err = cl.load(importFile)
@@ -188,7 +189,7 @@ func (cl *Loader) load(file string) (config map[string]any, err error) {
 				}
 			}
 			if err != nil {
-				return nil, fmt.Errorf("load import error: %v", err)
+				return nil, fmt.Errorf("load import error: %w", err)
 			}
 
 			err = mergo.Merge(&config, raw, mergo.WithOverride, mergo.WithAppendSlice, mergo.WithTypeCheck)
@@ -205,7 +206,7 @@ func (cl *Loader) loadDir(dir string) (map[string]any, error) {
 	pattern := filepath.Join(dir, "*.yaml")
 	q, err := filepath.Glob(pattern)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %v", dir, err)
+		return nil, fmt.Errorf("%s: %w", dir, err)
 	}
 
 	cm := make(map[string]any)
@@ -216,12 +217,12 @@ func (cl *Loader) loadDir(dir string) (map[string]any, error) {
 
 		cml, err := cl.load(importFile)
 		if err != nil {
-			return nil, fmt.Errorf("%s: %v", importFile, err)
+			return nil, fmt.Errorf("%s: %w", importFile, err)
 		}
 
 		err = mergo.Merge(&cm, cml, mergo.WithOverride, mergo.WithAppendSlice, mergo.WithTypeCheck)
 		if err != nil {
-			return nil, fmt.Errorf("%s: %v", importFile, err)
+			return nil, fmt.Errorf("%s: %w", importFile, err)
 		}
 	}
 
@@ -229,19 +230,24 @@ func (cl *Loader) loadDir(dir string) (map[string]any, error) {
 }
 
 func (cl *Loader) readURL(u string) (map[string]any, error) {
-	resp, err := http.Get(u)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, u, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := http.DefaultClient.Do(req) //nolint:bodyclose // body is closed via iox.Close on the next line
 	if err != nil {
 		return nil, err
 	}
 	defer iox.Close(resp.Body)
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("%d: config request failed - %s", resp.StatusCode, u)
 	}
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %v", u, err)
+		return nil, fmt.Errorf("%s: %w", u, err)
 	}
 
 	var ext string
@@ -270,7 +276,7 @@ func (cl *Loader) readURL(u string) (map[string]any, error) {
 func (cl *Loader) readFile(filename string) (map[string]any, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %v", filename, err)
+		return nil, fmt.Errorf("%s: %w", filename, err)
 	}
 
 	ext := filepath.Ext(filename)

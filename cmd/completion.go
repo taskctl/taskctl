@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -30,7 +31,7 @@ func newCompletionCommand() *cli.Command {
 				fmt.Println("_CLI_ZSH_AUTOCOMPLETE_HACK=1")
 				fmt.Println(zshSource)
 			default:
-				return fmt.Errorf("unsupported shell type")
+				return errors.New("unsupported shell type")
 			}
 
 			return nil

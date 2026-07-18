@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/urfave/cli/v2"
@@ -15,7 +16,7 @@ func newValidateCommand() *cli.Command {
 		ArgsUsage: "some-tasks-file.yaml",
 		Before: func(c *cli.Context) error {
 			if c.NArg() == 0 {
-				return fmt.Errorf("please provide file to validate")
+				return errors.New("please provide file to validate")
 			}
 
 			return nil

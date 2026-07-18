@@ -33,7 +33,7 @@ var fsnotifyMap = map[fsnotify.Op]string{
 	fsnotify.Chmod:  eventChmod,
 }
 
-// Watcher is a file watcher. It triggers tasks or pipelines when filesystem event occurs
+// Watcher is a file watcher. It triggers tasks or pipelines when filesystem event occurs.
 type Watcher struct {
 	name     string
 	r        *runner.TaskRunner
@@ -50,7 +50,7 @@ type Watcher struct {
 	eventsWg sync.WaitGroup
 }
 
-// NewWatcher creates new Watcher instance
+// NewWatcher creates new Watcher instance.
 func NewWatcher(name string, events, watch, exclude []string, t *task.Task) (w *Watcher, err error) {
 	w = &Watcher{
 		name:     name,
@@ -103,11 +103,11 @@ func NewWatcher(name string, events, watch, exclude []string, t *task.Task) (w *
 	return w, nil
 }
 
-// Run starts file watcher with provided TaskRunner
+// Run starts file watcher with provided TaskRunner.
 func (w *Watcher) Run(r *runner.TaskRunner) (err error) {
 	w.r = r
 
-	slog.Debug(fmt.Sprintf("starting watcher %s", w.name))
+	slog.Debug("starting watcher " + w.name)
 	for _, path := range w.paths {
 		err = w.fsw.Add(path)
 		slog.Debug(fmt.Sprintf("watcher \"%s\" is waiting for events in %s", w.name, path))
@@ -164,7 +164,7 @@ func (w *Watcher) Run(r *runner.TaskRunner) (err error) {
 	return nil
 }
 
-// Close  stops this watcher
+// Close  stops this watcher.
 func (w *Watcher) Close() {
 	if w.isClosed || !w.running.Load() {
 		return
@@ -181,6 +181,7 @@ func (w *Watcher) Close() {
 	<-w.finished
 }
 
+// Running reports whether the watcher is currently active.
 func (w *Watcher) Running() bool {
 	return w.running.Load()
 }

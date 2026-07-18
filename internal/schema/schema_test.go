@@ -28,6 +28,7 @@ func buildTestTask() *task.Task {
 }
 
 func buildTestGraph(t *testing.T) *scheduler.ExecutionGraph {
+	t.Helper()
 	buildTask := buildTestTask()
 
 	g, err := scheduler.NewExecutionGraph(

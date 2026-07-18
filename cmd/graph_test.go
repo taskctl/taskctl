@@ -23,6 +23,6 @@ func Test_graphCommand(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		runAppTest(app, test, t)
+		runAppTest(t, app, test)
 	}
 }

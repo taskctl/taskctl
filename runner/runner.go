@@ -108,7 +108,7 @@ func (r *TaskRunner) Run(t *task.Task) error {
 		return err
 	}
 
-	execContext, err := r.contextForTask(t)
+	execContext, err := r.contextForTask(r.ctx, t)
 	if err != nil {
 		return err
 	}
@@ -220,7 +220,7 @@ func (r *TaskRunner) before(ctx context.Context, t *task.Task, env, vars variabl
 		return nil
 	}
 
-	execContext, err := r.contextForTask(t)
+	execContext, err := r.contextForTask(ctx, t)
 	if err != nil {
 		return err
 	}
@@ -250,7 +250,7 @@ func (r *TaskRunner) after(ctx context.Context, t *task.Task, env, vars variable
 		return nil
 	}
 
-	execContext, err := r.contextForTask(t)
+	execContext, err := r.contextForTask(ctx, t)
 	if err != nil {
 		return err
 	}
@@ -275,7 +275,7 @@ func (r *TaskRunner) after(ctx context.Context, t *task.Task, env, vars variable
 	return nil
 }
 
-func (r *TaskRunner) contextForTask(t *task.Task) (c *ExecutionContext, err error) {
+func (r *TaskRunner) contextForTask(ctx context.Context, t *task.Task) (c *ExecutionContext, err error) {
 	if t.Context == "" {
 		c = DefaultContext()
 	} else {
@@ -288,12 +288,12 @@ func (r *TaskRunner) contextForTask(t *task.Task) (c *ExecutionContext, err erro
 		r.cleanupList.Store(t.Context, c)
 	}
 
-	err = c.Up()
+	err = c.Up(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	err = c.Before()
+	err = c.Before(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -306,7 +306,7 @@ func (r *TaskRunner) checkTaskCondition(t *task.Task) (bool, error) {
 		return true, nil
 	}
 
-	executionContext, err := r.contextForTask(t)
+	executionContext, err := r.contextForTask(r.ctx, t)
 	if err != nil {
 		return false, err
 	}

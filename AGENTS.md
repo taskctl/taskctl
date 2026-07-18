@@ -28,15 +28,17 @@ once and use the binary (`go run . --output json --no-input build-host`, then `.
 rebuild after changing source.
 
 Common targets: `prepare` (tidy → test → format → lint → completers; run before wrapping up),
-`test`, `golangci-lint`, `fixcs`, `build-host` (host binary for dogfooding), `build`
-(cross-platform release binaries), `update-completers`. `list` gives the authoritative set.
+`test`, `golangci-lint`, `fmt` (gofmt + goimports via `golangci-lint fmt`), `fixcs`, `build-host`
+(host binary for dogfooding), `build` (cross-platform release binaries), `update-completers`.
+`list` gives the authoritative set.
 
 Raw Go commands — fallback for cases with no matching task, or to mirror CI exactly:
 
 ```bash
 go test -race ./...                # race detector (CI runs -v -race; no task for this)
 go test -run TestName ./runner/    # single test in one package
-golangci-lint run                  # lint directly (golangci-lint v2; config in .golangci.yml)
+golangci-lint run                  # lint directly (golangci-lint v2; config in .golangci.yaml)
+golangci-lint fmt                  # format Go sources (gofmt + goimports; same config)
 go build -o bin/taskctl .          # host build without taskctl (same as build-host task)
 ```
 

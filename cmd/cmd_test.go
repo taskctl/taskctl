@@ -25,7 +25,8 @@ func makeTestApp() *cli.App {
 	return cmd.NewApp("test")
 }
 
-func runAppTest(app *cli.App, test appTest, t *testing.T) {
+func runAppTest(t *testing.T, app *cli.App, test appTest) {
+	t.Helper()
 	origStdout := os.Stdout
 	r, w, err := os.Pipe()
 	if err != nil {
@@ -80,7 +81,8 @@ func runAppTest(app *cli.App, test appTest, t *testing.T) {
 // consumes one line per field: a 1-based option number for a select, "y"/"n"
 // for a confirm.
 func stdinLines(t *testing.T, lines ...string) *os.File {
-	tmpfile, err := os.CreateTemp("", "stdin")
+	t.Helper()
+	tmpfile, err := os.CreateTemp(t.TempDir(), "stdin")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,10 +102,10 @@ func stdinLines(t *testing.T, lines ...string) *os.File {
 
 func TestBashComplete(t *testing.T) {
 	app := makeTestApp()
-	runAppTest(app, appTest{
+	runAppTest(t, app, appTest{
 		args:   []string{"", "-c", "testdata/graph.yaml", "--generate-bash-completion"},
 		output: []string{"graph\\:task1", "graph\\:pipeline1"},
-	}, t)
+	})
 }
 
 func TestCustomOutputFormat(t *testing.T) {
@@ -124,7 +126,7 @@ func TestCustomOutputFormat(t *testing.T) {
 
 	for _, v := range tests {
 		app := makeTestApp()
-		runAppTest(app, v, t)
+		runAppTest(t, app, v)
 	}
 }
 
@@ -144,7 +146,7 @@ func TestRootAction(t *testing.T) {
 
 	for _, v := range tests {
 		app := makeTestApp()
-		runAppTest(app, v, t)
+		runAppTest(t, app, v)
 	}
 }
 
@@ -152,18 +154,18 @@ func TestRootAction(t *testing.T) {
 // errors instead of opening the selector.
 func TestRootAction_NoInputFlagBlocksPrompt(t *testing.T) {
 	app := makeTestApp()
-	runAppTest(app, appTest{
+	runAppTest(t, app, appTest{
 		args:    []string{"", "--no-input"},
 		errored: true,
-	}, t)
+	})
 }
 
 // With a non-TTY stdout, the cockpit dashboard degrades to prefixed output
 // rather than failing to render, so task output still appears.
 func TestCockpitDegradesWhenStdoutNotTTY(t *testing.T) {
 	app := makeTestApp()
-	runAppTest(app, appTest{
+	runAppTest(t, app, appTest{
 		args:   []string{"", "--cockpit", "-c", "testdata/graph.yaml", "graph:task1"},
 		output: []string{"hello, world!"},
-	}, t)
+	})
 }

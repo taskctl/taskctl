@@ -3,7 +3,6 @@ package scheduler
 import (
 	"errors"
 	"fmt"
-	"sync/atomic"
 	"testing"
 
 	"github.com/taskctl/taskctl/variables"
@@ -258,7 +257,7 @@ func TestScheduler_Cancel(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if atomic.LoadInt32(&schdlr.cancelled) != 1 {
+	if schdlr.cancelled.Load() != 1 {
 		t.Error()
 	}
 }

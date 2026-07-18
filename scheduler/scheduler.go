@@ -1,6 +1,7 @@
 package scheduler
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"os/exec"
@@ -22,7 +23,7 @@ type Scheduler struct {
 	taskRunner runner.Runner
 	pause      time.Duration
 
-	cancelled int32
+	cancelled atomic.Int32
 }
 
 // NewScheduler create new Scheduler instance
@@ -43,7 +44,7 @@ func (s *Scheduler) Schedule(g *ExecutionGraph) error {
 	var wg = sync.WaitGroup{}
 
 	for !s.isDone(g) {
-		if atomic.LoadInt32(&s.cancelled) == 1 {
+		if s.cancelled.Load() == 1 {
 			break
 		}
 
@@ -106,7 +107,7 @@ func (s *Scheduler) Schedule(g *ExecutionGraph) error {
 
 // Cancel cancels executing tasks
 func (s *Scheduler) Cancel() {
-	atomic.StoreInt32(&s.cancelled, 1)
+	s.cancelled.Store(1)
 	s.taskRunner.Cancel()
 }
 
@@ -191,7 +192,7 @@ func checkStatus(p *ExecutionGraph, stage *Stage) (ready bool) {
 }
 
 func checkStageCondition(condition string) (bool, error) {
-	cmd := exec.Command(condition)
+	cmd := exec.CommandContext(context.Background(), condition)
 	err := cmd.Run()
 	if err != nil {
 		if isExitError(err) {

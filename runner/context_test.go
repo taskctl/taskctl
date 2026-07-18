@@ -1,7 +1,6 @@
 package runner
 
 import (
-	"io"
 	"log/slog"
 	"testing"
 
@@ -10,7 +9,7 @@ import (
 )
 
 func TestContext(t *testing.T) {
-	slog.SetDefault(slog.New(slog.NewTextHandler(io.Discard, nil)))
+	slog.SetDefault(slog.New(slog.DiscardHandler))
 
 	c1 := NewExecutionContext(nil, "/", variables.NewVariables(), []string{"true"}, []string{"false"}, []string{"true"}, []string{"false"})
 	c2 := NewExecutionContext(nil, "/", variables.NewVariables(), []string{"false"}, []string{"false"}, []string{"false"}, []string{"false"})

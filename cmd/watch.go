@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"sync"
@@ -20,7 +21,7 @@ func newWatchCommand() *cli.Command {
 		Usage:     "starts watching for filesystem events",
 		Before: func(c *cli.Context) error {
 			if c.NArg() == 0 {
-				return fmt.Errorf("no watcher specified")
+				return errors.New("no watcher specified")
 			}
 
 			return nil

@@ -14,7 +14,7 @@ func Test_watchCommand_error(t *testing.T) {
 	}
 
 	for _, v := range tests {
-		runAppTest(app, v, t)
+		runAppTest(t, app, v)
 	}
 }
 
@@ -26,6 +26,6 @@ func Test_watchCommand_success(t *testing.T) {
 
 	for _, v := range tests {
 		time.AfterFunc(100*time.Millisecond, cmd.Abort)
-		runAppTest(app, v, t)
+		runAppTest(t, app, v)
 	}
 }

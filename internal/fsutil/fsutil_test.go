@@ -40,10 +40,7 @@ func TestMustGetwd(t *testing.T) {
 }
 
 func TestMustGetUserHomeDir(t *testing.T) {
-	err := os.Setenv("HOME", "/test")
-	if err != nil {
-		t.Fatal(err)
-	}
+	t.Setenv("HOME", "/test")
 	hd := MustGetUserHomeDir()
 	if hd != "/test" {
 		t.Error()

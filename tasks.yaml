@@ -1,19 +1,15 @@
 output: cockpit
 pipelines:
   fixcs:
-    - task: goimports
+    - task: fmt
       dir: "{{.Root}}"
-    - task: gofmt
-      dir: "{{.Root}}"
-      depends_on: goimports
 
   prepare:
     - task: tidy
     - task: test
-    - task: goimports
+    - task: fmt
+      dir: "{{.Root}}"
       depends_on: test
-    - task: gofmt
-      depends_on: goimports
     - pipeline: lints
     - task: update-completers
       depends_on: test
@@ -43,27 +39,20 @@ tasks:
       - GOOS: windows
 
   golangci-lint:
-    description: Lint with golangci-lint (config in .golangci.yml)
+    description: Lint with golangci-lint (config in .golangci.yaml)
     command:
       - golangci-lint run
 
-  goimports:
-    # Walk directories instead of globbing: taskctl's embedded shell has no
-    # globstar, so `**` patterns silently match nothing.
-    description: Group and sort imports across the repo
+  fmt:
+    description: Format Go sources (gofmt -s + goimports) via golangci-lint
+    dir: "{{.Root}}"
     command:
-      - goimports -v -local github.com/taskctl/taskctl -w -format-only .
+      - golangci-lint fmt
 
   goreleaser:
     description: Build a release snapshot with GoReleaser
     command:
       - goreleaser --clean
-
-  gofmt:
-    description: Format and simplify all Go sources (gofmt -s)
-    dir: "{{.Root}}"
-    command:
-      - gofmt -l -s -w .
 
   tidy:
     description: Sync go.mod/go.sum with the source (go mod tidy)

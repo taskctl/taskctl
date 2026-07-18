@@ -61,10 +61,10 @@ func NewExecutionContext(executable *Binary, dir string, env variables.Container
 }
 
 // Up executes tasks defined to run once before first usage of the context
-func (c *ExecutionContext) Up() error {
+func (c *ExecutionContext) Up(ctx context.Context) error {
 	c.onceUp.Do(func() {
 		for _, command := range c.up {
-			err := c.runServiceCommand(command)
+			err := c.runServiceCommand(ctx, command)
 			if err != nil {
 				c.mu.Lock()
 				c.startupError = err
@@ -81,7 +81,9 @@ func (c *ExecutionContext) Up() error {
 func (c *ExecutionContext) Down() {
 	c.onceDown.Do(func() {
 		for _, command := range c.down {
-			err := c.runServiceCommand(command)
+			// Cleanup must run even when the run was cancelled, so it uses a
+			// fresh background context rather than the (possibly cancelled) one.
+			err := c.runServiceCommand(context.Background(), command)
 			if err != nil {
 				slog.Error(fmt.Sprintf("context cleanup error: %s", err.Error()))
 			}
@@ -90,9 +92,9 @@ func (c *ExecutionContext) Down() {
 }
 
 // Before executes tasks defined to run before every usage of the context
-func (c *ExecutionContext) Before() error {
+func (c *ExecutionContext) Before(ctx context.Context) error {
 	for _, command := range c.before {
-		err := c.runServiceCommand(command)
+		err := c.runServiceCommand(ctx, command)
 		if err != nil {
 			return err
 		}
@@ -104,7 +106,9 @@ func (c *ExecutionContext) Before() error {
 // After executes tasks defined to run after every usage of the context
 func (c *ExecutionContext) After() error {
 	for _, command := range c.after {
-		err := c.runServiceCommand(command)
+		// After runs during task teardown, so it uses a background context to
+		// stay independent of the run's cancellation.
+		err := c.runServiceCommand(context.Background(), command)
 		if err != nil {
 			return err
 		}
@@ -113,14 +117,14 @@ func (c *ExecutionContext) After() error {
 	return nil
 }
 
-func (c *ExecutionContext) runServiceCommand(command string) (err error) {
+func (c *ExecutionContext) runServiceCommand(ctx context.Context, command string) (err error) {
 	slog.Debug(fmt.Sprintf("running context service command: %s", command))
 	ex, err := executor.NewDefaultExecutor(nil, nil, nil)
 	if err != nil {
 		return err
 	}
 
-	out, err := ex.Execute(context.Background(), &executor.Job{
+	out, err := ex.Execute(ctx, &executor.Job{
 		Command: command,
 		Dir:     c.Dir,
 		Env:     c.Env,

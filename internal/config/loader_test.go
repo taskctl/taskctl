@@ -102,7 +102,7 @@ func TestLoader_readURL(t *testing.T) {
 			writer.Header().Set("Content-Type", "application/json")
 		}
 		if r == 2 {
-			writer.WriteHeader(500)
+			writer.WriteHeader(http.StatusInternalServerError)
 		}
 		_, _ = fmt.Fprintln(writer, sampleCfg)
 		r++

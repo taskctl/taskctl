@@ -162,7 +162,7 @@ func TestJSONOutputWriter_FooterFlushesFailedStatus(t *testing.T) {
 	tt.Name = "task1"
 	tt.Errored = true
 	tt.ExitCode = 1
-	tt.Error = errTest{}
+	tt.Error = testError{}
 	tt.Log.Stderr.WriteString("boom")
 
 	d := newJSONOutputWriter(tt, &buf)
@@ -183,9 +183,9 @@ func TestJSONOutputWriter_FooterFlushesFailedStatus(t *testing.T) {
 	}
 }
 
-type errTest struct{}
+type testError struct{}
 
-func (errTest) Error() string { return "boom" }
+func (testError) Error() string { return "boom" }
 
 func TestEmitRunStartedAndFinished(t *testing.T) {
 	var buf bytes.Buffer
