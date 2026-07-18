@@ -117,6 +117,50 @@ func TestTaskRunner_PreExecutionFailureKeepsExitCode(t *testing.T) {
 	runner.Finish()
 }
 
+func TestTaskRunner_ContextVariables(t *testing.T) {
+	c := NewExecutionContext(nil, "", variables.NewVariables(), nil, nil, nil, nil)
+	c.Variables = variables.FromMap(map[string]string{
+		"greeting": "hello-from-context",
+		"shared":   "context-wins",
+	})
+
+	runner, err := NewTaskRunner(WithContexts(map[string]*ExecutionContext{"local": c}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	runner.Stdout, runner.Stderr = io.Discard, io.Discard
+
+	contextOnly := taskpkg.NewTask()
+	contextOnly.Context = "local"
+	contextOnly.Name = "context-only"
+	contextOnly.Commands = []string{"echo '{{ .greeting }}'"}
+
+	taskOverride := taskpkg.NewTask()
+	taskOverride.Context = "local"
+	taskOverride.Name = "task-override"
+	taskOverride.Variables = variables.FromMap(map[string]string{"shared": "task-wins"})
+	taskOverride.Commands = []string{"echo '{{ .shared }}'"}
+
+	cases := []struct {
+		t    *taskpkg.Task
+		want string
+	}{
+		{t: contextOnly, want: "hello-from-context"},
+		{t: taskOverride, want: "task-wins"},
+	}
+
+	for _, tc := range cases {
+		if err := runner.Run(tc.t); err != nil {
+			t.Fatalf("%s: %v", tc.t.Name, err)
+		}
+		if !strings.Contains(tc.t.Output(), tc.want) {
+			t.Errorf("%s: output %q does not contain %q", tc.t.Name, tc.t.Output(), tc.want)
+		}
+	}
+
+	runner.Finish()
+}
+
 func ExampleTaskRunner_Run() {
 	t := taskpkg.FromCommands("go fmt ./...", "go build ./..")
 	r, err := NewTaskRunner()

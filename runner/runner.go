@@ -145,7 +145,7 @@ func (r *TaskRunner) Run(t *task.Task) error {
 		}
 	}()
 
-	vars := r.variables.Merge(t.Variables)
+	vars := r.variables.Merge(execContext.Variables).Merge(t.Variables)
 
 	env := r.env.Merge(execContext.Env)
 	env = env.With("TASK_NAME", t.Name)
