@@ -11,7 +11,7 @@ require (
 	github.com/bmatcuk/doublestar v1.3.4
 	github.com/charmbracelet/colorprofile v0.4.3
 	github.com/emicklei/dot v1.11.0
-	github.com/fsnotify/fsnotify v1.8.0
+	github.com/fsnotify/fsnotify v1.10.1
 	github.com/go-viper/mapstructure/v2 v2.5.0
 	github.com/pelletier/go-toml v1.9.5
 	github.com/urfave/cli/v2 v2.27.7

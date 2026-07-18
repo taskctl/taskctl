@@ -25,12 +25,18 @@ const (
 	eventChmod  = "chmod"
 )
 
-var fsnotifyMap = map[fsnotify.Op]string{
-	fsnotify.Create: eventCreate,
-	fsnotify.Write:  eventWrite,
-	fsnotify.Remove: eventRemove,
-	fsnotify.Rename: eventRename,
-	fsnotify.Chmod:  eventChmod,
+// fsnotifyOps pairs fsnotify operations with event names in priority order.
+// Op is a bitmask, so one event may carry several ops (e.g. Write|Chmod); the
+// first matching, watched op wins rather than requiring an exact-op match.
+var fsnotifyOps = []struct {
+	op   fsnotify.Op
+	name string
+}{
+	{fsnotify.Create, eventCreate},
+	{fsnotify.Write, eventWrite},
+	{fsnotify.Remove, eventRemove},
+	{fsnotify.Rename, eventRename},
+	{fsnotify.Chmod, eventChmod},
 }
 
 // Watcher is a file watcher. It triggers tasks or pipelines when filesystem event occurs.
@@ -46,6 +52,11 @@ type Watcher struct {
 	isClosed bool
 	mu       sync.Mutex
 	running  atomic.Bool
+
+	// runMu serializes task runs: events fan out into concurrent handle
+	// goroutines, but the shared TaskRunner is stateful and must run one task
+	// at a time.
+	runMu sync.Mutex
 
 	eventsWg sync.WaitGroup
 }
@@ -119,7 +130,10 @@ func (w *Watcher) Run(r *runner.TaskRunner) (err error) {
 	w.running.Store(true)
 
 	go func() {
-		err := w.r.Run(w.task)
+		w.runMu.Lock()
+		defer w.runMu.Unlock()
+		// Clone so w.task stays a pristine definition; Run mutates run state.
+		err := w.r.Run(w.task.Clone())
 		if err != nil {
 			slog.Error(err.Error())
 		}
@@ -189,15 +203,25 @@ func (w *Watcher) Running() bool {
 func (w *Watcher) handle(event fsnotify.Event) {
 	defer w.eventsWg.Done()
 
-	eventName := fsnotifyMap[event.Op]
-	if !w.events.Has(eventName) {
+	var eventName string
+	for _, e := range fsnotifyOps {
+		if event.Op.Has(e.op) && w.events.Has(e.name) {
+			eventName = e.name
+			break
+		}
+	}
+	if eventName == "" {
 		return
 	}
 
-	w.r.Cancel()
 	slog.Debug(fmt.Sprintf("running task \"%s\" for watcher \"%s\"", w.task.Name, w.name))
 
-	t := *w.task
+	// Clone under runMu: the shared task is mutated in place by an active run,
+	// so both the clone and the run must be serialized against it.
+	w.runMu.Lock()
+	defer w.runMu.Unlock()
+
+	t := w.task.Clone()
 	t.Env = t.Env.Merge(variables.FromMap(map[string]string{
 		"EventName": eventName,
 		"EventPath": event.Name,
@@ -208,7 +232,7 @@ func (w *Watcher) handle(event fsnotify.Event) {
 		"EVENT_PATH": event.Name,
 	}))
 
-	err := w.r.Run(&t)
+	err := w.r.Run(t)
 	if err != nil {
 		slog.Error(err.Error())
 	}
