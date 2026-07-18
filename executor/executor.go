@@ -3,6 +3,7 @@ package executor
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -134,5 +135,9 @@ func (e *DefaultExecutor) Execute(ctx context.Context, job *Job) ([]byte, error)
 
 // IsExitStatus checks if given `err` is an exit status
 func IsExitStatus(err error) (uint8, bool) {
-	return interp.IsExitStatus(err)
+	var status interp.ExitStatus
+	if errors.As(err, &status) {
+		return uint8(status), true
+	}
+	return 0, false
 }
