@@ -5,6 +5,8 @@ builds:
   - binary: bin/taskctl
     env:
       - CGO_ENABLED=0
+    flags:
+      - -trimpath
     goos:
       - darwin
       - linux
@@ -18,14 +20,14 @@ builds:
       - "7"
     goarm64:
       - v8.0
-    gcflags:
-      - all=-trimpath={{.Env.GOPATH}}
 
 archives:
-  - format: tar.gz
+  - formats:
+      - tar.gz
     format_overrides:
       - goos: windows
-        format: zip
+        formats:
+          - zip
     files:
       - LICENSE.md
       - README.md
@@ -54,28 +56,32 @@ release:
 checksum:
   name_template: checksums.txt
 
-brews:
+homebrew_casks:
   - commit_author:
       name: Yevhen Terentiev
       email: yevhen.terentiev@gmail.com
     homepage: https://github.com/taskctl/taskctl
-    extra_install: |
-        bash_completion.install "autocomplete/bash_completion.bash"
-        zsh_completion.install "autocomplete/zsh_completion.zsh"
+    description: Concurrent task runner and developer's routine tasks automation toolkit
+    binaries:
+      - bin/taskctl
+    completions:
+      bash: autocomplete/bash_completion.bash
+      zsh: autocomplete/zsh_completion.zsh
     repository:
       owner: taskctl
       name: homebrew-taskctl
 
-
-dockers:
-  - image_templates:
-      - "docker.io/taskctl/taskctl:latest"
-      - "ghcr.io/taskctl/taskctl:latest"
-      - "docker.io/taskctl/taskctl:{{ .Tag }}"
-      - "ghcr.io/taskctl/taskctl:{{ .Tag }}"
-    skip_push: auto
-    goos: linux
-    goarch: amd64
+dockers_v2:
+  - images:
+      - docker.io/taskctl/taskctl
+      - ghcr.io/taskctl/taskctl
+    tags:
+      - latest
+      - "{{ .Tag }}"
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    disable: "{{ if .Prerelease }}true{{ else }}false{{ end }}"
 
 scoops:
   - repository:
@@ -85,3 +91,4 @@ scoops:
       name: Yevhen Terentiev
       email: yevhen.terentiev@gmail.com
     homepage: https://github.com/taskctl/taskctl
+    description: Concurrent task runner and developer's routine tasks automation toolkit

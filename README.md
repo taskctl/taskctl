@@ -92,7 +92,7 @@ According to this plan, `lint` and `test` will run concurrently, and `build` wil
 #### macOS
 ```
 brew tap taskctl/taskctl
-brew install taskctl
+brew install --cask taskctl
 ```
 #### Linux
 ```
