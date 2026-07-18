@@ -139,6 +139,10 @@ func (s *Scheduler) runStage(stage *Stage) error {
 	t := stage.Task.Clone()
 	stage.Task = t
 
+	if stage.Dir != "" {
+		t.Dir = stage.Dir
+	}
+
 	if stage.Env != nil {
 		if t.Env == nil {
 			t.Env = stage.Env

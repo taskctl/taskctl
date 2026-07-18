@@ -119,12 +119,14 @@ func TestExecutionGraph_Scheduler_AllowFailure(t *testing.T) {
 func TestScheduler_TaskVariablesSurviveStageMerge(t *testing.T) {
 	tsk := task.FromCommands("true")
 	tsk.Variables = variables.FromMap(map[string]string{"taskVar": "fromTask", "shared": "fromTask"})
+	tsk.Dir = "/task-dir"
 
 	stage1 := &Stage{
 		Name:      "stage1",
 		Task:      tsk,
 		Variables: variables.FromMap(map[string]string{"stageVar": "fromStage", "shared": "fromStage"}),
 		Env:       variables.NewVariables(),
+		Dir:       "/stage-dir",
 	}
 
 	graph, err := NewExecutionGraph(stage1)
@@ -147,6 +149,14 @@ func TestScheduler_TaskVariablesSurviveStageMerge(t *testing.T) {
 
 	if got := stage1.Task.Variables.Get("shared"); got != "fromStage" {
 		t.Errorf("stage variable should override task variable: got %v", got)
+	}
+
+	if stage1.Task.Dir != "/stage-dir" {
+		t.Errorf("stage dir should override task dir: got %q", stage1.Task.Dir)
+	}
+
+	if tsk.Dir != "/task-dir" {
+		t.Errorf("stage dir leaked into the shared task definition: got %q", tsk.Dir)
 	}
 }
 

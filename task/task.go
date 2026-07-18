@@ -89,6 +89,10 @@ func (t *Task) Clone() *Task {
 
 // Duration returns task's execution duration
 func (t *Task) Duration() time.Duration {
+	if t.Start.IsZero() {
+		return 0
+	}
+
 	if t.End.IsZero() {
 		return time.Since(t.Start)
 	}
