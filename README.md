@@ -274,6 +274,8 @@ A task definition takes the following parameters:
 ### Tasks variables
 Each task, stage and context has variables that are used to render a task's fields - `command`, `dir`. Along with the globally predefined ones, variables can be set in a task's definition. You can use those variables according to the `text/template` [documentation](https://pkg.go.dev/text/template).
 
+Variables layer by precedence, last wins: global < context < task. So a variable declared under a context's `variables:` is available in the `command`, `before` and `after` of any task using that context, and a task-level variable of the same name overrides it. (A task's `condition:` sees global variables only.)
+
 Predefined variables are:
 - `.Root` - root config file directory
 - `.Dir` - config file directory
