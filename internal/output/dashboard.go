@@ -79,10 +79,10 @@ func (s *dashboardStreamWriter) Write(p []byte) (int, error) {
 }
 
 type taskStartedMsg struct {
-	id   uint64
-	name string
+	id      uint64
+	name    string
+	started time.Time
 }
-
 type taskFinishedMsg struct {
 	id       uint64
 	name     string
