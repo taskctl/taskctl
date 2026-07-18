@@ -127,6 +127,12 @@ func (r *TaskRunner) Run(t *task.Task) error {
 	}
 
 	defer func() {
+		// Record the success exit code before Finish writes the task_finished
+		// footer, which reports it.
+		if !t.Errored && !t.Skipped {
+			t.ExitCode = 0
+		}
+
 		err := taskOutput.Finish()
 		if err != nil {
 			slog.Error(err.Error())
@@ -135,10 +141,6 @@ func (r *TaskRunner) Run(t *task.Task) error {
 		err = execContext.After()
 		if err != nil {
 			slog.Error(err.Error())
-		}
-
-		if !t.Errored && !t.Skipped {
-			t.ExitCode = 0
 		}
 	}()
 

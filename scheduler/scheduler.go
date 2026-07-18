@@ -133,7 +133,12 @@ func (s *Scheduler) runStage(stage *Stage) error {
 		return s.Schedule(stage.Pipeline)
 	}
 
-	t := stage.Task
+	// Tasks are shared between stages that reference the same definition, so
+	// run a per-stage clone: merging stage env/variables into the shared
+	// instance would leak them into other stages and race under concurrency.
+	t := stage.Task.Clone()
+	stage.Task = t
+
 	if stage.Env != nil {
 		if t.Env == nil {
 			t.Env = stage.Env
@@ -150,7 +155,7 @@ func (s *Scheduler) runStage(stage *Stage) error {
 		}
 	}
 
-	return s.taskRunner.Run(stage.Task)
+	return s.taskRunner.Run(t)
 }
 
 func checkStatus(p *ExecutionGraph, stage *Stage) (ready bool) {
