@@ -112,7 +112,7 @@ func newInitCommand() *cli.Command {
 			}
 
 			tui.Println(os.Stdout, tui.StyleSuccess.Render(fmt.Sprintf("%s was created. Edit it accordingly to your needs", filename)))
-			tui.Println(os.Stdout, tui.StyleFaint.Render("To Run example pipeline - taskctl Run pipeline1"))
+			tui.Println(os.Stdout, tui.StyleFaint.Render("To run the example pipeline - taskctl run pipeline1"))
 
 			return nil
 		},

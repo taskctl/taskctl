@@ -33,6 +33,15 @@ archives:
       - autocomplete/zsh_completion.zsh
     allow_different_binary_count: true
 
+nfpms:
+  - homepage: https://github.com/taskctl/taskctl
+    maintainer: Yevhen Terentiev <yevhen.terentiev@gmail.com>
+    description: Concurrent task runner and developer's routine tasks automation toolkit
+    license: GPL-3.0
+    formats:
+      - deb
+      - rpm
+
 source:
   enabled: true
 

@@ -10,41 +10,38 @@
 ![GitHub issues](https://img.shields.io/github/issues/taskctl/taskctl)
 ![Licence](https://img.shields.io/github/license/taskctl/taskctl)
 
-![Tests](https://github.com/taskctl/taskctl/workflows/Test/badge.svg)
+[![Tests](https://github.com/taskctl/taskctl/actions/workflows/pull-request-checks.yml/badge.svg)](https://github.com/taskctl/taskctl/actions/workflows/pull-request-checks.yml)
 ![GitHub top language](https://img.shields.io/github/languages/top/taskctl/taskctl)
 [![Go Report Card](https://goreportcard.com/badge/github.com/taskctl/taskctl)](https://goreportcard.com/report/github.com/taskctl/taskctl)
-[![Test Coverage](https://codecov.io/gh/taskctl/taskctl/branch/main/graph/badge.svg)](https://codecov.io/gh/taskctl/taskctl/tree/main/pkg)
-[![Maintainability](https://api.codeclimate.com/v1/badges/a99a88d28ad37a79dbf6/maintainability)](https://codeclimate.com/github/codeclimate/codeclimate/maintainability)
+[![Test Coverage](https://codecov.io/gh/taskctl/taskctl/branch/main/graph/badge.svg)](https://codecov.io/gh/taskctl/taskctl)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat)](https://github.com/taskctl/taskctl/pulls)
 
-Simple modern alternative to GNU Make. *taskctl* is concurrent task runner that allows you to design you routine tasks and development pipelines in nice and neat way in human-readable format (YAML, JSON or TOML). 
-Given a pipeline (composed of tasks or other pipelines) it builds a graph that outlines the execution plan. Each task my run concurrently or cascade.
-Beside pipelines, each single task can be started manually or triggered by built-in filesystem watcher.
+A simple, modern alternative to GNU Make. *taskctl* is a concurrent task runner that allows you to design your routine tasks and development pipelines in a nice and neat way in a human-readable format (YAML, JSON or TOML). 
+Given a pipeline (composed of tasks or other pipelines), it builds a graph that outlines the execution plan. Tasks may run concurrently or cascade.
+Besides pipelines, each single task can be started manually or triggered by the built-in filesystem watcher.
 
 ## Features
-- human-readable configuration format (YAML, JSON or TOML)
-- concurrent tasks execution
-- highly customizable execution plan
-- cross platform
-- import local or remote configurations
+- human-readable configuration (YAML, JSON or TOML) with local or remote imports
+- concurrent task execution with DAG-based pipelines: dependencies, conditions, allowed failures, graph visualization
+- cross-platform: embedded shell interpreter, no dependency on a system shell
+- AI-agent friendly: JSON discovery, NDJSON run events, non-interactive mode, installable agent skill
+- customizable execution contexts (wrap commands in `docker`, `ssh`, any binary)
+- templated commands with variables, task variations, and output piped between tasks
 - integrated file watcher (live reload)
-- customizable execution contexts
-- different output types
-- embeddable task runner
-- interactive prompt
-- handy autocomplete
-- and many more...
+- output formats: raw, prefixed, live cockpit dashboard, or JSON event stream
+- interactive task selector and shell autocomplete
+- embeddable task runner for Go programs
 
 ```yaml
 tasks:
   lint:
     command:
-      - golint $(go list ./... | grep -v /vendor/)
-      - go vet $(go list ./... | grep -v /vendor/)
+      - golangci-lint run
+      - go vet ./...
   
   test:
     allow_failure: true
-    command: go test ./....
+    command: go test ./...
         
   build:
     command: go build -o bin/app ./...
@@ -60,10 +57,74 @@ pipelines:
     - task: build
       depends_on: [lint, test]
 ```
-According to this plan `lint` and `test` will run concurrently, `build` will start only when both `lint` and `test` finished.
+According to this plan, `lint` and `test` will run concurrently, and `build` will start only when both `lint` and `test` have finished.
 
 
 [![asciicast](https://asciinema.org/a/326726.svg)](https://asciinema.org/a/326726)
+
+## Contents  
+- [Getting started](#getting-started)
+  - [Installation](#install)
+  - [Usage](#usage)
+- [taskctl for AI agents](#taskctl-for-ai-agents)
+- [Configuration](#configuration)
+    - [Global configuration](#global-configuration)
+    - [Example](#example)
+- [Tasks](#tasks)
+    - [Pass CLI arguments to task](#pass-cli-arguments-to-task)
+    - [Task's variations](#tasks-variations)
+    - [Task's variables](#tasks-variables)
+    - [Storing task's output](#storing-tasks-output) 
+    - [Conditional execution](#task-conditional-execution) 
+- [Pipelines](#pipelines)
+- [Output formats](#taskctl-output-formats)
+- [Filesystem watchers](#filesystem-watchers)
+    - [Patterns](#patterns)
+- [Contexts](#contexts)
+- [CLI reference](#cli-reference)
+- [Embeddable task runner](#embeddable-task-runner)
+    - [Runner](#runner)
+    - [Scheduler](#scheduler)
+- [Autocomplete](#autocomplete)
+- [How to contribute?](#how-to-contribute)
+- [License](#license)
+
+## Getting started
+### Install
+#### macOS
+```
+brew tap taskctl/taskctl
+brew install taskctl
+```
+#### Linux
+```
+sudo wget https://github.com/taskctl/taskctl/releases/latest/download/taskctl_linux_amd64 -O /usr/local/bin/taskctl
+sudo chmod +x /usr/local/bin/taskctl
+```
+#### deb/rpm:
+Download the .deb or .rpm from the [releases](https://github.com/taskctl/taskctl/releases) page and install with `dpkg -i` 
+and `rpm -i` respectively.
+
+#### Windows
+```
+scoop bucket add taskctl https://github.com/taskctl/scoop-taskctl.git
+scoop install taskctl
+```
+#### From sources
+```
+git clone https://github.com/taskctl/taskctl
+cd taskctl
+go build -o taskctl .
+```
+#### Docker images
+Docker images are available on [Docker Hub](https://hub.docker.com/r/taskctl/taskctl) and [GitHub Container Registry](https://github.com/taskctl/taskctl/pkgs/container/taskctl) (`ghcr.io/taskctl/taskctl`).
+
+### Usage
+- `taskctl` - run the interactive task prompt
+- `taskctl pipeline1` - run a single pipeline
+- `taskctl task1` - run a single task
+- `taskctl pipeline1 task1` - run one or more pipelines and/or tasks
+- `taskctl watch watcher1 watcher2` - start one or more watchers
 
 ## taskctl for AI agents
 
@@ -94,7 +155,7 @@ taskctl has a machine-readable CLI surface designed for use by AI agents and oth
   "schema_version": 1,
   "task": {
     "name": "lint",
-    "commands": ["golint ./..."],
+    "commands": ["golangci-lint run"],
     "env": {},
     "variables": {},
     "allow_failure": false
@@ -152,82 +213,16 @@ Separately, `--cockpit` (the live full-screen dashboard) requires an interactive
 - `--global` installs into the user's home directory instead of the current directory.
 - `--force` overwrites an existing installation.
 
-## Contents  
-- [taskctl for AI agents](#taskctl-for-ai-agents)
-- [Getting started](#getting-started)
-  - [Installation](#install)
-  - [Usage](#usage)
-- [Configuration](#configuration)
-    - [Global configuration](#global-configuration)
-    - [Example](#example)
-- [Tasks](#tasks)
-    - [Pass CLI arguments to task](#pass-cli-arguments-to-task)
-    - [Task's variations](#tasks-variations)
-    - [Task's variables](#tasks-variables)
-    - [Storing task's output](#storing-tasks-output) 
-    - [Conditional execution](#task-conditional-execution) 
-- [Pipelines](#pipelines)
-- [Filesystem watchers](#filesystem-watchers)
-    - [Patterns](#patterns)
-- [Contexts](#contexts)
-- [Output formats](#taskctl-output-formats)
-- [Embeddable task runner](#embeddable-task-runner)
-    - [Runner](#runner)
-    - [Scheduler](#scheduler)
-- [FAQ](#faq)
-  - [How does it differ from go-task/task?](#how-does-it-differ-from-go-tasktask)
-- [Autocomplete](#autocomplete)
-- [Similar projects](#similar-projects)
-- [How to contribute?](#how-to-contribute)
-- [License](#license)
-
-## Getting started
-### Install
-#### MacOS
-```
-brew tap taskctl/taskctl
-brew install taskctl
-```
-#### Linux
-```
-sudo wget https://github.com/taskctl/taskctl/releases/latest/download/taskctl_linux_amd64 -O /usr/local/bin/taskctl
-sudo chmod +x /usr/local/bin/taskctl
-```
-#### deb/rpm:
-Download the .deb or .rpm from the [releases](https://github.com/taskctl/taskctl/releases) page and install with `dpkg -i` 
-and `rpm -i` respectively.
-
-#### Windows
-```
-scoop bucket add taskctl https://github.com/taskctl/scoop-taskctl.git
-scoop install taskctl
-```
-#### From sources
-```
-git clone https://github.com/taskctl/taskctl
-cd taskctl
-go build -o taskctl .
-```
-#### Docker images
-Docker images available on [Docker hub](https://hub.docker.com/repository/docker/taskctl/taskctl)
-
-### Usage
-- `taskctl` - run interactive task prompt
-- `taskctl pipeline1` - run single pipeline
-- `taskctl task1` - run single task
-- `taskctl pipeline1 task1` - run one or more pipelines and/or tasks
-- `taskctl watch watcher1 watcher2` - start one or more watchers
-
 ## Configuration
-*taskctl* uses config file (`tasks.yaml` or `taskctl.yaml`) where your tasks and pipelines stored. 
-Config file includes following sections:
+*taskctl* uses a config file (`tasks.yaml` or `taskctl.yaml`) where your tasks and pipelines are stored. 
+The config file includes the following sections:
 - tasks
 - pipelines
 - watchers
 - contexts
 - variables
 
-Config file may import other config files, directories or URLs.
+A config file may import other config files, directories or URLs.
 ```yaml
 import:
 - .tasks/database.yaml
@@ -239,10 +234,10 @@ import:
 Config file [example](https://github.com/taskctl/taskctl/blob/main/docs/example.yaml)
 
 ### Global configuration
-*taskctl* has global configuration stored in ``$HOME/.taskctl/config.yaml`` file. It is handy to store system-wide tasks, reusable contexts, defaults etc. 
+*taskctl* has a global configuration stored in the ``$HOME/.taskctl/config.yaml`` file. It is handy for storing system-wide tasks, reusable contexts, defaults, etc. 
 
 ## Tasks
-Task is a foundation of *taskctl*. It describes one or more commands to run, their environment, executors and attributes such as working directory, execution timeout, acceptance of failure, etc.
+A task is the foundation of *taskctl*. It describes one or more commands to run, their environment, executors and attributes such as the working directory, execution timeout, acceptance of failure, etc.
 ```yaml
 tasks:
     lint:
@@ -263,26 +258,27 @@ tasks:
           - GOARCH: arm
             GOARM: 7
 ```
-Task definition takes following parameters:
+A task definition takes the following parameters:
 - `command` - one or more commands to run
+- `description` - human-readable description, shown by `taskctl list` and `taskctl show`
 - `variations` - list of variations (env variables) to apply to command
 - `context` - execution context's name
 - `env` - environment variables. All existing environment variables will be passed automatically
 - `env_file` - env file in `k=v` format to read variables from
 - `dir` - working directory. Current working directory by default
 - `timeout` - command execution timeout (default: none)
-- `allow_failure` - if set to `true` failed commands will not interrupt execution (default: `false`)
-- `after` - command that will be executed after command completes
-- `before` - command that will be executed before task starts
-- `exportAs` - env variable name to store task's output (default: `TASK_NAME_OUTPUT`, where `TASK_NAME` is actual task's name)
+- `allow_failure` - if set to `true`, failed commands will not interrupt execution (default: `false`)
+- `after` - command that will be executed after the task completes
+- `before` - command that will be executed before the task starts
+- `exportAs` - env variable name to store the task's output (default: `TASK_NAME_OUTPUT`, where `TASK_NAME` is the actual task's name)
 - `condition` - condition to check before running task
 - `variables` - task's variables
 - `interactive` - if `true` provides STDIN to commands (default: `false`)
 
 ### Tasks variables
-Each task, stage and context has variables to be used to render task's fields  - `command`, `dir`.
-Along with globally predefined, variables can be set in a task's definition.
-You can use those variables according to `text/template` [documentation](https://golang.org/pkg/text/template/).
+Each task, stage and context has variables that are used to render a task's fields - `command`, `dir`.
+Along with the globally predefined ones, variables can be set in a task's definition.
+You can use those variables according to the `text/template` [documentation](https://pkg.go.dev/text/template).
 
 Predefined variables are:
 - `.Root` - root config file directory
@@ -312,7 +308,7 @@ tasks:
 ```
 
 ### Pass CLI arguments to task
-Any command line arguments succeeding `--` are passed to each task via `.Args`, `.ArgsList` variables or `ARGS` environment variable.
+Any command line arguments succeeding `--` are passed to each task via the `.Args` and `.ArgsList` variables or the `ARGS` environment variable.
 
 Given this definition:
 ```yaml
@@ -332,12 +328,12 @@ $ taskctl lint2 -- package.go main.go
 ```
 
 ### Storing task's output
-Task output automatically stored to the variable named like this - ``.Tasks.TaskName.Output``, where `TaskName` is the actual task's name.
-It is also stored to `TASK_NAME_OUTPUT` environment variable. It's name can be changed by a task's `exportAs` parameter.
-Those variables will be available to all dependent stages.
+A task's output is automatically stored in a variable named ``.Tasks.TaskName.Output``, where `TaskName` is the actual task's name.
+It is also stored in the `TASK_NAME_OUTPUT` environment variable, whose name can be changed with the task's `exportAs` parameter.
+Those variables are available to all dependent stages.
 
 ### Tasks variations
-Task may run in one or more variations. Variations allows to reuse task with different env variables:
+A task may run in one or more variations. Variations allow you to reuse a task with different env variables:
 ```yaml
 tasks:
   build:
@@ -350,7 +346,7 @@ tasks:
       - GOOS: darwin
       - GOOS: windows
 ```
-this config will run build 3 times with different GOOS
+This config will run the build 3 times, each with a different `GOOS`.
 
 ### Task conditional execution
 The following task will run only when there are any changes that are staged but not committed:
@@ -363,8 +359,8 @@ tasks:
 ```
 
 ## Pipelines
-Pipeline is a set of stages (tasks or other pipelines) to be executed in a certain order. Stages may be executed in parallel or one-by-one. 
-Stage may override task's environment, variables etc. 
+A pipeline is a set of stages (tasks or other pipelines) to be executed in a certain order. Stages may be executed in parallel or one-by-one. 
+A stage may override the task's environment, variables, etc. 
 
 This pipeline:
 ```yaml
@@ -387,14 +383,15 @@ pipelines:
 will result in an execution plan like this:
 ![execution plan](https://raw.githubusercontent.com/taskctl/taskctl/main/docs/pipeline.svg)
 
-Stage definition takes following parameters:
-- `name` - stage name. If not set - referenced task or pipeline name will be used.
+A stage definition takes the following parameters:
+- `name` - stage name. If not set, the referenced task or pipeline name will be used.
 - `task` - task to execute on this stage
 - `pipeline` - pipeline to execute on this stage
 - `env` - environment variables. All existing environment variables will be passed automatically
 - `env_file` - file with env variables in `k=v` format to read variables from
-- `depends_on` - name of stage on which this stage depends on. This stage will be started only after referenced stage is completed.
-- `allow_failure` - if `true` failing stage will not interrupt pipeline execution. ``false`` by default
+- `dir` - working directory override for the task run in this stage
+- `depends_on` - names of the stages this stage depends on. This stage will be started only after the referenced stages have completed.
+- `allow_failure` - if `true`, a failing stage will not interrupt pipeline execution. ``false`` by default
 - `condition` - condition to check before running stage
 - `variables` - stage's variables
 
@@ -406,7 +403,7 @@ Taskctl has several output formats:
 - `json` - newline-delimited JSON event stream for machine consumption (see [taskctl for AI agents](#taskctl-for-ai-agents))
 
 ## Filesystem watchers
-Watcher watches for changes in files selected by provided patterns and triggers task anytime an event has occurred.
+A watcher watches for changes in files selected by the provided patterns and triggers the task any time an event occurs.
 ```yaml
 watchers:
   watcher1:
@@ -415,21 +412,29 @@ watchers:
     events: [create, write, remove, rename, chmod] # Filesystem events to listen to
     task: task1 # Task to run when event occurs
 ```
+
+A watcher definition takes the following parameters:
+- `watch` - patterns of files to watch
+- `exclude` - patterns of files to exclude
+- `events` - filesystem events to listen to (`create`, `write`, `remove`, `rename`, `chmod`)
+- `task` - task to run when an event occurs
+- `variables` - watcher's variables, passed to the task
+
 ### Patterns
 Thanks to [doublestar](https://github.com/bmatcuk/doublestar) *taskctl* supports the following special terms within include and exclude patterns:
 
-Special Terms | Meaning
-------------- | -------
-`*`           | matches any sequence of non-path-separators
-`**`          | matches any sequence of characters, including path separators
-`?`           | matches any single non-path-separator character
-`[class]`     | matches any single non-path-separator character against a class of characters ([details](https://github.com/bmatcuk/doublestar/blob/master/README.md#character-classes))
-`{alt1,...}`  | matches a sequence of characters if one of the comma-separated alternatives matches
+| Special Terms | Meaning |
+|---|---|
+| `*` | matches any sequence of non-path-separators |
+| `**` | matches any sequence of characters, including path separators |
+| `?` | matches any single non-path-separator character |
+| `[class]` | matches any single non-path-separator character against a class of characters ([details](https://github.com/bmatcuk/doublestar/blob/master/README.md#character-classes)) |
+| `{alt1,...}` | matches a sequence of characters if one of the comma-separated alternatives matches |
 
 Any character with a special meaning can be escaped with a backslash (`\`).
 
 ## Contexts
-Contexts allow you to set up execution environment, variables, binary which will run your task, up/down commands etc.
+Contexts allow you to set up the execution environment, variables, the binary that will run your task, up/down commands, etc.
 ```yaml
 contexts:
   local:
@@ -446,7 +451,18 @@ contexts:
     after: echo "Have a nice day!"
 ```
 
-Context has hooks which may be triggered once before first context usage or every time before task with this context will run.
+A context definition takes the following parameters:
+- `dir` - working directory. Also the base for a relative `env_file` path
+- `executable` - binary (`bin`) and its arguments (`args`) that will run the task's commands
+- `quote` - symbol to quote commands with when passing them to the executable
+- `env` - environment variables
+- `env_file` - file with env variables in `k=v` format to read variables from
+- `variables` - context's variables
+- `up`, `down`, `before`, `after` - lifecycle hooks (see below)
+
+A context has lifecycle hooks: `up` and `down` run once per taskctl run - `up` before the context's first
+usage, `down` during cleanup when the run finishes. `before` and `after` run every time around each task
+that uses the context.
 ```yaml
 context:
     docker-compose:
@@ -480,13 +496,44 @@ tasks:
     command: uname -a
 ```
 
+## CLI reference
+
+### Commands
+
+| command | description |
+|---|---|
+| `taskctl [target...]` (or `taskctl run [target...]`) | run one or more pipelines and/or tasks; with no target, opens the interactive selector |
+| `taskctl init` | create a sample config file in the current (or `--dir`) directory |
+| `taskctl list` | list all tasks, pipelines and watchers; `list tasks`, `list pipelines`, `list watchers` narrow the output |
+| `taskctl show <name>` | show a task's or pipeline's details |
+| `taskctl watch <watcher...>` | start one or more filesystem watchers |
+| `taskctl graph [pipeline]` (alias `g`) | visualize a pipeline's execution graph in DOT format (e.g. `taskctl graph release \| dot -Tsvg > graph.svg`); `--lr` orients it left-to-right |
+| `taskctl validate` | validate the config file |
+| `taskctl completion <shell>` | generate a completion script for `bash` or `zsh` |
+| `taskctl skill install` | install the AI agent skill (see [taskctl for AI agents](#taskctl-for-ai-agents)) |
+
+### Global flags
+
+| flag | env variable | description |
+|---|---|---|
+| `-c, --config <file>` | `TASKCTL_CONFIG_FILE` | config file to use (default: `tasks.yaml` or `taskctl.yaml`) |
+| `-o, --output <format>` | `TASKCTL_OUTPUT_FORMAT` | output format: `raw`, `prefixed`, `cockpit` or `json` |
+| `-r, --raw` | | shortcut for `--output=raw` |
+| `--cockpit` | | shortcut for `--output=cockpit` |
+| `-q, --quiet` | | quiet mode |
+| `--set <name=value>` | | set a global variable value (repeatable) |
+| `--dry-run` | | resolve and print commands without executing them |
+| `-s, --summary` | | show a run summary (default: `true`) |
+| `--no-input` | `TASKCTL_NO_INPUT` | disable interactive prompts |
+| `-d, --debug` | `TASKCTL_DEBUG` | enable debug output |
+
 ## Embeddable task runner
-*taskctl* may be embedded into any go program. 
-Additional information may be found on taskctl's [pkg.go.dev](https://pkg.go.dev/github.com/taskctl/taskctl?tab=overview) page
+*taskctl* may be embedded into any Go program. 
+Additional information may be found on taskctl's [pkg.go.dev](https://pkg.go.dev/github.com/taskctl/taskctl?tab=overview) page.
 
 ### Runner
 ```go
-t := task.FromCommands("go fmt ./...", "go build ./..")
+t := task.FromCommands("go fmt ./...", "go build ./...")
 r, err := NewTaskRunner()
 if err != nil {
     return
@@ -501,7 +548,7 @@ fmt.Println(t.Output())
 ### Scheduler
 ```go
 format := task.FromCommands("go fmt ./...")
-build := task.FromCommands("go build ./..")
+build := task.FromCommands("go build ./...")
 r, _ := runner.NewTaskRunner()
 s := NewScheduler(r)
 
@@ -519,12 +566,6 @@ if err != nil {
 }
 ```
 
-## FAQ
-### How does it differ from go-task/task?
-It's amazing how solving same problems lead to same solutions. *taskctl* and go-task have a lot of concepts in common but also have some differences. 
-1. Main is pipelines. Pipelines and stages allows more precise workflow design because same tasks may have different dependencies (or no dependencies) in different scenarios.
-2. Contexts allow you to set up execution environment and binary which will run your task.
-
 ## Autocomplete
 ### Bash
 Add to  ~/.bashrc or ~/.profile
@@ -537,19 +578,9 @@ Add to  ~/.zshrc
 ```
 . <(taskctl completion zsh)
 ```
-### Similar projects
-- [GNU Make](https://github.com/mirror/make)
-- [go-task/task](https://github.com/go-task/task)
-- [mage](https://github.com/magefile/mage)
-- [tusk](https://github.com/rliebz/tusk)
-- [just](https://github.com/casey/just)
-- [makesure](https://github.com/xonixx/makesure)
-- [cr](https://github.com/cirocosta/cr)
-- [realize](https://github.com/oxequa/realize)
-
 ## How to contribute?
 Feel free to contribute in any way you want. Share ideas, submit issues, create pull requests. 
-You can start by improving this [README.md](https://github.com/taskctl/taskctl/blob/main/README.md) or suggesting new [features](https://github.com/taskctl/taskctl/issues)
+You can start by improving this [README.md](https://github.com/taskctl/taskctl/blob/main/README.md) or suggesting new [features](https://github.com/taskctl/taskctl/issues).
 Thank you! 
 
 ## License

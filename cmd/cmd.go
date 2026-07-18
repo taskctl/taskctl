@@ -105,15 +105,15 @@ func NewApp(version string) *cli.App {
 			&cli.BoolFlag{
 				Name:    "quiet",
 				Aliases: []string{"q"},
-				Usage:   "quite mode",
+				Usage:   "quiet mode",
 			},
 			&cli.StringSliceFlag{
 				Name:  "set",
 				Usage: "set global variable value",
 			},
 			&cli.BoolFlag{
-				Name:  "dry-Run",
-				Usage: "dry Run",
+				Name:  "dry-run",
+				Usage: "dry run",
 			},
 			&cli.BoolFlag{
 				Name:    "summary",
@@ -162,7 +162,7 @@ func NewApp(version string) *cli.App {
 				}
 			}
 
-			if c.Bool("dry-Run") {
+			if c.Bool("dry-run") {
 				cfg.DryRun = true
 			}
 

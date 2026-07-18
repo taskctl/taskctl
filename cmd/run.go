@@ -21,16 +21,16 @@ import (
 func newRunCommand() *cli.Command {
 	var taskRunner *runner.TaskRunner
 	cmd := &cli.Command{
-		Name:      "Run",
-		ArgsUsage: "Run (PIPELINE1 OR TASK1) [PIPELINE2 OR TASK2]... [flags] [-- TASKS_ARGS]",
+		Name:      "run",
+		ArgsUsage: "run (PIPELINE1 OR TASK1) [PIPELINE2 OR TASK2]... [flags] [-- TASKS_ARGS]",
 		Usage:     "runs pipeline or task",
-		UsageText: "taskctl Run pipeline1\n" +
+		UsageText: "taskctl run pipeline1\n" +
 			"taskctl pipeline1\n" +
 			"taskctl task1",
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
-				Name:  "dry-Run",
-				Usage: "dry Run",
+				Name:  "dry-run",
+				Usage: "dry run",
 			},
 			&cli.BoolFlag{
 				Name:    "summary",
@@ -174,7 +174,7 @@ func runPipeline(g *scheduler.ExecutionGraph, taskRunner *runner.TaskRunner, sum
 
 // targetNames extracts the list of target names from raw CLI args, stopping
 // at "--" (task args follow). When skipPipelineKeyword is true, the literal
-// "pipeline" token (used by `taskctl Run pipeline <name>`) is dropped.
+// "pipeline" token (used by `taskctl run pipeline <name>`) is dropped.
 func targetNames(args []string, skipPipelineKeyword bool) []string {
 	names := make([]string, 0, len(args))
 	for _, v := range args {
