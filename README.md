@@ -514,7 +514,7 @@ tasks:
 | `-q, --quiet` | | quiet mode |
 | `--set <name=value>` | | set a global variable value (repeatable) |
 | `--dry-run` | | resolve and print commands without executing them |
-| `-s, --summary` | | show a run summary (default: `true`) |
+| `-s, --summary` | | show a run summary; on by default in human output modes, off with `--quiet` or in `raw` mode (unless opted in via config), never in `json`. An explicit flag wins over these defaults |
 | `--no-input` | `TASKCTL_NO_INPUT` | disable interactive prompts |
 | `-d, --debug` | `TASKCTL_DEBUG` | enable debug output |
 

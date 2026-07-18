@@ -17,6 +17,7 @@ type appTest struct {
 	args        []string
 	errored     bool
 	output      []string
+	absent      []string
 	exactOutput string
 	stdin       io.ReadCloser
 }
@@ -68,6 +69,12 @@ func runAppTest(t *testing.T, app *cli.App, test appTest) {
 			if !strings.Contains(s, v) {
 				t.Errorf("\"%s\" not found in \"%s\"", v, s)
 			}
+		}
+	}
+
+	for _, v := range test.absent {
+		if strings.Contains(s, v) {
+			t.Errorf("\"%s\" unexpectedly found in \"%s\"", v, s)
 		}
 	}
 
