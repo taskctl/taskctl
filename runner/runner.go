@@ -94,9 +94,19 @@ func (r *TaskRunner) SetVariables(vars variables.Container) *TaskRunner {
 }
 
 // Run run provided task.
-// TaskRunner first compiles task into linked list of Jobs, then passes those jobs to Executor
-func (r *TaskRunner) Run(t *task.Task) error {
+// TaskRunner first compiles task into linked list of Jobs, then passes those jobs to Executor.
+// Any failure — including errors before execution starts (context resolution,
+// hooks, compilation) — is recorded on the task via Errored/Error.
+func (r *TaskRunner) Run(t *task.Task) (err error) {
 	defer func() {
+		// Pre-execution failures return an error without reaching execute(),
+		// which is what normally marks the task; record them here so task
+		// status and error reporting reflect the failure.
+		if err != nil && !t.Errored {
+			t.Errored = true
+			t.Error = err
+		}
+
 		r.cancelMutex.RLock()
 		if r.canceling {
 			close(r.doneCh)

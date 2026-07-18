@@ -361,6 +361,9 @@ func summarizeGraph(g *scheduler.ExecutionGraph) []output.StageSummary {
 		} else {
 			s.Start = stage.Start
 			s.Duration = stage.Duration()
+			if stage.Pipeline != nil && stage.Pipeline.LastError() != nil {
+				s.ErrMessage = stage.Pipeline.LastError().Error()
+			}
 		}
 		s.Name = stage.Name
 		s.Status = stageStatus(stage)

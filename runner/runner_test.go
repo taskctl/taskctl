@@ -114,6 +114,10 @@ func TestTaskRunner_PreExecutionFailureKeepsExitCode(t *testing.T) {
 		t.Errorf("task that never executed must not report a success exit code, got %d", tsk.ExitCode)
 	}
 
+	if !tsk.Errored || tsk.Error == nil {
+		t.Errorf("pre-execution failure must be recorded on the task, got Errored=%v Error=%v", tsk.Errored, tsk.Error)
+	}
+
 	runner.Finish()
 }
 

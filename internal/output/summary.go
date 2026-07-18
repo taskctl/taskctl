@@ -187,16 +187,29 @@ func printFailureDetail(w io.Writer, it StageSummary) {
 	}
 }
 
+// lastLines extracts the final n lines without copying the whole buffer: it
+// scans backwards for line boundaries and converts only the bounded tail,
+// keeping the cost independent of how large the captured log is.
 func lastLines(buf *bytes.Buffer, n int) []string {
-	trimmed := strings.TrimRight(buf.String(), "\r\n")
-	if trimmed == "" {
+	b := bytes.TrimRight(buf.Bytes(), "\r\n")
+	if len(b) == 0 {
 		return nil
 	}
 
-	lines := strings.Split(trimmed, "\n")
-	if len(lines) > n {
-		lines = lines[len(lines)-n:]
+	start := len(b)
+	for range n {
+		nl := bytes.LastIndexByte(b[:start], '\n')
+		if nl < 0 {
+			start = 0
+			break
+		}
+		start = nl
 	}
+	if start > 0 {
+		start++ // step past the newline preceding the tail
+	}
+
+	lines := strings.Split(string(b[start:]), "\n")
 	for i, l := range lines {
 		// Keep what the terminal would have displayed: drop the CR of CRLF
 		// endings, and for self-overwriting progress output keep only the
