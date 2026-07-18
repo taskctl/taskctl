@@ -1,3 +1,4 @@
 FROM alpine:latest
-COPY ./bin/taskctl /
+ARG TARGETPLATFORM
+COPY $TARGETPLATFORM/bin/taskctl /
 ENTRYPOINT ["/taskctl"]
