@@ -79,9 +79,9 @@ func TestDefaultExecutor_Execute_PerJobEnv(t *testing.T) {
 	}
 }
 
-// TestDefaultExecutor_Execute_JobEnvOverridesOSEnv a job's
-// environment must win over an inherited OS variable of the same name, so a
-// task's exportAs output overrides an external value.
+// TestDefaultExecutor_Execute_JobEnvOverridesOSEnv verifies that a job's environment
+// wins over an inherited OS variable of the same name, so a task's exportAs
+// output overrides an external value.
 func TestDefaultExecutor_Execute_JobEnvOverridesOSEnv(t *testing.T) {
 	t.Setenv("TASKCTL_ISSUE88", "external")
 
