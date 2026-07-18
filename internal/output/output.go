@@ -11,7 +11,7 @@ import (
 const (
 	FormatRaw      = "raw"
 	FormatPrefixed = "prefixed"
-	FormatCockpit  = "cockpit"
+	FormatDefault  = "default"
 	FormatJSON     = "json"
 )
 
@@ -52,8 +52,8 @@ func NewTaskOutput(t *task.Task, format string, stdout, stderr io.Writer) (*Task
 		o.decorator = newRawOutputWriter(stdout)
 	case FormatPrefixed:
 		o.decorator = newPrefixedOutputWriter(t, stdout)
-	case FormatCockpit:
-		o.decorator = newCockpitOutputWriter(t, stdout, closeCh)
+	case FormatDefault:
+		o.decorator = newDashboardOutputWriter(t, stdout, closeCh)
 	case FormatJSON:
 		o.decorator = newJSONOutputWriter(t, stdout)
 	default:
@@ -89,9 +89,9 @@ func (o *TaskOutput) Finish() error {
 	return o.decorator.WriteFooter()
 }
 
-// Close releases resources and closes underlying decorators. For cockpit output
-// it blocks until the dashboard program has fully shut down (final lines
-// flushed, terminal restored).
+// Close releases resources and closes underlying decorators. For the default
+// (dashboard) output it blocks until the dashboard program has fully shut down
+// (final lines flushed, terminal restored).
 func Close() {
 	if !closed {
 		closed = true

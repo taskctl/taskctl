@@ -160,12 +160,12 @@ func TestRootAction_NoInputFlagBlocksPrompt(t *testing.T) {
 	})
 }
 
-// With a non-TTY stdout, the cockpit dashboard degrades to prefixed output
+// With a non-TTY stdout, the default dashboard degrades to prefixed output
 // rather than failing to render, so task output still appears.
-func TestCockpitDegradesWhenStdoutNotTTY(t *testing.T) {
+func TestDefaultDegradesWhenStdoutNotTTY(t *testing.T) {
 	app := makeTestApp()
 	runAppTest(t, app, appTest{
-		args:   []string{"", "--cockpit", "-c", "testdata/graph.yaml", "graph:task1"},
+		args:   []string{"", "--output", "default", "-c", "testdata/graph.yaml", "graph:task1"},
 		output: []string{"hello, world!"},
 	})
 }

@@ -107,7 +107,7 @@ func TestNewTaskOutput(t *testing.T) {
 	closeCh = make(chan bool)
 	_, err = NewTaskOutput(
 		tt,
-		FormatCockpit,
+		FormatDefault,
 		&b,
 		&b,
 	)
