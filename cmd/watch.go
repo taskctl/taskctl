@@ -20,6 +20,17 @@ func newWatchCommand(cfg *config.Config) *cobra.Command {
 		Args:              cobra.MinimumNArgs(1),
 		ValidArgsFunction: watcherCompletion(cfg),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Resolve every watcher before starting any, so an unknown name
+			// fails cleanly instead of leaving earlier watchers running.
+			watchers := make([]*watch.Watcher, 0, len(args))
+			for _, name := range args {
+				w, ok := cfg.Watchers[name]
+				if !ok {
+					return fmt.Errorf("unknown watcher %q", name)
+				}
+				watchers = append(watchers, w)
+			}
+
 			taskRunner, err := buildTaskRunner(cmd, cfg)
 			if err != nil {
 				return err
@@ -28,12 +39,7 @@ func newWatchCommand(cfg *config.Config) *cobra.Command {
 
 			ctx := cmd.Context()
 			var wg sync.WaitGroup
-			for _, name := range args {
-				w, ok := cfg.Watchers[name]
-				if !ok {
-					return fmt.Errorf("unknown watcher %s", name)
-				}
-
+			for _, w := range watchers {
 				wg.Add(1)
 				go func(w *watch.Watcher) {
 					<-ctx.Done()
