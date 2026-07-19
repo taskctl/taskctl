@@ -24,6 +24,11 @@ import (
 	"github.com/taskctl/taskctl/task"
 )
 
+// defaultContextName is the context a task falls back to when it declares no
+// context: if the config defines a context by this name it is used (so its env,
+// variables and hooks apply to every such task), otherwise an empty context is used.
+const defaultContextName = "default"
+
 // injectedEnvPrefix namespaces the environment variables taskctl injects into a
 // task's process, keeping them clear of the user's own env. The double
 // underscore distinguishes these injected values from the single-underscore
@@ -320,16 +325,20 @@ func (r *TaskRunner) after(ctx context.Context, t *task.Task, env, vars variable
 }
 
 func (r *TaskRunner) contextForTask(ctx context.Context, t *task.Task) (c *ExecutionContext, err error) {
-	if t.Context == "" {
-		c = defaultContext()
-	} else {
-		var ok bool
-		c, ok = r.contexts[t.Context]
-		if !ok {
-			return nil, fmt.Errorf("no such context %s", t.Context)
-		}
+	name := t.Context
+	if name == "" {
+		name = defaultContextName
+	}
 
-		r.cleanupList.Store(t.Context, c)
+	var ok bool
+	c, ok = r.contexts[name]
+	switch {
+	case ok:
+		r.cleanupList.Store(name, c)
+	case t.Context != "":
+		return nil, fmt.Errorf("no such context %q", t.Context)
+	default:
+		c = defaultContext()
 	}
 
 	err = c.Up(ctx)

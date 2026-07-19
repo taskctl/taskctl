@@ -239,7 +239,7 @@ Predefined variables are:
 - `.ArgsList` - array of provided arguments
 - `.Output` - previous command's output
 - `.Task` - the running task's static metadata: `.Task.Name`, `.Task.Description`, `.Task.Dir`, `.Task.Context`, `.Task.Condition`, `.Task.Timeout`, `.Task.AllowFailure`, `.Task.Interactive`, `.Task.ExportAs`
-- `.Context` - the resolved execution context: `.Context.Name`, `.Context.Dir`, `.Context.Executable` (with `.Context.Executable.Bin` and `.Context.Executable.Args`; `.Context.Executable` is nil for the default context)
+- `.Context` - the resolved execution context: `.Context.Name`, `.Context.Dir`, `.Context.Executable` (with `.Context.Executable.Bin` and `.Context.Executable.Args`; `.Context.Executable` is nil when the context sets no executable)
 - `.Stage` - when the task runs inside a pipeline stage: `.Stage.Name`, `.Stage.Condition`, `.Stage.Dir`, `.Stage.AllowFailure`, `.Stage.DependsOn`
 - `.Tasks.<Name>` - results of an already-completed task, visible across the whole run: `.Tasks.<Name>.Stdout`, `.Tasks.<Name>.Stderr`, `.Tasks.<Name>.ExitCode`. `<Name>` is title-cased, so task `producer` is `.Tasks.Producer.Stdout`. A name containing a dash can't use field syntax (`{{ .Tasks.Build-Host.Stdout }}` fails to parse) - use `{{ (index .Tasks "Build-Host").Stdout }}` instead
 
@@ -407,6 +407,8 @@ A context definition takes the following parameters:
 - `env_file` - file with env variables in `k=v` format to read variables from
 - `variables` - context's variables
 - `up`, `down`, `before`, `after` - lifecycle hooks (see below)
+
+A task that declares no `context:` runs in the context named `default`. Define one to share environment variables, variables, a working directory, executable or lifecycle hooks across every such task — this is how you give all tasks a common `env`. A task's own `env`/`variables` override the default context's (precedence: `default context < task`). Tasks that opt into another context use that one instead; if no `default` context is defined, context-less tasks run in an empty implicit context.
 
 A context has lifecycle hooks: `up` and `down` run once per taskctl run - `up` before the context's first usage, `down` during cleanup when the run finishes. `before` and `after` run every time around each task that uses the context.
 ```yaml
