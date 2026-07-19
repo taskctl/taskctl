@@ -13,6 +13,11 @@ func run(dir string) error {
 	root := cmd.NewRootCommand("dev")
 	root.DisableAutoGenTag = true // suppress the timestamp footer so generated docs are reproducible
 
+	// cobra wires these only when a command actually executes; initialize them up
+	// front so the generated reference covers the full shipped CLI surface.
+	root.InitDefaultVersionFlag()
+	root.InitDefaultCompletionCmd()
+
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}

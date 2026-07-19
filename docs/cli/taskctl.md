@@ -31,10 +31,12 @@ taskctl [target...] [-- task-args] [flags]
   -r, --raw             shortcut for --output=raw
       --set strings     set global variable value
   -s, --summary         show summary (default true)
+  -v, --version         version for taskctl
 ```
 
 ### SEE ALSO
 
+* [taskctl completion](taskctl_completion.md)	 - Generate the autocompletion script for the specified shell
 * [taskctl graph](taskctl_graph.md)	 - visualizes pipeline execution graph
 * [taskctl init](taskctl_init.md)	 - creates sample config file
 * [taskctl list](taskctl_list.md)	 - lists contexts, pipelines, tasks and watchers
