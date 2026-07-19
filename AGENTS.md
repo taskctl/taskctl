@@ -4,7 +4,7 @@ This file provides guidance to AI coding agents when working with code in this r
 
 ## What this is
 
-`taskctl` is a concurrent task runner / Make alternative. Tasks and pipelines are declared in a human-readable config (`tasks.yaml`/`taskctl.yaml`, also JSON/TOML). It is a CLI application; the `runner`, `scheduler`, `task`, `executor`, and `variables` packages hold the reusable core, while CLI-only support (interactive prompts and output rendering) lives under `internal/`.
+`taskctl` is a concurrent task runner / Make alternative. Tasks and pipelines are declared in a human-readable config (`tasks.yaml`/`taskctl.yaml`, also JSON/TOML). It is a CLI application; the `runner`, `scheduler`, `task`, `executor`, and `variables` packages hold the reusable core, while CLI-only support (interactive prompts and output rendering) lives under `internal/`. The exported API of those five core packages is the embedding boundary and is kept exported-minimal — prefer unexported for anything only the package itself needs.
 
 ## General
 
@@ -50,9 +50,9 @@ Execution flows through two layers — a pipeline DAG on top, single-task compil
 
 **Pipelines / scheduling** — `scheduler`. A pipeline is an `ExecutionGraph`: a DAG whose nodes are `Stage`s and edges are `depends_on` relationships (cycle detection in `graph.go`). `Scheduler.Schedule` polls the graph on a 50ms tick; any `StatusWaiting` stage whose deps are all `Done`/`Skipped` is launched in its own goroutine, giving concurrent execution while respecting dependencies. Stages can nest sub-pipelines. `AllowFailure` and per-stage `Condition` gate propagation.
 
-**Single task** — `runner.TaskRunner.Run` (`runner/runner.go`) is the core. For each task it: resolves the `ExecutionContext` (running `Up`/`Before` hooks), merges env + variables, checks the task `condition`, runs `before` commands, then calls `TaskCompiler.CompileTask`.
+**Single task** — `runner.TaskRunner.Run` (`runner/runner.go`) is the core. For each task it: resolves the `ExecutionContext` (running `Up`/`Before` hooks), merges env + variables, checks the task `condition`, runs `before` commands, then calls `taskCompiler.compileTask`.
 
-**Compilation** — `runner/compiler.go`. `CompileTask` renders variable templates and expands `variations` into a **linked list of `executor.Job`s** (`job.Next`). Each command becomes one job; a task with N commands × M variations produces N×M chained jobs. Output of one command is fed to the next as the `Output` variable.
+**Compilation** — `runner/compiler.go`. `compileTask` renders variable templates and expands `variations` into a **linked list of `executor.Job`s** (`job.Next`). Each command becomes one job; a task with N commands × M variations produces N×M chained jobs. Output of one command is fed to the next as the `Output` variable.
 
 **Execution** — `executor`. `DefaultExecutor.Execute` renders the command template (`internal/tmpl`, Go `text/template`), parses it with `mvdan.cc/sh/v3/syntax`, and runs it through the embedded `interp` interpreter. **There is no dependency on a system shell** — this is what makes taskctl cross-platform. Exit codes surface via `IsExitStatus`.
 

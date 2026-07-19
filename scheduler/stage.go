@@ -28,7 +28,7 @@ type Stage struct {
 	DependsOn    []string
 	Dir          string
 	AllowFailure bool
-	Status       int32
+	status       atomic.Int32
 	Env          variables.Container
 	Variables    variables.Container
 
@@ -36,14 +36,14 @@ type Stage struct {
 	End   time.Time
 }
 
-// UpdateStatus updates stage's status atomically
-func (s *Stage) UpdateStatus(status int32) {
-	atomic.StoreInt32(&s.Status, status)
+// updateStatus updates stage's status atomically
+func (s *Stage) updateStatus(status int32) {
+	s.status.Store(status)
 }
 
 // ReadStatus is a helper to read stage's status atomically
 func (s *Stage) ReadStatus() int32 {
-	return atomic.LoadInt32(&s.Status)
+	return s.status.Load()
 }
 
 // Duration returns stage's execution duration

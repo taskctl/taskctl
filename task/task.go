@@ -1,3 +1,4 @@
+// Package task defines the Task model that runner executes and reports on.
 package task
 
 import (

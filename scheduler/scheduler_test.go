@@ -67,7 +67,7 @@ func TestExecutionGraph_Scheduler(t *testing.T) {
 		t.Fatal()
 	}
 
-	if stage3.Status != StatusCanceled || stage4.Status != StatusCanceled {
+	if stage3.ReadStatus() != StatusCanceled || stage4.ReadStatus() != StatusCanceled {
 		t.Fatal("stage3 was not cancelled")
 	}
 }
@@ -104,7 +104,7 @@ func TestExecutionGraph_Scheduler_AllowFailure(t *testing.T) {
 		t.Fatalf("unexpected error %v", err)
 	}
 
-	if stage3.Status == StatusCanceled {
+	if stage3.ReadStatus() == StatusCanceled {
 		t.Fatal("stage3 was cancelled")
 	}
 
@@ -229,7 +229,7 @@ func TestSkippedStage(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if stage1.Status != StatusDone || stage2.Status != StatusSkipped {
+	if stage1.ReadStatus() != StatusDone || stage2.ReadStatus() != StatusSkipped {
 		t.Error()
 	}
 }
@@ -289,7 +289,7 @@ func TestConditionErroredStage(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if stage1.Status != StatusDone || stage2.Status != StatusError {
+	if stage1.ReadStatus() != StatusDone || stage2.ReadStatus() != StatusError {
 		t.Error()
 	}
 }

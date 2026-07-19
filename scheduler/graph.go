@@ -13,8 +13,6 @@ var ErrCycleDetected = errors.New("cycle detected")
 
 // ExecutionGraph is a DAG whose nodes are Stages and edges are their dependencies
 type ExecutionGraph struct {
-	Env map[string][]string
-
 	nodes      map[string]*Stage
 	from       map[string][]string
 	to         map[string][]string

@@ -1,3 +1,4 @@
+// Package scheduler executes pipelines — DAGs of stages — concurrently while respecting dependencies.
 package scheduler
 
 import (
@@ -58,13 +59,13 @@ func (s *Scheduler) Schedule(g *ExecutionGraph) error {
 				meets, err := checkStageCondition(stage.Condition)
 				if err != nil {
 					slog.Error(err.Error())
-					stage.UpdateStatus(StatusError)
+					stage.updateStatus(StatusError)
 					s.Cancel()
 					continue
 				}
 
 				if !meets {
-					stage.UpdateStatus(StatusSkipped)
+					stage.updateStatus(StatusSkipped)
 					continue
 				}
 			}
@@ -74,7 +75,7 @@ func (s *Scheduler) Schedule(g *ExecutionGraph) error {
 			}
 
 			wg.Add(1)
-			stage.UpdateStatus(StatusRunning)
+			stage.updateStatus(StatusRunning)
 			go func(stage *Stage) {
 				defer func() {
 					stage.End = time.Now()
@@ -85,7 +86,7 @@ func (s *Scheduler) Schedule(g *ExecutionGraph) error {
 
 				err := s.runStage(stage)
 				if err != nil {
-					stage.UpdateStatus(StatusError)
+					stage.updateStatus(StatusError)
 
 					if !stage.AllowFailure {
 						g.error = err
@@ -93,7 +94,7 @@ func (s *Scheduler) Schedule(g *ExecutionGraph) error {
 					}
 				}
 
-				stage.UpdateStatus(StatusDone)
+				stage.updateStatus(StatusDone)
 			}(stage)
 		}
 
@@ -178,11 +179,11 @@ func checkStatus(p *ExecutionGraph, stage *Stage) (ready bool) {
 		case StatusError:
 			if !depStage.AllowFailure {
 				ready = false
-				stage.UpdateStatus(StatusCanceled)
+				stage.updateStatus(StatusCanceled)
 			}
 		case StatusCanceled:
 			ready = false
-			stage.UpdateStatus(StatusCanceled)
+			stage.updateStatus(StatusCanceled)
 		default:
 			ready = false
 		}
