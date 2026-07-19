@@ -32,7 +32,7 @@ func main() {
 	}
 
 	if err := run(dir); err != nil {
-		slog.Error(err.Error())
+		slog.Error("failed to generate CLI docs", "dir", dir, "err", err)
 		os.Exit(1)
 	}
 }
