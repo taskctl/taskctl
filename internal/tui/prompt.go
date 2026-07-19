@@ -15,21 +15,6 @@ import (
 // no-op rather than an error, without importing huh themselves.
 var ErrAborted = errors.New("prompt aborted")
 
-// runForm runs a single-field form with taskctl's shared keymap and theme:
-// Esc (as well as Ctrl-C) aborts, and the option list is rendered with a
-// higher-contrast foreground than huh's dim default so entries stay readable.
-func runForm(field huh.Field, stdin io.Reader, accessible bool) error {
-	km := huh.NewDefaultKeyMap()
-	km.Quit = key.NewBinding(key.WithKeys("ctrl+c", "esc"))
-
-	return huh.NewForm(huh.NewGroup(field)).
-		WithKeyMap(km).
-		WithTheme(promptTheme).
-		WithInput(promptInput(stdin, accessible)).
-		WithAccessible(accessible).
-		Run()
-}
-
 // promptTheme clears the foreground huh applies to unselected options — a dim
 // gray that washes out the whole row — so an unselected task name renders in
 // the terminal's default (bright) foreground while its description keeps the
@@ -45,6 +30,21 @@ var promptTheme = huh.ThemeFunc(func(isDark bool) *huh.Styles {
 
 	return s
 })
+
+// runForm runs a single-field form with taskctl's shared keymap and theme:
+// Esc (as well as Ctrl-C) aborts, and the option list is rendered with a
+// higher-contrast foreground than huh's dim default so entries stay readable.
+func runForm(field huh.Field, stdin io.Reader, accessible bool) error {
+	km := huh.NewDefaultKeyMap()
+	km.Quit = key.NewBinding(key.WithKeys("ctrl+c", "esc"))
+
+	return huh.NewForm(huh.NewGroup(field)).
+		WithKeyMap(km).
+		WithTheme(promptTheme).
+		WithInput(promptInput(stdin, accessible)).
+		WithAccessible(accessible).
+		Run()
+}
 
 // PromptReader prepares stdin for a sequence of prompts. A terminal is returned
 // unchanged, so Select/Confirm drive huh's full TUI. Non-terminal stdin is
