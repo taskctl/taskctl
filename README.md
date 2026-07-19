@@ -540,7 +540,7 @@ Errors are written to stderr as `Error: <message>` and a failed run exits `1`. W
 ## Embeddable task runner
 *taskctl* may be embedded into any Go program. Additional information may be found on taskctl's [pkg.go.dev](https://pkg.go.dev/github.com/taskctl/taskctl?tab=overview) page.
 
-The public, embeddable API is exactly five packages — `task`, `variables`, `executor`, `runner`, `scheduler`. Everything under `internal/` and `cmd/` is CLI plumbing and not importable. This surface is deliberately minimal and pre-1.0, so it may change between minor releases.
+The public, embeddable API is exactly five packages — `task`, `variables`, `executor`, `runner`, `scheduler`. Everything under `internal/` is CLI-only and not importable; `cmd/` contains CLI plumbing and is not part of the supported embeddable API.
 
 ### Runner
 ```go
