@@ -92,19 +92,16 @@ func NewApp(version string) *cli.App {
 				DefaultText: "tasks.yaml or taskctl.yaml",
 			},
 			&cli.StringFlag{
-				Name:    "output",
-				Aliases: []string{"o"},
-				Usage:   "output format (raw, prefixed, cockpit or json)",
-				EnvVars: []string{"TASKCTL_OUTPUT_FORMAT"},
+				Name:        "output",
+				Aliases:     []string{"o"},
+				Usage:       "output format (raw, prefixed, default or json)",
+				EnvVars:     []string{"TASKCTL_OUTPUT_FORMAT"},
+				DefaultText: "default",
 			},
 			&cli.BoolFlag{
 				Name:    "raw",
 				Aliases: []string{"r"},
 				Usage:   "shortcut for --output=raw",
-			},
-			&cli.BoolFlag{
-				Name:  "cockpit",
-				Usage: "shortcut for --output=cockpit",
 			},
 			&cli.BoolFlag{
 				Name:    "quiet",
@@ -154,25 +151,29 @@ func NewApp(version string) *cli.App {
 				c.App.ErrWriter = io.Discard
 				slog.SetDefault(slog.New(slog.DiscardHandler))
 				cfg.Quiet = true
-			} else {
-				switch {
-				case c.IsSet("output"):
-					cfg.Output = c.String("output")
-				case c.Bool("raw"):
-					cfg.Output = output.FormatRaw
-				case c.Bool("cockpit"):
-					cfg.Output = output.FormatCockpit
-				case cfg.Output == "":
-					cfg.Output = output.FormatPrefixed
-				}
+			}
+
+			switch {
+			case c.IsSet("output"):
+				cfg.Output = c.String("output")
+			case c.Bool("raw"):
+				cfg.Output = output.FormatRaw
+			case cfg.Output == "":
+				cfg.Output = output.FormatDefault
+			}
+
+			if cfg.Output == output.FormatDefault && !tui.Interactive(os.Stdout) {
+				cfg.Output = output.FormatPrefixed
+			}
+
+			switch cfg.Output {
+			case output.FormatRaw, output.FormatPrefixed, output.FormatDefault, output.FormatJSON:
+			default:
+				return fmt.Errorf("unknown output format %q (want raw, prefixed, default or json)", cfg.Output)
 			}
 
 			if c.Bool("dry-run") {
 				cfg.DryRun = true
-			}
-
-			if cfg.Output == output.FormatCockpit && !tui.Interactive(os.Stdout) {
-				cfg.Output = output.FormatPrefixed
 			}
 
 			return nil

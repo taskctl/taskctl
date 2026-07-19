@@ -26,7 +26,7 @@ A simple, modern alternative to GNU Make. *taskctl* is a concurrent task runner 
 - customizable execution contexts (wrap commands in `docker`, `ssh`, any binary)
 - templated commands with variables, task variations, and output piped between tasks
 - integrated file watcher (live reload)
-- output formats: raw, prefixed, live cockpit dashboard, or JSON event stream
+- output formats: raw, prefixed, live dashboard (`default`), or JSON event stream
 - interactive task selector and shell autocomplete
 - embeddable task runner for Go programs
 
@@ -201,7 +201,7 @@ By default taskctl may prompt interactively (e.g. for confirmation or input task
 
 A non-TTY stdin (e.g. a pipe or an agent harness) does *not* by itself enable non-interactive mode — prompts still run in accessible, line-based mode against the pipe. It only affects the no-target case: when you run `taskctl` with no task or pipeline, the interactive selector requires a TTY, so on a non-TTY stdin taskctl errors with guidance instead of blocking. Pass `--no-input` (or `--output json`) to suppress prompts explicitly.
 
-Separately, `--cockpit` (the live full-screen dashboard) requires an interactive stdout; if stdout is not a TTY, taskctl automatically degrades cockpit output to `prefixed` output instead of failing.
+Separately, the `default` live dashboard (the default format on a TTY) requires an interactive stdout; if stdout is not a TTY, taskctl automatically degrades it to `prefixed` output instead of failing.
 
 ### Claude Code skill: `taskctl skill install`
 
@@ -392,7 +392,7 @@ A stage definition takes the following parameters:
 Taskctl has several output formats:
 - `raw` - prints raw commands output
 - `prefixed` - strips ANSI escape sequences where possible, prefixes command output with task's name
-- `cockpit` - tasks dashboard
+- `default` - live dashboard (the default on a TTY): a spinner, name and elapsed time per running task, each with its latest output line; downgrades to `prefixed` when stdout is not a TTY
 - `json` - newline-delimited JSON event stream for machine consumption (see [taskctl for AI agents](#taskctl-for-ai-agents))
 
 ## Filesystem watchers
@@ -508,9 +508,8 @@ tasks:
 | flag | env variable | description |
 |---|---|---|
 | `-c, --config <file>` | `TASKCTL_CONFIG_FILE` | config file to use (default: `tasks.yaml` or `taskctl.yaml`) |
-| `-o, --output <format>` | `TASKCTL_OUTPUT_FORMAT` | output format: `raw`, `prefixed`, `cockpit` or `json` |
+| `-o, --output <format>` | `TASKCTL_OUTPUT_FORMAT` | output format: `raw`, `prefixed`, `default` or `json` |
 | `-r, --raw` | | shortcut for `--output=raw` |
-| `--cockpit` | | shortcut for `--output=cockpit` |
 | `-q, --quiet` | | quiet mode |
 | `--set <name=value>` | | set a global variable value (repeatable) |
 | `--dry-run` | | resolve and print commands without executing them |

@@ -160,5 +160,5 @@ contexts:
       KUBECONFIG: "$HOME/.kube/alternate-config"
 
 debug: true # debug enabled by default. To temporary disable run with "--debug=false" flag
-output: prefixed # raw, prefixed, cockpit
+output: prefixed # raw, prefixed, default or json (default on a TTY)
 summary: true # show summary by default

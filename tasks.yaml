@@ -1,4 +1,3 @@
-output: cockpit
 pipelines:
   fixcs:
     - task: fmt

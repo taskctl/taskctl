@@ -51,6 +51,8 @@ func TestNewTaskOutput_Prefixed(t *testing.T) {
 }
 
 func TestNewTaskOutput(t *testing.T) {
+	resetDashboard(t)
+
 	var b bytes.Buffer
 	_, err := NewTaskOutput(
 		&task.Task{Name: "task1"},
@@ -104,10 +106,9 @@ func TestNewTaskOutput(t *testing.T) {
 		t.Error()
 	}
 
-	closeCh = make(chan bool)
 	_, err = NewTaskOutput(
 		tt,
-		FormatCockpit,
+		FormatDefault,
 		&b,
 		&b,
 	)
