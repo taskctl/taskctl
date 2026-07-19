@@ -83,8 +83,12 @@ Execution flows through two layers — a pipeline DAG on top, single-task compil
 
 - **Plan first, then implement.** For any non-trivial change, agree on an approach before touching code — surface assumptions, edge cases, and trade-offs up front. Don't start editing while the design is still open.
 - **Run tests and linters once, at the end** — not after every intermediate stage. Make the full set of changes, then verify by dogfooding: `go run . --output json --no-input prepare` (tidy, test, format, lint, completers), plus `go test -race ./...` for the race gate CI enforces (no task covers it). Check the tree is clean afterwards — `prepare` rewrites formatting and generated files, and an unexpected diff means something drifted.
-- **Sync the docs before every PR.** Before opening or updating a pull request, invoke the `docs-sync` agent (`.claude/agents/docs-sync.md`) so `README.md` and `docs/` reflect the change set. Don't hand-wave this — the agent reconciles docs against the actual diff and fixes drift.
+- **Sync the docs before every PR.** Before opening or updating a pull request, invoke the `docs-sync` agent (`.
+claude/agents/docs-sync.md`) so `README.md`, agent skill and `docs/` reflect the change set. Don't hand-wave 
+  this — the 
+  agent 
+  reconciles docs against the actual diff and fixes drift.
 
 ## Agent skill (single source of truth)
 
-The taskctl agent skill lives once at `.agents/skills/taskctl/SKILL.md`. It is embedded into the binary from `main.go` (go:embed, then injected into `cmd` via `SetSkillTemplate`) and shipped by `taskctl skill install`; `.claude/skills/taskctl` symlinks to it so this repo's own agents use the same copy. Edit only the canonical file — never a copy.
+The taskctl agent skill lives once at `.agents/skills/taskctl/SKILL.md`. It is embedded into the binary and shipped by `taskctl skill install`; `.claude/skills/taskctl` symlinks to it so this repo's own agents use the same copy. Edit only the canonical file — never a copy.
