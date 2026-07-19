@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"testing"
@@ -63,6 +64,11 @@ func TestPresentReportedError(t *testing.T) {
 	}
 	os.Stdout = w
 
+	// Drain the pipe concurrently so the run's stdout can't fill the buffer and
+	// block ExecuteC.
+	drained := make(chan struct{})
+	go func() { _, _ = io.Copy(io.Discard, r); close(drained) }()
+
 	var buf bytes.Buffer
 	root := NewRootCommand("test")
 	root.SetOut(&buf)
@@ -73,6 +79,7 @@ func TestPresentReportedError(t *testing.T) {
 
 	os.Stdout = origStdout
 	_ = w.Close()
+	<-drained
 	_ = r.Close()
 
 	if _, ok := errors.AsType[reportedError](runErr); !ok {
