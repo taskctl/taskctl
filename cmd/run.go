@@ -41,7 +41,7 @@ func newRunCommand(cfg *config.Config) *cobra.Command {
 		Use:               "task TASK [TASK...] [-- task-args]",
 		Short:             "run one or more tasks",
 		Args:              cobra.MinimumNArgs(1),
-		ValidArgsFunction: targetCompletion(cfg),
+		ValidArgsFunction: taskCompletion(cfg),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			targets, _ := splitArgsAtDash(cmd, args)
 			return runTargets(cmd, cfg, targets, true)
@@ -50,6 +50,13 @@ func newRunCommand(cfg *config.Config) *cobra.Command {
 	runCmd.AddCommand(taskCmd)
 
 	return runCmd
+}
+
+// taskCompletion completes task names only; `run task` rejects pipelines.
+func taskCompletion(cfg *config.Config) func(*cobra.Command, []string, string) ([]string, cobra.ShellCompDirective) {
+	return completionFunc(cfg, func() []string {
+		return slices.Sorted(maps.Keys(cfg.Tasks))
+	})
 }
 
 // splitArgsAtDash separates target names from the arguments after "--", which

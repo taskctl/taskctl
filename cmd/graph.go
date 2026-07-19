@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 
 	"github.com/emicklei/dot"
 	"github.com/spf13/cobra"
@@ -22,7 +24,7 @@ func newGraphCommand(cfg *config.Config) *cobra.Command {
 		Example:           "  taskctl graph pipeline1 | dot -Tsvg > graph.svg",
 		GroupID:           groupInspect,
 		Args:              cobra.ExactArgs(1),
-		ValidArgsFunction: targetCompletion(cfg),
+		ValidArgsFunction: pipelineCompletion(cfg),
 		RunE: func(_ *cobra.Command, args []string) error {
 			name := args[0]
 			p := cfg.Pipelines[name]
@@ -46,6 +48,13 @@ func newGraphCommand(cfg *config.Config) *cobra.Command {
 	graphCmd.Flags().BoolVar(&lr, "lr", false, "orients outputted graph left-to-right")
 
 	return graphCmd
+}
+
+// pipelineCompletion completes pipeline names only; graph rejects tasks.
+func pipelineCompletion(cfg *config.Config) func(*cobra.Command, []string, string) ([]string, cobra.ShellCompDirective) {
+	return completionFunc(cfg, func() []string {
+		return slices.Sorted(maps.Keys(cfg.Pipelines))
+	})
 }
 
 func draw(g *dot.Graph, p *scheduler.ExecutionGraph) {

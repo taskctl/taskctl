@@ -14,6 +14,8 @@ func Test_runCommand(t *testing.T) {
 		{args: []string{"--raw", "-c", "testdata/graph.yaml", "run", "task", "graph:task1"}, exactOutput: "hello, world!\n"},
 		// `run task` only matches tasks: a pipeline name is rejected.
 		{args: []string{"--raw", "-c", "testdata/graph.yaml", "run", "task", "graph:pipeline1"}, errored: true},
+		// and its completion offers only tasks, never pipelines.
+		{args: []string{"__complete", "-c", "testdata/graph.yaml", "run", "task", ""}, output: []string{"graph:task1"}, absent: []string{"graph:pipeline1"}},
 		// but an explicit --summary opts raw back in.
 		{args: []string{"--raw", "-c", "testdata/graph.yaml", "run", "--summary", "graph:task1"}, output: []string{"hello, world!", "succeeded", "total"}},
 		// a root-level --summary=false must not be shadowed by the run

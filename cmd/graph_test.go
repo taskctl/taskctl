@@ -19,6 +19,11 @@ func Test_graphCommand(t *testing.T) {
 			args:   []string{"-c", "testdata/graph.yaml", "graph", "--lr", "graph:pipeline1"},
 			output: []string{"rankdir=\"LR\""},
 		},
+		// completion offers only pipelines, never tasks.
+		{
+			args:   []string{"__complete", "-c", "testdata/graph.yaml", "graph", ""},
+			output: []string{"graph:pipeline1"}, absent: []string{"graph:task1"},
+		},
 	}
 
 	for _, test := range tests {
