@@ -17,11 +17,10 @@ func Test_initCommand(t *testing.T) {
 		_ = os.Remove(f.Name())
 	}(*in)
 
-	app := makeTestApp()
 	dir := os.TempDir()
 	_ = os.Remove(filepath.Join(dir, "taskctl.yaml"))
 
-	runAppTest(t, app, appTest{args: []string{"", "init", "--dir", dir}, stdin: in, output: []string{"was created"}})
+	runAppTest(t, appTest{args: []string{"init", "--dir", dir}, stdin: in, output: []string{"was created"}})
 }
 
 // TestInitCommand_NoOverwrite verifies the safe default: when the file exists
@@ -33,7 +32,6 @@ func TestInitCommand_NoOverwrite(t *testing.T) {
 		_ = os.Remove(f.Name())
 	}(*in)
 
-	app := makeTestApp()
 	dir := os.TempDir()
 	path := filepath.Join(dir, "taskctl.yaml")
 	if err := os.WriteFile(path, []byte("here"), 0764); err != nil {
@@ -43,7 +41,7 @@ func TestInitCommand_NoOverwrite(t *testing.T) {
 	// The select consumes "1" and the confirm reads "n" (PromptReader hands
 	// each prompt exactly one line), so the confirm parses "n" -> false and the
 	// file is left intact.
-	runAppTest(t, app, appTest{args: []string{"", "init", "--dir", dir}, stdin: in})
+	runAppTest(t, appTest{args: []string{"init", "--dir", dir}, stdin: in})
 
 	content, err := os.ReadFile(path)
 	if err != nil {
@@ -63,7 +61,6 @@ func TestInitCommand_Overwrite(t *testing.T) {
 		_ = os.Remove(f.Name())
 	}(*in)
 
-	app := makeTestApp()
 	dir := os.TempDir()
 	path := filepath.Join(dir, "taskctl.yaml")
 	// Pre-seed a file longer than the template with a trailing marker: without
@@ -73,7 +70,7 @@ func TestInitCommand_Overwrite(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	runAppTest(t, app, appTest{args: []string{"", "init", "--dir", dir}, stdin: in, output: []string{"was created"}})
+	runAppTest(t, appTest{args: []string{"init", "--dir", dir}, stdin: in, output: []string{"was created"}})
 
 	content, err := os.ReadFile(path)
 	if err != nil {
@@ -90,8 +87,7 @@ func TestInitCommand_Overwrite(t *testing.T) {
 func TestInitCommand_NoInputCreatesDefaultFile(t *testing.T) {
 	dir := t.TempDir()
 
-	app := makeTestApp()
-	runAppTest(t, app, appTest{args: []string{"", "--no-input", "init", "--dir", dir}})
+	runAppTest(t, appTest{args: []string{"--no-input", "init", "--dir", dir}})
 
 	if _, err := os.Stat(filepath.Join(dir, config.DefaultFileNames[0])); err != nil {
 		t.Errorf("expected %s to be created, got error: %v", config.DefaultFileNames[0], err)
@@ -105,8 +101,7 @@ func TestInitCommand_NoInputErrorsOnExistingFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	app := makeTestApp()
-	runAppTest(t, app, appTest{args: []string{"", "--no-input", "init", "--dir", dir}, errored: true})
+	runAppTest(t, appTest{args: []string{"--no-input", "init", "--dir", dir}, errored: true})
 
 	content, readErr := os.ReadFile(filepath.Join(dir, config.DefaultFileNames[0]))
 	if readErr != nil {

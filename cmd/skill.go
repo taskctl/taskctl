@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/urfave/cli/v2"
+	"github.com/spf13/cobra"
 
 	"github.com/taskctl/taskctl/internal/fsutil"
 )
@@ -22,51 +22,42 @@ func SetSkillTemplate(s string) {
 	skillTemplate = s
 }
 
-func newSkillCommand() *cli.Command {
-	cmd := &cli.Command{
-		Name:  "skill",
-		Usage: "manage AI agent skills",
-		Subcommands: []*cli.Command{
-			{
-				Name:  "install",
-				Usage: "installs the taskctl Claude Code skill",
-				Flags: []cli.Flag{
-					&cli.BoolFlag{
-						Name:  "global",
-						Usage: "install into the user's home directory instead of the current directory",
-					},
-					&cli.BoolFlag{
-						Name:  "force",
-						Usage: "overwrite an existing installation",
-					},
-				},
-				Action: func(c *cli.Context) error {
-					var baseDir string
-					var err error
-
-					if c.Bool("global") {
-						baseDir, err = os.UserHomeDir()
-					} else {
-						baseDir, err = os.Getwd()
-					}
-					if err != nil {
-						return err
-					}
-
-					path, err := installSkill(baseDir, c.Bool("force"))
-					if err != nil {
-						return err
-					}
-
-					fmt.Printf("installed: %s\n", path)
-
-					return nil
-				},
-			},
-		},
+func newSkillCommand() *cobra.Command {
+	skillCmd := &cobra.Command{
+		Use:     "skill",
+		Short:   "manage AI agent skills",
+		GroupID: groupSetup,
 	}
 
-	return cmd
+	var global, force bool
+	installCmd := &cobra.Command{
+		Use:   "install",
+		Short: "installs the taskctl Claude Code skill",
+		Args:  cobra.NoArgs,
+		RunE: func(_ *cobra.Command, _ []string) error {
+			baseDir, err := os.Getwd()
+			if global {
+				baseDir, err = os.UserHomeDir()
+			}
+			if err != nil {
+				return err
+			}
+
+			path, err := installSkill(baseDir, force)
+			if err != nil {
+				return err
+			}
+
+			fmt.Printf("installed: %s\n", path)
+			return nil
+		},
+	}
+	installCmd.Flags().BoolVar(&global, "global", false, "install into the user's home directory instead of the current directory")
+	installCmd.Flags().BoolVar(&force, "force", false, "overwrite an existing installation")
+
+	skillCmd.AddCommand(installCmd)
+
+	return skillCmd
 }
 
 // installSkill writes the embedded SKILL.md to <baseDir>/.claude/skills/taskctl/SKILL.md.

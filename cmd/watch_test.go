@@ -3,29 +3,17 @@ package cmd_test
 import (
 	"testing"
 	"time"
-
-	"github.com/taskctl/taskctl/cmd"
 )
 
 func Test_watchCommand_error(t *testing.T) {
-	app := makeTestApp()
-	tests := []appTest{
-		{args: []string{"", "-c", "testdata/watch.yaml", "watch", "watch:watcher99"}, errored: true},
-	}
-
-	for _, v := range tests {
-		runAppTest(t, app, v)
-	}
+	runAppTest(t, appTest{args: []string{"-c", "testdata/watch.yaml", "watch", "watch:watcher99"}, errored: true})
 }
 
 func Test_watchCommand_success(t *testing.T) {
-	app := makeTestApp()
-	tests := []appTest{
-		{args: []string{"", "-c", "testdata/watch.yaml", "watch", "watch:watcher1"}, errored: false},
-	}
-
-	for _, v := range tests {
-		time.AfterFunc(100*time.Millisecond, cmd.Abort)
-		runAppTest(t, app, v)
-	}
+	// The watcher blocks until the run context is cancelled; cancelAfter stands
+	// in for the SIGINT that would stop it in a real session.
+	runAppTest(t, appTest{
+		args:        []string{"-c", "testdata/watch.yaml", "watch", "watch:watcher1"},
+		cancelAfter: 100 * time.Millisecond,
+	})
 }

@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"maps"
@@ -9,103 +8,78 @@ import (
 	"slices"
 	"time"
 
-	"github.com/urfave/cli/v2"
+	"github.com/spf13/cobra"
 
+	"github.com/taskctl/taskctl/internal/config"
 	"github.com/taskctl/taskctl/internal/output"
 	"github.com/taskctl/taskctl/runner"
 	"github.com/taskctl/taskctl/scheduler"
 	"github.com/taskctl/taskctl/task"
 )
 
-func newRunCommand() *cli.Command {
-	var taskRunner *runner.TaskRunner
-	cmd := &cli.Command{
-		Name:      "run",
-		ArgsUsage: "run (PIPELINE1 OR TASK1) [PIPELINE2 OR TASK2]... [flags] [-- TASKS_ARGS]",
-		Usage:     "runs pipeline or task",
-		UsageText: "taskctl run pipeline1\n" +
-			"taskctl pipeline1\n" +
-			"taskctl task1",
-		Flags: []cli.Flag{
-			&cli.BoolFlag{
-				Name:  "dry-run",
-				Usage: "dry run",
-			},
-			&cli.BoolFlag{
-				Name:    "summary",
-				Usage:   "show summary",
-				Aliases: []string{"s"},
-				Value:   true,
-			},
-		},
-		Before: func(c *cli.Context) (err error) {
-			cancelMu.Lock()
-			c.Context, cancelFn = context.WithCancel(c.Context)
-			cancelMu.Unlock()
-
-			taskRunner, err = buildTaskRunner(c.Context, c)
-			return err
-		},
-		After: func(c *cli.Context) error {
-			return nil
-		},
-		Action: func(c *cli.Context) error {
-			if !c.Args().Present() {
+func newRunCommand(cfg *config.Config) *cobra.Command {
+	runCmd := &cobra.Command{
+		Use:     "run TARGET [TARGET...] [-- task-args]",
+		Short:   "run one or more pipelines or tasks",
+		GroupID: groupRun,
+		Example: "  taskctl run pipeline1\n" +
+			"  taskctl run task1 task2\n" +
+			"  taskctl run test -- -v",
+		Args:              cobra.MinimumNArgs(1),
+		ValidArgsFunction: targetCompletion(cfg),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			targets, _ := splitArgsAtDash(cmd, args)
+			targets = slices.DeleteFunc(targets, func(s string) bool { return s == "pipeline" })
+			if len(targets) == 0 {
 				return errors.New("no target specified")
 			}
-
-			return runTargets(targetNames(c.Args().Slice(), true), taskRunner, summaryEnabled(c))
-		},
-		Subcommands: []*cli.Command{
-			{
-				Name:      "task",
-				ArgsUsage: "task (TASK1) [TASK2]... [flags] [-- TASK_ARGS]",
-				Usage:     "Run specified task(s)",
-				Action: func(c *cli.Context) error {
-					emitRunStarted(targetNames(c.Args().Slice(), false))
-
-					var tasks []*task.Task
-					var err error
-					for _, v := range c.Args().Slice() {
-						if v == "--" {
-							break
-						}
-
-						t := cfg.Tasks[v]
-						if t == nil {
-							err = fmt.Errorf("unknown task %s", v)
-							break
-						}
-						tasks = append(tasks, t)
-						if terr := runTask(t, taskRunner); terr != nil {
-							err = terr
-							break
-						}
-					}
-
-					finishRun(nil, tasks, summaryEnabled(c), err)
-					return err
-				},
-			},
+			return runTargets(cmd, cfg, targets, false)
 		},
 	}
 
-	return cmd
+	taskCmd := &cobra.Command{
+		Use:               "task TASK [TASK...] [-- task-args]",
+		Short:             "run one or more tasks",
+		Args:              cobra.MinimumNArgs(1),
+		ValidArgsFunction: targetCompletion(cfg),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			targets, _ := splitArgsAtDash(cmd, args)
+			return runTargets(cmd, cfg, targets, true)
+		},
+	}
+	runCmd.AddCommand(taskCmd)
+
+	return runCmd
+}
+
+// splitArgsAtDash separates target names from the arguments after "--", which
+// cobra strips but records the position of via ArgsLenAtDash.
+func splitArgsAtDash(cmd *cobra.Command, args []string) (targets, passArgs []string) {
+	dash := cmd.ArgsLenAtDash()
+	if dash < 0 {
+		return args, nil
+	}
+	return args[:dash], args[dash:]
 }
 
 // runTargets runs each named target in order, aggregates the executed pipeline
 // graphs and directly-run tasks, and brackets the run with the run_started /
 // run_finished NDJSON events (no-ops outside json mode). It stops at the first
-// failing target and returns its error.
-func runTargets(targets []string, taskRunner *runner.TaskRunner, summary bool) error {
-	emitRunStarted(targets)
+// failing target and returns its error. When tasksOnly is set, pipeline names
+// are not matched (used by `run task`).
+func runTargets(cmd *cobra.Command, cfg *config.Config, targets []string, tasksOnly bool) error {
+	taskRunner, err := buildTaskRunner(cmd, cfg)
+	if err != nil {
+		return err
+	}
+
+	summary := summaryEnabled(cmd, cfg)
+	emitRunStarted(cfg, targets)
 
 	var graphs []*scheduler.ExecutionGraph
 	var tasks []*task.Task
-	var err error
-
 	for _, name := range targets {
-		g, t, terr := runTarget(name, taskRunner)
+		g, t, terr := runTarget(cfg, taskRunner, name, tasksOnly)
 		if g != nil {
 			graphs = append(graphs, g)
 		}
@@ -118,29 +92,32 @@ func runTargets(targets []string, taskRunner *runner.TaskRunner, summary bool) e
 		}
 	}
 
-	finishRun(graphs, tasks, summary, err)
+	finishRun(cfg, graphs, tasks, summary, err)
 	return err
 }
 
 // runTarget runs the pipeline or task named by name and reports back
 // whichever of the two it ran, so callers can aggregate results for the
 // NDJSON run_finished event.
-func runTarget(name string, taskRunner *runner.TaskRunner) (g *scheduler.ExecutionGraph, t *task.Task, err error) {
-	p := cfg.Pipelines[name]
-	if p != nil {
-		err = runPipeline(p, taskRunner)
-		if err != nil {
-			return p, nil, fmt.Errorf("pipeline %q failed: %w", name, err)
+func runTarget(cfg *config.Config, taskRunner *runner.TaskRunner, name string, tasksOnly bool) (g *scheduler.ExecutionGraph, t *task.Task, err error) {
+	if !tasksOnly {
+		if p := cfg.Pipelines[name]; p != nil {
+			if err = runPipeline(p, taskRunner); err != nil {
+				return p, nil, fmt.Errorf("pipeline %q failed: %w", name, err)
+			}
+			return p, nil, nil
 		}
-		return p, nil, nil
 	}
 
 	t = cfg.Tasks[name]
 	if t == nil {
-		return nil, nil, fmt.Errorf("unknown task or pipeline %q", name)
+		kind := "task or pipeline"
+		if tasksOnly {
+			kind = "task"
+		}
+		return nil, nil, fmt.Errorf("unknown %s %q", kind, name)
 	}
-	err = runTask(t, taskRunner)
-	if err != nil {
+	if err = runTask(t, taskRunner); err != nil {
 		return nil, t, fmt.Errorf("task %q failed: %w", name, err)
 	}
 
@@ -159,27 +136,18 @@ func runPipeline(g *scheduler.ExecutionGraph, taskRunner *runner.TaskRunner) err
 	return err
 }
 
-// targetNames extracts the list of target names from raw CLI args, stopping
-// at "--" (task args follow). When skipPipelineKeyword is true, the literal
-// "pipeline" token (used by `taskctl run pipeline <name>`) is dropped.
-func targetNames(args []string, skipPipelineKeyword bool) []string {
-	names := make([]string, 0, len(args))
-	for _, v := range args {
-		if v == "--" {
-			break
-		}
-		if skipPipelineKeyword && v == "pipeline" {
-			continue
-		}
-		names = append(names, v)
-	}
+// runTask finishes the runner even when the task fails, for the same
+// teardown-before-summary reason as runPipeline.
+func runTask(t *task.Task, taskRunner *runner.TaskRunner) error {
+	err := taskRunner.Run(t)
+	taskRunner.Finish()
 
-	return names
+	return err
 }
 
 // emitRunStarted writes the run_started NDJSON event when running in json
 // output mode; it is a no-op otherwise.
-func emitRunStarted(targets []string) {
+func emitRunStarted(cfg *config.Config, targets []string) {
 	if cfg.Output != output.FormatJSON {
 		return
 	}
@@ -191,7 +159,7 @@ func emitRunStarted(targets []string) {
 // output mode; it is a no-op otherwise. It builds per-task results from both
 // executed pipeline graphs and directly-run tasks, and derives an overall
 // status of "failed" if err is non-nil or any task/stage failed.
-func emitRunFinished(graphs []*scheduler.ExecutionGraph, tasks []*task.Task, runErr error) {
+func emitRunFinished(cfg *config.Config, graphs []*scheduler.ExecutionGraph, tasks []*task.Task, runErr error) {
 	if cfg.Output != output.FormatJSON {
 		return
 	}
@@ -272,44 +240,15 @@ func stageStatus(stage *scheduler.Stage) string {
 	}
 }
 
-// runTask finishes the runner even when the task fails, for the same
-// teardown-before-summary reason as runPipeline.
-func runTask(t *task.Task, taskRunner *runner.TaskRunner) error {
-	err := taskRunner.Run(t)
-	taskRunner.Finish()
-
-	return err
-}
-
-func taskArgs(c *cli.Context) []string {
-	var runArgs []string
-	var dash = -1
-	for k, arg := range c.Args().Slice() {
-		if arg == "--" {
-			dash = k
-		}
-	}
-
-	if dash >= 0 && dash != c.NArg()-1 {
-		runArgs = c.Args().Slice()[dash+1:]
-	}
-
-	return runArgs
-}
-
-// summaryEnabled reports whether the human end-of-run summary should print.
-// An explicitly passed --summary wins in both directions; the lineage walk is
-// required because the flag is declared on both the app root and the run
-// command, and c.Bool alone would resolve the nearest (possibly unset,
-// default-true) declaration, silently ignoring an explicit root-level value.
-// With no explicit flag: --quiet suppresses the summary, raw output defaults
-// it off (raw is meant for clean, pipeable output) unless config opts in, and
-// every other human mode defaults it on.
-func summaryEnabled(c *cli.Context) bool {
-	for _, ctx := range c.Lineage() {
-		if ctx.IsSet("summary") {
-			return ctx.Bool("summary")
-		}
+// summaryEnabled reports whether the human end-of-run summary should print. An
+// explicitly passed --summary wins in both directions. With no explicit flag:
+// --quiet suppresses the summary, raw output defaults it off (raw is meant for
+// clean, pipeable output) unless config opts in, and every other human mode
+// defaults it on.
+func summaryEnabled(cmd *cobra.Command, cfg *config.Config) bool {
+	if cmd.Flags().Changed("summary") {
+		v, _ := cmd.Flags().GetBool("summary")
+		return v
 	}
 
 	if cfg.Quiet {
@@ -323,8 +262,8 @@ func summaryEnabled(c *cli.Context) bool {
 // output mode with summary enabled, prints the persistent end-of-run summary.
 // It runs after the dashboard has torn down (via each caller's Finish), so the
 // summary stays on screen.
-func finishRun(graphs []*scheduler.ExecutionGraph, tasks []*task.Task, summary bool, err error) {
-	emitRunFinished(graphs, tasks, err)
+func finishRun(cfg *config.Config, graphs []*scheduler.ExecutionGraph, tasks []*task.Task, summary bool, err error) {
+	emitRunFinished(cfg, graphs, tasks, err)
 
 	if cfg.Output == output.FormatJSON || !summary {
 		return

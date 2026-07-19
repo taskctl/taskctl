@@ -1,39 +1,27 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 
-	"github.com/urfave/cli/v2"
+	"github.com/spf13/cobra"
 
 	"github.com/taskctl/taskctl/internal/config"
 )
 
-func newValidateCommand() *cli.Command {
-	cmd := &cli.Command{
-		Name:      "validate",
-		Usage:     "validates config file",
-		ArgsUsage: "some-tasks-file.yaml",
-		Before: func(c *cli.Context) error {
-			if c.NArg() == 0 {
-				return errors.New("please provide file to validate")
-			}
-
-			return nil
-		},
-		Action: func(c *cli.Context) error {
-			cl := config.NewConfigLoader(cfg)
-
-			_, err := cl.Load(c.Args().First())
-			if err != nil {
-				fmt.Println(err.Error())
-				return nil
+func newValidateCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:     "validate CONFIG_FILE",
+		Short:   "validates config file",
+		GroupID: groupInspect,
+		Args:    cobra.ExactArgs(1),
+		RunE: func(_ *cobra.Command, args []string) error {
+			loader := config.NewConfigLoader(config.NewConfig())
+			if _, err := loader.Load(args[0]); err != nil {
+				return fmt.Errorf("invalid config; %w", err)
 			}
 
 			fmt.Println("file is valid")
 			return nil
 		},
 	}
-
-	return cmd
 }

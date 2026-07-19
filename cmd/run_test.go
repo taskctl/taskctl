@@ -7,26 +7,27 @@ import (
 
 func Test_runCommand(t *testing.T) {
 	tests := []appTest{
-		{args: []string{"", "--raw", "-c", "testdata/graph.yaml", "run", "graph:task2"}, errored: true},
-		{args: []string{"", "--raw", "-c", "testdata/graph.yaml", "run"}, errored: true},
+		{args: []string{"--raw", "-c", "testdata/graph.yaml", "run", "graph:task2"}, errored: true},
+		{args: []string{"--raw", "-c", "testdata/graph.yaml", "run"}, errored: true},
 		// raw output defaults the summary off, so command output stays clean.
-		{args: []string{"", "--raw", "-c", "testdata/graph.yaml", "run", "graph:task1"}, exactOutput: "hello, world!\n"},
-		{args: []string{"", "--raw", "-c", "testdata/graph.yaml", "run", "task", "graph:task1"}, exactOutput: "hello, world!\n"},
+		{args: []string{"--raw", "-c", "testdata/graph.yaml", "run", "graph:task1"}, exactOutput: "hello, world!\n"},
+		{args: []string{"--raw", "-c", "testdata/graph.yaml", "run", "task", "graph:task1"}, exactOutput: "hello, world!\n"},
+		// `run task` only matches tasks: a pipeline name is rejected.
+		{args: []string{"--raw", "-c", "testdata/graph.yaml", "run", "task", "graph:pipeline1"}, errored: true},
 		// but an explicit --summary opts raw back in.
-		{args: []string{"", "--raw", "-c", "testdata/graph.yaml", "run", "--summary", "graph:task1"}, output: []string{"hello, world!", "succeeded", "total"}},
+		{args: []string{"--raw", "-c", "testdata/graph.yaml", "run", "--summary", "graph:task1"}, output: []string{"hello, world!", "succeeded", "total"}},
 		// a root-level --summary=false must not be shadowed by the run
 		// command's own (unset, default-true) flag declaration.
-		{args: []string{"", "--output=prefixed", "--summary=false", "-c", "testdata/graph.yaml", "run", "graph:task1"}, output: []string{"hello, world!"}, absent: []string{"succeeded", "total"}},
-		{args: []string{"", "--raw", "-c", "testdata/graph.yaml", "run", "--summary", "pipeline", "graph:pipeline1"}, output: []string{"graph:task3", "hello, world!\n"}},
+		{args: []string{"--output=prefixed", "--summary=false", "-c", "testdata/graph.yaml", "run", "graph:task1"}, output: []string{"hello, world!"}, absent: []string{"succeeded", "total"}},
+		{args: []string{"--raw", "-c", "testdata/graph.yaml", "run", "--summary", "pipeline", "graph:pipeline1"}, output: []string{"graph:task3", "hello, world!\n"}},
 		{
-			args:   []string{"", "--output=prefixed", "-c", "testdata/graph.yaml", "run", "graph:pipeline1"},
+			args:   []string{"--output=prefixed", "-c", "testdata/graph.yaml", "run", "graph:pipeline1"},
 			output: []string{"graph:task1", "graph:task2", "graph:task3", "hello, world!"},
 		},
 	}
 
 	for _, v := range tests {
-		app := makeTestApp()
-		runAppTest(t, app, v)
+		runAppTest(t, v)
 	}
 }
 
@@ -37,7 +38,7 @@ func Test_runCommand(t *testing.T) {
 // run_started with a schema_version, and the last is run_finished with
 // per-task results.
 func Test_runCommand_json(t *testing.T) {
-	out, err := captureStdout(t, []string{"", "-c", "testdata/graph.yaml", "-o", "json", "run", "graph:pipeline1"})
+	out, err := captureStdout(t, []string{"-c", "testdata/graph.yaml", "-o", "json", "run", "graph:pipeline1"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,18 +83,17 @@ func Test_runCommand_json(t *testing.T) {
 func Test_runCommandSummary(t *testing.T) {
 	tests := []appTest{
 		{
-			args:   []string{"", "--output=prefixed", "-c", "testdata/graph.yaml", "graph:task1"},
+			args:   []string{"--output=prefixed", "-c", "testdata/graph.yaml", "graph:task1"},
 			output: []string{"hello, world!", "succeeded", "total"},
 		},
 		{
-			args:   []string{"", "--output=prefixed", "-c", "testdata/graph.yaml", "run", "graph:pipeline1"},
+			args:   []string{"--output=prefixed", "-c", "testdata/graph.yaml", "run", "graph:pipeline1"},
 			output: []string{"succeeded", "total", "graph:task1"},
 		},
 	}
 
 	for _, v := range tests {
-		app := makeTestApp()
-		runAppTest(t, app, v)
+		runAppTest(t, v)
 	}
 }
 
@@ -116,13 +116,12 @@ func splitLines(b []byte) [][]byte {
 
 func Test_runCommandWithArgumentsList(t *testing.T) {
 	tests := []appTest{
-		{args: []string{"", "--raw", "-c", "testdata/task.yaml", "run", "task", "task:task1", "--", "first", "second"}, exactOutput: "This is first argument\n"},
-		{args: []string{"", "--raw", "-c", "testdata/task.yaml", "run", "task", "task:task2", "--", "first", "second"}, exactOutput: "This is second argument\n"},
-		{args: []string{"", "--raw", "-c", "testdata/task.yaml", "run", "task", "task:task3", "--", "first", "and", "second"}, exactOutput: "This is first and second arguments\n"},
+		{args: []string{"--raw", "-c", "testdata/task.yaml", "run", "task", "task:task1", "--", "first", "second"}, exactOutput: "This is first argument\n"},
+		{args: []string{"--raw", "-c", "testdata/task.yaml", "run", "task", "task:task2", "--", "first", "second"}, exactOutput: "This is second argument\n"},
+		{args: []string{"--raw", "-c", "testdata/task.yaml", "run", "task", "task:task3", "--", "first", "and", "second"}, exactOutput: "This is first and second arguments\n"},
 	}
 
 	for _, v := range tests {
-		app := makeTestApp()
-		runAppTest(t, app, v)
+		runAppTest(t, v)
 	}
 }

@@ -17,7 +17,7 @@ tasks:
         VAR_NAME_2: VARIATION_1
       - VAR_NAME_1: VARIATION_2
         VAR_NAME_2: VARIATION_2
-    dir: {{ .Root }}/task/working/dir # current directory by default
+    dir: "{{ .Root }}/task/working/dir" # current directory by default
     timeout: 10s
     before: mkdir some-dir
     after: rm -rf some-dir
@@ -160,5 +160,5 @@ contexts:
       KUBECONFIG: "$HOME/.kube/alternate-config"
 
 debug: true # debug enabled by default. To temporary disable run with "--debug=false" flag
-output: prefixed # raw, prefixed, default or json (default on a TTY)
+output: prefixed # default, prefixed, raw or json (default is the format on a TTY)
 summary: true # show summary by default

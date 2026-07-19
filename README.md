@@ -499,8 +499,8 @@ tasks:
 | `taskctl show <name>` | show a task's or pipeline's details |
 | `taskctl watch <watcher...>` | start one or more filesystem watchers |
 | `taskctl graph [pipeline]` (alias `g`) | visualize a pipeline's execution graph in DOT format (e.g. `taskctl graph release \| dot -Tsvg > graph.svg`); `--lr` orients it left-to-right |
-| `taskctl validate` | validate the config file |
-| `taskctl completion <shell>` | generate a completion script for `bash` or `zsh` |
+| `taskctl validate <config-file>` | validate a config file; exits non-zero if it is invalid |
+| `taskctl completion <shell>` | generate a completion script for `bash`, `zsh`, `fish` or `powershell` |
 | `taskctl skill install` | install the AI agent skill (see [taskctl for AI agents](#taskctl-for-ai-agents)) |
 
 ### Global flags
@@ -556,6 +556,8 @@ if err != nil {
 ```
 
 ## Autocomplete
+Completion scripts are generated natively for `bash`, `zsh`, `fish` and `powershell`, and complete task and pipeline names dynamically from your config. Run `taskctl completion <shell> --help` for shell-specific install steps.
+
 ### Bash
 Add to  ~/.bashrc or ~/.profile
 ```
