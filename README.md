@@ -259,7 +259,7 @@ tasks:
 ```
 
 ### Pass CLI arguments to task
-Any command line arguments succeeding `--` are passed to each task via the `.Args` and `.ArgsList` variables or the `ARGS` environment variable.
+Any command line arguments succeeding `--` are passed to each task via the `.Args` and `.ArgsList` variables or the `TASKCTL__ARGS` environment variable.
 
 Given this definition:
 ```yaml

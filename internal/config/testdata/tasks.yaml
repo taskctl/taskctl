@@ -25,7 +25,7 @@ tasks:
     dir: "{{ .Root }}/bin"
     condition: /usr/bin/true
     command:
-      - echo ${ARGS}
+      - echo ${TASKCTL__ARGS}
       - echo "Args - {{ .Args }}"
       - sleep {{ .sleep }}
     env:

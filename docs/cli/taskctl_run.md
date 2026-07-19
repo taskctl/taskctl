@@ -4,7 +4,7 @@ run one or more pipelines or tasks
 
 ### Synopsis
 
-Runs one or more named pipelines or tasks in order, stopping at the first failure. Arguments after "--" are passed to each task via the `.Args`/`.ArgsList` template variables or the `ARGS` environment variable.
+Runs one or more named pipelines or tasks in order, stopping at the first failure. Arguments after "--" are passed to each task via the `.Args`/`.ArgsList` template variables or the `TASKCTL__ARGS` environment variable.
 
 ```
 taskctl run TARGET [TARGET...] [-- task-args] [flags]

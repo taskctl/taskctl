@@ -24,6 +24,12 @@ import (
 	"github.com/taskctl/taskctl/task"
 )
 
+// injectedEnvPrefix namespaces the environment variables taskctl injects into a
+// task's process, keeping them clear of the user's own env. The double
+// underscore distinguishes these injected values from the single-underscore
+// TASKCTL_ config vars (e.g. TASKCTL_OUTPUT_FORMAT) that taskctl reads.
+const injectedEnvPrefix = "TASKCTL__"
+
 // Runner describes tasks runner interface
 type Runner interface {
 	Run(t *task.Task) error
@@ -109,7 +115,7 @@ func NewTaskRunner(opts ...Opts) (*TaskRunner, error) {
 		o(r)
 	}
 
-	r.env = variables.FromMap(map[string]string{"ARGS": r.variables.Get("Args").(string)})
+	r.env = variables.FromMap(map[string]string{injectedEnvPrefix + "ARGS": r.variables.Get("Args").(string)})
 
 	return r, nil
 }
@@ -185,7 +191,7 @@ func (r *TaskRunner) Run(t *task.Task) (err error) {
 	vars.Set("Tasks", r.results.Snapshot())
 
 	env := r.env.Merge(execContext.Env)
-	env = env.With("TASK_NAME", t.Name)
+	env = env.With(injectedEnvPrefix+"TASK_NAME", t.Name)
 	env = env.Merge(t.Env)
 
 	meets, err := r.checkTaskCondition(t, env, vars)
