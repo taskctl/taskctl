@@ -21,7 +21,7 @@ func newRunCommand(cfg *config.Config) *cobra.Command {
 	runCmd := &cobra.Command{
 		Use:     "run TARGET [TARGET...] [-- task-args]",
 		Short:   "run one or more pipelines or tasks",
-		Long:    "Runs one or more named pipelines or tasks in order, stopping at the first failure. Arguments after \"--\" are passed through to the tasks as $Args.",
+		Long:    "Runs one or more named pipelines or tasks in order, stopping at the first failure. Arguments after \"--\" are passed to each task via the `.Args`/`.ArgsList` template variables or the `ARGS` environment variable.",
 		GroupID: groupRun,
 		Example: "  taskctl run pipeline1\n" +
 			"  taskctl run task1 task2\n" +
