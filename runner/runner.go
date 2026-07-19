@@ -324,7 +324,8 @@ func (r *TaskRunner) contextForTask(ctx context.Context, t *task.Task) (c *Execu
 		name = defaultContextName
 	}
 
-	c, ok := r.contexts[name]
+	var ok bool
+	c, ok = r.contexts[name]
 	switch {
 	case ok:
 		r.cleanupList.Store(name, c)
