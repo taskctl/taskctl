@@ -284,7 +284,7 @@ A task definition takes the following parameters:
 ### Tasks variables
 Each task, stage and context has variables that are used to render a task's fields - `command`, `dir`, `before`, `after`. Along with the globally predefined ones, variables can be set in a task's definition. You can use those variables according to the `text/template` [documentation](https://pkg.go.dev/text/template).
 
-Variables layer by precedence, last wins: global < context < task. So a variable declared under a context's `variables:` is available in the `command`, `dir`, `before` and `after` of any task using that context, and a task-level variable of the same name overrides it. (A task's `condition:` sees global variables only.)
+Variables layer by precedence, last wins: global < context < task. So a variable declared under a context's `variables:` is available in the `command`, `dir`, `before` and `after` of any task using that context, and a task-level variable of the same name overrides it. A task's `condition:` is rendered with the same merged variables — global, context, task, and the predefined ones below — as its commands.
 
 Predefined variables are:
 - `.Root` - root config file directory
@@ -334,7 +334,7 @@ $ taskctl lint2 -- package.go main.go
 ```
 
 ### Storing task's output
-A task's stdout is automatically stored in the ``.Tasks.<Name>.Stdout`` variable (alongside ``.Tasks.<Name>.Stderr`` and ``.Tasks.<Name>.ExitCode``), where `<Name>` is the task's title-cased name. These variables are available to all dependent stages. The stdout is exported to an environment variable only if the task sets `exportAs`, in which case it is written verbatim to the env var of that name; with no `exportAs` there is no environment export.
+A task's stdout is automatically stored in the ``.Tasks.<Name>.Stdout`` variable (alongside ``.Tasks.<Name>.Stderr`` and ``.Tasks.<Name>.ExitCode``), where `<Name>` is the task's title-cased name. Results accumulate in a run-wide map, so a task sees any task that finished before it started; a stage that `depends_on` the producer is guaranteed to see its result. The stdout is exported to an environment variable only if the task sets `exportAs`, in which case it is written verbatim to the env var of that name; with no `exportAs` there is no environment export.
 
 ### Tasks variations
 A task may run in one or more variations. Variations allow you to reuse a task with different env variables:
