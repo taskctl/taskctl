@@ -14,9 +14,9 @@ var shBin = Binary{
 }
 
 func TestTaskCompiler_CompileCommand(t *testing.T) {
-	tc := NewTaskCompiler()
+	tc := newTaskCompiler()
 
-	job, err := tc.CompileCommand(
+	job, err := tc.compileCommand(
 		"echo 1",
 		NewExecutionContext(&shBin, "/tmp", variables.FromMap(map[string]string{"HOME": "/root"}), nil, nil, nil, nil),
 		"/root", nil,
@@ -39,7 +39,7 @@ func TestTaskCompiler_CompileCommand(t *testing.T) {
 	}
 
 	quotedContext := NewExecutionContext(&shBin, "/", variables.NewVariables(), []string{"false"}, []string{"false"}, []string{"false"}, []string{"false"}, WithQuote("\""))
-	job, err = tc.CompileCommand(
+	job, err = tc.compileCommand(
 		"echo 1",
 		quotedContext,
 		"/root", nil,
@@ -59,8 +59,8 @@ func TestTaskCompiler_CompileCommand(t *testing.T) {
 }
 
 func TestTaskCompiler_CompileTask(t *testing.T) {
-	tc := NewTaskCompiler()
-	j, err := tc.CompileTask(&task.Task{
+	tc := newTaskCompiler()
+	j, err := tc.compileTask(&task.Task{
 		Commands:  []string{"echo 1"},
 		Variables: variables.FromMap(map[string]string{"TestInterpolatedVar": "TestVar={{.TestVar}}"}),
 	},

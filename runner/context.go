@@ -141,8 +141,7 @@ func (c *ExecutionContext) runServiceCommand(ctx context.Context, command string
 	return nil
 }
 
-// DefaultContext creates default ExecutionContext instance
-func DefaultContext() *ExecutionContext {
+func defaultContext() *ExecutionContext {
 	return &ExecutionContext{
 		Env:       variables.NewVariables(),
 		Variables: variables.NewVariables(),

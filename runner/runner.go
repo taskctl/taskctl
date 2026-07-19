@@ -1,3 +1,4 @@
+// Package runner compiles tasks into jobs and executes them inside execution contexts.
 package runner
 
 import (
@@ -34,7 +35,6 @@ type Runner interface {
 
 // TaskRunner run tasks
 type TaskRunner struct {
-	Executor executor.Executor
 	// DryRun makes each task's commands (condition, before, main, after) render
 	// and parse for validation but not execute, so a task with valid commands is
 	// marked completed (an invalid template or command still fails). Context
@@ -50,7 +50,7 @@ type TaskRunner struct {
 	canceling   bool
 	doneCh      chan struct{}
 
-	compiler *TaskCompiler
+	compiler *taskCompiler
 
 	Stdin          io.Reader
 	Stdout, Stderr io.Writer
@@ -62,7 +62,7 @@ type TaskRunner struct {
 // NewTaskRunner creates new TaskRunner instance
 func NewTaskRunner(opts ...Opts) (*TaskRunner, error) {
 	r := &TaskRunner{
-		compiler:     NewTaskCompiler(),
+		compiler:     newTaskCompiler(),
 		OutputFormat: output.FormatRaw,
 		Stdin:        os.Stdin,
 		Stdout:       os.Stdout,
@@ -81,20 +81,6 @@ func NewTaskRunner(opts ...Opts) (*TaskRunner, error) {
 	r.env = variables.FromMap(map[string]string{"ARGS": r.variables.Get("Args").(string)})
 
 	return r, nil
-}
-
-// SetContexts sets task runner's contexts
-func (r *TaskRunner) SetContexts(contexts map[string]*ExecutionContext) *TaskRunner {
-	r.contexts = contexts
-
-	return r
-}
-
-// SetVariables sets task runner's variables
-func (r *TaskRunner) SetVariables(vars variables.Container) *TaskRunner {
-	r.variables = vars
-
-	return r
 }
 
 // Run run provided task.
@@ -181,7 +167,7 @@ func (r *TaskRunner) Run(t *task.Task) (err error) {
 		return err
 	}
 
-	job, err := r.compiler.CompileTask(t, execContext, stdin, taskOutput.Stdout(), taskOutput.Stderr(), env, vars)
+	job, err := r.compiler.compileTask(t, execContext, stdin, taskOutput.Stdout(), taskOutput.Stderr(), env, vars)
 	if err != nil {
 		return err
 	}
@@ -221,14 +207,6 @@ func (r *TaskRunner) Finish() {
 	output.Close()
 }
 
-// WithVariable adds variable to task runner's variables list.
-// It creates new instance of variables container.
-func (r *TaskRunner) WithVariable(key, value string) *TaskRunner {
-	r.variables = r.variables.With(key, value)
-
-	return r
-}
-
 func (r *TaskRunner) before(ctx context.Context, t *task.Task, env, vars variables.Container) error {
 	if len(t.Before) == 0 {
 		return nil
@@ -240,7 +218,7 @@ func (r *TaskRunner) before(ctx context.Context, t *task.Task, env, vars variabl
 	}
 
 	for _, command := range t.Before {
-		job, err := r.compiler.CompileCommand(command, execContext, t.Dir, t.Timeout, nil, r.Stdout, r.Stderr, env, vars)
+		job, err := r.compiler.compileCommand(command, execContext, t.Dir, t.Timeout, nil, r.Stdout, r.Stderr, env, vars)
 		if err != nil {
 			return fmt.Errorf("\"before\" command compilation failed: %w", err)
 		}
@@ -271,7 +249,7 @@ func (r *TaskRunner) after(ctx context.Context, t *task.Task, env, vars variable
 	}
 
 	for _, command := range t.After {
-		job, err := r.compiler.CompileCommand(command, execContext, t.Dir, t.Timeout, nil, r.Stdout, r.Stderr, env, vars)
+		job, err := r.compiler.compileCommand(command, execContext, t.Dir, t.Timeout, nil, r.Stdout, r.Stderr, env, vars)
 		if err != nil {
 			return fmt.Errorf("\"after\" command compilation failed: %w", err)
 		}
@@ -293,7 +271,7 @@ func (r *TaskRunner) after(ctx context.Context, t *task.Task, env, vars variable
 
 func (r *TaskRunner) contextForTask(ctx context.Context, t *task.Task) (c *ExecutionContext, err error) {
 	if t.Context == "" {
-		c = DefaultContext()
+		c = defaultContext()
 	} else {
 		var ok bool
 		c, ok = r.contexts[t.Context]
@@ -327,7 +305,7 @@ func (r *TaskRunner) checkTaskCondition(t *task.Task) (bool, error) {
 		return false, err
 	}
 
-	job, err := r.compiler.CompileCommand(t.Condition, executionContext, t.Dir, t.Timeout, nil, r.Stdout, r.Stderr, r.env, r.variables)
+	job, err := r.compiler.compileCommand(t.Condition, executionContext, t.Dir, t.Timeout, nil, r.Stdout, r.Stderr, r.env, r.variables)
 	if err != nil {
 		return false, err
 	}

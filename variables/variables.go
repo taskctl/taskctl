@@ -1,3 +1,4 @@
+// Package variables provides the key-value containers shared by tasks, contexts and runners.
 package variables
 
 import (

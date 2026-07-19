@@ -540,10 +540,12 @@ Errors are written to stderr as `Error: <message>` and a failed run exits `1`. W
 ## Embeddable task runner
 *taskctl* may be embedded into any Go program. Additional information may be found on taskctl's [pkg.go.dev](https://pkg.go.dev/github.com/taskctl/taskctl?tab=overview) page.
 
+The public, embeddable API is exactly five packages — `task`, `variables`, `executor`, `runner`, `scheduler`. Everything under `internal/` and `cmd/` is CLI plumbing and not importable. This surface is deliberately minimal and pre-1.0, so it may change between minor releases.
+
 ### Runner
 ```go
 t := task.FromCommands("go fmt ./...", "go build ./...")
-r, err := NewTaskRunner()
+r, err := runner.NewTaskRunner()
 if err != nil {
     return
 }
@@ -559,11 +561,11 @@ fmt.Println(t.Output())
 format := task.FromCommands("go fmt ./...")
 build := task.FromCommands("go build ./...")
 r, _ := runner.NewTaskRunner()
-s := NewScheduler(r)
+s := scheduler.NewScheduler(r)
 
-graph, err := NewExecutionGraph(
-    &Stage{Name: "format", Task: format},
-    &Stage{Name: "build", Task: build, DependsOn: []string{"format"}},
+graph, err := scheduler.NewExecutionGraph(
+    &scheduler.Stage{Name: "format", Task: format},
+    &scheduler.Stage{Name: "build", Task: build, DependsOn: []string{"format"}},
 )
 if err != nil {
     return

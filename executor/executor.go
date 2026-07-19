@@ -1,3 +1,4 @@
+// Package executor runs compiled jobs through an embedded shell interpreter, without a system shell.
 package executor
 
 import (

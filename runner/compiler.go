@@ -13,18 +13,17 @@ import (
 	"github.com/taskctl/taskctl/variables"
 )
 
-// TaskCompiler compiles tasks into jobs for executor
-type TaskCompiler struct {
+// taskCompiler compiles tasks into jobs for executor
+type taskCompiler struct {
 	variables variables.Container
 }
 
-// NewTaskCompiler create new TaskCompiler instance
-func NewTaskCompiler() *TaskCompiler {
-	return &TaskCompiler{variables: variables.NewVariables()}
+func newTaskCompiler() *taskCompiler {
+	return &taskCompiler{variables: variables.NewVariables()}
 }
 
-// CompileTask compiles task into Job (linked list of commands) executed by Executor
-func (tc *TaskCompiler) CompileTask(t *task.Task, executionContext *ExecutionContext, stdin io.Reader, stdout, stderr io.Writer, env, vars variables.Container) (*executor.Job, error) {
+// compileTask compiles task into Job (linked list of commands) executed by Executor
+func (tc *taskCompiler) compileTask(t *task.Task, executionContext *ExecutionContext, stdin io.Reader, stdout, stderr io.Writer, env, vars variables.Container) (*executor.Job, error) {
 	vars = t.Variables.Merge(vars)
 	var job, prev *executor.Job
 
@@ -42,7 +41,7 @@ func (tc *TaskCompiler) CompileTask(t *task.Task, executionContext *ExecutionCon
 
 	for _, variant := range t.GetVariations() {
 		for _, command := range t.Commands {
-			j, err := tc.CompileCommand(
+			j, err := tc.compileCommand(
 				command,
 				executionContext,
 				t.Dir,
@@ -73,8 +72,7 @@ func (tc *TaskCompiler) CompileTask(t *task.Task, executionContext *ExecutionCon
 	return job, nil
 }
 
-// CompileCommand compiles command into Job
-func (tc *TaskCompiler) CompileCommand(
+func (tc *taskCompiler) compileCommand(
 	command string,
 	executionCtx *ExecutionContext,
 	dir string,

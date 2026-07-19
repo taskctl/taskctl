@@ -15,21 +15,18 @@ import (
 func TestTaskRunner(t *testing.T) {
 	c := NewExecutionContext(nil, "/", variables.NewVariables(), []string{"true"}, []string{"false"}, []string{"echo 1"}, []string{"echo 2"})
 
-	runner, err := NewTaskRunner(WithContexts(map[string]*ExecutionContext{"local": c}))
+	runner, err := NewTaskRunner(
+		WithContexts(map[string]*ExecutionContext{"default": defaultContext(), "local": c}),
+		WithVariables(variables.FromMap(map[string]string{"Root": "/"})),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	runner.SetContexts(map[string]*ExecutionContext{
-		"default": DefaultContext(),
-		"local":   c,
-	})
 	if _, ok := runner.contexts["default"]; !ok {
 		t.Error()
 	}
 
 	runner.Stdout, runner.Stderr = io.Discard, io.Discard
-	runner.SetVariables(variables.FromMap(map[string]string{"Root": "/tmp"}))
-	runner.WithVariable("Root", "/")
 
 	task1 := taskpkg.NewTask()
 	task1.Context = "local"
