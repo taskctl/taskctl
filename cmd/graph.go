@@ -45,7 +45,7 @@ func newGraphCommand(cfg *config.Config) *cobra.Command {
 		},
 	}
 
-	graphCmd.Flags().BoolVar(&lr, "lr", false, "orients outputted graph left-to-right")
+	graphCmd.Flags().BoolVar(&lr, "lr", false, "orients the output graph left-to-right")
 
 	return graphCmd
 }

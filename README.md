@@ -535,7 +535,7 @@ tasks:
 | `1` | runtime error (bad config, unknown task or pipeline) or a failed task/pipeline run |
 | `2` | usage error (missing/extra argument, unknown flag) — the command's usage is printed alongside the message |
 
-Errors are written to stderr as `Error: <message>`. A failed run prints only its end-of-run summary (no duplicate error line) and exits `1`.
+Errors are written to stderr as `Error: <message>` and a failed run exits `1`. When the failure has already been surfaced — by the end-of-run summary or, in `json` mode, the `run_finished` event — the duplicate `Error:` line is suppressed; when no summary is shown (`--summary=false`, `--quiet`, or `raw` output) the `Error:` line is printed.
 
 ## Embeddable task runner
 *taskctl* may be embedded into any Go program. Additional information may be found on taskctl's [pkg.go.dev](https://pkg.go.dev/github.com/taskctl/taskctl?tab=overview) page.

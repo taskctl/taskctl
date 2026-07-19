@@ -41,8 +41,8 @@ type Config struct {
 
 	Quiet, Debug, DryRun bool
 	// Summary is nil when no config file set summary:, so callers can fall back
-	// to their default (on except in raw output) rather than treating an
-	// omitted key as false.
+	// to their default (on everywhere except raw output) rather than treating
+	// an omitted key as false.
 	Summary *bool
 	Output  string
 

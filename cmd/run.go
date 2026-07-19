@@ -29,7 +29,12 @@ func newRunCommand(cfg *config.Config) *cobra.Command {
 		ValidArgsFunction: targetCompletion(cfg),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			targets, _ := splitArgsAtDash(cmd, args)
-			targets = slices.DeleteFunc(targets, func(s string) bool { return s == "pipeline" })
+			// Support the legacy `run pipeline <name>` form by dropping a leading
+			// "pipeline" keyword — without swallowing a real target of that name
+			// elsewhere in the list.
+			if len(targets) > 0 && targets[0] == "pipeline" {
+				targets = targets[1:]
+			}
 			if len(targets) == 0 {
 				return errors.New("no target specified")
 			}

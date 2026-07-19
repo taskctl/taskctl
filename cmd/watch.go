@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 	"log/slog"
+	"maps"
+	"slices"
 	"sync"
 
 	"github.com/spf13/cobra"
@@ -62,10 +64,6 @@ func newWatchCommand(cfg *config.Config) *cobra.Command {
 
 func watcherCompletion(cfg *config.Config) func(*cobra.Command, []string, string) ([]string, cobra.ShellCompDirective) {
 	return completionFunc(cfg, func() []string {
-		names := make([]string, 0, len(cfg.Watchers))
-		for name := range cfg.Watchers {
-			names = append(names, name)
-		}
-		return names
+		return slices.Sorted(maps.Keys(cfg.Watchers))
 	})
 }
