@@ -253,7 +253,7 @@ func TestTaskRunner_TasksStdoutVariable(t *testing.T) {
 	}
 
 	if got := consumer.Stdout(); !strings.Contains(got, "[produced]") {
-		t.Errorf(".Tasks.<Name>.Output must expose producer output: got %q", got)
+		t.Errorf(".Tasks.<Name>.Stdout must expose producer output: got %q", got)
 	}
 }
 
