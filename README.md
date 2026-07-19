@@ -276,7 +276,7 @@ A task definition takes the following parameters:
 - `allow_failure` - if set to `true`, failed commands will not interrupt execution (default: `false`)
 - `after` - command that will be executed after the task completes
 - `before` - command that will be executed before the task starts
-- `exportAs` - env variable name to store the task's output (default: `TASK_NAME_OUTPUT`, where `TASK_NAME` is the actual task's name)
+- `exportAs` - name of the env variable that receives the task's stdout; when omitted, the output is not exported to the environment (it remains available via `.Tasks.<Name>.Stdout`)
 - `condition` - condition to check before running task
 - `variables` - task's variables
 - `interactive` - if `true` provides STDIN to commands (default: `false`)
@@ -334,7 +334,7 @@ $ taskctl lint2 -- package.go main.go
 ```
 
 ### Storing task's output
-A task's stdout is automatically stored in the ``.Tasks.<Name>.Stdout`` variable (alongside ``.Tasks.<Name>.Stderr`` and ``.Tasks.<Name>.ExitCode``), where `<Name>` is the task's title-cased name. It is also stored in the `TASK_NAME_OUTPUT` environment variable, whose name can be changed with the task's `exportAs` parameter. Those variables are available to all dependent stages.
+A task's stdout is automatically stored in the ``.Tasks.<Name>.Stdout`` variable (alongside ``.Tasks.<Name>.Stderr`` and ``.Tasks.<Name>.ExitCode``), where `<Name>` is the task's title-cased name. These variables are available to all dependent stages. The stdout is exported to an environment variable only if the task sets `exportAs`, in which case it is written verbatim to the env var of that name; with no `exportAs` there is no environment export.
 
 ### Tasks variations
 A task may run in one or more variations. Variations allow you to reuse a task with different env variables:
