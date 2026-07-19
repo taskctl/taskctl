@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/taskctl/taskctl/executor"
+	"github.com/taskctl/taskctl/internal/envutil"
 	"github.com/taskctl/taskctl/internal/tmpl"
 	"github.com/taskctl/taskctl/task"
 	"github.com/taskctl/taskctl/variables"
@@ -90,27 +91,34 @@ func (tc *taskCompiler) compileCommand(
 		Vars:    tc.variables.Merge(vars),
 	}
 
-	var c []string
-	if executionCtx.Executable != nil {
-		c = []string{executionCtx.Executable.Bin}
-		c = append(c, executionCtx.Executable.Args...)
-		c = append(c, fmt.Sprintf("%s%s%s", executionCtx.Quote, command, executionCtx.Quote))
-	} else {
-		c = []string{command}
-	}
-
-	j.Command = strings.Join(c, " ")
-
-	var err error
+	var renderedDir string
 	if dir != "" {
-		j.Dir = dir
+		renderedDir = dir
 	} else if executionCtx.Dir != "" {
-		j.Dir = executionCtx.Dir
+		renderedDir = executionCtx.Dir
 	}
 
-	j.Dir, err = tmpl.RenderString(j.Dir, j.Vars.Map())
+	renderedDir, err := tmpl.RenderString(renderedDir, j.Vars.Map())
 	if err != nil {
 		return nil, err
+	}
+
+	if executionCtx.wrapper != nil {
+		j.Command = executionCtx.wrapper.wrap(command, envutil.ConvertToMapOfStrings(env.Map()), renderedDir)
+		j.Env = variables.NewVariables()
+		j.Dir = ""
+	} else {
+		var c []string
+		if executionCtx.Executable != nil {
+			c = []string{executionCtx.Executable.Bin}
+			c = append(c, executionCtx.Executable.Args...)
+			c = append(c, fmt.Sprintf("%s%s%s", executionCtx.Quote, command, executionCtx.Quote))
+		} else {
+			c = []string{command}
+		}
+
+		j.Command = strings.Join(c, " ")
+		j.Dir = renderedDir
 	}
 
 	return j, nil

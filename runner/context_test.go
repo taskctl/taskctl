@@ -41,3 +41,42 @@ func TestContext(t *testing.T) {
 
 	runner.Finish()
 }
+
+func TestWithDocker(t *testing.T) {
+	c := NewExecutionContext(nil, "", variables.NewVariables(), nil, nil, nil, nil, WithDocker(DockerSpec{Image: "alpine"}))
+	if c.wrapper == nil {
+		t.Fatal("expected wrapper to be set")
+	}
+
+	got := c.wrapper.wrap("echo hi", map[string]string{"FOO": "bar"}, "/app")
+	want := `docker run --rm -e 'FOO=bar' -w /app alpine sh -c 'echo hi'`
+	if got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}
+
+func TestWithKubernetes(t *testing.T) {
+	c := NewExecutionContext(nil, "", variables.NewVariables(), nil, nil, nil, nil, WithKubernetes(KubernetesSpec{Pod: "web"}))
+	if c.wrapper == nil {
+		t.Fatal("expected wrapper to be set")
+	}
+
+	got := c.wrapper.wrap("echo hi", map[string]string{"FOO": "bar"}, "/app")
+	want := `kubectl exec web -- sh -c 'export FOO=bar; cd /app && echo hi'`
+	if got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}
+
+func TestWithSSH(t *testing.T) {
+	c := NewExecutionContext(nil, "", variables.NewVariables(), nil, nil, nil, nil, WithSSH(SSHSpec{Host: "example.com", User: "deploy"}))
+	if c.wrapper == nil {
+		t.Fatal("expected wrapper to be set")
+	}
+
+	got := c.wrapper.wrap("echo hi", map[string]string{"FOO": "bar"}, "/app")
+	want := `ssh deploy@example.com 'export FOO=bar; cd /app && echo hi'`
+	if got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}
