@@ -40,7 +40,7 @@ taskctl list [flags]
 ### SEE ALSO
 
 * [taskctl](taskctl.md)	 - modern task runner
-* [taskctl list pipelines](taskctl_list_pipelines.md)	 - List pipelines
-* [taskctl list tasks](taskctl_list_tasks.md)	 - List tasks
-* [taskctl list watchers](taskctl_list_watchers.md)	 - List watchers
+* [taskctl list pipelines](taskctl_list_pipelines.md)	 - list pipelines
+* [taskctl list tasks](taskctl_list_tasks.md)	 - list tasks
+* [taskctl list watchers](taskctl_list_watchers.md)	 - list watchers
 

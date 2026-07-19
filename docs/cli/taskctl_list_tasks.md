@@ -1,6 +1,10 @@
 ## taskctl list tasks
 
-List tasks
+list tasks
+
+### Synopsis
+
+Lists task names one per line; with --output json, a schema-versioned array of task summaries.
 
 ```
 taskctl list tasks [flags]

@@ -1,6 +1,10 @@
 ## taskctl list watchers
 
-List watchers
+list watchers
+
+### Synopsis
+
+Lists watcher names one per line; with --output json, a schema-versioned list of watcher names.
 
 ```
 taskctl list watchers [flags]

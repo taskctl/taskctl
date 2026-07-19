@@ -1,6 +1,10 @@
 ## taskctl list pipelines
 
-List pipelines
+list pipelines
+
+### Synopsis
+
+Lists pipeline names one per line; with --output json, a schema-versioned array of pipeline summaries with their stages.
 
 ```
 taskctl list pipelines [flags]

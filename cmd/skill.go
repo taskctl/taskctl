@@ -27,6 +27,7 @@ func newSkillCommand() *cobra.Command {
 		Use:     "skill",
 		Short:   "manage AI agent skills",
 		Long:    "Manages the installable taskctl AI agent skill, which teaches coding agents to drive taskctl through its machine-readable JSON interface. See `skill install`.",
+		Example: "  taskctl skill install",
 		GroupID: groupSetup,
 	}
 

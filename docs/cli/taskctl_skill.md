@@ -6,6 +6,12 @@ manage AI agent skills
 
 Manages the installable taskctl AI agent skill, which teaches coding agents to drive taskctl through its machine-readable JSON interface. See `skill install`.
 
+### Examples
+
+```
+  taskctl skill install
+```
+
 ### Options
 
 ```
