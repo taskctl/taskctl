@@ -1,6 +1,6 @@
 tasks:
   task1:
-    context: local # optional. "local" is context by default
+    context: default # optional; a task with no context uses the "default" context
     description: "Optional description for task1"
     command:
       - echo ${ARGS} # ARGS is populated by arguments passed to task. eg. taskctl run task task1 -- arg1 arg2
@@ -35,7 +35,7 @@ tasks:
       sleep: 10
 
   task3:
-    context: docker-compose-context-name # local is default context
+    context: docker-compose-context-name
     command:
       - echo "Hello from container created by docker-compose"
       - echo ${TASK1_STORED_OUTPUT}
@@ -113,7 +113,7 @@ watchers:
     task: test-watch-task-2
 
 contexts:
-  local: # will be created automatically if not set
+  default: # used by any task that sets no context; an empty one is used if not defined
     executable:
       bin: /bin/zsh
       args:

@@ -199,6 +199,71 @@ func TestTaskRunner_ContextVariables(t *testing.T) {
 	runner.Finish()
 }
 
+func TestTaskRunner_DefaultContext(t *testing.T) {
+	defaultCtx := NewExecutionContext(nil, "", variables.FromMap(map[string]string{
+		"GLOBAL_ENV": "from-default",
+		"SHARED_ENV": "default-wins",
+	}), nil, nil, nil, nil)
+	otherCtx := NewExecutionContext(nil, "", variables.NewVariables(), nil, nil, nil, nil)
+
+	runner, err := NewTaskRunner(WithContexts(map[string]*ExecutionContext{
+		defaultContextName: defaultCtx,
+		"other":            otherCtx,
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	runner.Stdout, runner.Stderr = io.Discard, io.Discard
+	defer runner.Finish()
+
+	inherit := taskpkg.FromCommands(`printf "[%s]" "$GLOBAL_ENV"`)
+	inherit.Name = "inherit"
+
+	override := taskpkg.FromCommands(`printf "[%s]" "$SHARED_ENV"`)
+	override.Name = "override"
+	override.Env = variables.FromMap(map[string]string{"SHARED_ENV": "task-wins"})
+
+	explicit := taskpkg.FromCommands(`printf "[%s]" "${GLOBAL_ENV:-unset}"`)
+	explicit.Name = "explicit"
+	explicit.Context = "other"
+
+	cases := []struct {
+		t    *taskpkg.Task
+		want string
+	}{
+		{t: inherit, want: "[from-default]"}, // no context -> inherits the default context env
+		{t: override, want: "[task-wins]"},   // task env overrides the default context env
+		{t: explicit, want: "[unset]"},       // an explicit context does not see the default context env
+	}
+
+	for _, tc := range cases {
+		if err := runner.Run(tc.t); err != nil {
+			t.Fatalf("%s: %v", tc.t.Name, err)
+		}
+		if !strings.Contains(tc.t.Stdout(), tc.want) {
+			t.Errorf("%s: output %q does not contain %q", tc.t.Name, tc.t.Stdout(), tc.want)
+		}
+	}
+}
+
+func TestTaskRunner_NoDefaultContext(t *testing.T) {
+	runner, err := NewTaskRunner()
+	if err != nil {
+		t.Fatal(err)
+	}
+	runner.Stdout, runner.Stderr = io.Discard, io.Discard
+	defer runner.Finish()
+
+	tsk := taskpkg.FromCommands(`printf "ok"`)
+	tsk.Name = "plain"
+	if err := runner.Run(tsk); err != nil {
+		t.Fatalf("context-less task must run without a default context: %v", err)
+	}
+	if got := tsk.Stdout(); !strings.Contains(got, "ok") {
+		t.Errorf("context-less task output %q does not contain %q", got, "ok")
+	}
+}
+
 // TestTaskRunner_ExportAsOverridesExternalEnv reproduces issue #88: when a task
 // exports its output as an env var (exportAs) that already exists in the
 // external environment, a later task in the same pipeline must see the exported
