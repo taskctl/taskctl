@@ -18,6 +18,8 @@ func newWatchCommand(cfg *config.Config) *cobra.Command {
 	return &cobra.Command{
 		Use:               "watch WATCHER [WATCHER...]",
 		Short:             "starts watching for filesystem events",
+		Long:              "Watches the filesystem paths declared by one or more named watchers, running their task on matching create/write/remove/rename/chmod events until interrupted.",
+		Example:           "  taskctl watch watcher1 watcher2",
 		GroupID:           groupRun,
 		Args:              cobra.MinimumNArgs(1),
 		ValidArgsFunction: watcherCompletion(cfg),

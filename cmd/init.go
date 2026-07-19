@@ -43,8 +43,11 @@ func newInitCommand(cfg *config.Config) *cobra.Command {
 	var dir string
 
 	initCmd := &cobra.Command{
-		Use:     "init",
-		Short:   "creates sample config file",
+		Use:   "init",
+		Short: "creates sample config file",
+		Long:  "Writes a sample tasks.yaml with an example pipeline, task, and watcher to get started from.",
+		Example: "  taskctl init\n" +
+			"  taskctl init --dir ./sub",
 		GroupID: groupSetup,
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {

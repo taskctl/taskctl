@@ -26,7 +26,7 @@ go run . --output json --no-input <target>        # run; run_finished.status is 
 
 `go run .` is the default invocation — it can never run a stale binary. For repeated runs, build once and use the binary (`go run . --output json --no-input build-host`, then `./bin/taskctl ...`); rebuild after changing source.
 
-Common targets: `prepare` (tidy → test → format → lint → completers; run before wrapping up), `test`, `golangci-lint`, `fmt` (gofmt + goimports via `golangci-lint fmt`), `fixcs`, `build-host` (host binary for dogfooding), `build` (cross-platform release binaries), `update-completers`. `list` gives the authoritative set.
+Common targets: `prepare` (tidy → test → format → lint → completers → docs; run before wrapping up), `test`, `golangci-lint`, `fmt` (gofmt + goimports via `golangci-lint fmt`), `fixcs`, `build-host` (host binary for dogfooding), `build` (cross-platform release binaries), `update-completers`, `update-docs` (regenerates the `docs/cli/` Markdown reference tree via the dev-only `tools/gendocs` generator). `list` gives the authoritative set.
 
 Raw Go commands — fallback for cases with no matching task, or to mirror CI exactly:
 

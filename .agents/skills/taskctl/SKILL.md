@@ -49,3 +49,4 @@ Stdout is an NDJSON event stream — one JSON object per line:
 - Always pass `--output json --no-input`.
 - Never invoke interactive commands (`taskctl` with no arguments opens a selector when in a terminal).
 - Prefer running a pipeline over hand-sequencing its tasks — taskctl handles ordering and concurrency.
+- For a command's own usage, flags and examples (as opposed to task/pipeline data), run `taskctl <command> --help` or `taskctl help <command>`, or read the full CLI reference — https://raw.githubusercontent.com/taskctl/taskctl/main/docs/cli/taskctl.md — which links to a Markdown page per command.

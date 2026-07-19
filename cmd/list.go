@@ -21,8 +21,11 @@ import (
 
 func newListCommand(cfg *config.Config) *cobra.Command {
 	listCmd := &cobra.Command{
-		Use:     "list",
-		Short:   "lists contexts, pipelines, tasks and watchers",
+		Use:   "list",
+		Short: "lists contexts, pipelines, tasks and watchers",
+		Long:  "Lists everything declared in the config. With --output json, emits a schema-versioned discovery document intended for machine/agent consumption.",
+		Example: "  taskctl list\n" +
+			"  taskctl list --output json",
 		GroupID: groupInspect,
 		Args:    cobra.NoArgs,
 		RunE: func(*cobra.Command, []string) error {
@@ -43,11 +46,11 @@ func newListCommand(cfg *config.Config) *cobra.Command {
 	// tasks/pipelines/watchers share the human path (one name per line); they
 	// differ only in the typed JSON document they emit.
 	subs := []struct {
-		use, short string
-		names      func() []string
-		jsonDoc    func() any
+		use, short, long, example string
+		names                     func() []string
+		jsonDoc                   func() any
 	}{
-		{"tasks", "List tasks", sortedKeys(cfg.Tasks), func() any {
+		{"tasks", "list tasks", "Lists task names one per line; with --output json, a schema-versioned array of task summaries.", "  taskctl list tasks", sortedKeys(cfg.Tasks), func() any {
 			names := slices.Sorted(maps.Keys(cfg.Tasks))
 			summaries := make([]schema.TaskSummary, 0, len(names))
 			for _, name := range names {
@@ -58,7 +61,7 @@ func newListCommand(cfg *config.Config) *cobra.Command {
 				Tasks         []schema.TaskSummary `json:"tasks"`
 			}{1, summaries}
 		}},
-		{"pipelines", "List pipelines", sortedKeys(cfg.Pipelines), func() any {
+		{"pipelines", "list pipelines", "Lists pipeline names one per line; with --output json, a schema-versioned array of pipeline summaries with their stages.", "  taskctl list pipelines", sortedKeys(cfg.Pipelines), func() any {
 			names := slices.Sorted(maps.Keys(cfg.Pipelines))
 			summaries := make([]schema.PipelineSummary, 0, len(names))
 			for _, name := range names {
@@ -69,7 +72,7 @@ func newListCommand(cfg *config.Config) *cobra.Command {
 				Pipelines     []schema.PipelineSummary `json:"pipelines"`
 			}{1, summaries}
 		}},
-		{"watchers", "List watchers", sortedKeys(cfg.Watchers), func() any {
+		{"watchers", "list watchers", "Lists watcher names one per line; with --output json, a schema-versioned list of watcher names.", "  taskctl list watchers", sortedKeys(cfg.Watchers), func() any {
 			return struct {
 				SchemaVersion int      `json:"schema_version"`
 				Watchers      []string `json:"watchers"`
@@ -79,9 +82,11 @@ func newListCommand(cfg *config.Config) *cobra.Command {
 
 	for _, s := range subs {
 		listCmd.AddCommand(&cobra.Command{
-			Use:   s.use,
-			Short: s.short,
-			Args:  cobra.NoArgs,
+			Use:     s.use,
+			Short:   s.short,
+			Long:    s.long,
+			Example: s.example,
+			Args:    cobra.NoArgs,
 			RunE: func(*cobra.Command, []string) error {
 				if cfg.Output == output.FormatJSON {
 					return json.NewEncoder(os.Stdout).Encode(s.jsonDoc())

@@ -25,7 +25,7 @@ Do not guess what changed — derive it:
 
 - **README.md** — features list, CLI usage/flags, config examples, output formats, embeddable-API snippets, any command names or invocation forms.
 - **docs/** — must parse under the current config schema and reflect current keys/behavior.
-- **Never edit** binary/generated assets: `docs/logo.png`, `docs/pipeline.svg`.
+- **Never hand-edit** generated assets: `docs/logo.png`, `docs/pipeline.svg`, and the `docs/cli/` Markdown reference — `docs/cli/` is generated from the command tree by the `update-docs` task (`go run ./tools/gendocs docs/cli`); regenerate it instead, and keep README's pointer to it in sync.
 
 ## How to verify examples (don't just eyeball)
 

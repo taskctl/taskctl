@@ -26,6 +26,8 @@ func newSkillCommand() *cobra.Command {
 	skillCmd := &cobra.Command{
 		Use:     "skill",
 		Short:   "manage AI agent skills",
+		Long:    "Manages the installable taskctl AI agent skill, which teaches coding agents to drive taskctl through its machine-readable JSON interface. See `skill install`.",
+		Example: "  taskctl skill install",
 		GroupID: groupSetup,
 	}
 
@@ -33,7 +35,10 @@ func newSkillCommand() *cobra.Command {
 	installCmd := &cobra.Command{
 		Use:   "install",
 		Short: "installs the taskctl Claude Code skill",
-		Args:  cobra.NoArgs,
+		Long:  "Writes the taskctl SKILL.md into .claude/skills/taskctl in the current directory, or the user's home directory with --global.",
+		Example: "  taskctl skill install\n" +
+			"  taskctl skill install --global",
+		Args: cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			baseDir, err := os.Getwd()
 			if global {
