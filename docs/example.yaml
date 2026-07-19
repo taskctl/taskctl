@@ -3,7 +3,7 @@ tasks:
     context: default # optional; a task with no context uses the "default" context
     description: "Optional description for task1"
     command:
-      - echo ${ARGS} # ARGS is populated by arguments passed to task. eg. taskctl run task task1 -- arg1 arg2
+      - echo ${TASKCTL__ARGS} # TASKCTL__ARGS is populated by arguments passed to task. eg. taskctl run task task1 -- arg1 arg2
       - echo {{ .Args | default 'some value' }} # .Args is populated by arguments passed to task. eg. taskctl run task task1 -- arg1 arg2
       - echo {{ index .ArgsList 0 }} # .ArgsList is populated by list of arguments passed to task. eg. taskctl run task task1 -- arg1 arg2
       - echo "My name is task1"
