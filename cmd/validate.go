@@ -29,7 +29,9 @@ func newValidateCommand(cfg *config.Config) *cobra.Command {
 
 			if err != nil {
 				tui.Println(os.Stdout, tui.StyleError.Render("✗")+" "+file+" is invalid")
-				tui.Println(os.Stdout, tui.StyleFaint.Render("    "+strings.TrimSpace(err.Error())))
+				for line := range strings.SplitSeq(strings.TrimSpace(err.Error()), "\n") {
+					tui.Println(os.Stdout, tui.StyleFaint.Render("    "+line))
+				}
 				return reportedError{err}
 			}
 
