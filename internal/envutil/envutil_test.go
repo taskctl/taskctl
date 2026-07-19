@@ -52,6 +52,26 @@ func TestOverlayEnviron(t *testing.T) {
 	}
 }
 
+func TestNormalizeName(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{name: "already valid", in: "BUILD", want: "BUILD"},
+		{name: "lower-cased", in: "build", want: "BUILD"},
+		{name: "dash replaced", in: "build-host", want: "BUILD_HOST"},
+		{name: "spaces and dots replaced", in: "some test.task", want: "SOME_TEST_TASK"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := NormalizeName(tt.in); got != tt.want {
+				t.Errorf("NormalizeName(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestReadEnvFile(t *testing.T) {
 	dir := t.TempDir()
 	file := filepath.Join(dir, "test.env")

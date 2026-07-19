@@ -7,8 +7,6 @@ import (
 	"io"
 	"log/slog"
 	"os"
-	"regexp"
-	"strings"
 	"sync"
 	"time"
 
@@ -18,6 +16,7 @@ import (
 
 	"github.com/taskctl/taskctl/executor"
 	"github.com/taskctl/taskctl/internal/collections"
+	"github.com/taskctl/taskctl/internal/envutil"
 
 	"github.com/taskctl/taskctl/variables"
 
@@ -377,9 +376,9 @@ func (r *TaskRunner) checkTaskCondition(t *task.Task, env, vars variables.Contai
 func (r *TaskRunner) storeTaskResult(t *task.Task) {
 	envVarName := t.ExportAs
 	if envVarName == "" {
-		envVarName = fmt.Sprintf("%s_OUTPUT", strings.ToUpper(t.Name))
-		envVarName = regexp.MustCompile("[^a-zA-Z0-9_]").ReplaceAllString(envVarName, "_")
+		envVarName = envutil.NormalizeName(t.Name) + "_OUTPUT"
 	}
+
 	stdout := t.Stdout()
 	r.env.Set(envVarName, stdout)
 	r.results.Store(cases.Title(language.English).String(t.Name), taskResult{
