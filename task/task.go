@@ -131,7 +131,6 @@ func (t *Task) Stderr() string {
 	return t.Log.Stderr.String()
 }
 
-// lastLine returns last line from provided reader
 func lastLine(r io.Reader) (l string) {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
