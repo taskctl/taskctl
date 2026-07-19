@@ -329,7 +329,7 @@ func (r *TaskRunner) contextForTask(ctx context.Context, t *task.Task) (c *Execu
 	case ok:
 		r.cleanupList.Store(name, c)
 	case t.Context != "":
-		return nil, fmt.Errorf("no such context %s", t.Context)
+		return nil, fmt.Errorf("no such context %q", t.Context)
 	default:
 		c = defaultContext()
 	}
