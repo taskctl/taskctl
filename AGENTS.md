@@ -6,6 +6,14 @@ This file provides guidance to AI coding agents when working with code in this r
 
 `taskctl` is a concurrent task runner / Make alternative. Tasks and pipelines are declared in a human-readable config (`tasks.yaml`/`taskctl.yaml`, also JSON/TOML). It is a CLI application; the `runner`, `scheduler`, `task`, `executor`, and `variables` packages hold the reusable core, while CLI-only support (interactive prompts and output rendering) lives under `internal/`.
 
+## General
+
+These guidelines bias toward caution over speed; for trivial tasks, use judgment.
+
+- **Think before coding.** State assumptions explicitly; if multiple interpretations exist, present them — don't pick silently. If something is unclear, stop and ask. If a simpler approach exists, say so — push back when warranted.
+- **Simplicity first.** Minimum code that solves the problem, nothing speculative: no features beyond what was asked, no abstractions for single-use code, no unrequested configurability, no error handling for impossible scenarios. If 200 lines could be 50, rewrite.
+- **Surgical changes.** Touch only what the request requires: don't improve adjacent code, refactor what isn't broken, or delete pre-existing dead code (mention it instead). Match existing style. Remove the orphans your own changes create — nothing else. Every changed line should trace directly to the user's request.
+
 ## Commands
 
 There is no Makefile. The repo **dogfoods itself**: routine work (test, lint, format, completers) runs through taskctl's own task definitions in `tasks.yaml`, driven from the current source — so every dev loop also exercises the tool being changed. Use the machine-readable interface described by the bundled taskctl skill (`.agents/skills/taskctl/SKILL.md`); don't parse `tasks.yaml` or hand-sequence its commands in bash.
@@ -69,6 +77,7 @@ Execution flows through two layers — a pipeline DAG on top, single-task compil
 - Every package has table-style `_test.go` tests alongside; `cmd/` and `internal/config/` use `testdata/` fixtures.
 - Do not use branch prefixes (`feat/`, `fix/`, `chore/`, …) — use plain branch names (e.g. `pipeline-task-variables`, not `fix/pipeline-task-variables`). Commit messages still use conventional prefixes (`feat:`, `fix:`, …).
 - Do not use manual line breaks inside Markdown paragraphs or list items (`AGENTS.md`, `SKILL.md`, etc.) — write each paragraph or list item as a single line and let the renderer soft-wrap it. Reason: hard-wrapped source lines diff noisily on small edits and read awkwardly once rendered at a different width. Code blocks and tables are exempt.
+- Private (unexported) functions or variables always goes last, after public (exported) ones. Order is consts -> variables -> structs -> constructors -> methods -> unexported functions.
 
 ## Development process
 

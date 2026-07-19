@@ -28,21 +28,12 @@ type Executor interface {
 // DefaultExecutor is a default executor used for jobs
 // Uses `mvdan.cc/sh/v3/interp` under the hood
 type DefaultExecutor struct {
-	dir    string
-	env    []string
-	stdin  io.Reader
-	stdout io.Writer
-	stderr io.Writer
-	buf    bytes.Buffer
-
-	// interp is reused across consecutive jobs sharing the same environment and
-	// directory so that shell state (functions, variables, cwd) set by one
-	// command is visible to the next. lastEnv/lastDir record what it was built
-	// with; when a job's environment or directory differs (e.g. the next task
-	// variation) a fresh interpreter is created — interp.Runner snapshots its
-	// environment and directory on first Run and ignores later Env/Dir
-	// mutations, so reuse alone would leak the first job's environment into
-	// every subsequent variation.
+	dir     string
+	env     []string
+	stdin   io.Reader
+	stdout  io.Writer
+	stderr  io.Writer
+	buf     bytes.Buffer
 	interp  *interp.Runner
 	lastEnv map[string]string
 	lastDir string
