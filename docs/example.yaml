@@ -160,6 +160,6 @@ contexts:
       KUBECONFIG: "$HOME/.kube/alternate-config"
 
 debug: true # debug enabled by default. To temporary disable run with "--debug=false" flag
-dryrun: false # when true, skip executing task commands; each task still completes as "done". Also settable per-run with "--dry-run"
+dryrun: false # when true, validate task commands (render + parse) without executing them; valid tasks complete as "done". Also settable per-run with "--dry-run"
 output: prefixed # default, prefixed, raw or json (default is the format on a TTY)
 summary: true # show summary by default

@@ -35,8 +35,9 @@ type Runner interface {
 // TaskRunner run tasks
 type TaskRunner struct {
 	Executor executor.Executor
-	// DryRun makes each task's commands (condition, before, main, after) resolve
-	// without executing, so every task is marked completed having run nothing.
+	// DryRun makes each task's commands (condition, before, main, after) render
+	// and parse for validation but not execute, so a task with valid commands is
+	// marked completed having run nothing (an invalid template or command fails).
 	DryRun    bool
 	contexts  map[string]*ExecutionContext
 	variables variables.Container
