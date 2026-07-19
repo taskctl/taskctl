@@ -10,16 +10,6 @@ import (
 	"github.com/taskctl/taskctl/variables"
 )
 
-// lastLine returns last line from provided reader
-func lastLine(r io.Reader) (l string) {
-	scanner := bufio.NewScanner(r)
-	for scanner.Scan() {
-		l = scanner.Text()
-	}
-
-	return l
-}
-
 // Task is a structure that describes task, its commands, environment, working directory etc.
 // After task completes it provides task's execution status, exit code, stdout and stderr
 type Task struct {
@@ -131,7 +121,21 @@ func (t *Task) GetVariations() []map[string]string {
 	return variations
 }
 
-// Output returns task's stdout as a string
-func (t *Task) Output() string {
+// Stdout returns task's stdout as a string
+func (t *Task) Stdout() string {
 	return t.Log.Stdout.String()
+}
+
+// Stderr returns task's stderr as a string
+func (t *Task) Stderr() string {
+	return t.Log.Stderr.String()
+}
+
+func lastLine(r io.Reader) (l string) {
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		l = scanner.Text()
+	}
+
+	return l
 }

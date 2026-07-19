@@ -28,9 +28,6 @@ func buildTask(def *taskDefinition, lc *loaderContext) (*task.Task, error) {
 		Interactive:  def.Interactive,
 	}
 
-	t.Variables.Set("Context.Name", t.Context)
-	t.Variables.Set("Task.Name", t.Name)
-
 	if def.EnvFile != "" {
 		filename := def.EnvFile
 		if !filepath.IsAbs(filename) && lc.Dir != "" {

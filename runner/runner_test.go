@@ -75,7 +75,7 @@ func TestTaskRunner(t *testing.T) {
 			t.Error()
 		}
 
-		if !strings.Contains(testCase.t.Output(), testCase.output) {
+		if !strings.Contains(testCase.t.Stdout(), testCase.output) {
 			t.Error()
 		}
 
@@ -137,7 +137,7 @@ func TestTaskRunner_DryRun(t *testing.T) {
 	if fail.End.IsZero() {
 		t.Error("dry-run task must be marked completed (End set)")
 	}
-	if out := fail.Output(); out != "" {
+	if out := fail.Stdout(); out != "" {
 		t.Errorf("dry-run must produce no command output, got %q", out)
 	}
 
@@ -191,8 +191,8 @@ func TestTaskRunner_ContextVariables(t *testing.T) {
 		if err := runner.Run(tc.t); err != nil {
 			t.Fatalf("%s: %v", tc.t.Name, err)
 		}
-		if !strings.Contains(tc.t.Output(), tc.want) {
-			t.Errorf("%s: output %q does not contain %q", tc.t.Name, tc.t.Output(), tc.want)
+		if !strings.Contains(tc.t.Stdout(), tc.want) {
+			t.Errorf("%s: output %q does not contain %q", tc.t.Name, tc.t.Stdout(), tc.want)
 		}
 	}
 
@@ -227,8 +227,102 @@ func TestTaskRunner_ExportAsOverridesExternalEnv(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got := consumer.Output(); !strings.Contains(got, "[exported]") {
+	if got := consumer.Stdout(); !strings.Contains(got, "[exported]") {
 		t.Errorf("exportAs must override external env: got %q, want to contain %q", got, "[exported]")
+	}
+}
+
+func TestTaskRunner_NoEnvExportWithoutExportAs(t *testing.T) {
+	runner, err := NewTaskRunner()
+	if err != nil {
+		t.Fatal(err)
+	}
+	runner.Stdout, runner.Stderr = io.Discard, io.Discard
+	defer runner.Finish()
+
+	producer := taskpkg.FromCommands(`printf produced`)
+	producer.Name = "producer"
+	if err := runner.Run(producer); err != nil {
+		t.Fatal(err)
+	}
+
+	// PRODUCER_OUTPUT is the var the removed default would have set; it must be unset.
+	consumer := taskpkg.FromCommands(`printf "[%s]" "${PRODUCER_OUTPUT:-unset}"`)
+	consumer.Name = "consumer"
+	if err := runner.Run(consumer); err != nil {
+		t.Fatal(err)
+	}
+	if got := consumer.Stdout(); !strings.Contains(got, "[unset]") {
+		t.Errorf("without exportAs no env var must be exported: got %q", got)
+	}
+}
+
+func TestTaskRunner_TasksStdoutVariable(t *testing.T) {
+	runner, err := NewTaskRunner()
+	if err != nil {
+		t.Fatal(err)
+	}
+	runner.Stdout, runner.Stderr = io.Discard, io.Discard
+	defer runner.Finish()
+
+	producer := taskpkg.FromCommands(`printf "produced"`)
+	producer.Name = "producer"
+	if err := runner.Run(producer); err != nil {
+		t.Fatal(err)
+	}
+
+	consumer := taskpkg.FromCommands(`printf "[{{ .Tasks.Producer.Stdout }}]"`)
+	consumer.Name = "consumer"
+	if err := runner.Run(consumer); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := consumer.Stdout(); !strings.Contains(got, "[produced]") {
+		t.Errorf(".Tasks.<Name>.Stdout must expose producer output: got %q", got)
+	}
+}
+
+func TestTaskRunner_PredefinedTaskVars(t *testing.T) {
+	runner, err := NewTaskRunner()
+	if err != nil {
+		t.Fatal(err)
+	}
+	runner.Stdout, runner.Stderr = io.Discard, io.Discard
+	defer runner.Finish()
+
+	tsk := taskpkg.FromCommands(`printf "name={{ .Task.Name }} desc={{ .Task.Description }}"`)
+	tsk.Name = "greet"
+	tsk.Description = "greeter"
+	if err := runner.Run(tsk); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := tsk.Stdout(); !strings.Contains(got, "name=greet") || !strings.Contains(got, "desc=greeter") {
+		t.Errorf(".Task fields must render: got %q", got)
+	}
+}
+
+func TestTaskRunner_ConditionSeesPredefinedVars(t *testing.T) {
+	runner, err := NewTaskRunner()
+	if err != nil {
+		t.Fatal(err)
+	}
+	runner.Stdout, runner.Stderr = io.Discard, io.Discard
+	defer runner.Finish()
+
+	// The condition renders against the same merged view as commands; before the
+	// fix it compiled against base vars and errored on .Task.Name with missing-key.
+	tsk := taskpkg.FromCommands(`printf "ran"`)
+	tsk.Name = "greet"
+	tsk.Condition = `test "{{ .Task.Name }}" = "greet"`
+	if err := runner.Run(tsk); err != nil {
+		t.Fatal(err)
+	}
+	if tsk.Skipped {
+		t.Error("condition referencing .Task.Name should have been met")
+	}
+	if got := tsk.Stdout(); !strings.Contains(got, "ran") {
+		t.Errorf("task should have run, got %q", got)
 	}
 }
 
@@ -242,5 +336,5 @@ func ExampleTaskRunner_Run() {
 	if err != nil {
 		fmt.Println(err, t.ExitCode, t.ErrorMessage())
 	}
-	fmt.Println(t.Output())
+	fmt.Println(t.Stdout())
 }

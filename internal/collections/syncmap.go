@@ -37,3 +37,14 @@ func (sm *SyncMap[K, V]) Range(f func(k K, v V) bool) {
 		return f(k.(K), v.(V))
 	})
 }
+
+// Snapshot returns a plain map copy of the current key/value pairs.
+func (sm *SyncMap[K, V]) Snapshot() map[K]V {
+	m := make(map[K]V)
+	sm.Range(func(k K, v V) bool {
+		m[k] = v
+		return true
+	})
+
+	return m
+}

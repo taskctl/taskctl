@@ -74,10 +74,8 @@ func buildFromDefinition(def *configDefinition, lc *loaderContext) (cfg *Config,
 	}
 
 	for k, v := range def.Tasks {
+		v.Name = k
 		cfg.Tasks[k], err = buildTask(v, lc)
-		if cfg.Tasks[k].Name == "" {
-			cfg.Tasks[k].Name = k
-		}
 		if err != nil {
 			return nil, err
 		}

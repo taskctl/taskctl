@@ -276,7 +276,7 @@ A task definition takes the following parameters:
 - `allow_failure` - if set to `true`, failed commands will not interrupt execution (default: `false`)
 - `after` - command that will be executed after the task completes
 - `before` - command that will be executed before the task starts
-- `exportAs` - env variable name to store the task's output (default: `TASK_NAME_OUTPUT`, where `TASK_NAME` is the actual task's name)
+- `exportAs` - name of the env variable that receives the task's stdout; when omitted, the output is not exported to the environment (it remains available via `.Tasks.<Name>.Stdout`)
 - `condition` - condition to check before running task
 - `variables` - task's variables
 - `interactive` - if `true` provides STDIN to commands (default: `false`)
@@ -284,19 +284,19 @@ A task definition takes the following parameters:
 ### Tasks variables
 Each task, stage and context has variables that are used to render a task's fields - `command`, `dir`, `before`, `after`. Along with the globally predefined ones, variables can be set in a task's definition. You can use those variables according to the `text/template` [documentation](https://pkg.go.dev/text/template).
 
-Variables layer by precedence, last wins: global < context < task. So a variable declared under a context's `variables:` is available in the `command`, `dir`, `before` and `after` of any task using that context, and a task-level variable of the same name overrides it. (A task's `condition:` sees global variables only.)
+Variables layer by precedence, last wins: global < context < task. So a variable declared under a context's `variables:` is available in the `command`, `dir`, `before` and `after` of any task using that context, and a task-level variable of the same name overrides it. A task's `condition:` is rendered with the same merged variables — global, context, task, and the predefined ones below — as its commands.
 
 Predefined variables are:
 - `.Root` - root config file directory
-- `.Dir` - config file directory
+- `.Dir` - config file directory (same as `.Root`)
 - `.TempDir` - system's temporary directory
 - `.Args` - provided arguments as a string
 - `.ArgsList` - array of provided arguments
-- `.Task.Name` - current task's name
-- `.Context.Name` - current task's execution context's name
-- `.Stage.Name` - current stage's name
 - `.Output` - previous command's output
-- `.Tasks.Task1.Output` - `task1` last command output
+- `.Task` - the running task's static metadata: `.Task.Name`, `.Task.Description`, `.Task.Dir`, `.Task.Context`, `.Task.Condition`, `.Task.Timeout`, `.Task.AllowFailure`, `.Task.Interactive`, `.Task.ExportAs`
+- `.Context` - the resolved execution context: `.Context.Name`, `.Context.Dir`, `.Context.Executable` (with `.Context.Executable.Bin` and `.Context.Executable.Args`; `.Context.Executable` is nil for the default context)
+- `.Stage` - when the task runs inside a pipeline stage: `.Stage.Name`, `.Stage.Condition`, `.Stage.Dir`, `.Stage.AllowFailure`, `.Stage.DependsOn`
+- `.Tasks.<Name>` - results of an already-completed task, visible across the whole run: `.Tasks.<Name>.Stdout`, `.Tasks.<Name>.Stderr`, `.Tasks.<Name>.ExitCode`. `<Name>` is title-cased, so task `producer` is `.Tasks.Producer.Stdout`. A name containing a dash can't use field syntax (`{{ .Tasks.Build-Host.Stdout }}` fails to parse) - use `{{ (index .Tasks "Build-Host").Stdout }}` instead
 
 Variables can be used inside task definition. For example:
 ```yaml
@@ -334,7 +334,7 @@ $ taskctl lint2 -- package.go main.go
 ```
 
 ### Storing task's output
-A task's output is automatically stored in a variable named ``.Tasks.TaskName.Output``, where `TaskName` is the actual task's name. It is also stored in the `TASK_NAME_OUTPUT` environment variable, whose name can be changed with the task's `exportAs` parameter. Those variables are available to all dependent stages.
+A task's stdout is automatically stored in the ``.Tasks.<Name>.Stdout`` variable (alongside ``.Tasks.<Name>.Stderr`` and ``.Tasks.<Name>.ExitCode``), where `<Name>` is the task's title-cased name. Results accumulate in a run-wide map, so a task sees any task that finished before it started; a stage that `depends_on` the producer is guaranteed to see its result. The stdout is exported to an environment variable only if the task sets `exportAs`, in which case it is written verbatim to the env var of that name; with no `exportAs` there is no environment export.
 
 ### Tasks variations
 A task may run in one or more variations. Variations allow you to reuse a task with different env variables:
@@ -553,7 +553,7 @@ err  = r.Run(t)
 if err != nil {
     fmt.Println(err, t.ExitCode, t.ErrorMessage())
 }
-fmt.Println(t.Output())
+fmt.Println(t.Stdout())
 ```
 
 ### Scheduler

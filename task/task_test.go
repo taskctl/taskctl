@@ -49,7 +49,7 @@ func TestTask_ErrorMessage(t *testing.T) {
 	}
 
 	task.Log.Stdout.Write([]byte("new output"))
-	if task.Output() != "new output" {
+	if task.Stdout() != "new output" {
 		t.Error()
 	}
 }
