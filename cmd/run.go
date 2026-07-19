@@ -21,6 +21,7 @@ func newRunCommand(cfg *config.Config) *cobra.Command {
 	runCmd := &cobra.Command{
 		Use:     "run TARGET [TARGET...] [-- task-args]",
 		Short:   "run one or more pipelines or tasks",
+		Long:    "Runs one or more named pipelines or tasks in order, stopping at the first failure. Arguments after \"--\" are passed through to the tasks as $Args.",
 		GroupID: groupRun,
 		Example: "  taskctl run pipeline1\n" +
 			"  taskctl run task1 task2\n" +
@@ -43,8 +44,11 @@ func newRunCommand(cfg *config.Config) *cobra.Command {
 	}
 
 	taskCmd := &cobra.Command{
-		Use:               "task TASK [TASK...] [-- task-args]",
-		Short:             "run one or more tasks",
+		Use:   "task TASK [TASK...] [-- task-args]",
+		Short: "run one or more tasks",
+		Long:  "Runs one or more named tasks directly, rejecting pipeline names (unlike plain `run`).",
+		Example: "  taskctl run task test -- -v\n" +
+			"  taskctl run task task1 task2",
 		Args:              minArgs(1, "run task requires at least one task name"),
 		ValidArgsFunction: taskCompletion(cfg),
 		RunE: func(cmd *cobra.Command, args []string) error {

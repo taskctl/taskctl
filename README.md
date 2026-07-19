@@ -499,6 +499,8 @@ tasks:
 
 ## CLI reference
 
+The tables below cover the common commands and flags. For the full per-command reference — every command, flag and example — see [`docs/cli/taskctl.md`](docs/cli/taskctl.md), generated from the command tree by the `update-docs` task.
+
 ### Commands
 
 | command | description |

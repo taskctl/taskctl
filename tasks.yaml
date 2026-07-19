@@ -12,6 +12,8 @@ pipelines:
     - pipeline: lints
     - task: update-completers
       depends_on: test
+    - task: update-docs
+      depends_on: test
 
   lints:
     - task: golangci-lint
@@ -65,3 +67,10 @@ tasks:
       - rm -rf autocomplete/*
       - go run . completion bash > autocomplete/bash_completion.bash
       - go run . completion zsh > autocomplete/zsh_completion.zsh
+
+  update-docs:
+    description: Regenerate the Markdown CLI reference in docs/cli/
+    dir: "{{.Root}}"
+    command:
+      - rm -rf docs/cli/*
+      - go run ./tools/gendocs docs/cli

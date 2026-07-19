@@ -63,8 +63,12 @@ func NewRootCommand(version string) *cobra.Command {
 	cl := &loader
 
 	root := &cobra.Command{
-		Use:           "taskctl [target...] [-- task-args]",
-		Short:         "modern task runner",
+		Use:   "taskctl [target...] [-- task-args]",
+		Short: "modern task runner",
+		Long: "taskctl runs pipelines and tasks declared in tasks.yaml (or taskctl.yaml). " +
+			"Running it with one or more target names executes them directly; with no target " +
+			"and a TTY it opens an interactive selector. See the global flags for output format, " +
+			"config file location, and non-interactive/dry-run controls.",
 		Version:       version,
 		Args:          cobra.ArbitraryArgs,
 		SilenceUsage:  true,

@@ -18,8 +18,11 @@ import (
 
 func newShowCommand(cfg *config.Config) *cobra.Command {
 	return &cobra.Command{
-		Use:               "show TASK_OR_PIPELINE",
-		Short:             "shows a task's or pipeline's details",
+		Use:   "show TASK_OR_PIPELINE",
+		Short: "shows a task's or pipeline's details",
+		Long:  "Shows the resolved commands (for a task) or stage dependency graph (for a pipeline). With --output json, emits a schema-versioned document.",
+		Example: "  taskctl show build\n" +
+			"  taskctl show build --output json",
 		GroupID:           groupInspect,
 		Args:              exactArgs(1, "show requires exactly one task or pipeline name"),
 		ValidArgsFunction: targetCompletion(cfg),

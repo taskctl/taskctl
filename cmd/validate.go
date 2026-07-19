@@ -16,6 +16,8 @@ func newValidateCommand(cfg *config.Config) *cobra.Command {
 	return &cobra.Command{
 		Use:     "validate CONFIG_FILE",
 		Short:   "validates config file",
+		Long:    "Loads the given config file and reports whether it parses and resolves cleanly, without running anything.",
+		Example: "  taskctl validate tasks.yaml",
 		GroupID: groupInspect,
 		Args:    exactArgs(1, "validate requires exactly one config file path"),
 		RunE: func(_ *cobra.Command, args []string) error {
