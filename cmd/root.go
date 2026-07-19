@@ -150,7 +150,6 @@ func resolveConfig(cmd *cobra.Command, cfg *config.Config, cl *config.Loader) er
 	for _, b := range []struct{ name, env string }{
 		{"debug", "TASKCTL_DEBUG"},
 		{"config", "TASKCTL_CONFIG_FILE"},
-		{"output", "TASKCTL_OUTPUT_FORMAT"},
 		{"no-input", "TASKCTL_NO_INPUT"},
 	} {
 		if err := bindEnv(fs, b.name, b.env); err != nil {
@@ -185,14 +184,18 @@ func resolveConfig(cmd *cobra.Command, cfg *config.Config, cl *config.Loader) er
 		cfg.Quiet = true
 	}
 
-	// bindEnv sets the flag (marking it Changed) when the env var is present,
-	// so Changed covers both --output and TASKCTL_OUTPUT_FORMAT.
+	// Precedence: an explicit --output wins, then --raw, then the
+	// TASKCTL_OUTPUT_FORMAT env var, then a config-file output:, then the
+	// built-in default. The env var is read here rather than bound onto the
+	// --output flag so a command-line --raw stays authoritative over it.
 	raw, _ := fs.GetBool("raw")
 	switch {
 	case fs.Changed("output"):
 		cfg.Output, _ = fs.GetString("output")
 	case raw:
 		cfg.Output = output.FormatRaw
+	case os.Getenv("TASKCTL_OUTPUT_FORMAT") != "":
+		cfg.Output = os.Getenv("TASKCTL_OUTPUT_FORMAT")
 	case cfg.Output == "":
 		cfg.Output = output.FormatDefault
 	}

@@ -137,6 +137,25 @@ func TestInvalidBoolEnvErrors(t *testing.T) {
 	})
 }
 
+// A command-line --raw must win over TASKCTL_OUTPUT_FORMAT: raw output stays
+// clean rather than falling back to the env var's format.
+func TestRawFlagBeatsOutputEnv(t *testing.T) {
+	t.Setenv("TASKCTL_OUTPUT_FORMAT", "json")
+	runAppTest(t, appTest{
+		args:        []string{"--raw", "-c", "testdata/graph.yaml", "graph:task1"},
+		exactOutput: "hello, world!\n",
+	})
+}
+
+// With no --output/--raw flag, TASKCTL_OUTPUT_FORMAT still selects the format.
+func TestOutputEnvSelectsFormat(t *testing.T) {
+	t.Setenv("TASKCTL_OUTPUT_FORMAT", "json")
+	runAppTest(t, appTest{
+		args:   []string{"-c", "testdata/graph.yaml", "list"},
+		output: []string{`"schema_version"`, "graph:task1"},
+	})
+}
+
 func TestCustomOutputFormat(t *testing.T) {
 	tests := []appTest{
 		{
