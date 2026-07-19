@@ -1,6 +1,6 @@
 tasks:
   task1:
-    context: default # optional; a task with no context uses the "default" context
+    # context: default # optional; omit to use the "default" context
     description: "Optional description for task1"
     command:
       - echo ${TASKCTL__ARGS} # TASKCTL__ARGS is populated by arguments passed to task. eg. taskctl run task task1 -- arg1 arg2
