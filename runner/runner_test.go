@@ -232,7 +232,7 @@ func TestTaskRunner_ExportAsOverridesExternalEnv(t *testing.T) {
 	}
 }
 
-func TestTaskRunner_TasksOutputVariable(t *testing.T) {
+func TestTaskRunner_TasksStdoutVariable(t *testing.T) {
 	runner, err := NewTaskRunner()
 	if err != nil {
 		t.Fatal(err)
