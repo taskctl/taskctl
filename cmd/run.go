@@ -266,7 +266,11 @@ func summaryEnabled(cmd *cobra.Command, cfg *config.Config) bool {
 		return false
 	}
 
-	return cfg.Summary || cfg.Output != output.FormatRaw
+	if cfg.Summary != nil {
+		return *cfg.Summary
+	}
+
+	return cfg.Output != output.FormatRaw
 }
 
 // finishRun emits the run_finished NDJSON event (json mode) or, in a human

@@ -39,8 +39,12 @@ type Config struct {
 	Tasks     map[string]*task.Task
 	Watchers  map[string]*watch.Watcher
 
-	Quiet, Debug, DryRun, Summary bool
-	Output                        string
+	Quiet, Debug, DryRun bool
+	// Summary is nil when no config file set summary:, so callers can fall back
+	// to their default (on except in raw output) rather than treating an
+	// omitted key as false.
+	Summary *bool
+	Output  string
 
 	Variables variables.Container
 }

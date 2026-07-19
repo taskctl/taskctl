@@ -1,0 +1,5 @@
+summary: false
+
+tasks:
+  hello:
+    command: "echo 'hello, world!'"

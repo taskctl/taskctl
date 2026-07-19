@@ -92,6 +92,12 @@ func Test_runCommandSummary(t *testing.T) {
 			args:   []string{"--output=prefixed", "-c", "testdata/graph.yaml", "run", "graph:pipeline1"},
 			output: []string{"succeeded", "total", "graph:task1"},
 		},
+		// A config-file summary: false disables the summary in non-raw modes,
+		// the same as --summary=false (previously config could never turn it off).
+		{
+			args:   []string{"--output=prefixed", "-c", "testdata/summary-off.yaml", "hello"},
+			output: []string{"hello, world!"}, absent: []string{"succeeded", "total"},
+		},
 	}
 
 	for _, v := range tests {
