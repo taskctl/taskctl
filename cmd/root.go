@@ -171,8 +171,14 @@ func resolveConfig(cmd *cobra.Command, cfg *config.Config, cl *config.Loader) er
 		}
 	}
 
+	// An explicit --debug/TASKCTL_DEBUG wins in both directions; the config
+	// file's debug: only applies when the flag was not set, so --debug=false
+	// can turn off a config that enables it.
 	debug, _ := fs.GetBool("debug")
-	if debug || cfg.Debug {
+	if !fs.Changed("debug") {
+		debug = cfg.Debug
+	}
+	if debug {
 		slog.SetLogLoggerLevel(slog.LevelDebug)
 	} else {
 		slog.SetLogLoggerLevel(slog.LevelInfo)
