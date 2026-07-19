@@ -190,7 +190,7 @@ func (r *TaskRunner) Run(t *task.Task) (err error) {
 	env = env.With("TASK_NAME", t.Name)
 	env = env.Merge(t.Env)
 
-	meets, err := r.checkTaskCondition(t)
+	meets, err := r.checkTaskCondition(t, env, vars)
 	if err != nil {
 		return err
 	}
@@ -341,7 +341,7 @@ func (r *TaskRunner) contextForTask(ctx context.Context, t *task.Task) (c *Execu
 	return c, nil
 }
 
-func (r *TaskRunner) checkTaskCondition(t *task.Task) (bool, error) {
+func (r *TaskRunner) checkTaskCondition(t *task.Task, env, vars variables.Container) (bool, error) {
 	if t.Condition == "" {
 		return true, nil
 	}
@@ -351,7 +351,7 @@ func (r *TaskRunner) checkTaskCondition(t *task.Task) (bool, error) {
 		return false, err
 	}
 
-	job, err := r.compiler.compileCommand(t.Condition, executionContext, t.Dir, t.Timeout, nil, r.Stdout, r.Stderr, r.env, r.variables)
+	job, err := r.compiler.compileCommand(t.Condition, executionContext, t.Dir, t.Timeout, nil, r.Stdout, r.Stderr, env, vars)
 	if err != nil {
 		return false, err
 	}
@@ -380,9 +380,10 @@ func (r *TaskRunner) storeTaskResult(t *task.Task) {
 		envVarName = fmt.Sprintf("%s_OUTPUT", strings.ToUpper(t.Name))
 		envVarName = regexp.MustCompile("[^a-zA-Z0-9_]").ReplaceAllString(envVarName, "_")
 	}
-	r.env.Set(envVarName, t.Stdout())
+	stdout := t.Stdout()
+	r.env.Set(envVarName, stdout)
 	r.results.Store(cases.Title(language.English).String(t.Name), taskResult{
-		Stdout:   t.Stdout(),
+		Stdout:   stdout,
 		Stderr:   t.Stderr(),
 		ExitCode: t.ExitCode,
 	})

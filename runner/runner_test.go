@@ -277,6 +277,30 @@ func TestTaskRunner_PredefinedTaskVars(t *testing.T) {
 	}
 }
 
+func TestTaskRunner_ConditionSeesPredefinedVars(t *testing.T) {
+	runner, err := NewTaskRunner()
+	if err != nil {
+		t.Fatal(err)
+	}
+	runner.Stdout, runner.Stderr = io.Discard, io.Discard
+	defer runner.Finish()
+
+	// The condition renders against the same merged view as commands; before the
+	// fix it compiled against base vars and errored on .Task.Name with missing-key.
+	tsk := taskpkg.FromCommands(`printf "ran"`)
+	tsk.Name = "greet"
+	tsk.Condition = `test "{{ .Task.Name }}" = "greet"`
+	if err := runner.Run(tsk); err != nil {
+		t.Fatal(err)
+	}
+	if tsk.Skipped {
+		t.Error("condition referencing .Task.Name should have been met")
+	}
+	if got := tsk.Stdout(); !strings.Contains(got, "ran") {
+		t.Errorf("task should have run, got %q", got)
+	}
+}
+
 func ExampleTaskRunner_Run() {
 	t := taskpkg.FromCommands("go fmt ./...", "go build ./..")
 	r, err := NewTaskRunner()
