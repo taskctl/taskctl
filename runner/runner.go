@@ -26,7 +26,7 @@ import (
 
 // defaultContextName is the context a task falls back to when it declares no
 // context: if the config defines a context by this name it is used (so its env,
-// variables and hooks apply to every such task), otherwise an empty context is.
+// variables and hooks apply to every such task), otherwise an empty context is used.
 const defaultContextName = "default"
 
 // Runner describes tasks runner interface
