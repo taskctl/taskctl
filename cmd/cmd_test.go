@@ -121,6 +121,24 @@ func TestCompletion(t *testing.T) {
 	})
 }
 
+// Completion runs before PersistentPreRunE, so it cannot rely on env-var flag
+// binding; it must read TASKCTL_CONFIG_FILE itself.
+func TestCompletionViaConfigEnv(t *testing.T) {
+	t.Setenv("TASKCTL_CONFIG_FILE", "testdata/graph.yaml")
+	runAppTest(t, appTest{
+		args:   []string{"__complete", ""},
+		output: []string{"graph:task1", "graph:pipeline1"},
+	})
+}
+
+func TestInvalidBoolEnvErrors(t *testing.T) {
+	t.Setenv("TASKCTL_DEBUG", "maybe")
+	runAppTest(t, appTest{
+		args:    []string{"-c", "testdata/graph.yaml", "list"},
+		errored: true,
+	})
+}
+
 func TestCustomOutputFormat(t *testing.T) {
 	tests := []appTest{
 		{

@@ -147,10 +147,16 @@ func NewRootCommand(version string) *cobra.Command {
 // commands like init and validate work without one.
 func resolveConfig(cmd *cobra.Command, cfg *config.Config, cl *config.Loader) error {
 	fs := cmd.Flags()
-	bindEnv(fs, "debug", "TASKCTL_DEBUG")
-	bindEnv(fs, "config", "TASKCTL_CONFIG_FILE")
-	bindEnv(fs, "output", "TASKCTL_OUTPUT_FORMAT")
-	bindEnv(fs, "no-input", "TASKCTL_NO_INPUT")
+	for _, b := range []struct{ name, env string }{
+		{"debug", "TASKCTL_DEBUG"},
+		{"config", "TASKCTL_CONFIG_FILE"},
+		{"output", "TASKCTL_OUTPUT_FORMAT"},
+		{"no-input", "TASKCTL_NO_INPUT"},
+	} {
+		if err := bindEnv(fs, b.name, b.env); err != nil {
+			return err
+		}
+	}
 
 	configFile, _ := fs.GetString("config")
 	if _, err := cl.Load(configFile); err != nil {
@@ -209,14 +215,21 @@ func resolveConfig(cmd *cobra.Command, cfg *config.Config, cl *config.Loader) er
 }
 
 // bindEnv applies an environment variable to a flag that was not set on the
-// command line. pflag has no built-in env support, so this fills the gap.
-func bindEnv(fs *pflag.FlagSet, name, env string) {
+// command line, returning an error when the env value is invalid for the flag
+// (e.g. a non-boolean TASKCTL_DEBUG). pflag has no built-in env support, so
+// this fills the gap.
+func bindEnv(fs *pflag.FlagSet, name, env string) error {
 	if fs.Changed(name) {
-		return
+		return nil
 	}
-	if v, ok := os.LookupEnv(env); ok {
-		_ = fs.Set(name, v)
+	v, ok := os.LookupEnv(env)
+	if !ok {
+		return nil
 	}
+	if err := fs.Set(name, v); err != nil {
+		return fmt.Errorf("invalid value for %s: %w", env, err)
+	}
+	return nil
 }
 
 // nonInteractive reports whether the CLI should skip prompts entirely and rely
@@ -294,12 +307,17 @@ func buildSuggestions(cfg *config.Config) []suggestion {
 }
 
 // completionFunc returns a shell-completion function that loads the config
-// itself (completion runs before PersistentPreRunE) from the --config flag
-// value, then offers whatever names produces.
+// itself and offers whatever names produces. Completion runs before
+// PersistentPreRunE (so bindEnv has not fired yet); it reads the --config flag
+// and falls back to TASKCTL_CONFIG_FILE directly to keep completion working
+// for users who configure via the environment.
 func completionFunc(cfg *config.Config, names func() []string) func(*cobra.Command, []string, string) ([]string, cobra.ShellCompDirective) {
 	return func(cmd *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
 		loader := config.NewConfigLoader(cfg)
 		configFile, _ := cmd.Flags().GetString("config")
+		if configFile == "" {
+			configFile = os.Getenv("TASKCTL_CONFIG_FILE")
+		}
 		if _, err := loader.Load(configFile); err != nil {
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
