@@ -257,6 +257,44 @@ func TestTaskRunner_NoEnvExportWithoutExportAs(t *testing.T) {
 	}
 }
 
+func TestTaskRunner_InjectsPrefixedTaskName(t *testing.T) {
+	runner, err := NewTaskRunner()
+	if err != nil {
+		t.Fatal(err)
+	}
+	runner.Stdout, runner.Stderr = io.Discard, io.Discard
+	defer runner.Finish()
+
+	tsk := taskpkg.FromCommands(`printf "[%s]" "${TASKCTL__TASK_NAME}"`)
+	tsk.Name = "build"
+	if err := runner.Run(tsk); err != nil {
+		t.Fatal(err)
+	}
+	if got := tsk.Stdout(); !strings.Contains(got, "[build]") {
+		t.Errorf("TASKCTL__TASK_NAME must hold the task name: got %q", got)
+	}
+}
+
+func TestTaskRunner_InjectsPrefixedArgs(t *testing.T) {
+	runner, err := NewTaskRunner(
+		WithVariables(variables.FromMap(map[string]string{"Args": "hello world"})),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	runner.Stdout, runner.Stderr = io.Discard, io.Discard
+	defer runner.Finish()
+
+	tsk := taskpkg.FromCommands(`printf "[%s]" "${TASKCTL__ARGS}"`)
+	tsk.Name = "echo-args"
+	if err := runner.Run(tsk); err != nil {
+		t.Fatal(err)
+	}
+	if got := tsk.Stdout(); !strings.Contains(got, "[hello world]") {
+		t.Errorf("TASKCTL__ARGS must hold the passthrough args: got %q", got)
+	}
+}
+
 func TestTaskRunner_TasksStdoutVariable(t *testing.T) {
 	runner, err := NewTaskRunner()
 	if err != nil {
