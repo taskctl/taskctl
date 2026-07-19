@@ -39,8 +39,12 @@ type Config struct {
 	Tasks     map[string]*task.Task
 	Watchers  map[string]*watch.Watcher
 
-	Quiet, Debug, DryRun, Summary bool
-	Output                        string
+	Quiet, Debug, DryRun bool
+	// Summary is nil when no config file set summary:, so callers can fall back
+	// to their default (on everywhere except raw output) rather than treating
+	// an omitted key as false.
+	Summary *bool
+	Output  string
 
 	Variables variables.Container
 }
@@ -107,6 +111,7 @@ func buildFromDefinition(def *configDefinition, lc *loaderContext) (cfg *Config,
 
 	cfg.Import = def.Import
 	cfg.Debug = def.Debug
+	cfg.DryRun = def.DryRun
 	cfg.Summary = def.Summary
 	cfg.Output = def.Output
 	cfg.Variables = cfg.Variables.Merge(variables.FromMap(def.Variables))

@@ -1,39 +1,62 @@
 package cmd
 
 import (
-	"errors"
-	"fmt"
+	"encoding/json"
+	"os"
+	"strings"
 
-	"github.com/urfave/cli/v2"
+	"github.com/spf13/cobra"
 
 	"github.com/taskctl/taskctl/internal/config"
+	"github.com/taskctl/taskctl/internal/output"
+	"github.com/taskctl/taskctl/internal/tui"
 )
 
-func newValidateCommand() *cli.Command {
-	cmd := &cli.Command{
-		Name:      "validate",
-		Usage:     "validates config file",
-		ArgsUsage: "some-tasks-file.yaml",
-		Before: func(c *cli.Context) error {
-			if c.NArg() == 0 {
-				return errors.New("please provide file to validate")
+func newValidateCommand(cfg *config.Config) *cobra.Command {
+	return &cobra.Command{
+		Use:     "validate CONFIG_FILE",
+		Short:   "validates config file",
+		GroupID: groupInspect,
+		Args:    exactArgs(1, "validate requires exactly one config file path"),
+		RunE: func(_ *cobra.Command, args []string) error {
+			file := args[0]
+			loader := config.NewConfigLoader(config.NewConfig())
+			_, err := loader.Load(file)
+
+			if cfg.Output == output.FormatJSON {
+				return encodeValidateJSON(file, err)
 			}
 
-			return nil
-		},
-		Action: func(c *cli.Context) error {
-			cl := config.NewConfigLoader(cfg)
-
-			_, err := cl.Load(c.Args().First())
 			if err != nil {
-				fmt.Println(err.Error())
-				return nil
+				tui.Println(os.Stdout, tui.StyleError.Render("✗")+" "+file+" is invalid")
+				for line := range strings.SplitSeq(strings.TrimSpace(err.Error()), "\n") {
+					tui.Println(os.Stdout, tui.StyleFaint.Render("    "+line))
+				}
+				return reportedError{err}
 			}
 
-			fmt.Println("file is valid")
+			tui.Println(os.Stdout, tui.StyleSuccess.Render("✓")+" "+file+" is valid")
 			return nil
 		},
 	}
+}
 
-	return cmd
+func encodeValidateJSON(file string, loadErr error) error {
+	doc := struct {
+		SchemaVersion int    `json:"schema_version"`
+		Valid         bool   `json:"valid"`
+		File          string `json:"file"`
+		Error         string `json:"error,omitempty"`
+	}{SchemaVersion: 1, Valid: loadErr == nil, File: file}
+	if loadErr != nil {
+		doc.Error = strings.TrimSpace(loadErr.Error())
+	}
+
+	if err := json.NewEncoder(os.Stdout).Encode(doc); err != nil {
+		return err
+	}
+	if loadErr != nil {
+		return reportedError{loadErr}
+	}
+	return nil
 }

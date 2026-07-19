@@ -54,6 +54,36 @@ func TestDefaultExecutor_Execute(t *testing.T) {
 	}
 }
 
+// TestDefaultExecutor_DryRun verifies that a dry run validates the command
+// (template render + shell parse) but never executes it.
+func TestDefaultExecutor_DryRun(t *testing.T) {
+	e, err := NewDefaultExecutor(nil, io.Discard, io.Discard)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.DryRun = true
+
+	// A command that would fail if executed is not run, and produces no output.
+	out, err := e.Execute(context.Background(), NewJobFromCommand("exit 1"))
+	if err != nil {
+		t.Fatalf("dry-run must not execute the command: %v", err)
+	}
+	if len(out) != 0 {
+		t.Errorf("dry-run must produce no output, got %q", out)
+	}
+
+	// A template that cannot render still fails (validation happens before the
+	// dry-run short-circuit).
+	if _, err := e.Execute(context.Background(), NewJobFromCommand("echo {{ .Fail }}")); err == nil {
+		t.Error("dry-run must still fail on an unrenderable template")
+	}
+
+	// Invalid shell syntax also fails: render succeeds, parse does not.
+	if _, err := e.Execute(context.Background(), NewJobFromCommand("echo 'unterminated")); err == nil {
+		t.Error("dry-run must still fail on invalid shell syntax")
+	}
+}
+
 // TestDefaultExecutor_Execute_PerJobEnv guards against the interpreter caching
 // its environment across jobs. A single executor runs the commands of a task's
 // linked list (one per command/variation), so each Execute must honor its own

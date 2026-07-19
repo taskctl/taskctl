@@ -121,6 +121,43 @@ func TestTaskRunner_PreExecutionFailureKeepsExitCode(t *testing.T) {
 	runner.Finish()
 }
 
+func TestTaskRunner_DryRun(t *testing.T) {
+	runner, err := NewTaskRunner()
+	if err != nil {
+		t.Fatal(err)
+	}
+	runner.DryRun = true
+	runner.Stdout, runner.Stderr = io.Discard, io.Discard
+
+	// A command that would fail if executed proves nothing ran.
+	fail := taskpkg.FromCommands("exit 1", "echo should-not-run")
+	if err = runner.Run(fail); err != nil {
+		t.Fatalf("dry-run must not surface a command failure: %v", err)
+	}
+	if fail.Errored {
+		t.Error("dry-run task must not be marked errored")
+	}
+	if fail.End.IsZero() {
+		t.Error("dry-run task must be marked completed (End set)")
+	}
+	if out := fail.Output(); out != "" {
+		t.Errorf("dry-run must produce no command output, got %q", out)
+	}
+
+	// A condition that would normally skip the task is not evaluated either, so
+	// the task is completed rather than skipped.
+	conditional := taskpkg.FromCommands("echo hi")
+	conditional.Condition = "exit 1"
+	if err = runner.Run(conditional); err != nil {
+		t.Fatal(err)
+	}
+	if conditional.Skipped {
+		t.Error("dry-run must not evaluate the condition; the task is completed, not skipped")
+	}
+
+	runner.Finish()
+}
+
 func TestTaskRunner_ContextVariables(t *testing.T) {
 	c := NewExecutionContext(nil, "", variables.NewVariables(), nil, nil, nil, nil)
 	c.Variables = variables.FromMap(map[string]string{

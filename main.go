@@ -2,7 +2,6 @@ package main
 
 import (
 	_ "embed"
-	"log/slog"
 	"os"
 
 	"github.com/taskctl/taskctl/cmd"
@@ -21,9 +20,7 @@ var skillTemplate string
 func main() {
 	cmd.SetSkillTemplate(skillTemplate)
 
-	err := cmd.Run(version)
-	if err != nil {
-		slog.Error(err.Error())
-		os.Exit(1)
+	if err := cmd.Run(version); err != nil {
+		os.Exit(cmd.ExitCode(err))
 	}
 }

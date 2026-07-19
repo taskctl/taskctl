@@ -192,6 +192,16 @@ taskctl --output json --no-input <task-or-pipeline>
 | `task_finished` | `task`, `status` (`done`/`failed`/`skipped`), `exit_code`, `duration_ms`, `error` (on failure) |
 | `run_finished` | `status` (`done`/`failed`), `duration_ms`, `tasks` (array of `{task, status (done/failed/skipped/canceled), exit_code, duration_ms}`), `error` (on failure) |
 
+### Validating config: `--output json validate`
+
+`taskctl validate <config-file>` also honors `--output json`, emitting a single document instead of the human `✓`/`✗` line. Invalid config exits non-zero.
+
+```json
+{"schema_version": 1, "valid": false, "file": "tasks.yaml", "error": "decoding failed due to the following error(s):..."}
+```
+
+`error` is present only when `valid` is `false`.
+
 ### Non-interactive execution: `--no-input`
 
 By default taskctl may prompt interactively (e.g. for confirmation or input tasks). Non-interactive mode disables all of that, and is enabled whenever either of the following is true:
@@ -499,8 +509,8 @@ tasks:
 | `taskctl show <name>` | show a task's or pipeline's details |
 | `taskctl watch <watcher...>` | start one or more filesystem watchers |
 | `taskctl graph [pipeline]` (alias `g`) | visualize a pipeline's execution graph in DOT format (e.g. `taskctl graph release \| dot -Tsvg > graph.svg`); `--lr` orients it left-to-right |
-| `taskctl validate` | validate the config file |
-| `taskctl completion <shell>` | generate a completion script for `bash` or `zsh` |
+| `taskctl validate <config-file>` | validate a config file; prints `✓`/`✗` (or a JSON document with `--output json`) and exits non-zero if it is invalid |
+| `taskctl completion <shell>` | generate a completion script for `bash`, `zsh`, `fish` or `powershell` |
 | `taskctl skill install` | install the AI agent skill (see [taskctl for AI agents](#taskctl-for-ai-agents)) |
 
 ### Global flags
@@ -512,10 +522,20 @@ tasks:
 | `-r, --raw` | | shortcut for `--output=raw` |
 | `-q, --quiet` | | quiet mode |
 | `--set <name=value>` | | set a global variable value (repeatable) |
-| `--dry-run` | | resolve and print commands without executing them |
+| `--dry-run` | | validate each task's commands (template render + shell parse) without executing them; valid tasks complete as `done`, an invalid template or command still fails (overrides the `dryrun:` config key in both directions) |
 | `-s, --summary` | | show a run summary; on by default in human output modes, off with `--quiet` or in `raw` mode (unless opted in via config), never in `json`. An explicit flag wins over these defaults |
 | `--no-input` | `TASKCTL_NO_INPUT` | disable interactive prompts |
 | `-d, --debug` | `TASKCTL_DEBUG` | enable debug output |
+
+### Exit codes
+
+| code | meaning |
+|---|---|
+| `0` | success |
+| `1` | runtime error (bad config, unknown task or pipeline) or a failed task/pipeline run |
+| `2` | usage error (missing/extra argument, unknown flag) — the command's usage is printed alongside the message |
+
+Errors are written to stderr as `Error: <message>` and a failed run exits `1`. When the failure has already been surfaced — by the end-of-run summary or, in `json` mode, the `run_finished` event — the duplicate `Error:` line is suppressed; when no summary is shown (`--summary=false`, `--quiet`, or `raw` output) the `Error:` line is printed.
 
 ## Embeddable task runner
 *taskctl* may be embedded into any Go program. Additional information may be found on taskctl's [pkg.go.dev](https://pkg.go.dev/github.com/taskctl/taskctl?tab=overview) page.
@@ -556,6 +576,8 @@ if err != nil {
 ```
 
 ## Autocomplete
+Completion scripts are generated natively for `bash`, `zsh`, `fish` and `powershell`, and complete task and pipeline names dynamically from your config. Run `taskctl completion <shell> --help` for shell-specific install steps.
+
 ### Bash
 Add to  ~/.bashrc or ~/.profile
 ```

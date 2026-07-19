@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"text/template"
 
-	"github.com/urfave/cli/v2"
+	"github.com/spf13/cobra"
 
 	"github.com/taskctl/taskctl/internal/config"
 	"github.com/taskctl/taskctl/internal/fsutil"
@@ -27,7 +27,7 @@ tasks:
   task1:
     description: "Example task 1"
     command: echo "I'm task1"
-  
+
   task2:
     description: "Example task 2"
     command: echo "I'm task2. Your date is $(date)"
@@ -39,18 +39,15 @@ watchers:
     task: task1
 `
 
-func newInitCommand() *cli.Command {
-	cmd := &cli.Command{
-		Name:  "init",
-		Usage: "creates sample config file",
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:  "dir",
-				Usage: "directory to initialize",
-			},
-		},
-		Action: func(c *cli.Context) error {
-			dir := c.String("dir")
+func newInitCommand(cfg *config.Config) *cobra.Command {
+	var dir string
+
+	initCmd := &cobra.Command{
+		Use:     "init",
+		Short:   "creates sample config file",
+		GroupID: groupSetup,
+		Args:    cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			if dir == "" {
 				wd, err := os.Getwd()
 				if err != nil {
@@ -59,14 +56,10 @@ func newInitCommand() *cli.Command {
 				dir = wd
 			}
 
-			// Two sequential prompts rather than one form with a conditional
-			// group: huh's accessible (non-TTY) mode ignores WithHideFunc, so
-			// gate the overwrite confirm in Go instead. Both prompts share one
-			// PromptReader so piped input survives across them (see tui docs).
 			in := tui.PromptReader(stdin)
 
 			var filename string
-			if nonInteractive(c) {
+			if nonInteractive(cmd, cfg) {
 				filename = config.DefaultFileNames[0]
 			} else {
 				var err error
@@ -81,7 +74,7 @@ func newInitCommand() *cli.Command {
 
 			file := filepath.Join(dir, filename)
 			if fsutil.FileExists(file) {
-				if nonInteractive(c) {
+				if nonInteractive(cmd, cfg) {
 					return fmt.Errorf("%s already exists; remove it or run interactively to overwrite", file)
 				}
 
@@ -105,9 +98,7 @@ func newInitCommand() *cli.Command {
 			defer iox.Close(fw)
 
 			t := template.Must(template.New("init_config").Parse(configTmpl))
-
-			err = t.Execute(fw, nil)
-			if err != nil {
+			if err := t.Execute(fw, nil); err != nil {
 				return err
 			}
 
@@ -118,5 +109,7 @@ func newInitCommand() *cli.Command {
 		},
 	}
 
-	return cmd
+	initCmd.Flags().StringVar(&dir, "dir", "", "directory to initialize")
+
+	return initCmd
 }

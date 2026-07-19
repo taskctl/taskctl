@@ -1,0 +1,5 @@
+tasks:
+  echo-task:
+    command: "echo dry-run-marker"
+  fail-task:
+    command: "exit 1"

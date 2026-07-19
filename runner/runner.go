@@ -34,7 +34,11 @@ type Runner interface {
 
 // TaskRunner run tasks
 type TaskRunner struct {
-	Executor  executor.Executor
+	Executor executor.Executor
+	// DryRun makes each task's commands (condition, before, main, after) render
+	// and parse for validation but not execute, so a task with valid commands is
+	// marked completed (an invalid template or command still fails). Context
+	// lifecycle hooks (Up/Down/Before/After) are not skipped.
 	DryRun    bool
 	contexts  map[string]*ExecutionContext
 	variables variables.Container
@@ -245,6 +249,7 @@ func (r *TaskRunner) before(ctx context.Context, t *task.Task, env, vars variabl
 		if err != nil {
 			return err
 		}
+		exec.DryRun = r.DryRun
 
 		_, err = exec.Execute(ctx, job)
 		if err != nil {
@@ -275,6 +280,7 @@ func (r *TaskRunner) after(ctx context.Context, t *task.Task, env, vars variable
 		if err != nil {
 			return err
 		}
+		exec.DryRun = r.DryRun
 
 		_, err = exec.Execute(ctx, job)
 		if err != nil {
@@ -330,6 +336,7 @@ func (r *TaskRunner) checkTaskCondition(t *task.Task) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	exec.DryRun = r.DryRun
 
 	_, err = exec.Execute(context.Background(), job)
 	if err != nil {
@@ -363,6 +370,7 @@ func (r *TaskRunner) execute(ctx context.Context, t *task.Task, job *executor.Jo
 	if err != nil {
 		return err
 	}
+	exec.DryRun = r.DryRun
 
 	t.Start = time.Now()
 	var prevOutput []byte

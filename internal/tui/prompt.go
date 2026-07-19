@@ -6,6 +6,7 @@ import (
 	"io"
 	"strings"
 
+	"charm.land/bubbles/v2/key"
 	"charm.land/huh/v2"
 )
 
@@ -13,6 +14,37 @@ import (
 // (Ctrl-C / Esc). Callers check it with errors.Is to treat cancellation as a
 // no-op rather than an error, without importing huh themselves.
 var ErrAborted = errors.New("prompt aborted")
+
+// promptTheme clears the foreground huh applies to unselected options — a dim
+// gray that washes out the whole row — so an unselected task name renders in
+// the terminal's default (bright) foreground while its description keeps the
+// dimmed color set in the label (see cmd.buildSuggestions). The selected row
+// keeps the base theme's highlight.
+var promptTheme = huh.ThemeFunc(func(isDark bool) *huh.Styles {
+	s := huh.ThemeCharm(isDark)
+
+	for _, fs := range []*huh.FieldStyles{&s.Focused, &s.Blurred} {
+		fs.Option = fs.Option.UnsetForeground()
+		fs.UnselectedOption = fs.UnselectedOption.UnsetForeground()
+	}
+
+	return s
+})
+
+// runForm runs a single-field form with taskctl's shared keymap and theme:
+// Esc (as well as Ctrl-C) aborts, and the option list is rendered with a
+// higher-contrast foreground than huh's dim default so entries stay readable.
+func runForm(field huh.Field, stdin io.Reader, accessible bool) error {
+	km := huh.NewDefaultKeyMap()
+	km.Quit = key.NewBinding(key.WithKeys("ctrl+c", "esc"))
+
+	return huh.NewForm(huh.NewGroup(field)).
+		WithKeyMap(km).
+		WithTheme(promptTheme).
+		WithInput(promptInput(stdin, accessible)).
+		WithAccessible(accessible).
+		Run()
+}
 
 // PromptReader prepares stdin for a sequence of prompts. A terminal is returned
 // unchanged, so Select/Confirm drive huh's full TUI. Non-terminal stdin is
@@ -77,12 +109,12 @@ func Select[T comparable](stdin io.Reader, title string, items []Item[T]) (T, er
 	}
 
 	accessible := !Interactive(stdin)
-	err := huh.NewForm(huh.NewGroup(
-		huh.NewSelect[T]().
-			Title(title).
-			Options(opts...).
-			Value(&value),
-	)).WithInput(promptInput(stdin, accessible)).WithAccessible(accessible).Run()
+	field := huh.NewSelect[T]().
+		Title(title).
+		Options(opts...).
+		Value(&value)
+
+	err := runForm(field, stdin, accessible)
 	if err != nil {
 		if errors.Is(err, huh.ErrUserAborted) {
 			return value, ErrAborted
@@ -100,11 +132,11 @@ func Confirm(stdin io.Reader, title string) (bool, error) {
 	var value bool
 
 	accessible := !Interactive(stdin)
-	err := huh.NewForm(huh.NewGroup(
-		huh.NewConfirm().
-			Title(title).
-			Value(&value),
-	)).WithInput(promptInput(stdin, accessible)).WithAccessible(accessible).Run()
+	field := huh.NewConfirm().
+		Title(title).
+		Value(&value)
+
+	err := runForm(field, stdin, accessible)
 	if err != nil {
 		if errors.Is(err, huh.ErrUserAborted) {
 			return false, ErrAborted

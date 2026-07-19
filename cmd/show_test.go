@@ -9,20 +9,21 @@ import (
 )
 
 func Test_showCommand(t *testing.T) {
-	app := makeTestApp()
 
 	tests := []appTest{
-		{args: []string{"", "-c", "testdata/graph.yaml", "show"}, errored: true},
-		{args: []string{"", "-c", "testdata/graph.yaml", "show", "graph:task1"}, output: []string{"Name: graph:task1", "echo 'hello, world!'"}},
+		{args: []string{"-c", "testdata/graph.yaml", "show"}, errored: true},
+		{args: []string{"-c", "testdata/graph.yaml", "show", "graph:task1"}, output: []string{"graph:task1", "echo 'hello, world!'"}},
+		// Text mode now renders pipelines too (previously errored "unknown task").
+		{args: []string{"-c", "testdata/graph.yaml", "show", "graph:pipeline1"}, output: []string{"graph:pipeline1", "graph:task1"}},
 	}
 
 	for _, v := range tests {
-		runAppTest(t, app, v)
+		runAppTest(t, v)
 	}
 }
 
 func Test_showCommand_json_task(t *testing.T) {
-	out, err := captureStdout(t, []string{"", "-c", "testdata/graph.yaml", "-o", "json", "show", "graph:task1"})
+	out, err := captureStdout(t, []string{"-c", "testdata/graph.yaml", "-o", "json", "show", "graph:task1"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -49,7 +50,7 @@ func Test_showCommand_json_task(t *testing.T) {
 }
 
 func Test_showCommand_json_pipeline(t *testing.T) {
-	out, err := captureStdout(t, []string{"", "-c", "testdata/graph.yaml", "-o", "json", "show", "graph:pipeline1"})
+	out, err := captureStdout(t, []string{"-c", "testdata/graph.yaml", "-o", "json", "show", "graph:pipeline1"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -76,7 +77,7 @@ func Test_showCommand_json_pipeline(t *testing.T) {
 }
 
 func Test_showCommand_json_unknown(t *testing.T) {
-	_, err := captureStdout(t, []string{"", "-c", "testdata/graph.yaml", "-o", "json", "show", "nope"})
+	_, err := captureStdout(t, []string{"-c", "testdata/graph.yaml", "-o", "json", "show", "nope"})
 	if err == nil {
 		t.Fatal("expected error for unknown task or pipeline")
 	}

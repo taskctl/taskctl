@@ -2,27 +2,28 @@ package cmd_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"os"
 	"testing"
 
+	"github.com/taskctl/taskctl/cmd"
 	"github.com/taskctl/taskctl/internal/iox"
 	"github.com/taskctl/taskctl/internal/schema"
 )
 
 func Test_listCommand(t *testing.T) {
-	app := makeTestApp()
 
 	tests := []appTest{
-		{args: []string{"", "-c", "testdata/graph.yaml", "list"}, output: []string{"graph:pipeline1", "graph:task1", "no watchers"}},
-		{args: []string{"", "-c", "testdata/graph.yaml", "list", "pipelines"}, output: []string{"graph:pipeline1"}},
-		{args: []string{"", "-c", "testdata/graph.yaml", "list", "tasks"}, output: []string{"graph:task1"}},
-		{args: []string{"", "-c", "testdata/graph.yaml", "list", "watchers"}, exactOutput: ""},
+		{args: []string{"-c", "testdata/graph.yaml", "list"}, output: []string{"PIPELINES", "graph:pipeline1", "TASKS", "graph:task1"}, absent: []string{"WATCHERS", "CONTEXTS"}},
+		{args: []string{"-c", "testdata/graph.yaml", "list", "pipelines"}, output: []string{"graph:pipeline1"}},
+		{args: []string{"-c", "testdata/graph.yaml", "list", "tasks"}, output: []string{"graph:task1"}},
+		{args: []string{"-c", "testdata/graph.yaml", "list", "watchers"}, exactOutput: ""},
 	}
 
 	for _, v := range tests {
-		runAppTest(t, app, v)
+		runAppTest(t, v)
 	}
 }
 
@@ -40,8 +41,9 @@ func captureStdout(t *testing.T, args []string) ([]byte, error) {
 	}
 	os.Stdout = w
 
-	app := makeTestApp()
-	runErr := app.Run(args)
+	root := cmd.NewRootCommand("test")
+	root.SetArgs(args)
+	runErr := root.ExecuteContext(context.Background())
 
 	os.Stdout = origStdout
 	iox.Close(w)
@@ -56,7 +58,7 @@ func captureStdout(t *testing.T, args []string) ([]byte, error) {
 }
 
 func Test_listCommand_json(t *testing.T) {
-	out, err := captureStdout(t, []string{"", "-c", "testdata/graph.yaml", "-o", "json", "list"})
+	out, err := captureStdout(t, []string{"-c", "testdata/graph.yaml", "-o", "json", "list"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -108,9 +110,9 @@ func Test_listCommand_json_subcommands(t *testing.T) {
 		args []string
 		key  string
 	}{
-		{"tasks", []string{"", "-c", "testdata/graph.yaml", "-o", "json", "list", "tasks"}, "tasks"},
-		{"pipelines", []string{"", "-c", "testdata/graph.yaml", "-o", "json", "list", "pipelines"}, "pipelines"},
-		{"watchers", []string{"", "-c", "testdata/graph.yaml", "-o", "json", "list", "watchers"}, "watchers"},
+		{"tasks", []string{"-c", "testdata/graph.yaml", "-o", "json", "list", "tasks"}, "tasks"},
+		{"pipelines", []string{"-c", "testdata/graph.yaml", "-o", "json", "list", "pipelines"}, "pipelines"},
+		{"watchers", []string{"-c", "testdata/graph.yaml", "-o", "json", "list", "watchers"}, "watchers"},
 	}
 
 	allKeys := []string{"tasks", "pipelines", "watchers", "contexts"}

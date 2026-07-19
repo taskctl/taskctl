@@ -1,0 +1,3 @@
+tasks:
+  boom:
+    command: "definitely-not-a-real-binary-xyz"

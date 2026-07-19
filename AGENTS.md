@@ -44,7 +44,7 @@ CI (`.github/workflows/pull-request-checks.yml`) gates PRs on `golangci-lint` + 
 
 Execution flows through two layers — a pipeline DAG on top, single-task compilation underneath.
 
-**Entry** — `main.go` → `cmd.Run(version)` builds a `urfave/cli/v2` app (`cmd/cmd.go`). Subcommands live in `cmd/*.go` (run, init, list, show, watch, completion, graph, validate, skill). The root action with no target opens an interactive `huh` selector (via `internal/tui`). A background goroutine (`listenSignals`) turns SIGINT/SIGTERM into a context cancel.
+**Entry** — `main.go` → `cmd.Run(version)` builds a `spf13/cobra` command tree (`cmd/root.go`, `NewRootCommand`). Subcommands live one-per-file in `cmd/*.go` (run, init, list, show, watch, graph, validate, skill), all in `package cmd`; each `newXCommand(cfg)` constructor closes over the shared `*config.Config` and loader that `NewRootCommand` creates, so there are no mutable package globals. Global flags are cobra persistent flags on the root, inherited by every subcommand and resolved in `PersistentPreRunE`; env-var fallbacks are wired by the `bindEnv` helper (pflag has no built-in env support). Completion is cobra-native (`completion` subcommand + `ValidArgsFunction` for dynamic task/pipeline names); there is no hand-rolled completion command. A bare invocation with no target opens an interactive `huh` selector (via `internal/tui`). `Run` uses `signal.NotifyContext` to turn SIGINT/SIGTERM into a context cancel that tears down in-flight tasks.
 
 **Config** — `internal/config`. `Loader` (`loader.go`) reads YAML/JSON/TOML, resolves `import:` entries (local files, directories, or remote URLs), and merges them with `dario.cat/mergo`. Raw maps are decoded into typed structs via `go-viper/mapstructure/v2`. The result is a `config.Config` holding `Tasks`, `Pipelines` (already built into `scheduler.ExecutionGraph`s), `Contexts`, `Watchers`, and a `Variables` container.
 
@@ -83,8 +83,8 @@ Execution flows through two layers — a pipeline DAG on top, single-task compil
 
 - **Plan first, then implement.** For any non-trivial change, agree on an approach before touching code — surface assumptions, edge cases, and trade-offs up front. Don't start editing while the design is still open.
 - **Run tests and linters once, at the end** — not after every intermediate stage. Make the full set of changes, then verify by dogfooding: `go run . --output json --no-input prepare` (tidy, test, format, lint, completers), plus `go test -race ./...` for the race gate CI enforces (no task covers it). Check the tree is clean afterwards — `prepare` rewrites formatting and generated files, and an unexpected diff means something drifted.
-- **Sync the docs before every PR.** Before opening or updating a pull request, invoke the `docs-sync` agent (`.claude/agents/docs-sync.md`) so `README.md` and `docs/` reflect the change set. Don't hand-wave this — the agent reconciles docs against the actual diff and fixes drift.
+- **Sync the docs before every PR.** Before opening or updating a pull request, invoke the `docs-sync` agent (`.claude/agents/docs-sync.md`) so `README.md`, agent skill and `docs/` reflect the change set. Don't hand-wave this — the agent reconciles docs against the actual diff and fixes drift.
 
 ## Agent skill (single source of truth)
 
-The taskctl agent skill lives once at `.agents/skills/taskctl/SKILL.md`. It is embedded into the binary from `main.go` (go:embed, then injected into `cmd` via `SetSkillTemplate`) and shipped by `taskctl skill install`; `.claude/skills/taskctl` symlinks to it so this repo's own agents use the same copy. Edit only the canonical file — never a copy.
+The taskctl agent skill lives once at `.agents/skills/taskctl/SKILL.md`. It is embedded into the binary and shipped by `taskctl skill install`; `.claude/skills/taskctl` symlinks to it so this repo's own agents use the same copy. Edit only the canonical file — never a copy.
