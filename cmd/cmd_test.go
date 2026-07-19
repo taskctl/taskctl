@@ -43,11 +43,9 @@ func runAppTest(t *testing.T, test appTest) {
 		defer cmd.SetStdin(origStdin)
 	}
 
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	if test.cancelAfter > 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithCancel(ctx)
-		defer cancel()
 		time.AfterFunc(test.cancelAfter, cancel)
 	}
 
