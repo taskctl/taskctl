@@ -125,64 +125,15 @@ Docker images are available on [Docker Hub](https://hub.docker.com/r/taskctl/tas
 
 ## taskctl for AI agents
 
-taskctl has a machine-readable CLI surface designed for use by AI agents and other tooling: JSON discovery documents, an NDJSON event stream for runs, non-interactive execution, and an installable Claude Code skill.
+taskctl has a machine-readable CLI surface designed for use by AI agents and other tooling: JSON discovery documents, an NDJSON event stream for runs, non-interactive execution, and an installable Claude Code skill. A full per-command reference — every command, flag and example — is generated into [`docs/cli/`](docs/cli/taskctl.md), one Markdown page per command, kept in sync with the binary by the `update-docs` task.
 
 ### Discovering tasks and pipelines: `--output json list` / `show`
 
-`taskctl --output json list` prints a single JSON document describing every task, pipeline, context and watcher in the config:
-
-```json
-{
-  "schema_version": 1,
-  "tasks": [
-    {"name": "lint", "description": "", "context": ""}
-  ],
-  "pipelines": [
-    {"name": "release", "stages": ["build", "lint", "test"]}
-  ],
-  "contexts": [],
-  "watchers": []
-}
-```
-
-`taskctl --output json show <name>` prints the full detail for a single task or pipeline:
-
-```json
-{
-  "schema_version": 1,
-  "task": {
-    "name": "lint",
-    "commands": ["golangci-lint run"],
-    "env": {},
-    "variables": {},
-    "allow_failure": false
-  }
-}
-```
-
-Pipelines are shown as a name plus a list of stages (sorted by stage name for stability), each with its task (or `pipeline` for nested sub-pipelines), dependencies and conditions:
-
-```json
-{
-  "schema_version": 1,
-  "pipeline": {
-    "name": "release",
-    "stages": [
-      {"name": "build", "task": "build", "depends_on": ["lint", "test"], "allow_failure": false}
-    ]
-  }
-}
-```
+`taskctl --output json list` prints a single `schema_version`-tagged JSON document describing every task, pipeline, context and watcher in the config. `taskctl --output json show <name>` prints the full detail for a single task (resolved commands, env, variables, `allow_failure`) or pipeline (its stages, sorted by name for stability — each with its task, or `pipeline` for a nested sub-pipeline, plus dependencies and conditions). See [`docs/cli/`](docs/cli/taskctl.md) for the per-command reference.
 
 ### Streaming run events: `--output json`
 
-Running with `--output json` switches the run's output to newline-delimited JSON (NDJSON) — one event object per line — instead of human-oriented text. This makes it easy for an agent to parse progress and results without screen-scraping.
-
-```
-taskctl --output json --no-input <task-or-pipeline>
-```
-
-`<task-or-pipeline>` is passed directly, with no `run` keyword. The stream is:
+Running with `--output json` switches the run's output to newline-delimited JSON (NDJSON) — one event object per line — instead of human-oriented text, so an agent can parse progress and results without screen-scraping. The target is passed directly, with no `run` keyword. The stream is:
 
 | event | key fields |
 |---|---|
@@ -194,13 +145,7 @@ taskctl --output json --no-input <task-or-pipeline>
 
 ### Validating config: `--output json validate`
 
-`taskctl validate <config-file>` also honors `--output json`, emitting a single document instead of the human `✓`/`✗` line. Invalid config exits non-zero.
-
-```json
-{"schema_version": 1, "valid": false, "file": "tasks.yaml", "error": "decoding failed due to the following error(s):..."}
-```
-
-`error` is present only when `valid` is `false`.
+`taskctl validate <config-file>` also honors `--output json`, emitting a single `schema_version`-tagged document (with `valid`, `file` and `error` fields; `error` is present only when `valid` is `false`) instead of the human `✓`/`✗` line. Invalid config exits non-zero.
 
 ### Non-interactive execution: `--no-input`
 
