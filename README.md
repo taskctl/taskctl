@@ -522,7 +522,7 @@ tasks:
 | `-r, --raw` | | shortcut for `--output=raw` |
 | `-q, --quiet` | | quiet mode |
 | `--set <name=value>` | | set a global variable value (repeatable) |
-| `--dry-run` | | resolve and print commands without executing them |
+| `--dry-run` | | run without executing any task commands; every task still flows through and completes as `done` (overrides the `dryrun:` config key in both directions) |
 | `-s, --summary` | | show a run summary; on by default in human output modes, off with `--quiet` or in `raw` mode (unless opted in via config), never in `json`. An explicit flag wins over these defaults |
 | `--no-input` | `TASKCTL_NO_INPUT` | disable interactive prompts |
 | `-d, --debug` | `TASKCTL_DEBUG` | enable debug output |

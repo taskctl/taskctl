@@ -229,9 +229,14 @@ func resolveConfig(cmd *cobra.Command, cfg *config.Config, cl *config.Loader) er
 		return fmt.Errorf("unknown output format %q (want raw, prefixed, default or json)", cfg.Output)
 	}
 
-	if dryRun, _ := fs.GetBool("dry-run"); dryRun {
-		cfg.DryRun = true
+	// An explicit --dry-run wins in both directions; the config file's dryrun:
+	// only applies when the flag was not set, so --dry-run=false can turn off a
+	// config that enables it.
+	dryRun, _ := fs.GetBool("dry-run")
+	if !fs.Changed("dry-run") {
+		dryRun = cfg.DryRun
 	}
+	cfg.DryRun = dryRun
 
 	return nil
 }

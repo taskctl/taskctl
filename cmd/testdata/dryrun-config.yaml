@@ -1,0 +1,5 @@
+dryrun: true
+
+tasks:
+  fail-task:
+    command: "exit 1"

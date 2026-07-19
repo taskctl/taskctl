@@ -111,6 +111,7 @@ func buildFromDefinition(def *configDefinition, lc *loaderContext) (cfg *Config,
 
 	cfg.Import = def.Import
 	cfg.Debug = def.Debug
+	cfg.DryRun = def.DryRun
 	cfg.Summary = def.Summary
 	cfg.Output = def.Output
 	cfg.Variables = cfg.Variables.Merge(variables.FromMap(def.Variables))

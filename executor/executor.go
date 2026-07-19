@@ -28,6 +28,10 @@ type Executor interface {
 // DefaultExecutor is a default executor used for jobs
 // Uses `mvdan.cc/sh/v3/interp` under the hood
 type DefaultExecutor struct {
+	// DryRun makes Execute return immediately without running the command, so a
+	// job resolves successfully having executed nothing.
+	DryRun bool
+
 	dir     string
 	env     []string
 	stdin   io.Reader
@@ -69,6 +73,10 @@ func NewDefaultExecutor(stdin io.Reader, stdout, stderr io.Writer) (*DefaultExec
 // Execute executes given job with provided context
 // Returns job output
 func (e *DefaultExecutor) Execute(ctx context.Context, job *Job) ([]byte, error) {
+	if e.DryRun {
+		return nil, nil
+	}
+
 	command, err := tmpl.RenderString(job.Command, job.Vars.Map())
 	if err != nil {
 		return nil, err

@@ -105,6 +105,28 @@ func Test_runCommandSummary(t *testing.T) {
 	}
 }
 
+// Test_runCommandDryRun asserts dry-run executes no command yet marks the task
+// completed, and that --dry-run and a config dryrun: agree with flag-overrides-
+// config precedence.
+func Test_runCommandDryRun(t *testing.T) {
+	tests := []appTest{
+		// Sanity: without dry-run the fixture really produces output.
+		{args: []string{"--raw", "-c", "testdata/dryrun.yaml", "echo-task"}, output: []string{"dry-run-marker"}},
+		// --dry-run skips execution: no command output.
+		{args: []string{"--raw", "-c", "testdata/dryrun.yaml", "--dry-run", "echo-task"}, absent: []string{"dry-run-marker"}},
+		// A command that would fail is not run, so the task still completes.
+		{args: []string{"--raw", "-c", "testdata/dryrun.yaml", "--dry-run", "fail-task"}},
+		// Config dryrun: true enables it without the flag.
+		{args: []string{"--raw", "-c", "testdata/dryrun-config.yaml", "fail-task"}},
+		// An explicit --dry-run=false overrides the config and runs for real.
+		{args: []string{"--raw", "-c", "testdata/dryrun-config.yaml", "--dry-run=false", "fail-task"}, errored: true},
+	}
+
+	for _, v := range tests {
+		runAppTest(t, v)
+	}
+}
+
 func splitLines(b []byte) [][]byte {
 	var lines [][]byte
 	start := 0
