@@ -232,6 +232,30 @@ func TestTaskRunner_ExportAsOverridesExternalEnv(t *testing.T) {
 	}
 }
 
+func TestTaskRunner_NoEnvExportWithoutExportAs(t *testing.T) {
+	runner, err := NewTaskRunner()
+	if err != nil {
+		t.Fatal(err)
+	}
+	runner.Stdout, runner.Stderr = io.Discard, io.Discard
+	defer runner.Finish()
+
+	producer := taskpkg.FromCommands(`printf produced`)
+	producer.Name = "producer"
+	if err := runner.Run(producer); err != nil {
+		t.Fatal(err)
+	}
+
+	consumer := taskpkg.FromCommands(`printf "[%s]" "${PRODUCER:-unset}"`)
+	consumer.Name = "consumer"
+	if err := runner.Run(consumer); err != nil {
+		t.Fatal(err)
+	}
+	if got := consumer.Stdout(); !strings.Contains(got, "[unset]") {
+		t.Errorf("without exportAs no env var must be exported: got %q", got)
+	}
+}
+
 func TestTaskRunner_TasksStdoutVariable(t *testing.T) {
 	runner, err := NewTaskRunner()
 	if err != nil {

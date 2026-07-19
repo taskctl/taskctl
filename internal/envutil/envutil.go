@@ -5,19 +5,10 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"regexp"
 	"strings"
 
 	"github.com/taskctl/taskctl/internal/iox"
 )
-
-var nonNameChar = regexp.MustCompile("[^a-zA-Z0-9_]")
-
-// NormalizeName converts an arbitrary string into a valid environment variable
-// name: upper-cased with every character outside [A-Za-z0-9_] replaced by '_'.
-func NormalizeName(name string) string {
-	return nonNameChar.ReplaceAllString(strings.ToUpper(name), "_")
-}
 
 // ConvertEnv converts map representing the environment to array of strings in the form "key=value"
 func ConvertEnv(env map[string]string) []string {

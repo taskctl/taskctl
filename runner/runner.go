@@ -16,7 +16,6 @@ import (
 
 	"github.com/taskctl/taskctl/executor"
 	"github.com/taskctl/taskctl/internal/collections"
-	"github.com/taskctl/taskctl/internal/envutil"
 
 	"github.com/taskctl/taskctl/variables"
 
@@ -374,16 +373,16 @@ func (r *TaskRunner) checkTaskCondition(t *task.Task, env, vars variables.Contai
 }
 
 func (r *TaskRunner) storeTaskResult(t *task.Task) {
-	envVarName := t.ExportAs
-	if envVarName == "" {
-		envVarName = envutil.NormalizeName(t.Name) + "_OUTPUT"
+	stdout := t.Stdout()
+	stderr := t.Stderr()
+
+	if t.ExportAs != "" {
+		r.env.Set(t.ExportAs, stdout)
 	}
 
-	stdout := t.Stdout()
-	r.env.Set(envVarName, stdout)
 	r.results.Store(cases.Title(language.English).String(t.Name), taskResult{
 		Stdout:   stdout,
-		Stderr:   t.Stderr(),
+		Stderr:   stderr,
 		ExitCode: t.ExitCode,
 	})
 }
