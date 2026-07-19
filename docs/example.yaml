@@ -35,7 +35,7 @@ tasks:
       sleep: 10
 
   task3:
-    context: docker-compose-context-name
+    context: docker-compose-context
     command:
       - echo "Hello from container created by docker-compose"
       - echo ${TASK1_STORED_OUTPUT}
