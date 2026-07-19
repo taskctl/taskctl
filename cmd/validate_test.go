@@ -6,7 +6,7 @@ func Test_validateCommand(t *testing.T) {
 
 	tests := []appTest{
 		{args: []string{"validate", "testdata/graph2.yaml"}, errored: true},
-		{args: []string{"validate", "testdata/graph.yaml"}, output: []string{"file is valid"}},
+		{args: []string{"validate", "testdata/graph.yaml"}, output: []string{"is valid"}},
 	}
 
 	for _, v := range tests {

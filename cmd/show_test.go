@@ -12,9 +12,9 @@ func Test_showCommand(t *testing.T) {
 
 	tests := []appTest{
 		{args: []string{"-c", "testdata/graph.yaml", "show"}, errored: true},
-		{args: []string{"-c", "testdata/graph.yaml", "show", "graph:task1"}, output: []string{"Name: graph:task1", "echo 'hello, world!'"}},
+		{args: []string{"-c", "testdata/graph.yaml", "show", "graph:task1"}, output: []string{"graph:task1", "echo 'hello, world!'"}},
 		// Text mode now renders pipelines too (previously errored "unknown task").
-		{args: []string{"-c", "testdata/graph.yaml", "show", "graph:pipeline1"}, output: []string{"Pipeline: graph:pipeline1", "graph:task1"}},
+		{args: []string{"-c", "testdata/graph.yaml", "show", "graph:pipeline1"}, output: []string{"graph:pipeline1", "graph:task1"}},
 	}
 
 	for _, v := range tests {

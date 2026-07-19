@@ -42,7 +42,16 @@ func Run(version string) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	return NewRootCommand(version).ExecuteContext(ctx)
+	root := NewRootCommand(version)
+	root.SetContext(ctx)
+
+	// ExecuteC returns the command that actually failed, which present needs to
+	// print the right usage for arg/flag errors.
+	cmd, err := root.ExecuteC()
+	if code := present(cmd, err); code != 0 {
+		return exitError{code}
+	}
+	return nil
 }
 
 // NewRootCommand builds the taskctl root command with all subcommands. The
@@ -119,6 +128,8 @@ func NewRootCommand(version string) *cobra.Command {
 		return []string{output.FormatDefault, output.FormatPrefixed, output.FormatRaw, output.FormatJSON}, cobra.ShellCompDirectiveNoFileComp
 	})
 
+	root.SetFlagErrorFunc(func(_ *cobra.Command, e error) error { return usageError{e} })
+
 	root.AddGroup(
 		&cobra.Group{ID: groupRun, Title: "Run:"},
 		&cobra.Group{ID: groupInspect, Title: "Inspect:"},
@@ -134,9 +145,11 @@ func NewRootCommand(version string) *cobra.Command {
 		newShowCommand(cfg),
 		newWatchCommand(cfg),
 		newGraphCommand(cfg),
-		newValidateCommand(),
+		newValidateCommand(cfg),
 		newSkillCommand(),
 	)
+
+	markUsageErrors(root)
 
 	return root
 }
