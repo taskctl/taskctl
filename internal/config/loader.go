@@ -103,6 +103,7 @@ func (cl *Loader) Load(file string) (*Config, error) {
 		return nil, err
 	}
 	cl.dst.Variables.Set("Root", cl.dir)
+	cl.dst.Variables.Set("Dir", cl.dir)
 
 	slog.Debug(fmt.Sprintf("config %s loaded", file))
 	return cl.dst, nil

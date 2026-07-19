@@ -17,6 +17,9 @@ func TestRenderString(t *testing.T) {
 		{args: args{tmpl: "hello, {{ .Name | default \"John\" }}!", variables: map[string]any{"Name": ""}}, want: "hello, John!"},
 		{args: args{tmpl: "hello, {{ .Name }}!", variables: make(map[string]any)}, wantErr: true},
 		{args: args{tmpl: "hello, {{ .Name", variables: make(map[string]any)}, wantErr: true},
+		{args: args{tmpl: "{{ .Task.Name }}", variables: map[string]any{"Task": map[string]any{"Name": "t1"}}}, want: "t1"},
+		{args: args{tmpl: "{{ .Tasks.Build.Stdout }}", variables: map[string]any{"Tasks": map[string]any{"Build": map[string]any{"Stdout": "out"}}}}, want: "out"},
+		{args: args{tmpl: "{{ .Task.Missing }}", variables: map[string]any{"Task": map[string]any{"Name": "t1"}}}, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

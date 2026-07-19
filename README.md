@@ -288,15 +288,15 @@ Variables layer by precedence, last wins: global < context < task. So a variable
 
 Predefined variables are:
 - `.Root` - root config file directory
-- `.Dir` - config file directory
+- `.Dir` - config file directory (same as `.Root`)
 - `.TempDir` - system's temporary directory
 - `.Args` - provided arguments as a string
 - `.ArgsList` - array of provided arguments
-- `.Task.Name` - current task's name
-- `.Context.Name` - current task's execution context's name
-- `.Stage.Name` - current stage's name
 - `.Output` - previous command's output
-- `.Tasks.Task1.Output` - `task1` last command output
+- `.Task` - the running task's static metadata: `.Task.Name`, `.Task.Description`, `.Task.Dir`, `.Task.Context`, `.Task.Condition`, `.Task.Timeout`, `.Task.AllowFailure`, `.Task.Interactive`, `.Task.ExportAs`
+- `.Context` - the resolved execution context: `.Context.Name`, `.Context.Dir`, `.Context.Executable` (with `.Context.Executable.Bin` and `.Context.Executable.Args`; `.Context.Executable` is nil for the default context)
+- `.Stage` - when the task runs inside a pipeline stage: `.Stage.Name`, `.Stage.Condition`, `.Stage.Dir`, `.Stage.AllowFailure`, `.Stage.DependsOn`
+- `.Tasks.<Name>` - results of an already-completed task, visible across the whole run: `.Tasks.<Name>.Stdout`, `.Tasks.<Name>.Stderr`, `.Tasks.<Name>.ExitCode`. `<Name>` is title-cased, so task `producer` is `.Tasks.Producer.Stdout`. A name containing a dash can't use field syntax (`{{ .Tasks.Build-Host.Stdout }}` fails to parse) - use `{{ index .Tasks "Build-Host" "Stdout" }}` instead
 
 Variables can be used inside task definition. For example:
 ```yaml
@@ -334,7 +334,7 @@ $ taskctl lint2 -- package.go main.go
 ```
 
 ### Storing task's output
-A task's output is automatically stored in a variable named ``.Tasks.TaskName.Output``, where `TaskName` is the actual task's name. It is also stored in the `TASK_NAME_OUTPUT` environment variable, whose name can be changed with the task's `exportAs` parameter. Those variables are available to all dependent stages.
+A task's stdout is automatically stored in the ``.Tasks.<Name>.Stdout`` variable (alongside ``.Tasks.<Name>.Stderr`` and ``.Tasks.<Name>.ExitCode``), where `<Name>` is the task's title-cased name. It is also stored in the `TASK_NAME_OUTPUT` environment variable, whose name can be changed with the task's `exportAs` parameter. Those variables are available to all dependent stages.
 
 ### Tasks variations
 A task may run in one or more variations. Variations allow you to reuse a task with different env variables:
@@ -553,7 +553,7 @@ err  = r.Run(t)
 if err != nil {
     fmt.Println(err, t.ExitCode, t.ErrorMessage())
 }
-fmt.Println(t.Output())
+fmt.Println(t.Stdout())
 ```
 
 ### Scheduler

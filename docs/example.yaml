@@ -8,7 +8,7 @@ tasks:
       - echo {{ index .ArgsList 0 }} # .ArgsList is populated by list of arguments passed to task. eg. taskctl run task task1 -- arg1 arg2
       - echo "My name is task1"
       - echo ${VAR_NAME_1} - ${VAR_NAME_2}
-      - echo {{ .TaskName }}
+      - echo {{ .Task.Name }}
       - pwd
     env:
       VAR_NAME: VAR_VALUE

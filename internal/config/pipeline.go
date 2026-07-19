@@ -12,6 +12,16 @@ import (
 	"github.com/taskctl/taskctl/task"
 )
 
+// stageInfo is the template-facing view of a stage (.Stage). The type is
+// unexported but its fields are exported so text/template can read them.
+type stageInfo struct {
+	Name         string
+	Condition    string
+	Dir          string
+	AllowFailure bool
+	DependsOn    []string
+}
+
 func buildPipeline(g *scheduler.ExecutionGraph, stages []*stageDefinition, cfg *Config) (*scheduler.ExecutionGraph, error) {
 	for _, def := range stages {
 		var stageTask *task.Task
@@ -75,7 +85,13 @@ func buildPipeline(g *scheduler.ExecutionGraph, stages []*stageDefinition, cfg *
 			}
 		}
 
-		stage.Variables.Set(".Stage.Name", stage.Name)
+		stage.Variables.Set("Stage", stageInfo{
+			Name:         stage.Name,
+			Condition:    stage.Condition,
+			Dir:          stage.Dir,
+			AllowFailure: stage.AllowFailure,
+			DependsOn:    stage.DependsOn,
+		})
 
 		if _, err := g.Node(stage.Name); err == nil {
 			return nil, fmt.Errorf("stage with same name %s already exists", stage.Name)

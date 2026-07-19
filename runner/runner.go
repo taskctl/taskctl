@@ -50,6 +50,8 @@ type TaskRunner struct {
 	canceling   bool
 	doneCh      chan struct{}
 
+	results collections.SyncMap[string, taskResult]
+
 	compiler *taskCompiler
 
 	Stdin          io.Reader
@@ -57,6 +59,37 @@ type TaskRunner struct {
 	OutputFormat   string
 
 	cleanupList collections.SyncMap[string, *ExecutionContext]
+}
+
+// taskInfo and contextInfo are the template-facing views of the running task and
+// its context (.Task and .Context). The types are unexported but their fields
+// are exported: text/template navigates the fields, not the type name. Only
+// static task metadata is exposed — not runtime state (exit code, logs), the
+// variable/env containers, or the raw (unrendered) command slices.
+type taskInfo struct {
+	Name         string
+	Description  string
+	Dir          string
+	Context      string
+	Condition    string
+	Timeout      *time.Duration
+	AllowFailure bool
+	Interactive  bool
+	ExportAs     string
+}
+
+type contextInfo struct {
+	Name       string
+	Dir        string
+	Executable *Binary
+}
+
+// taskResult is the template-facing view of a completed task's result
+// (.Tasks.<Name>). Exported fields so text/template can read them.
+type taskResult struct {
+	Stdout   string
+	Stderr   string
+	ExitCode int16
 }
 
 // NewTaskRunner creates new TaskRunner instance
@@ -127,13 +160,6 @@ func (r *TaskRunner) Run(t *task.Task) (err error) {
 	}
 
 	defer func() {
-		// Record the success exit code before Finish writes the task_finished
-		// footer, which reports it. Only after the task actually executed
-		// (t.End set) — failures before execution must not report success.
-		if !t.Errored && !t.Skipped && !t.End.IsZero() {
-			t.ExitCode = 0
-		}
-
 		err := taskOutput.Finish()
 		if err != nil {
 			slog.Error(err.Error())
@@ -146,6 +172,19 @@ func (r *TaskRunner) Run(t *task.Task) (err error) {
 	}()
 
 	vars := r.variables.Merge(execContext.Variables).Merge(t.Variables)
+	vars.Set("Task", taskInfo{
+		Name:         t.Name,
+		Description:  t.Description,
+		Dir:          t.Dir,
+		Context:      t.Context,
+		Condition:    t.Condition,
+		Timeout:      t.Timeout,
+		AllowFailure: t.AllowFailure,
+		Interactive:  t.Interactive,
+		ExportAs:     t.ExportAs,
+	})
+	vars.Set("Context", contextInfo{Name: t.Context, Dir: execContext.Dir, Executable: execContext.Executable})
+	vars.Set("Tasks", r.results.Snapshot())
 
 	env := r.env.Merge(execContext.Env)
 	env = env.With("TASK_NAME", t.Name)
@@ -178,10 +217,17 @@ func (r *TaskRunner) Run(t *task.Task) (err error) {
 	}
 
 	err = r.execute(r.ctx, t, job)
+
+	// execute leaves a succeeded task's exit code at -1; normalize it before the
+	// result is stored and the footer is written. Failures keep their real code.
+	if !t.Errored && t.ExitCode < 0 {
+		t.ExitCode = 0
+	}
+	r.storeTaskResult(t)
+
 	if err != nil {
 		return err
 	}
-	r.storeTaskOutput(t)
 
 	return r.after(r.ctx, t, env, vars)
 }
@@ -328,19 +374,18 @@ func (r *TaskRunner) checkTaskCondition(t *task.Task) (bool, error) {
 	return true, nil
 }
 
-func (r *TaskRunner) storeTaskOutput(t *task.Task) {
-	var envVarName string
-	varName := fmt.Sprintf("Tasks.%s.Output", cases.Title(language.English).String(t.Name))
-
-	if t.ExportAs == "" {
+func (r *TaskRunner) storeTaskResult(t *task.Task) {
+	envVarName := t.ExportAs
+	if envVarName == "" {
 		envVarName = fmt.Sprintf("%s_OUTPUT", strings.ToUpper(t.Name))
 		envVarName = regexp.MustCompile("[^a-zA-Z0-9_]").ReplaceAllString(envVarName, "_")
-	} else {
-		envVarName = t.ExportAs
 	}
-
-	r.env.Set(envVarName, t.Log.Stdout.String())
-	r.variables.Set(varName, t.Log.Stdout.String())
+	r.env.Set(envVarName, t.Stdout())
+	r.results.Store(cases.Title(language.English).String(t.Name), taskResult{
+		Stdout:   t.Stdout(),
+		Stderr:   t.Stderr(),
+		ExitCode: t.ExitCode,
+	})
 }
 
 func (r *TaskRunner) execute(ctx context.Context, t *task.Task, job *executor.Job) error {
