@@ -246,7 +246,8 @@ func TestTaskRunner_NoEnvExportWithoutExportAs(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	consumer := taskpkg.FromCommands(`printf "[%s]" "${PRODUCER:-unset}"`)
+	// PRODUCER_OUTPUT is the var the removed default would have set; it must be unset.
+	consumer := taskpkg.FromCommands(`printf "[%s]" "${PRODUCER_OUTPUT:-unset}"`)
 	consumer.Name = "consumer"
 	if err := runner.Run(consumer); err != nil {
 		t.Fatal(err)
