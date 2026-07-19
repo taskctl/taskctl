@@ -17,7 +17,7 @@ func newValidateCommand() *cobra.Command {
 		RunE: func(_ *cobra.Command, args []string) error {
 			loader := config.NewConfigLoader(config.NewConfig())
 			if _, err := loader.Load(args[0]); err != nil {
-				return fmt.Errorf("invalid config; %w", err)
+				return fmt.Errorf("invalid config %q: %w", args[0], err)
 			}
 
 			fmt.Println("file is valid")
