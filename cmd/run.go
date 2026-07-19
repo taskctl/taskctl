@@ -25,7 +25,7 @@ func newRunCommand(cfg *config.Config) *cobra.Command {
 		Example: "  taskctl run pipeline1\n" +
 			"  taskctl run task1 task2\n" +
 			"  taskctl run test -- -v",
-		Args:              cobra.MinimumNArgs(1),
+		Args:              minArgs(1, "run requires at least one task or pipeline name"),
 		ValidArgsFunction: targetCompletion(cfg),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			targets, _ := splitArgsAtDash(cmd, args)
@@ -40,7 +40,7 @@ func newRunCommand(cfg *config.Config) *cobra.Command {
 	taskCmd := &cobra.Command{
 		Use:               "task TASK [TASK...] [-- task-args]",
 		Short:             "run one or more tasks",
-		Args:              cobra.MinimumNArgs(1),
+		Args:              minArgs(1, "run task requires at least one task name"),
 		ValidArgsFunction: taskCompletion(cfg),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			targets, _ := splitArgsAtDash(cmd, args)
@@ -99,7 +99,11 @@ func runTargets(cmd *cobra.Command, cfg *config.Config, targets []string, tasksO
 		}
 	}
 
-	finishRun(cfg, graphs, tasks, summary, err)
+	// When finishRun surfaced the failure (summary or JSON run_finished event),
+	// mark it reported so the top-level presenter doesn't print it again.
+	if reported := finishRun(cfg, graphs, tasks, summary, err); err != nil && reported {
+		return reportedError{err}
+	}
 	return err
 }
 
@@ -268,12 +272,17 @@ func summaryEnabled(cmd *cobra.Command, cfg *config.Config) bool {
 // finishRun emits the run_finished NDJSON event (json mode) or, in a human
 // output mode with summary enabled, prints the persistent end-of-run summary.
 // It runs after the dashboard has torn down (via each caller's Finish), so the
-// summary stays on screen.
-func finishRun(cfg *config.Config, graphs []*scheduler.ExecutionGraph, tasks []*task.Task, summary bool, err error) {
+// summary stays on screen. It reports whether the run's outcome was surfaced to
+// the user (JSON event or a printed summary), so callers can suppress a
+// duplicate top-level error line.
+func finishRun(cfg *config.Config, graphs []*scheduler.ExecutionGraph, tasks []*task.Task, summary bool, err error) bool {
 	emitRunFinished(cfg, graphs, tasks, err)
 
-	if cfg.Output == output.FormatJSON || !summary {
-		return
+	if cfg.Output == output.FormatJSON {
+		return true
+	}
+	if !summary {
+		return false
 	}
 
 	var items []output.StageSummary
@@ -288,11 +297,12 @@ func finishRun(cfg *config.Config, graphs []*scheduler.ExecutionGraph, tasks []*
 	items = append(items, output.SummarizeTasks(tasks)...)
 
 	if len(items) == 0 {
-		return
+		return false
 	}
 
 	_, _ = fmt.Fprint(os.Stdout, "\r\n")
 	output.PrintRunSummary(os.Stdout, items, total)
+	return true
 }
 
 func summarizeGraph(g *scheduler.ExecutionGraph) []output.StageSummary {

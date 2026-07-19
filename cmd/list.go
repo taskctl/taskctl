@@ -3,37 +3,21 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"maps"
 	"os"
 	"slices"
-	"text/template"
+	"strings"
 
+	"charm.land/lipgloss/v2"
 	"github.com/spf13/cobra"
 
 	"github.com/taskctl/taskctl/internal/collections"
 	"github.com/taskctl/taskctl/internal/config"
 	"github.com/taskctl/taskctl/internal/output"
 	"github.com/taskctl/taskctl/internal/schema"
+	"github.com/taskctl/taskctl/internal/tui"
 )
-
-var listTmpl = `Contexts:{{range $context := .Contexts}}
-- {{ $context }}{{else}} no contexts {{end}}
-
-Pipelines:
-{{- range $pipeline := .Pipelines}}
-- {{ $pipeline }}{{else}} no pipelines
-{{end}}
-
-Tasks:
-{{- range $task := .Tasks}}
-- {{ $task }}{{else}} no tasks
-{{end}}
-
-Watchers:
-{{- range $watcher := .Watchers}}
-- {{ $watcher }}{{else}} no watchers
-{{end}}
-`
 
 func newListCommand(cfg *config.Config) *cobra.Command {
 	listCmd := &cobra.Command{
@@ -51,10 +35,8 @@ func newListCommand(cfg *config.Config) *cobra.Command {
 				return encodeListJSON(cfg, contexts, pipelines, tasks, watchers)
 			}
 
-			t := template.Must(template.New("list").Parse(listTmpl))
-			return t.Execute(os.Stdout, struct {
-				Contexts, Pipelines, Tasks, Watchers []string
-			}{contexts, pipelines, tasks, watchers})
+			renderList(os.Stdout, cfg, contexts, pipelines, tasks, watchers)
+			return nil
 		},
 	}
 
@@ -143,4 +125,59 @@ func encodeListJSON(cfg *config.Config, contexts, pipelineNames, taskNames, watc
 	}
 
 	return json.NewEncoder(os.Stdout).Encode(resp)
+}
+
+// renderList writes the styled human listing: a bold section header per
+// non-empty group, task names aligned against their faint descriptions.
+func renderList(w io.Writer, cfg *config.Config, contexts, pipelines, tasks, watchers []string) {
+	first := true
+	header := func(title string) {
+		if !first {
+			tui.Println(w, "")
+		}
+		first = false
+		tui.Println(w, tui.StyleBold.Render(strings.ToUpper(title)))
+	}
+
+	if len(pipelines) > 0 {
+		header("Pipelines")
+		for _, name := range pipelines {
+			tui.Printf(w, "  %s\n", name)
+		}
+	}
+
+	if len(tasks) > 0 {
+		header("Tasks")
+		width := 0
+		for _, name := range tasks {
+			width = max(width, lipgloss.Width(name))
+		}
+		for _, name := range tasks {
+			desc := cfg.Tasks[name].Description
+			if desc == "" {
+				tui.Printf(w, "  %s\n", name)
+				continue
+			}
+			pad := strings.Repeat(" ", width-lipgloss.Width(name)+2)
+			tui.Printf(w, "  %s%s%s\n", name, pad, tui.StyleFaint.Render(desc))
+		}
+	}
+
+	if len(contexts) > 0 {
+		header("Contexts")
+		for _, name := range contexts {
+			tui.Printf(w, "  %s\n", name)
+		}
+	}
+
+	if len(watchers) > 0 {
+		header("Watchers")
+		for _, name := range watchers {
+			tui.Printf(w, "  %s\n", name)
+		}
+	}
+
+	if first {
+		tui.Println(w, tui.StyleFaint.Render("No tasks or pipelines found."))
+	}
 }

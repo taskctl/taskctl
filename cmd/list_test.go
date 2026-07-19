@@ -16,7 +16,7 @@ import (
 func Test_listCommand(t *testing.T) {
 
 	tests := []appTest{
-		{args: []string{"-c", "testdata/graph.yaml", "list"}, output: []string{"graph:pipeline1", "graph:task1", "no watchers"}},
+		{args: []string{"-c", "testdata/graph.yaml", "list"}, output: []string{"PIPELINES", "graph:pipeline1", "TASKS", "graph:task1"}, absent: []string{"WATCHERS", "CONTEXTS"}},
 		{args: []string{"-c", "testdata/graph.yaml", "list", "pipelines"}, output: []string{"graph:pipeline1"}},
 		{args: []string{"-c", "testdata/graph.yaml", "list", "tasks"}, output: []string{"graph:task1"}},
 		{args: []string{"-c", "testdata/graph.yaml", "list", "watchers"}, exactOutput: ""},
