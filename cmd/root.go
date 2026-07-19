@@ -174,7 +174,7 @@ func resolveConfig(cmd *cobra.Command, cfg *config.Config, cl *config.Loader) er
 	configFile, _ := fs.GetString("config")
 	if _, err := cl.Load(configFile); err != nil {
 		if !errors.Is(err, config.ErrConfigNotFound) || fs.Changed("config") {
-			return fmt.Errorf("invalid config; %w", err)
+			return fmt.Errorf("failed to load config: %w", err)
 		}
 	}
 
