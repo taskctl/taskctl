@@ -11,9 +11,9 @@ pipelines:
       depends_on: test
     - pipeline: lints
     - task: update-completers
-      depends_on: test
+      depends_on: fmt
     - task: update-docs
-      depends_on: test
+      depends_on: fmt
 
   lints:
     - task: golangci-lint
