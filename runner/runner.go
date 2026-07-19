@@ -37,7 +37,8 @@ type TaskRunner struct {
 	Executor executor.Executor
 	// DryRun makes each task's commands (condition, before, main, after) render
 	// and parse for validation but not execute, so a task with valid commands is
-	// marked completed having run nothing (an invalid template or command fails).
+	// marked completed (an invalid template or command still fails). Context
+	// lifecycle hooks (Up/Down/Before/After) are not skipped.
 	DryRun    bool
 	contexts  map[string]*ExecutionContext
 	variables variables.Container
