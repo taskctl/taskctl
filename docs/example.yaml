@@ -43,7 +43,7 @@ tasks:
       VAR_NAME: VAR_VALUE
 
   task4:
-    context: kubectl
+    context: kubernetes-context
     command:
       - echo "I'm task4"
       - env
@@ -124,6 +124,7 @@ contexts:
     before: echo "SOME COMMAND TO RUN BEFORE EVERY TASK"
     after: echo "SOME COMMAND TO RUN WHEN TASK FINISHED SUCCESSFULLY"
 
+  # Escape hatch: wrap commands in any binary via executable.bin/args (type defaults to local)
   docker-context:
     executable:
       bin: /usr/local/bin/docker
@@ -149,15 +150,44 @@ contexts:
     up: docker-compose up -d --build --force-recreate api # Executes once before first context usage
     down: docker-compose down api # Executes once when all tasks done
 
-  kubectl:
-    executable:
-      bin: /usr/local/bin/kubectl
-      args:
-        - exec
-        - -n stage
-        - pod-name
+  # Typed docker context, run mode: a fresh `docker run --rm` container per command
+  docker-run:
+    type: docker
+    dir: /app # workdir inside the container
     env:
-      KUBECONFIG: "$HOME/.kube/alternate-config"
+      NODE_ENV: prod # forwarded into the container via -e
+    docker:
+      image: node:20 # run mode; mutually exclusive with container
+      host: tcp://0.0.0.0:2375 # optional docker daemon host (docker -H)
+      options: [--network, host] # extra flags passed through verbatim
+      shell: [sh, -c] # in-target shell, default sh -c
+
+  # Typed docker context, exec mode: run against a container you started yourself
+  docker-exec:
+    type: docker
+    docker:
+      container: my-app # exec mode; mutually exclusive with image
+
+  kubernetes-context:
+    type: kubernetes
+    kubernetes:
+      pod: web-0 # required; also accepts a controller ref passed to kubectl exec, e.g. deployment/web
+      namespace: stage
+      container: app # optional -c container within the pod
+      kube_context: my-ctx # optional --context
+      kubeconfig: "$HOME/.kube/alternate-config" # optional --kubeconfig
+      shell: [sh, -c] # in-target shell, default sh -c
+
+  ssh-context:
+    type: ssh
+    dir: /srv/app # remote workdir (cd into it before running)
+    env:
+      DEPLOY_ENV: prod # exported in the remote shell
+    ssh:
+      host: build-01 # required
+      user: deploy
+      port: 2222
+      identity_file: ~/.ssh/id_ed25519
 
 debug: true # debug enabled by default. To temporary disable run with "--debug=false" flag
 dryrun: false # when true, validate task commands (render + parse) without executing them; valid tasks complete as "done". Also settable per-run with "--dry-run"

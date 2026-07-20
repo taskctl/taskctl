@@ -1,0 +1,38 @@
+tasks:
+  test-task:
+    command:
+      - echo true
+
+contexts:
+  local_ctx:
+    dir: /tmp
+    env:
+      LOCAL_ENV: LOCAL_ENV_VALUE
+
+  docker_run_ctx:
+    type: docker
+    dir: /tmp
+    env:
+      FOO: bar
+    docker:
+      image: alpine
+
+  docker_exec_ctx:
+    type: docker
+    docker:
+      container: my-container
+
+  kubernetes_ctx:
+    type: kubernetes
+    kubernetes:
+      pod: my-pod
+      namespace: my-namespace
+      kube_context: my-context
+
+  ssh_ctx:
+    type: ssh
+    dir: /tmp
+    ssh:
+      host: example.com
+      user: deploy
+      identity_file: /home/deploy/.ssh/id_rsa

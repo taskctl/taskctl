@@ -23,7 +23,7 @@ A simple, modern alternative to GNU Make. *taskctl* is a concurrent task runner 
 - concurrent task execution with DAG-based pipelines: dependencies, conditions, allowed failures, graph visualization
 - cross-platform: embedded shell interpreter, no dependency on a system shell
 - AI-agent friendly: JSON discovery, NDJSON run events, non-interactive mode, installable agent skill
-- customizable execution contexts (wrap commands in `docker`, `ssh`, any binary)
+- typed execution contexts: run commands in `docker`, `kubernetes` or `ssh` targets, or wrap them in any binary
 - templated commands with variables, task variations, and output piped between tasks
 - integrated file watcher (live reload)
 - output formats: raw, prefixed, live dashboard (`default`), or JSON event stream
@@ -401,14 +401,15 @@ contexts:
 
 A context definition takes the following parameters:
 - `dir` - working directory. Also the base for a relative `env_file` path
-- `executable` - binary (`bin`) and its arguments (`args`) that will run the task's commands
+- `type` - context type: `local` (default), `docker`, `kubernetes` or `ssh`. Type-specific settings go in a nested block named after the type (see [Typed contexts](#typed-contexts))
+- `executable` - binary (`bin`) and its arguments (`args`) that will run the task's commands (the `local` escape hatch; mutually exclusive with a `type` block)
 - `quote` - symbol to quote commands with when passing them to the executable
 - `env` - environment variables
 - `env_file` - file with env variables in `k=v` format to read variables from
 - `variables` - context's variables
 - `up`, `down`, `before`, `after` - lifecycle hooks (see below)
 
-A task that declares no `context:` runs in the context named `default`. Define one to share environment variables, variables, a working directory, executable or lifecycle hooks across every such task — this is how you give all tasks a common `env`. A task's own `env`/`variables` override the default context's (precedence: `default context < task`). Tasks that opt into another context use that one instead; if no `default` context is defined, context-less tasks run in an empty implicit context.
+A task that declares no `context:` runs in the context named `default`. Define one to share environment variables, variables, a working directory, executable or lifecycle hooks across every such task — this is how you give all tasks a common `env`. A task's own `env`/`variables` override the default context's (precedence: `default context < task`). Tasks that opt into another context use that one instead; if no `default` context is defined, context-less tasks run in an empty implicit context. The `default` context may itself be typed, making every context-less task run inside that docker/kubernetes/ssh target.
 
 A context has lifecycle hooks: `up` and `down` run once per taskctl run - `up` before the context's first usage, `down` during cleanup when the run finishes. `before` and `after` run every time around each task that uses the context.
 ```yaml
@@ -424,19 +425,65 @@ context:
       after: rm -rf var/*
 ```
 
-### Docker context
+### Typed contexts
+
+A context's `type:` selects how commands run. The default, `local`, runs them on the host (directly, or through the optional `executable:` escape hatch). `docker`, `kubernetes` and `ssh` run every command — plus the task's `before`/`after`, its `condition`, and the context's own `up`/`down`/`before`/`after` hooks — inside the target. Type-specific settings go in a block named after the type.
+
+For a typed context the task's `env` and `dir` are applied *inside* the target, not on the local launcher: docker forwards them with `-e KEY=VAL`/`-w`, while kubernetes and ssh inline `export KEY=VAL; cd <dir> && <command>` into the remote shell. Only declared `env` is forwarded (including the injected `TASKCTL__ARGS`/`TASKCTL__TASK_NAME`); the host's own environment is not.
+
 ```yaml
+contexts:
+  # docker run mode: a fresh `docker run --rm` container per command
+  api:
+    type: docker
+    dir: /app                     # workdir inside the container
+    env: { NODE_ENV: prod }       # forwarded into the container
+    docker:
+      image: node:20              # run mode; mutually exclusive with `container`
+      host: tcp://0.0.0.0:2375    # optional docker daemon host (docker -H)
+      options: [--network, host]  # extra flags, passed through verbatim
+      shell: [sh, -c]             # in-target shell, default `sh -c`
+
+  # docker exec mode: run against a container you started yourself
+  worker:
+    type: docker
+    docker:
+      container: my-app           # exec mode; mutually exclusive with `image`
+
+  cluster:
+    type: kubernetes
+    kubernetes:
+      pod: web-0                  # required; also accepts a controller ref, e.g. deployment/web
+      namespace: stage
+      container: app              # optional `-c` container within the pod
+      kube_context: my-ctx        # optional `--context`
+      kubeconfig: /path/to/config # optional `--kubeconfig`
+      shell: [sh, -c]             # in-target shell, default `sh -c`
+
+  box:
+    type: ssh
+    ssh:
+      host: build-01              # required
+      user: deploy
+      port: 2222
+      identity_file: ~/.ssh/id_ed25519
+```
+
+Docker **run mode** (`image:`) starts a fresh `--rm` container for every command, so state does not persist between commands — an `up:` install step won't be visible to later commands. For stateful setup use **exec mode** (`container:`) against a container you start yourself (e.g. from a `local`/escape-hatch `up:` hook or out of band), or use kubernetes/ssh.
+
+The `kubernetes` `pod:` value is passed through to `kubectl exec` verbatim, so it accepts any target `kubectl exec` understands — a bare pod name (`web-0`) or a controller reference (`deployment/web`, `statefulset/db`, `daemonset/agent`, `job/migrate`, `svc/api`). For a controller, kubectl selects one of its pods (the first, not all replicas).
+
+Validation: `docker` requires exactly one of `image`/`container`; `kubernetes` requires `pod`; `ssh` requires `host`. A typed context may not also set `executable`, and a `local` context may not carry a type block.
+
+The low-level `executable:` form remains the escape hatch — leave `type` unset (or `local`) and give a `bin`/`args` to wrap commands in any binary yourself:
+```yaml
+contexts:
   alpine:
     executable:
       bin: /usr/local/bin/docker
-      args:
-        - run
-        - --rm
-        - alpine:latest
+      args: [run, --rm, alpine:latest]
     env:
       DOCKER_HOST: "tcp://0.0.0.0:2375"
-    before: echo "SOME COMMAND TO RUN BEFORE TASK"
-    after: echo "SOME COMMAND TO RUN WHEN TASK FINISHED SUCCESSFULLY"
 
 tasks:
   mysql-task:

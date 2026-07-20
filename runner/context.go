@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/taskctl/taskctl/executor"
+	"github.com/taskctl/taskctl/internal/envutil"
 
 	"github.com/taskctl/taskctl/variables"
 )
@@ -24,6 +25,8 @@ type ExecutionContext struct {
 	Env        variables.Container
 	Variables  variables.Container
 	Quote      string
+
+	wrapper commandWrapper
 
 	up     []string
 	down   []string
@@ -124,12 +127,17 @@ func (c *ExecutionContext) runServiceCommand(ctx context.Context, command string
 		return err
 	}
 
-	out, err := ex.Execute(ctx, &executor.Job{
-		Command: command,
-		Dir:     c.Dir,
-		Env:     c.Env,
-		Vars:    c.Variables,
-	})
+	job := &executor.Job{Command: command, Dir: c.Dir, Env: c.Env, Vars: c.Variables}
+	if c.wrapper != nil {
+		// Env/dir are forwarded into the target by the wrapper itself, so the
+		// local launcher job must not also apply them.
+		job = &executor.Job{
+			Command: c.wrapper.wrap(command, envutil.ConvertToMapOfStrings(c.Env.Map()), c.Dir),
+			Vars:    c.Variables,
+		}
+	}
+
+	out, err := ex.Execute(ctx, job)
 	if err != nil {
 		if out != nil {
 			slog.Warn(string(out))
@@ -152,5 +160,26 @@ func defaultContext() *ExecutionContext {
 func WithQuote(quote string) ExecutionContextOption {
 	return func(c *ExecutionContext) {
 		c.Quote = quote
+	}
+}
+
+// WithDocker is functional option to run ExecutionContext commands inside a docker container
+func WithDocker(spec DockerSpec) ExecutionContextOption {
+	return func(c *ExecutionContext) {
+		c.wrapper = newDockerWrapper(spec)
+	}
+}
+
+// WithKubernetes is functional option to run ExecutionContext commands inside a kubernetes pod
+func WithKubernetes(spec KubernetesSpec) ExecutionContextOption {
+	return func(c *ExecutionContext) {
+		c.wrapper = newKubectlWrapper(spec)
+	}
+}
+
+// WithSSH is functional option to run ExecutionContext commands on a remote host over ssh
+func WithSSH(spec SSHSpec) ExecutionContextOption {
+	return func(c *ExecutionContext) {
+		c.wrapper = newSSHWrapper(spec)
 	}
 }
