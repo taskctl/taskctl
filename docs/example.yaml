@@ -171,7 +171,7 @@ contexts:
   kubernetes-context:
     type: kubernetes
     kubernetes:
-      pod: web-0 # required
+      pod: web-0 # required; also accepts a controller ref passed to kubectl exec, e.g. deployment/web
       namespace: stage
       container: app # optional -c container within the pod
       kube_context: my-ctx # optional --context

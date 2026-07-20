@@ -453,7 +453,7 @@ contexts:
   cluster:
     type: kubernetes
     kubernetes:
-      pod: web-0                  # required
+      pod: web-0                  # required; also accepts a controller ref, e.g. deployment/web
       namespace: stage
       container: app              # optional `-c` container within the pod
       kube_context: my-ctx        # optional `--context`
@@ -470,6 +470,8 @@ contexts:
 ```
 
 Docker **run mode** (`image:`) starts a fresh `--rm` container for every command, so state does not persist between commands — an `up:` install step won't be visible to later commands. For stateful setup use **exec mode** (`container:`) against a container you start yourself (e.g. from a `local`/escape-hatch `up:` hook or out of band), or use kubernetes/ssh.
+
+The `kubernetes` `pod:` value is passed through to `kubectl exec` verbatim, so it accepts any target `kubectl exec` understands — a bare pod name (`web-0`) or a controller reference (`deployment/web`, `statefulset/db`, `daemonset/agent`, `job/migrate`, `svc/api`). For a controller, kubectl selects one of its pods (the first, not all replicas).
 
 Validation: `docker` requires exactly one of `image`/`container`; `kubernetes` requires `pod`; `ssh` requires `host`. A typed context may not also set `executable`, and a `local` context may not carry a type block.
 
